@@ -15,13 +15,15 @@
 		<url>http://www.tigase.org</url>
 	</organization>
 
-	<!-- 
-		<scm>
-		<connection>scm:svn:https://svn.tigase.org/reps/tigase-muc/trunk</connection>
-		<developerConnection>scm:svn:https://svn.tigase.org/reps/tigase-muc/trunk</developerConnection>
+	<scm>
+		<connection>
+			scm:svn:https://svn.tigase.org/reps/tigase-muc/trunk
+		</connection>
+		<developerConnection>
+			scm:svn:https://svn.tigase.org/reps/tigase-muc/trunk
+		</developerConnection>
 		<url>https://svn.tigase.org/reps/tigase-muc</url>
-		</scm> 
-	-->
+	</scm>
 
 	<developers>
 		<developer>
