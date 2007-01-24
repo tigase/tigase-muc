@@ -1,5 +1,5 @@
 /*
- * tigase-muc Copyright (C) 2007 by Bartosz M. Ma³kowski
+ * tigase-muc Copyright (C) 2007 by Bartosz M. MaÅ‚kowski
  * 
  * This program is free software; you can redistribute it and/or modify it under the terms of the GNU
  * General Public License as published by the Free Software Foundation; either version 2 of the License,
@@ -34,9 +34,18 @@ import tigase.util.DNSResolver;
  */
 public class MUCService extends AbstractMessageReceiver {
 
+    /**
+     * Construct MUC service.
+     */
+    public MUCService() {
+        // mucContainer = new MUCContainer();
+        System.out.println(" CONSTRUCT ");
+    }
+
     /** {@inheritDoc} */
     @Override
     public Map<String, Object> getDefaults(Map<String, Object> params) {
+        System.out.println(" getDefaults ");
         Map<String, Object> props = super.getDefaults(params);
         String[] hostnamesPropVal = null;
         if (params.get("--virt-hosts") != null) {
@@ -54,12 +63,14 @@ public class MUCService extends AbstractMessageReceiver {
     /** {@inheritDoc} */
     @Override
     public void processPacket(Packet packet) {
-        System.out.println(" obedra³em: " + packet);
+        System.out.println(" obedraï¿½em: " + packet);
+
     }
 
     /** {@inheritDoc} */
     @Override
     public void setProperties(Map<String, Object> props) {
+        System.out.println(" setProperties ");
         super.setProperties(props);
         String[] hostnames = (String[]) props.get(SessionManagerConfig.HOSTNAMES_PROP_KEY);
         clearRoutings();

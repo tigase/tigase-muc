@@ -5,7 +5,7 @@
   <map/>
   <node name="logging">
    <map>
-    <entry value="FINE" type="String" key=".level"/>
+	<entry value="WARNING" type="String" key=".level"/>
     <entry value="java.util.logging.ConsoleHandler+java.util.logging.FileHandler" type="String" key="handlers"/>
     <entry value="tigase.util.LogFormatter" type="String" key="java.util.logging.ConsoleHandler.formatter"/>
     <entry value="WARNING" type="String" key="java.util.logging.ConsoleHandler.level"/>
@@ -16,6 +16,10 @@
     <entry value="100000" type="String" key="java.util.logging.FileHandler.limit"/>
     <entry value="logs%2Ftigase.log" type="String" key="java.util.logging.FileHandler.pattern"/>
     <entry value="true" type="String" key="tigase.useParentHandlers"/>
+    
+    <entry value="ALL" type="String" key="tigase.server.xmppsession.level"/>
+    <entry value="ALL" type="String" key="tigase.server.MessageRouter.level"/>
+    
    </map>
   </node>
  </component>
