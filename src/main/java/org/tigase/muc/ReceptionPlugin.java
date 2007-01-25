@@ -31,7 +31,7 @@ import org.tigase.muc.room.Room;
 import tigase.xml.Element;
 
 /**
- * Implements Reception who knows anything about rooms and routes stanza to
+ * Implements ReceptionPlugin who knows anything about rooms and routes stanza to
  * rooms.
  * <p>
  * Created: 2007-01-25 13:15:33
@@ -40,7 +40,7 @@ import tigase.xml.Element;
  * @author bmalkow
  * @version $Rev$
  */
-public class Reception extends AbstractPlugin {
+public class ReceptionPlugin extends AbstractPlugin {
 
     /**
      * Map of rooms. Keyed by room name.
@@ -50,7 +50,7 @@ public class Reception extends AbstractPlugin {
     /**
      * Construct plugin.
      */
-    public Reception() {
+    public ReceptionPlugin() {
     }
 
     /** {@inheritDoc} */
