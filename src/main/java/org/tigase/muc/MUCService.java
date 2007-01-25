@@ -18,10 +18,21 @@ package org.tigase.muc;
 
 import java.util.Map;
 
+import org.picocontainer.defaults.DefaultPicoContainer;
+import org.tigase.jaxmpp.JaXMPPException;
+import org.tigase.jaxmpp.jeps.Jep0092SoftwareVersion;
+import org.tigase.jaxmpp.plugins.PluginManager;
+import org.tigase.jaxmpp.plugins.TransactionManager;
+import org.tigase.jaxmpp.plugins.cor.StupidCoRBuilder;
+import org.tigase.jaxmpp.utils.ObscuredIdGenerator;
+import org.tigase.jaxmpp.xmpp.core.XMPPStreamOut;
+import org.tigase.jaxmpp.xmpp.core.exceptions.XMPPException;
+
 import tigase.server.AbstractMessageReceiver;
 import tigase.server.Packet;
 import tigase.server.xmppsession.SessionManagerConfig;
 import tigase.util.DNSResolver;
+import tigase.xml.Element;
 
 /**
  * Implements MUC service for tigase server.
@@ -35,17 +46,65 @@ import tigase.util.DNSResolver;
 public class MUCService extends AbstractMessageReceiver {
 
     /**
+     * MUC components container.
+     */
+    private DefaultPicoContainer mucContainer = new DefaultPicoContainer();
+
+    /**
+     * Plugin manager.
+     */
+    private PluginManager pluginManager;
+
+    /**
+     * XMPP Stream out.
+     */
+    private XMPPStreamOut streamOut;
+
+    /**
+     * Default service name. Will be set in 'from' stanza attribute when 'ftom'
+     * was <code>null</code>.
+     */
+    private String defaultServiceHost;
+
+    /**
+     * Send element.
+     * 
+     * @param element
+     *            element to send.
+     */
+    public final void send(Element element) {
+        element.setAttribute("from", defaultServiceHost);
+        Packet p = new Packet(element);
+        addOutPacket(p);
+    }
+
+    /**
      * Construct MUC service.
      */
     public MUCService() {
-        // mucContainer = new MUCContainer();
-        System.out.println(" CONSTRUCT ");
+
+        this.streamOut = new XMPPStreamOut() {
+
+            public void process() throws JaXMPPException {
+            }
+
+            public void write(Element buffer) {
+                send(buffer);
+            }
+        };
+        mucContainer.registerComponentInstance(this.streamOut);
+
+        mucContainer.registerComponentImplementation(PluginManager.class);
+        mucContainer.registerComponentImplementation(TransactionManager.class);
+        mucContainer.registerComponentImplementation(StupidCoRBuilder.class);
+        mucContainer.registerComponentImplementation(ObscuredIdGenerator.class);
+
+        mucContainer.registerComponentImplementation(Jep0092SoftwareVersion.class);
     }
 
     /** {@inheritDoc} */
     @Override
     public Map<String, Object> getDefaults(Map<String, Object> params) {
-        System.out.println(" getDefaults ");
         Map<String, Object> props = super.getDefaults(params);
         String[] hostnamesPropVal = null;
         if (params.get("--virt-hosts") != null) {
@@ -63,19 +122,28 @@ public class MUCService extends AbstractMessageReceiver {
     /** {@inheritDoc} */
     @Override
     public void processPacket(Packet packet) {
-        System.out.println(" obedra�em: " + packet);
-
+        try {
+            this.pluginManager.process(packet.getElement());
+            this.pluginManager.process();
+        } catch (XMPPException e) {
+            e.printStackTrace();
+        }
     }
 
     /** {@inheritDoc} */
     @Override
     public void setProperties(Map<String, Object> props) {
-        System.out.println(" setProperties ");
         super.setProperties(props);
         String[] hostnames = (String[]) props.get(SessionManagerConfig.HOSTNAMES_PROP_KEY);
         clearRoutings();
         for (String host : hostnames) {
+            if (defaultServiceHost == null) {
+                defaultServiceHost = host;
+            }
             addRouting(host);
-        } // end of for ()
+        }
+
+        this.pluginManager = (PluginManager) this.mucContainer.getComponentInstanceOfType(PluginManager.class);
+
     }
 }
