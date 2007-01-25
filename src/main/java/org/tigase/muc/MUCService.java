@@ -122,6 +122,7 @@ public class MUCService extends AbstractMessageReceiver {
     /** {@inheritDoc} */
     @Override
     public void processPacket(Packet packet) {
+        System.out.println(" IN: " + packet.toString());
         try {
             this.pluginManager.process(packet.getElement());
             this.pluginManager.process();

@@ -17,22 +17,30 @@
  *
  *  $Id$
  */
-package org.tigase.muc;
-
-import org.picocontainer.defaults.DefaultPicoContainer;
+package org.tigase.muc.room;
 
 /**
- * Implementation of MUC container.
+ * Implements MUC Room.
  * <p>
- * Created: 2007-01-24 13:56:24
+ * Created: 2007-01-25 13:45:19
  * </p>
  * 
  * @author bmalkow
  * @version $Rev$
  */
-public class MUCContainer extends DefaultPicoContainer {
+public class Room {
+    /**
+     * Rooms name.
+     */
+    private String name;
 
-    /** */
-    private static final long serialVersionUID = 1L;
-
+    /**
+     * Construct room.
+     * 
+     * @param name
+     *            room name
+     */
+    public Room(final String name) {
+        this.name = name;
+    }
 }
