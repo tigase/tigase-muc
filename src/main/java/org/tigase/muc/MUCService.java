@@ -20,7 +20,6 @@ import java.util.Map;
 
 import org.picocontainer.defaults.DefaultPicoContainer;
 import org.tigase.jaxmpp.JaXMPPException;
-import org.tigase.jaxmpp.Resetable;
 import org.tigase.jaxmpp.jeps.Jep0092SoftwareVersion;
 import org.tigase.jaxmpp.plugins.PluginManager;
 import org.tigase.jaxmpp.plugins.TransactionManager;
@@ -74,11 +73,11 @@ public class MUCService extends AbstractMessageReceiver {
      *            element to send.
      */
     public final void send(Element element) {
-        //element.setAttribute("from", defaultServiceHost);
-        Packet p = new Packet(element);        
+        // element.setAttribute("from", defaultServiceHost);
+        Packet p = new Packet(element);
         addOutPacket(p);
-        System.out.println("OUT: "+p);
-        
+        System.out.println("OUT: " + p);
+
     }
 
     /**

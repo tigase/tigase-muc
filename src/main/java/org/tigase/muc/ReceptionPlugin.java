@@ -46,6 +46,11 @@ import tigase.xml.Element;
 public class ReceptionPlugin extends AbstractPlugin {
 
     /**
+     * 
+     */
+    private String hostName;
+
+    /**
      * Logger.
      */
     private Logger logger = Logger.getLogger(this.getClass().getName());
@@ -76,14 +81,14 @@ public class ReceptionPlugin extends AbstractPlugin {
         return true;
     }
 
-    public void send(Element element) {
-        toSend(element);
-    }
-
     /**
+     * Get MUC hostname.
      * 
+     * @return hostname.
      */
-    private String hostName;
+    public String getHostName() {
+        return hostName;
+    }
 
     /** {@inheritDoc} */
     public String getName() {
@@ -100,10 +105,22 @@ public class ReceptionPlugin extends AbstractPlugin {
         return null;
     }
 
-    public String getHostName() {
-        return hostName;
+    /**
+     * Send element.
+     * 
+     * @param element
+     *            element to send.
+     */
+    public void send(Element element) {
+        toSend(element);
     }
 
+    /**
+     * Set MUC hostname.
+     * 
+     * @param hostName
+     *            hostname to set.
+     */
     public void setHostName(String hostName) {
         this.hostName = hostName;
     }
