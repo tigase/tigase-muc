@@ -26,7 +26,6 @@
  <component name="tigase-xmpp-server">
   <map>
    <entry type="String[]" key="hostnames">
-    <item value="qs135"/>
     <item value="localhost"/>
    </entry>
    <entry value="1000" type="Integer" key="max-queue-size"/>
@@ -68,7 +67,6 @@
  <component name="client_1">
   <map>
    <entry type="String[]" key="hostnames">
-    <item value="qs135"/>
     <item value="localhost"/>
    </entry>
    <entry value="1000" type="Integer" key="max-queue-size"/>
@@ -131,7 +129,6 @@
  <component name="server_1">
   <map>
    <entry type="String[]" key="hostnames">
-    <item value="qs135"/>
     <item value="localhost"/>
    </entry>
    <entry value="1000" type="Integer" key="max-queue-size"/>
@@ -172,7 +169,6 @@
  <component name="session_1">
   <map>
    <entry type="String[]" key="admins">
-    <item value="admin%40qs135"/>
     <item value="admin%40localhost"/>
    </entry>
    <entry value="tigase.db.xml.XMLRepository" type="String" key="auth-repo-class"/>
@@ -199,7 +195,6 @@
     <item value="jabber%3Aiq%3Aoob"/>
    </entry>
    <entry type="String[]" key="hostnames">
-    <item value="qs135"/>
     <item value="localhost"/>
    </entry>
    <entry value="1000" type="Integer" key="max-queue-size"/>
@@ -210,7 +205,6 @@
  <component name="muc_1">
   <map>
    <entry type="String[]" key="hostnames">
-    <item value="muc.qs135"/>
     <item value="muc.localhost"/>
    </entry>
    <entry value="1000" type="Integer" key="max-queue-size"/>

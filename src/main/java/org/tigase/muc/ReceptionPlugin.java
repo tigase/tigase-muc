@@ -21,18 +21,21 @@ package org.tigase.muc;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.tigase.jaxmpp.plugins.AbstractPlugin;
 import org.tigase.jaxmpp.plugins.PluginWorkStage;
 import org.tigase.jaxmpp.plugins.query.Query;
+import org.tigase.jaxmpp.xmpp.core.JID;
 import org.tigase.jaxmpp.xmpp.core.exceptions.XMPPException;
+import org.tigase.jaxmpp.xmpp.im.presence.Presence;
 import org.tigase.muc.room.Room;
 
 import tigase.xml.Element;
 
 /**
- * Implements ReceptionPlugin who knows anything about rooms and routes stanza to
- * rooms.
+ * Implements ReceptionPlugin who knows anything about rooms and routes stanza
+ * to rooms.
  * <p>
  * Created: 2007-01-25 13:15:33
  * </p>
@@ -41,6 +44,11 @@ import tigase.xml.Element;
  * @version $Rev$
  */
 public class ReceptionPlugin extends AbstractPlugin {
+
+    /**
+     * Logger.
+     */
+    private Logger logger = Logger.getLogger(this.getClass().getName());
 
     /**
      * Map of rooms. Keyed by room name.
@@ -55,9 +63,27 @@ public class ReceptionPlugin extends AbstractPlugin {
 
     /** {@inheritDoc} */
     public boolean execute(Element packet) throws XMPPException {
-        System.out.println(" RECEPTION: " + packet);
+        String roomName = JID.fromString(packet.getAttribute("to")).getUsername();
+        Room room = this.rooms.get(roomName);
+        if (room == null) {
+            logger.info("Creating room with name: " + roomName);
+            room = new Room(new Presence(packet), this);
+            this.rooms.put(roomName, room);
+        } else {
+            room.process(packet);
+        }
+
         return true;
     }
+
+    public void send(Element element) {
+        toSend(element);
+    }
+
+    /**
+     * 
+     */
+    private String hostName;
 
     /** {@inheritDoc} */
     public String getName() {
@@ -72,6 +98,14 @@ public class ReceptionPlugin extends AbstractPlugin {
     /** {@inheritDoc} */
     public PluginWorkStage getStage() {
         return null;
+    }
+
+    public String getHostName() {
+        return hostName;
+    }
+
+    public void setHostName(String hostName) {
+        this.hostName = hostName;
     }
 
 }

@@ -10,12 +10,31 @@
   </node>
   <node name="roster">
    <map/>
-   <node name="pokoj@muc.localhost">
+  </node>
+  <node name="offline">
+   <map/>
+   <node name="msgoffline">
+    <map/>
+   </node>
+  </node>
+  <node name="public">
+   <map/>
+   <node name="vcard-temp">
     <map>
-     <entry value="pokoj%40muc.localhost" type="String" key="name"/>
-     <entry value="none_pending_out" type="String" key="subscription"/>
+     <entry value="%3CvCard+xmlns%3D%22vcard-temp%22%3E%3CFN%3EBartek%3C%2FFN%3E%3C%2FvCard%3E" type="String" key="vCard"/>
     </map>
    </node>
+  </node>
+ </user>
+ <user name="tester@localhost">
+  <map>
+   <entry value="dupa" type="String" key="password"/>
+  </map>
+  <node name="privacy">
+   <map/>
+  </node>
+  <node name="roster">
+   <map/>
   </node>
   <node name="offline">
    <map/>
