@@ -29,6 +29,7 @@ import org.tigase.jaxmpp.xmpp.core.stanzas.PresenceType;
 import org.tigase.jaxmpp.xmpp.im.presence.Presence;
 import org.tigase.muc.ReceptionPlugin;
 
+import tigase.db.UserRepository;
 import tigase.xml.Element;
 
 /**
@@ -41,14 +42,12 @@ import tigase.xml.Element;
  * @version $Rev$
  */
 public class Room {
-    /**
-     * Rooms name.
-     */
-    private String roomName;
 
     private ReceptionPlugin reception;
 
     private Map<JID, Occupant> occupants = new HashMap<JID, Occupant>();
+
+    private RoomConfig roomConfig;
 
     private void putOccupant(Occupant occupant) {
         this.occupants.put(occupant.getJid(), occupant);
@@ -88,14 +87,20 @@ public class Room {
      * @param name
      *            room name
      */
-    public Room(final Presence initialPresence, final ReceptionPlugin reception) {
-        this.roomName = initialPresence.getTo().getUsername();
+    public Room(final UserRepository repository, final Presence initialPresence, final ReceptionPlugin reception) {
         this.reception = reception;
-        Occupant occupant = new Occupant(initialPresence);
+        roomConfig = new RoomConfig(new JID(initialPresence.getTo().getUsername(), reception.getHostName()), repository);
+
+        boolean initializedNewRoom = roomConfig.init();
+        Occupant occupant = new Occupant(roomConfig.getRoomJID(), roomConfig.getRepository(), initialPresence);
+        if (initializedNewRoom) {
+            occupant.setAffiliation(Affiliations.OWNER);
+            occupant.setRole(Roles.MODERATOR);
+        }
         putOccupant(occupant);
         Element presence = preparePresence(occupant, occupant, 201);
-
         this.reception.send(presence);
+
     }
 
     private Presence preparePresence(Occupant recipient, Occupant occupant, int... statuses) {
@@ -103,7 +108,8 @@ public class Room {
     }
 
     private Presence preparePresence(Occupant recipient, Occupant occupant, String nick, int... statuses) {
-        JID from = new JID(roomName, reception.getHostName(), occupant.getNickname());
+        JID from = new JID(roomConfig.getRoomJID().getUsername(), roomConfig.getRoomJID().getHost(), occupant
+                .getNickname());
 
         Presence result = new Presence();
         result.setTo(recipient.getJid());
@@ -155,7 +161,7 @@ public class Room {
     private void processPresence(Presence presence) {
         Occupant occupant = getOccupantByJID(presence.getFrom());
         if (occupant == null) {
-            occupant = new Occupant(presence);
+            occupant = new Occupant(roomConfig.getRoomJID(), roomConfig.getRepository(), presence);
             putOccupant(occupant);
             // send all occupants to new occupant
             for (Occupant occFrom : this.occupants.values()) {
@@ -164,10 +170,10 @@ public class Room {
                 }
                 Element toSend = preparePresence(occupant, occFrom);
                 this.reception.send(toSend);
-                for (Occupant occTo : this.occupants.values()) {
-                    Element toSen = preparePresence(occTo, occupant);
-                    this.reception.send(toSen);
-                }
+            }
+            for (Occupant occTo : this.occupants.values()) {
+                Element toSen = preparePresence(occTo, occupant);
+                this.reception.send(toSen);
             }
         } else {
             if (presence.getType() == PresenceType.UNAVAILABLE) {
@@ -196,6 +202,9 @@ public class Room {
             this.reception.send(presence);
         }
         this.occupants.remove(occupant.getJid());
+        if (this.occupants.size() == 0) {
+            this.reception.roomCanByDischarge(this);
+        }
     }
 
     public void process(Element element) {
@@ -210,7 +219,8 @@ public class Room {
     private void processMessage(Message message) {
         Occupant sender = getOccupantByJID(message.getFrom());
         if (occupants != null) {
-            JID from = new JID(roomName, reception.getHostName(), sender.getNickname());
+            JID from = new JID(roomConfig.getRoomJID().getUsername(), roomConfig.getRoomJID().getHost(), sender
+                    .getNickname());
             Message msg = (Message) message.clone();
             msg.setFrom(from);
 
@@ -229,4 +239,5 @@ public class Room {
             }
         }
     }
+
 }

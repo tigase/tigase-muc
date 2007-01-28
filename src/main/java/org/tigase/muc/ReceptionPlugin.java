@@ -31,6 +31,7 @@ import org.tigase.jaxmpp.xmpp.core.exceptions.XMPPException;
 import org.tigase.jaxmpp.xmpp.im.presence.Presence;
 import org.tigase.muc.room.Room;
 
+import tigase.db.UserRepository;
 import tigase.xml.Element;
 
 /**
@@ -66,13 +67,15 @@ public class ReceptionPlugin extends AbstractPlugin {
     public ReceptionPlugin() {
     }
 
+    private UserRepository repository;
+
     /** {@inheritDoc} */
     public boolean execute(Element packet) throws XMPPException {
         String roomName = JID.fromString(packet.getAttribute("to")).getUsername();
         Room room = this.rooms.get(roomName);
         if (room == null) {
             logger.info("Creating room with name: " + roomName);
-            room = new Room(new Presence(packet), this);
+            room = new Room(this.repository, new Presence(packet), this);
             this.rooms.put(roomName, room);
         } else {
             room.process(packet);
@@ -123,6 +126,20 @@ public class ReceptionPlugin extends AbstractPlugin {
      */
     public void setHostName(String hostName) {
         this.hostName = hostName;
+    }
+
+    /**
+     * @param room
+     */
+    public void roomCanByDischarge(Room room) {
+    }
+
+    public UserRepository getRepository() {
+        return repository;
+    }
+
+    public void setRepository(UserRepository repository) {
+        this.repository = repository;
     }
 
 }

@@ -22,6 +22,10 @@ package org.tigase.muc.room;
 import org.tigase.jaxmpp.xmpp.core.JID;
 import org.tigase.jaxmpp.xmpp.im.presence.Presence;
 
+import tigase.db.TigaseDBException;
+import tigase.db.UserNotFoundException;
+import tigase.db.UserRepository;
+
 /**
  * 
  * <p>
@@ -44,14 +48,18 @@ public class Occupant {
 
     private Presence currentPresence;
 
-    public Occupant(final JID jid) {
-        this.jid = jid;
-        this.currentPresence = null;
+    private OccupantConfig config;
+
+    public Occupant(final JID roomJID, final UserRepository repository, final Presence presence) {
+        this(new OccupantConfig(roomJID, presence.getFrom(), repository), presence);
     }
 
-    public Occupant(final Presence presence) {
+    public Occupant(final OccupantConfig config, final Presence presence) {
         this.jid = presence.getFrom();
         this.currentPresence = presence;
+        this.config = config;
+        this.affiliation = this.config.restoreAffiliation();
+        this.role = this.config.restoreRole();
     }
 
     public JID getJid() {
@@ -72,6 +80,7 @@ public class Occupant {
 
     public void setAffiliation(Affiliations affiliation) {
         this.affiliation = affiliation;
+        this.config.storeAffiliation(affiliation);
     }
 
     public Roles getRole() {
@@ -80,6 +89,7 @@ public class Occupant {
 
     public void setRole(Roles role) {
         this.role = role;
+        this.config.storeRole(role);
     }
 
     /**

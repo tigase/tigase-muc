@@ -17,6 +17,7 @@
 package org.tigase.muc;
 
 import java.util.Map;
+import java.util.logging.Logger;
 
 import org.picocontainer.defaults.DefaultPicoContainer;
 import org.tigase.jaxmpp.JaXMPPException;
@@ -28,6 +29,8 @@ import org.tigase.jaxmpp.utils.ObscuredIdGenerator;
 import org.tigase.jaxmpp.xmpp.core.XMPPStreamOut;
 import org.tigase.jaxmpp.xmpp.core.exceptions.XMPPException;
 
+import tigase.db.RepositoryFactory;
+import tigase.db.UserRepository;
 import tigase.server.AbstractMessageReceiver;
 import tigase.server.Packet;
 import tigase.server.xmppsession.SessionManagerConfig;
@@ -45,10 +48,28 @@ import tigase.xml.Element;
  */
 public class MUCService extends AbstractMessageReceiver {
 
+    private static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
+
+    private static final String MUC_REPO_CLASS_PROP_VAL = "tigase.db.xml.XMLRepository";
+
+    private static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
+
+    private static final String MUC_REPO_URL_PROP_VAL = "muc-repository.xml";
+
+    /**
+     * Default service name. Will be set in 'from' stanza attribute when 'ftom'
+     * was <code>null</code>.
+     */
+    private String defaultServiceHost;
+
+    private Logger log = Logger.getLogger(this.getClass().getName());
+
     /**
      * MUC components container.
      */
     private DefaultPicoContainer mucContainer = new DefaultPicoContainer();
+
+    private UserRepository mucRepository;
 
     /**
      * Plugin manager.
@@ -59,26 +80,6 @@ public class MUCService extends AbstractMessageReceiver {
      * XMPP Stream out.
      */
     private XMPPStreamOut streamOut;
-
-    /**
-     * Default service name. Will be set in 'from' stanza attribute when 'ftom'
-     * was <code>null</code>.
-     */
-    private String defaultServiceHost;
-
-    /**
-     * Send element.
-     * 
-     * @param element
-     *            element to send.
-     */
-    public final void send(Element element) {
-        // element.setAttribute("from", defaultServiceHost);
-        Packet p = new Packet(element);
-        addOutPacket(p);
-        System.out.println("OUT: " + p);
-
-    }
 
     /**
      * Construct MUC service.
@@ -104,6 +105,7 @@ public class MUCService extends AbstractMessageReceiver {
         mucContainer.registerComponentImplementation(ReceptionPlugin.class);
 
         mucContainer.registerComponentImplementation(Jep0092SoftwareVersion.class);
+
     }
 
     /** {@inheritDoc} */
@@ -119,6 +121,10 @@ public class MUCService extends AbstractMessageReceiver {
         for (int i = 0; i < hostnamesPropVal.length; i++) {
             hostnamesPropVal[i] = "muc." + hostnamesPropVal[i];
         }
+
+        props.put(MUC_REPO_CLASS_PROP_KEY, MUC_REPO_CLASS_PROP_VAL);
+        props.put(MUC_REPO_URL_PROP_KEY, MUC_REPO_URL_PROP_VAL);
+
         props.put(SessionManagerConfig.HOSTNAMES_PROP_KEY, hostnamesPropVal);
         return props;
     }
@@ -135,10 +141,34 @@ public class MUCService extends AbstractMessageReceiver {
         }
     }
 
+    /**
+     * Send element.
+     * 
+     * @param element
+     *            element to send.
+     */
+    public final void send(Element element) {
+        // element.setAttribute("from", defaultServiceHost);
+        Packet p = new Packet(element);
+        addOutPacket(p);
+        System.out.println("OUT: " + p);
+
+    }
+
     /** {@inheritDoc} */
     @Override
     public void setProperties(Map<String, Object> props) {
         super.setProperties(props);
+        try {
+            String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
+            String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
+            mucRepository = RepositoryFactory.getUserRepository(cls_name, res_uri);
+            log.config("Initialized " + cls_name + " as user repository: " + res_uri);
+        } catch (Exception e) {
+            log.severe("Can't initialize user repository: " + e);
+            e.printStackTrace();
+            System.exit(1);
+        }
         String[] hostnames = (String[]) props.get(SessionManagerConfig.HOSTNAMES_PROP_KEY);
         clearRoutings();
         for (String host : hostnames) {
@@ -152,5 +182,6 @@ public class MUCService extends AbstractMessageReceiver {
         ReceptionPlugin receptionPlugin = (ReceptionPlugin) this.mucContainer
                 .getComponentInstanceOfType(ReceptionPlugin.class);
         receptionPlugin.setHostName(defaultServiceHost);
+        receptionPlugin.setRepository(mucRepository);
     }
 }

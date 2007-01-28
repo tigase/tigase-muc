@@ -1,0 +1,13 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<users>
+ <node name="testowy_2@muc.localhost">
+  <map/>
+  <node name="bmalkow@localhost">
+   <map>
+    <entry value="OWNER" type="String" key="affiliations"/>
+    <entry value="MODERATOR" type="String" key="role"/>
+   </map>
+  </node>
+ </node>
+</users>

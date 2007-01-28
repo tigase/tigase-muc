@@ -208,6 +208,8 @@
     <item value="muc.localhost"/>
    </entry>
    <entry value="1000" type="Integer" key="max-queue-size"/>
+   <entry value="tigase.db.xml.XMLRepository" type="String" key="muc-repo-class"/>
+   <entry value="muc-repository.xml" type="String" key="muc-repo-url"/>
   </map>
  </component>
 </tigase-config>
