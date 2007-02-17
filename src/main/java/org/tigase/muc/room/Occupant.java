@@ -22,8 +22,6 @@ package org.tigase.muc.room;
 import org.tigase.jaxmpp.xmpp.core.JID;
 import org.tigase.jaxmpp.xmpp.im.presence.Presence;
 
-import tigase.db.TigaseDBException;
-import tigase.db.UserNotFoundException;
 import tigase.db.UserRepository;
 
 /**

@@ -20,7 +20,10 @@
 package org.tigase.muc.room;
 
 /**
- * 
+ * A temporary position or privilege level within a room, distinct from a user's
+ * long-lived affiliation with the room; the possible roles are "moderator",
+ * "participant", and "visitor" (it is also possible to have no defined role). A
+ * role lasts only for the duration of an occupant's visit to a room.
  * <p>
  * Created: 2007-01-26 16:29:36
  * </p>
@@ -29,7 +32,21 @@ package org.tigase.muc.room;
  * @version $Rev$
  */
 public enum Roles {
+    /**
+     * A room role that is usually associated with room admins but that may be
+     * granted to non-admins; is allowed to kick users, grant and revoke voice,
+     * etc.
+     */
     MODERATOR,
+    /**
+     * An occupant who does not have administrative privileges; in a moderated
+     * room, a participant is further defined as having voice (in contrast to a
+     * visitor).
+     */
     PARTICIPANT,
+    /**
+     * In a moderated room, an occupant who does not have voice (in contrast to
+     * a participant).
+     */
     VISITOR
 }

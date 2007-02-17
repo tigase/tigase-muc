@@ -132,7 +132,6 @@ public class MUCService extends AbstractMessageReceiver {
     /** {@inheritDoc} */
     @Override
     public void processPacket(Packet packet) {
-        System.out.println(" IN: " + packet.toString());
         try {
             this.pluginManager.process(packet.getElement());
             this.pluginManager.process();
@@ -151,8 +150,6 @@ public class MUCService extends AbstractMessageReceiver {
         // element.setAttribute("from", defaultServiceHost);
         Packet p = new Packet(element);
         addOutPacket(p);
-        System.out.println("OUT: " + p);
-
     }
 
     /** {@inheritDoc} */

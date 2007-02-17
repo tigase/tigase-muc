@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
 	<name>tigase-muc</name>
-	<comment>Multi User Chat for Tigase</comment>
+	<comment>Multi User Chat component for Tigase</comment>
 	<projects>
 	</projects>
 	<buildSpec>

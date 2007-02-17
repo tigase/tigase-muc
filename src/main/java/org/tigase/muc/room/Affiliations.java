@@ -20,7 +20,10 @@
 package org.tigase.muc.room;
 
 /**
- * 
+ * A long-lived association or connection with a room; the possible affiliations
+ * are "owner", "admin", "member", and "outcast" (naturally it is also possible
+ * to have no affiliation); affiliation is distinct from role. An affiliation
+ * lasts across a user's visits to a room.
  * <p>
  * Created: 2007-01-26 16:30:15
  * </p>
@@ -29,5 +32,27 @@ package org.tigase.muc.room;
  * @version $Rev$
  */
 public enum Affiliations {
-    OWNER, ADMIN, MEMBER, OUTCAST
+    /**
+     * The Jabber user who created the room or a Jabber user who has been
+     * designated by the room creator or owner as someone with owner privileges
+     * (if allowed); is allowed to change defining room features as well as
+     * perform all administrative functions.
+     */
+    OWNER,
+    /**
+     * A user empowered by the room owner to perform administrative functions
+     * such as banning users; however, is not allowed to change defining room
+     * features.
+     */
+    ADMIN,
+    /**
+     * A user who is on the "whitelist" for a members-only room or who is
+     * registered with an open room.
+     */
+    MEMBER,
+    /**
+     * A user who is on the "whitelist" for a members-only room or who is
+     * registered with an open room.
+     */
+    OUTCAST
 }
