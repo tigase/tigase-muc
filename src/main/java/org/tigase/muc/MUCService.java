@@ -19,16 +19,6 @@ package org.tigase.muc;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import org.picocontainer.defaults.DefaultPicoContainer;
-import org.tigase.jaxmpp.JaXMPPException;
-import org.tigase.jaxmpp.jeps.Jep0092SoftwareVersion;
-import org.tigase.jaxmpp.plugins.PluginManager;
-import org.tigase.jaxmpp.plugins.TransactionManager;
-import org.tigase.jaxmpp.plugins.cor.StupidCoRBuilder;
-import org.tigase.jaxmpp.utils.ObscuredIdGenerator;
-import org.tigase.jaxmpp.xmpp.core.XMPPStreamOut;
-import org.tigase.jaxmpp.xmpp.core.exceptions.XMPPException;
-
 import tigase.db.RepositoryFactory;
 import tigase.db.UserRepository;
 import tigase.server.AbstractMessageReceiver;
@@ -65,46 +55,9 @@ public class MUCService extends AbstractMessageReceiver {
     private Logger log = Logger.getLogger(this.getClass().getName());
 
     /**
-     * MUC components container.
-     */
-    private DefaultPicoContainer mucContainer = new DefaultPicoContainer();
-
-    private UserRepository mucRepository;
-
-    /**
-     * Plugin manager.
-     */
-    private PluginManager pluginManager;
-
-    /**
-     * XMPP Stream out.
-     */
-    private XMPPStreamOut streamOut;
-
-    /**
      * Construct MUC service.
      */
     public MUCService() {
-
-        this.streamOut = new XMPPStreamOut() {
-
-            public void process() throws JaXMPPException {
-            }
-
-            public void write(Element buffer) {
-                send(buffer);
-            }
-        };
-        mucContainer.registerComponentInstance(this.streamOut);
-
-        mucContainer.registerComponentImplementation(PluginManager.class);
-        mucContainer.registerComponentImplementation(TransactionManager.class);
-        mucContainer.registerComponentImplementation(StupidCoRBuilder.class);
-        mucContainer.registerComponentImplementation(ObscuredIdGenerator.class);
-
-        mucContainer.registerComponentImplementation(ReceptionPlugin.class);
-
-        mucContainer.registerComponentImplementation(Jep0092SoftwareVersion.class);
 
     }
 
@@ -132,25 +85,10 @@ public class MUCService extends AbstractMessageReceiver {
     /** {@inheritDoc} */
     @Override
     public void processPacket(Packet packet) {
-        try {
-            this.pluginManager.process(packet.getElement());
-            this.pluginManager.process();
-        } catch (XMPPException e) {
-            e.printStackTrace();
-        }
+        // XXX
     }
 
-    /**
-     * Send element.
-     * 
-     * @param element
-     *            element to send.
-     */
-    public final void send(Element element) {
-        // element.setAttribute("from", defaultServiceHost);
-        Packet p = new Packet(element);
-        addOutPacket(p);
-    }
+
 
     /** {@inheritDoc} */
     @Override
@@ -159,7 +97,7 @@ public class MUCService extends AbstractMessageReceiver {
         try {
             String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
             String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
-            mucRepository = RepositoryFactory.getUserRepository(cls_name, res_uri);
+
             log.config("Initialized " + cls_name + " as user repository: " + res_uri);
         } catch (Exception e) {
             log.severe("Can't initialize user repository: " + e);
@@ -174,11 +112,5 @@ public class MUCService extends AbstractMessageReceiver {
             }
             addRouting(host);
         }
-
-        this.pluginManager = (PluginManager) this.mucContainer.getComponentInstanceOfType(PluginManager.class);
-        ReceptionPlugin receptionPlugin = (ReceptionPlugin) this.mucContainer
-                .getComponentInstanceOfType(ReceptionPlugin.class);
-        receptionPlugin.setHostName(defaultServiceHost);
-        receptionPlugin.setRepository(mucRepository);
     }
 }
