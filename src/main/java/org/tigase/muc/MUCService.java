@@ -16,15 +16,21 @@
  */
 package org.tigase.muc;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import tigase.db.RepositoryFactory;
-import tigase.db.UserRepository;
+import tigase.conf.Configurable;
+import tigase.disco.ServiceEntity;
+import tigase.disco.ServiceIdentity;
+import tigase.disco.XMPPService;
 import tigase.server.AbstractMessageReceiver;
 import tigase.server.Packet;
 import tigase.server.xmppsession.SessionManagerConfig;
 import tigase.util.DNSResolver;
+import tigase.util.JID;
 import tigase.xml.Element;
 
 /**
@@ -36,7 +42,7 @@ import tigase.xml.Element;
  * @author bmalkow
  * @version $Rev$
  */
-public class MUCService extends AbstractMessageReceiver {
+public class MUCService extends AbstractMessageReceiver implements XMPPService, Configurable {
 
     private static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
 
@@ -45,12 +51,6 @@ public class MUCService extends AbstractMessageReceiver {
     private static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
 
     private static final String MUC_REPO_URL_PROP_VAL = "muc-repository.xml";
-
-    /**
-     * Default service name. Will be set in 'from' stanza attribute when 'ftom'
-     * was <code>null</code>.
-     */
-    private String defaultServiceHost;
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -82,18 +82,60 @@ public class MUCService extends AbstractMessageReceiver {
         return props;
     }
 
+    private Map<String, Room> rooms = new HashMap<String, Room>();
+
+    static Element errorPresence(String from, String to, String type, String code, String errorElement) {
+        Element p = new Element("presence");
+        p.setAttribute("from", from);
+        p.setAttribute("to", to);
+        p.setAttribute("type", "error");
+
+        Element error = new Element("error");
+        error.setAttribute("code", code);
+        error.setAttribute("type", type);
+        error.addChild(new Element(errorElement, new String[] { "xmlns" },
+                new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
+        p.addChild(error);
+        
+        return p;
+    };
+
+    static Packet error400(String roomID, Packet packet) {
+        return new Packet(errorPresence(roomID, packet.getElemFrom(), "modify", "400", "jid-malformed"));
+    }
+
     /** {@inheritDoc} */
     @Override
     public void processPacket(Packet packet) {
-        // XXX
+        String roomName = JID.getNodeNick(packet.getElemTo());
+        String roomHost = JID.getNodeHost(packet.getElemTo());
+
+        String roomID = JID.getNodeID(packet.getElemTo());
+        String username = JID.getNodeResource(packet.getElemTo());
+
+        Room room = this.rooms.get(roomID);
+
+        if (room == null) {
+            room = new Room(roomID);
+            this.rooms.put(roomID, room);
+        }
+
+        List<Element> stanzasToSend = room.processStanza(packet.getElement());
+        if (stanzasToSend != null) {
+            for (Element element : stanzasToSend) {
+                addOutPacket(new Packet(element));
+            }
+        }
     }
-
-
 
     /** {@inheritDoc} */
     @Override
     public void setProperties(Map<String, Object> props) {
         super.setProperties(props);
+
+        serviceEntity = new ServiceEntity(getName(), null, "Multi User Chat");
+        serviceEntity.addIdentities(new ServiceIdentity("component", "generic", "Multi User Chat"));
+
         try {
             String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
             String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
@@ -107,10 +149,29 @@ public class MUCService extends AbstractMessageReceiver {
         String[] hostnames = (String[]) props.get(SessionManagerConfig.HOSTNAMES_PROP_KEY);
         clearRoutings();
         for (String host : hostnames) {
-            if (defaultServiceHost == null) {
-                defaultServiceHost = host;
-            }
             addRouting(host);
         }
     }
+
+    public Element getDiscoInfo(String node, String jid) {
+        if (jid != null && JID.getNodeHost(jid).startsWith(getName() + ".")) {
+            return serviceEntity.getDiscoInfo(node);
+        }
+        return null;
+    }
+
+    public List<Element> getDiscoFeatures() {
+        return null;
+    }
+
+    public List<Element> getDiscoItems(String node, String jid) {
+        if (JID.getNodeHost(jid).startsWith(getName() + ".")) {
+            return serviceEntity.getDiscoItems(node, null);
+        } else {
+            return Arrays.asList(serviceEntity.getDiscoItem(null, getName() + "." + jid));
+        }
+    }
+
+    private ServiceEntity serviceEntity = null;
+
 }
