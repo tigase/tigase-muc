@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import tigase.conf.Configurable;
+import tigase.db.RepositoryFactory;
+import tigase.db.UserRepository;
 import tigase.disco.ServiceEntity;
 import tigase.disco.ServiceIdentity;
 import tigase.disco.XMPPService;
@@ -96,7 +98,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         error.addChild(new Element(errorElement, new String[] { "xmlns" },
                 new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
         p.addChild(error);
-        
+
         return p;
     };
 
@@ -116,7 +118,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         Room room = this.rooms.get(roomID);
 
         if (room == null) {
-            room = new Room(roomID);
+            room = new Room(mucRepository, roomID, packet.getElemFrom());
             this.rooms.put(roomID, room);
         }
 
@@ -128,6 +130,8 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         }
     }
 
+    private UserRepository mucRepository;
+
     /** {@inheritDoc} */
     @Override
     public void setProperties(Map<String, Object> props) {
@@ -135,10 +139,12 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 
         serviceEntity = new ServiceEntity(getName(), null, "Multi User Chat");
         serviceEntity.addIdentities(new ServiceIdentity("component", "generic", "Multi User Chat"));
-
         try {
             String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
             String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
+
+            mucRepository = RepositoryFactory.getUserRepository("muc", cls_name, res_uri);
+            mucRepository.initRepository(res_uri);
 
             log.config("Initialized " + cls_name + " as user repository: " + res_uri);
         } catch (Exception e) {

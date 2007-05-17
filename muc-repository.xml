@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8'?>
+
+<users>
+ <user name="testowy@muc.localhost">
+  <map>
+   <entry value="testowy" type="String" key="roomShortName"/>
+   <entry value="testowy" type="String" key="roomFullName"/>
+   <entry value="false" type="String" key="allowedOccupantChangeSobject"/>
+   <entry value="false" type="String" key="allowedOccupantsToInvite"/>
+   <entry value="false" type="String" key="allowedOccupantsToQueryOccupants"/>
+   <entry value="false" type="String" key="allowedPublicSearch"/>
+   <entry value="false" type="String" key="invitationRequired"/>
+   <entry value="false" type="String" key="lockNicknames"/>
+   <entry value="false" type="String" key="logging"/>
+   <entry value="false" type="String" key="moderated"/>
+   <entry value="false" type="String" key="persist"/>
+   <entry value="false" type="String" key="passwordRequired"/>
+   <entry value="false" type="String" key="privateMessageBanned"/>
+   <entry value="false" type="String" key="occupantDefaultParticipant"/>
+   <entry value="0" type="String" key="maxOccupantNumber"/>
+   <entry type="String[]" key="affiliationsViewsJID">
+    <item value="ADMIN"/>
+    <item value="OWNER"/>
+   </entry>
+   <entry value="false" type="String" key="allowedOccupantChangeSubject"/>
+  </map>
+ </user>
+</users>
