@@ -21,8 +21,10 @@ package org.tigase.muc;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 import tigase.db.TigaseDBException;
@@ -115,6 +117,32 @@ public class RoomConfiguration implements Serializable {
      */
     private boolean occupantDefaultParticipant;
 
+    public Affiliation getAffiliation(String jid) {
+        return this.affiliations.get(JID.getNodeID(jid));
+    }
+
+    public void setAffiliation(String jid, Affiliation affiliation) {
+        this.affiliations.put(JID.getNodeID(jid), affiliation);
+        if (isPersist()) {
+            try {
+                if (affiliation != null) {
+                    this.mucRepocitory.setData(id, "affiliation", JID.getNodeID(jid), affiliation.name());
+                } else {
+                    this.mucRepocitory.removeData(id, "affiliation", JID.getNodeID(jid));
+                }
+            } catch (UserNotFoundException e) {
+                e.printStackTrace();
+            } catch (TigaseDBException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * Key: bareJID
+     */
+    private Map<String, Affiliation> affiliations = new HashMap<String, Affiliation>();
+
     /**
      * The Room Password.
      */
@@ -174,7 +202,7 @@ public class RoomConfiguration implements Serializable {
         }
     }
 
-    RoomConfiguration(String id, UserRepository mucRepocitory) {
+    RoomConfiguration(String id, UserRepository mucRepocitory, String constructorJid) {
         this.id = id;
         this.mucRepocitory = mucRepocitory;
         String roomName = JID.getNodeNick(id);
@@ -197,6 +225,7 @@ public class RoomConfiguration implements Serializable {
         this.passwordRequired = getBoolean("passwordRequired", false);
         this.persist = getBoolean("persist", false);
         this.privateMessageBanned = getBoolean("privateMessageBanned", false);
+
         this.affiliationsViewsJID.clear();
         try {
             Collection<Affiliation> x = new HashSet<Affiliation>();
@@ -209,6 +238,21 @@ public class RoomConfiguration implements Serializable {
             this.affiliationsViewsJID.add(Affiliation.ADMIN);
             this.affiliationsViewsJID.add(Affiliation.OWNER);
         }
+
+        try {
+            Map<String, Affiliation> tmp = new HashMap<String, Affiliation>();
+            // this.mucRepocitory.setData(id, "affiliation", JID.getNodeID(jid)
+            String[] jids = this.mucRepocitory.getKeys(id, "affiliation");
+            for (String jid : jids) {
+                String affName = this.mucRepocitory.getData(id, "affiliation", JID.getNodeID(jid));
+                tmp.put(jid, Affiliation.valueOf(affName));
+            }
+            this.affiliations.clear();
+            this.affiliations.putAll(tmp);
+        } catch (Exception e) {
+            this.affiliations.put(JID.getNodeID(constructorJid), Affiliation.OWNER);
+        }
+
     }
 
     public void flushConfig() {
