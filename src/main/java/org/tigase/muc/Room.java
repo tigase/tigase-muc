@@ -43,9 +43,9 @@ public class Room implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    private Map<String, Element> lastReceivedPresence = new HashMap<String, Element>();
-
     private final RoomConfiguration configuration;
+
+    private Map<String, Element> lastReceivedPresence = new HashMap<String, Element>();
 
     /**
      * <realJID, nick>
@@ -234,6 +234,197 @@ public class Room implements Serializable {
         return result;
     }
 
+    private List<Element> processIq(Element element) {
+        List<Element> result = new LinkedList<Element>();
+        System.out.println("I:" + element);
+        Element query = element.getChild("query", "http://jabber.org/protocol/muc#admin");
+        Element item = query.getChild("item");
+
+        String nick = item.getAttribute("nick");
+        String role = item.getAttribute("role");
+
+        String jid = item.getAttribute("jid");
+        String affiliation = item.getAttribute("affiliation");
+
+        if (nick != null && role != null && role.equals("none")) {
+            jid = this.occupantsByNick.get(nick);
+            return processIqKick(jid, element);
+        } else if (nick != null && role != null) {
+            // changing role
+            jid = this.occupantsByNick.get(nick);
+            Role r = Role.valueOf(role.toUpperCase());
+            this.roles.put(JID.getNodeID(jid), r);
+            publishNewPresence(result, jid);
+            Element answer = new Element("iq");
+            answer.addAttribute("id", element.getAttribute("id"));
+            answer.addAttribute("type", "result");
+            answer.addAttribute("to", element.getAttribute("from"));
+            answer.addAttribute("from", roomID);
+
+            result.add(answer);
+        } else if (jid != null && affiliation != null) {
+            // changing affiliation
+            return processIqChangeAffiliation(element);
+        }
+
+        return result;
+    }
+
+    private List<Element> processIqChangeAffiliation(Element element) {
+        Element queryR = element.getChild("query", "http://jabber.org/protocol/muc#admin");
+        Element itemR = queryR.getChild("item");
+        List<Element> result = new LinkedList<Element>();
+        Element reason = itemR.getChild("reason");
+
+        String affiliation = itemR.getAttribute("affiliation");
+
+        Affiliation aff = "none".equals(affiliation) ? null : Affiliation.valueOf(affiliation.toUpperCase());
+
+        String whoSendCommand = element.getAttribute("from");
+
+        String modifiedBareJID = JID.getNodeID(itemR.getAttribute("jid"));
+
+        List<String> modifiedsJIDs = new LinkedList<String>();
+        for (String jid : this.occupantsByJID.keySet()) {
+            if (modifiedBareJID.equals(JID.getNodeID(jid))) {
+                modifiedsJIDs.add(jid);
+            }
+        }
+
+        this.configuration.setAffiliation(modifiedBareJID, aff);
+
+        for (String jid : modifiedsJIDs) {
+            String nick = this.occupantsByJID.get(jid);
+            {
+                Element kick = this.lastReceivedPresence.get(jid);
+                kick = kick == null ? new Element("presence") : kick.clone();
+                kick.setAttribute("from", roomID + "/" + nick);
+                kick.setAttribute("to", jid);
+                if ("outcast".equals(affiliation)) {
+                    kick.setAttribute("type", "unavailable");
+                }
+                Element x = new Element("x");
+                kick.addChild(x);
+                x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
+                Element item = preparePresenceSubItem(jid, jid);
+                item.addChild(new Element("actor", new String[] { "jid" },
+                        new String[] { JID.getNodeID(whoSendCommand) }));
+                if (reason != null) {
+                    item.addChild(reason);
+                }
+                x.addChild(item);
+                if ("outcast".equals(affiliation)) {
+                    x.addChild(new Element("status", new String[] { "code" }, new String[] { "301" }));
+                }
+                x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
+                result.add(kick);
+            }
+
+            if ("outcast".equals(affiliation)) {
+                removeOccupantByJID(jid);
+            }
+
+            // Service Informs Remaining Occupants
+            for (Entry<String, String> entry : this.occupantsByNick.entrySet()) {
+                if (jid.equals(entry.getValue()))
+                    continue;
+                Element kick = this.lastReceivedPresence.get(jid);
+                kick = kick == null ? new Element("presence") : kick.clone();
+                kick.setAttribute("from", roomID + "/" + nick);
+                kick.setAttribute("to", entry.getValue());
+                if ("outcast".equals(affiliation)) {
+                    kick.setAttribute("type", "unavailable");
+                }
+                Element x = new Element("x");
+                kick.addChild(x);
+                x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
+                Element item = preparePresenceSubItem(jid, entry.getValue());
+                if (reason != null) {
+                    item.addChild(reason);
+                }
+
+                x.addChild(item);
+                if ("outcast".equals(affiliation)) {
+                    x.addChild(new Element("status", new String[] { "code" }, new String[] { "301" }));
+                }
+                result.add(kick);
+            }
+
+        }
+
+        // Service Informs Admin or Owner of Success
+        Element answer = new Element("iq");
+        answer.addAttribute("id", element.getAttribute("id"));
+        answer.addAttribute("type", "result");
+        answer.addAttribute("to", element.getAttribute("from"));
+        answer.addAttribute("from", roomID);
+        result.add(answer);
+
+        return result;
+    }
+
+    private List<Element> processIqKick(String kickedJID, Element element) {
+        List<Element> result = new LinkedList<Element>();
+
+        Element query = element.getChild("query", "http://jabber.org/protocol/muc#admin");
+        Element itemReceived = query.getChild("item");
+        Element reason = itemReceived.getChild("reason");
+
+        String nick = itemReceived.getAttribute("nick");
+        String whoKickJid = element.getAttribute("from");
+        String whoKickNick = this.occupantsByJID.get(kickedJID);
+
+        // Service Removes Kicked Occupant
+        {
+            Element kick = new Element("presence");
+            kick.setAttribute("from", roomID + "/" + nick);
+            kick.setAttribute("to", kickedJID);
+            kick.setAttribute("type", "unavailable");
+            Element x = new Element("x");
+            kick.addChild(x);
+            x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
+            Element item = preparePresenceSubItem(kickedJID, kickedJID);
+            item.addChild(new Element("actor", new String[] { "jid" }, new String[] { JID.getNodeID(whoKickJid) }));
+            if (reason != null) {
+                item.addChild(reason);
+            }
+            x.addChild(item);
+            x.addChild(new Element("status", new String[] { "code" }, new String[] { "307" }));
+            x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
+            result.add(kick);
+        }
+
+        removeOccupantByJID(kickedJID);
+
+        // Service Informs Moderator of Success
+        Element answer = new Element("iq");
+        answer.addAttribute("id", element.getAttribute("id"));
+        answer.addAttribute("type", "result");
+        answer.addAttribute("to", element.getAttribute("from"));
+        answer.addAttribute("from", roomID);
+        result.add(answer);
+
+        // Service Informs Remaining Occupants
+        for (Entry<String, String> entry : this.occupantsByNick.entrySet()) {
+            Element kick = new Element("presence");
+            kick.setAttribute("from", roomID + "/" + nick);
+            kick.setAttribute("to", entry.getValue());
+            kick.setAttribute("type", "unavailable");
+            Element x = new Element("x");
+            kick.addChild(x);
+            x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
+            Element item = preparePresenceSubItem(kickedJID, entry.getValue());
+            if (reason != null) {
+                item.addChild(reason);
+            }
+            x.addChild(item);
+            x.addChild(new Element("status", new String[] { "code" }, new String[] { "307" }));
+            result.add(kick);
+        }
+
+        return result;
+    }
+
     private List<Element> processMessage(Element element) {
         String senderNick = this.occupantsByJID.get(element.getAttribute("from"));
         String recipentNick = JID.getNodeResource(element.getAttribute("to"));
@@ -312,115 +503,6 @@ public class Room implements Serializable {
         return null;
     }
 
-    private List<Element> processIqKick(String kickedJID, Element element) {
-        List<Element> result = new LinkedList<Element>();
-
-        Element query = element.getChild("query", "http://jabber.org/protocol/muc#admin");
-        Element itemReceived = query.getChild("item");
-        Element reason = itemReceived.getChild("reason");
-
-        String nick = itemReceived.getAttribute("nick");
-        String whoKickJid = element.getAttribute("from");
-        String whoKickNick = this.occupantsByJID.get(kickedJID);
-
-        // Service Removes Kicked Occupant
-        {
-            Element kick = new Element("presence");
-            kick.setAttribute("from", roomID + "/" + nick);
-            kick.setAttribute("to", kickedJID);
-            kick.setAttribute("type", "unavailable");
-            Element x = new Element("x");
-            kick.addChild(x);
-            x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
-            Element item = preparePresenceSubItem(kickedJID, kickedJID);
-            item.addChild(new Element("actor", new String[] { "jid" }, new String[] { JID.getNodeID(whoKickJid) }));
-            if (reason != null) {
-                item.addChild(reason);
-            }
-            x.addChild(item);
-            x.addChild(new Element("status", new String[] { "code" }, new String[] { "307" }));
-            x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
-            result.add(kick);
-        }
-
-        removeOccupantByJID(kickedJID);
-
-        // Service Informs Moderator of Success
-        Element answer = new Element("iq");
-        answer.addAttribute("id", element.getAttribute("id"));
-        answer.addAttribute("type", "result");
-        answer.addAttribute("to", element.getAttribute("from"));
-        answer.addAttribute("from", roomID);
-        result.add(answer);
-
-        // Service Informs Remaining Occupants
-        for (Entry<String, String> entry : this.occupantsByNick.entrySet()) {
-            Element kick = new Element("presence");
-            kick.setAttribute("from", roomID + "/" + nick);
-            kick.setAttribute("to", entry.getValue());
-            kick.setAttribute("type", "unavailable");
-            Element x = new Element("x");
-            kick.addChild(x);
-            x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
-            Element item = preparePresenceSubItem(kickedJID, entry.getValue());
-            if (reason != null) {
-                item.addChild(reason);
-            }
-            x.addChild(item);
-            x.addChild(new Element("status", new String[] { "code" }, new String[] { "307" }));
-            result.add(kick);
-        }
-
-        return result;
-    }
-
-    private List<Element> processIq(Element element) {
-        List<Element> result = new LinkedList<Element>();
-        System.out.println("I:" + element);
-        Element query = element.getChild("query", "http://jabber.org/protocol/muc#admin");
-        Element item = query.getChild("item");
-
-        String nick = item.getAttribute("nick");
-        String role = item.getAttribute("role");
-
-        String jid = item.getAttribute("jid");
-        String affiliation = item.getAttribute("affiliation");
-
-        if (nick != null && role != null && role.equals("none")) {
-            jid = this.occupantsByNick.get(nick);
-            return processIqKick(jid, element);
-        } else if (nick != null && role != null) {
-            // changing role
-            jid = this.occupantsByNick.get(nick);
-            Role r = Role.valueOf(role.toUpperCase());
-            this.roles.put(JID.getNodeID(jid), r);
-            publishNewPresence(result, jid);
-            Element answer = new Element("iq");
-            answer.addAttribute("id", element.getAttribute("id"));
-            answer.addAttribute("type", "result");
-            answer.addAttribute("to", element.getAttribute("from"));
-            answer.addAttribute("from", roomID);
-
-            result.add(answer);
-        } else if (jid != null && affiliation != null) {
-            // changing affiliation
-            Affiliation aff = affiliation.equals("none") ? null : Affiliation.valueOf(affiliation.toUpperCase());
-            this.configuration.setAffiliation(jid, aff);
-
-            publishNewPresence(result, jid);
-
-            Element answer = new Element("iq");
-            answer.addAttribute("id", element.getAttribute("id"));
-            answer.addAttribute("type", "result");
-            answer.addAttribute("to", element.getAttribute("from"));
-            answer.addAttribute("from", roomID);
-
-            result.add(answer);
-        }
-
-        return result;
-    }
-
     private void publishNewPresence(List<Element> out, String jid, String... additionalStatuses) {
         String nick = this.occupantsByJID.get(jid);
         for (Entry<String, String> entry : this.occupantsByNick.entrySet()) {
@@ -430,7 +512,9 @@ public class Room implements Serializable {
 
             Element x = new Element("x");
             x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
-            x.addChild(preparePresenceSubItem(jid, entry.getValue()));
+            Element item = preparePresenceSubItem(jid, entry.getValue());
+            item.addChild(new Element("reason", "bo kurwa takk cgcuiał"));
+            x.addChild(item);
             if (additionalStatuses != null) {
                 for (String code : additionalStatuses) {
                     x.addChild(new Element("status", new String[] { "code" }, new String[] { code }));

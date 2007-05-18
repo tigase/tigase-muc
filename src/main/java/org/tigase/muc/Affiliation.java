@@ -51,8 +51,8 @@ public enum Affiliation {
      */
     MEMBER,
     /**
-     * A user who is on the "whitelist" for a members-only room or who is
-     * registered with an open room.
+     * A user who has been banned from a room. An outcast has an affiliation of
+     * "outcast".
      */
     OUTCAST
 }
