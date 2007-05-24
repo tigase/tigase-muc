@@ -38,21 +38,39 @@ public enum Affiliation {
      * (if allowed); is allowed to change defining room features as well as
      * perform all administrative functions.
      */
-    OWNER,
+    OWNER(3),
     /**
      * A user empowered by the room owner to perform administrative functions
      * such as banning users; however, is not allowed to change defining room
      * features.
      */
-    ADMIN,
+    ADMIN(2),
     /**
      * A user who is on the "whitelist" for a members-only room or who is
      * registered with an open room.
      */
-    MEMBER,
+    MEMBER(1),
+    /**
+     * Absence of role. Internal usage only.
+     */
+    NONE(0),
     /**
      * A user who has been banned from a room. An outcast has an affiliation of
      * "outcast".
      */
-    OUTCAST
+    OUTCAST(-1);
+
+    private int weight;
+
+    private Affiliation(int weight) {
+        this.weight = weight;
+    }
+
+    /**
+     * @return Returns the weight.
+     */
+    public int getWeight() {
+        return weight;
+    }
+
 }

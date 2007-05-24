@@ -37,17 +37,35 @@ public enum Role {
      * granted to non-admins; is allowed to kick users, grant and revoke voice,
      * etc.
      */
-    MODERATOR,
+    MODERATOR(3),
     /**
      * An occupant who does not have administrative privileges; in a moderated
      * room, a participant is further defined as having voice (in contrast to a
      * visitor).
      */
-    PARTICIPANT,
+    PARTICIPANT(2),
     /**
      * In a moderated room, an occupant who does not have voice (in contrast to
      * a participant).
      */
-    VISITOR
+    VISITOR(1),
+
+    /**
+     * Internal usage only.
+     */
+    NONE(0);
     
+    private int weight;
+
+    private Role(int weight) {
+        this.weight = weight;
+    }
+
+    /**
+     * @return Returns the weight.
+     */
+    public int getWeight() {
+        return weight;
+    }
+
 }

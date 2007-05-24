@@ -13,7 +13,7 @@
    <entry value="false" type="String" key="lockNicknames"/>
    <entry value="false" type="String" key="logging"/>
    <entry value="false" type="String" key="moderated"/>
-   <entry value="false" type="String" key="persist"/>
+   <entry value="true" type="String" key="persist"/>
    <entry value="false" type="String" key="passwordRequired"/>
    <entry value="false" type="String" key="privateMessageBanned"/>
    <entry value="false" type="String" key="occupantDefaultParticipant"/>
@@ -24,5 +24,11 @@
    </entry>
    <entry value="false" type="String" key="allowedOccupantChangeSubject"/>
   </map>
+  <node name="affiliation">
+   <map>
+    <entry value="MEMBER" type="String" key="malkowski@localhost"/>
+    <entry value="OWNER" type="String" key="bmalkow@localhost"/>
+   </map>
+  </node>
  </user>
 </users>

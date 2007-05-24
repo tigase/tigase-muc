@@ -39,14 +39,11 @@
       <item value="c2s"/>
       <item value="s2s"/>
       <item value="sess_man"/>
-      <item value="muc"/>
      </entry>
      <entry value="true" type="Boolean" key="s2s.active"/>
      <entry value="tigase.server.xmppserver.ServerConnectionManager" type="String" key="s2s.class"/>
      <entry value="true" type="Boolean" key="sess_man.active"/>
      <entry value="tigase.server.xmppsession.SessionManager" type="String" key="sess_man.class"/>
-     <entry value="org.tigase.muc.MUCService" type="String" key="muc.class"/>
-     <entry value="true" type="Boolean" key="muc.active"/>
     </map>
    </node>
    <node name="registrators">
@@ -201,7 +198,46 @@
    <entry value="user-repository.xml" type="String" key="user-repo-url"/>
   </map>
  </component>
- <component name="muc">
+ <component name="message-router">
+  <map>
+   <entry type="String[]" key="hostnames">
+    <item value="qs135"/>
+    <item value="localhost"/>
+   </entry>
+   <entry value="1000" type="Integer" key="max-queue-size"/>
+  </map>
+  <node name="components">
+   <map/>
+   <node name="msg-receivers">
+    <map>
+     <entry value="true" type="Boolean" key="c2s.active"/>
+     <entry value="tigase.server.xmppclient.ClientConnectionManager" type="String" key="c2s.class"/>
+     <entry type="String[]" key="id-names">
+      <item value="c2s"/>
+      <item value="s2s"/>
+      <item value="sess_man"/>
+      <item value="muc_comp"/>
+     </entry>
+     <entry value="true" type="Boolean" key="s2s.active"/>
+     <entry value="tigase.server.xmppserver.ServerConnectionManager" type="String" key="s2s.class"/>
+     <entry value="true" type="Boolean" key="sess_man.active"/>
+     <entry value="tigase.server.xmppsession.SessionManager" type="String" key="sess_man.class"/>
+     <entry value="org.tigase.muc.MUCService" type="String" key="muc_comp.class"/>
+     <entry value="true" type="Boolean" key="muc_comp.active"/>
+    </map>
+   </node>
+   <node name="registrators">
+    <map>
+     <entry type="String[]" key="id-names">
+      <item value="stat_1"/>
+     </entry>
+     <entry value="true" type="Boolean" key="stat_1.active"/>
+     <entry value="tigase.stats.StatisticsCollector" type="String" key="stat_1.class"/>
+    </map>
+   </node>
+  </node>
+ </component>
+ <component name="muc_comp">
   <map>
    <entry value="tigase.db.xml.XMLRepository" type="String" key="muc-repo-class"/>
    <entry value="muc-repository.xml" type="String" key="muc-repo-url"/>

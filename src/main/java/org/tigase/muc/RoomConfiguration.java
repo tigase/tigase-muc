@@ -118,17 +118,22 @@ public class RoomConfiguration implements Serializable {
     private boolean occupantDefaultParticipant;
 
     public Affiliation getAffiliation(String jid) {
-        return this.affiliations.get(JID.getNodeID(jid));
+        Affiliation result = this.affiliations.get(JID.getNodeID(jid));
+        return result == null ? Affiliation.NONE : result;
     }
 
     public void setAffiliation(String jid, Affiliation affiliation) {
-        this.affiliations.put(JID.getNodeID(jid), affiliation);
+        if (affiliation == null || affiliation == Affiliation.NONE) {
+            this.affiliations.remove(JID.getNodeID(jid));
+        } else {
+            this.affiliations.put(JID.getNodeID(jid), affiliation);
+        }
         if (isPersist()) {
             try {
-                if (affiliation != null) {
-                    this.mucRepocitory.setData(id, "affiliation", JID.getNodeID(jid), affiliation.name());
-                } else {
+                if (affiliation == null || affiliation == Affiliation.NONE) {
                     this.mucRepocitory.removeData(id, "affiliation", JID.getNodeID(jid));
+                } else {
+                    this.mucRepocitory.setData(id, "affiliation", JID.getNodeID(jid), affiliation.name());
                 }
             } catch (UserNotFoundException e) {
                 e.printStackTrace();
@@ -252,7 +257,6 @@ public class RoomConfiguration implements Serializable {
         } catch (Exception e) {
             this.affiliations.put(JID.getNodeID(constructorJid), Affiliation.OWNER);
         }
-
     }
 
     public void flushConfig() {
