@@ -521,13 +521,15 @@ public class Room implements Serializable {
 
     public List<Element> processStanza(Element element) {
 
+        String nick = JID.getNodeResource(element.getAttribute("to"));
+
         if ("message".equals(element.getName())) {
             return processMessage(element);
-        } else if ("presence".equals(element.getName())) {
+        } else if (nick == null && "presence".equals(element.getName())) {
             return processPresence(element);
-        } else if ("iq".equals(element.getName()) && "set".equals(element.getAttribute("type"))) {
+        } else if (nick == null && "iq".equals(element.getName()) && "set".equals(element.getAttribute("type"))) {
             return processIqSet(element);
-        } else if ("iq".equals(element.getName()) && "get".equals(element.getAttribute("type"))) {
+        } else if (nick == null && "iq".equals(element.getName()) && "get".equals(element.getAttribute("type"))) {
             return processIqGet(element);
         }
 
