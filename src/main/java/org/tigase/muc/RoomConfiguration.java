@@ -33,6 +33,7 @@ import tigase.db.TigaseDBException;
 import tigase.db.UserNotFoundException;
 import tigase.db.UserRepository;
 import tigase.util.JIDUtils;
+import tigase.xml.Element;
 
 /**
  * 
@@ -248,7 +249,8 @@ public class RoomConfiguration implements Serializable {
 
         try {
             Map<String, Affiliation> tmp = new HashMap<String, Affiliation>();
-            // this.mucRepocitory.setData(id, "affiliation", JIDUtils.getNodeID(jid)
+            // this.mucRepocitory.setData(id, "affiliation",
+            // JIDUtils.getNodeID(jid)
             String[] jids = this.mucRepocitory.getKeys(id, "affiliation");
             for (String jid : jids) {
                 String affName = this.mucRepocitory.getData(id, "affiliation", JIDUtils.getNodeID(jid));
@@ -476,6 +478,20 @@ public class RoomConfiguration implements Serializable {
             }
         }
         return result;
+    }
+
+    /**
+     * @return
+     */
+    public Element getFormElement() {
+        Element x = new Element("q", new String[] { "xmlns", "type" }, new String[] { "jabber:x:data", "form" });
+
+        x.addChild(new Element("title", "Room configuration"));
+        x.addChild(new Element("instructions", "Room created"));
+
+        x.addChild(new Element("field", new String[] { "label", "type","var" }, new String[] { "Natural-Language Room Name", "text-single","roomconfigroomname" }));
+        
+        return x;
     }
 
 }

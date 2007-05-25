@@ -310,7 +310,7 @@ public class Room implements Serializable {
         return result;
     }
 
-    private List<Element> processIqGet(Element iq) {
+    private List<Element> processIqAdminGet(Element iq) {
         List<Element> result = new LinkedList<Element>();
         Element query = iq.getChild("query", "http://jabber.org/protocol/muc#admin");
         List<Element> items = query.getChildren("/query");
@@ -363,7 +363,7 @@ public class Room implements Serializable {
      * @param iq
      * @return
      */
-    private List<Element> processIqSet(Element iq) {
+    private List<Element> processIqAdminSet(Element iq) {
         List<Element> result = new LinkedList<Element>();
 
         Affiliation senderAffiliation = this.configuration.getAffiliation(iq.getAttribute("from"));
@@ -443,7 +443,7 @@ public class Room implements Serializable {
                         // preparing <x> element
                         Element x = new Element("x");
                         presence.addChild(x);
-                        x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
+                        x.setAttribute("xmlns", "http://jabber.org/protocol/muc#admin");
                         if (newRole == Role.NONE) {
                             // kick
                             x.addChild(new Element("status", new String[] { "code" }, new String[] { "307" }));
@@ -577,6 +577,49 @@ public class Room implements Serializable {
         }
     }
 
+    public List<Element> processIq(Element iq) {
+        String nick = JIDUtils.getNodeResource(iq.getAttribute("to"));
+        Element query = iq.getChild("query");
+        String xmlns = query == null ? null : query.getAttribute("xmlns");
+
+        if ("http://jabber.org/protocol/muc#admin".equals(xmlns) && nick == null
+                && "set".equals(iq.getAttribute("type"))) {
+            return processIqAdminSet(iq);
+        } else if ("http://jabber.org/protocol/muc#admin".equals(xmlns) && nick == null
+                && "get".equals(iq.getAttribute("type"))) {
+            return processIqAdminGet(iq);
+        } else if ("http://jabber.org/protocol/muc#owner".equals(xmlns) && nick == null
+                && "get".equals(iq.getAttribute("type"))) {
+            return processIqOwnerGet(iq);
+        } else {
+            System.err.println(" unknown <iq> stanza " + iq);
+        }
+        return null;
+    }
+
+    private List<Element> processIqOwnerGet(Element iq) {
+        List<Element> result = new LinkedList<Element>();
+        Element query = iq.getChild("query");
+
+        if (query.getChildren() == null || query.getChildren().size() == 0) {
+            Element answer = new Element("iq");
+            answer.addAttribute("id", iq.getAttribute("id"));
+            answer.addAttribute("type", "result");
+            answer.addAttribute("to", iq.getAttribute("from"));
+            answer.addAttribute("from", roomID);
+
+            Element answerQuery = new Element("query", new String[] { "xmlns" },
+                    new String[] { "http://jabber.org/protocol/muc#owner" });
+            answer.addChild(answerQuery);
+
+            answerQuery.addChild(this.configuration.getFormElement());
+
+            result.add(answer);
+        }
+
+        return result;
+    }
+
     public List<Element> processStanza(Element element) {
         String nick = JIDUtils.getNodeResource(element.getAttribute("to"));
 
@@ -584,10 +627,8 @@ public class Room implements Serializable {
             return processMessage(element);
         } else if ("presence".equals(element.getName())) {
             return processPresence(element);
-        } else if (nick == null && "iq".equals(element.getName()) && "set".equals(element.getAttribute("type"))) {
-            return processIqSet(element);
-        } else if (nick == null && "iq".equals(element.getName()) && "get".equals(element.getAttribute("type"))) {
-            return processIqGet(element);
+        } else if ("iq".equals(element.getName())) {
+            return processIq(element);
         }
 
         return null;
