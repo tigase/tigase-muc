@@ -32,7 +32,7 @@ import tigase.server.AbstractMessageReceiver;
 import tigase.server.Packet;
 import tigase.server.xmppsession.SessionManagerConfig;
 import tigase.util.DNSResolver;
-import tigase.util.JID;
+import tigase.util.JIDUtils;
 import tigase.xml.Element;
 
 /**
@@ -109,11 +109,11 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
     /** {@inheritDoc} */
     @Override
     public void processPacket(Packet packet) {
-        String roomName = JID.getNodeNick(packet.getElemTo());
-        String roomHost = JID.getNodeHost(packet.getElemTo());
+        String roomName = JIDUtils.getNodeNick(packet.getElemTo());
+        String roomHost = JIDUtils.getNodeHost(packet.getElemTo());
 
-        String roomID = JID.getNodeID(packet.getElemTo());
-        String username = JID.getNodeResource(packet.getElemTo());
+        String roomID = JIDUtils.getNodeID(packet.getElemTo());
+        String username = JIDUtils.getNodeResource(packet.getElemTo());
 
         Room room = this.rooms.get(roomID);
 
@@ -160,7 +160,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
     }
 
     public Element getDiscoInfo(String node, String jid) {
-        if (jid != null && JID.getNodeHost(jid).startsWith(getName() + ".")) {
+        if (jid != null && JIDUtils.getNodeHost(jid).startsWith(getName() + ".")) {
             return serviceEntity.getDiscoInfo(node);
         }
         return null;
@@ -171,7 +171,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
     }
 
     public List<Element> getDiscoItems(String node, String jid) {
-        if (JID.getNodeHost(jid).startsWith(getName() + ".")) {
+        if (JIDUtils.getNodeHost(jid).startsWith(getName() + ".")) {
             return serviceEntity.getDiscoItems(node, null);
         } else {
             return Arrays.asList(serviceEntity.getDiscoItem(null, getName() + "." + jid));

@@ -13,6 +13,9 @@
    <node name="testowy@muc.localhost">
     <map/>
    </node>
+   <node name="zzzz@muc.localhost">
+    <map/>
+   </node>
   </node>
   <node name="offline">
    <map/>
@@ -30,7 +33,7 @@
   </node>
   <node name="jabber:iq:private">
    <map>
-    <entry value="%3Cstorage+xmlns%3D%22storage%3Abookmarks%22%3E%3Cconference+name%3D%22testowy%40muc.localhost%22+jid%3D%22testowy%40muc.localhost%22+autojoin%3D%22false%22%3E%3Cnick%3Elokal%3C%2Fnick%3E%3C%2Fconference%3E%3C%2Fstorage%3E" type="String" key="storagestorage:bookmarks"/>
+    <entry value="%3Cstorage+xmlns%3D%22storage%3Abookmarks%22%3E%3Cconference+name%3D%22testowy%40muc.localhost%22+jid%3D%22testowy%40muc.localhost%22+autojoin%3D%22false%22%3E%3Cnick%3Elokal%3C%2Fnick%3E%3C%2Fconference%3E%3Cconference+name%3D%22zzzz%40muc.localhost%22+jid%3D%22zzzz%40muc.localhost%22+autojoin%3D%22false%22%3E%3Cnick%3Elokal%3C%2Fnick%3E%3C%2Fconference%3E%3C%2Fstorage%3E" type="String" key="storagestorage:bookmarks"/>
    </map>
   </node>
  </user>
@@ -44,6 +47,9 @@
   <node name="roster">
    <map/>
    <node name="testowy@muc.localhost">
+    <map/>
+   </node>
+   <node name="zzz@muc.localhost">
     <map/>
    </node>
   </node>
@@ -63,7 +69,7 @@
   </node>
   <node name="jabber:iq:private">
    <map>
-    <entry value="%3Cstorage+xmlns%3D%22storage%3Abookmarks%22%3E%3Cconference+name%3D%22testowy%40muc.localhost%22+jid%3D%22testowy%40muc.localhost%22+autojoin%3D%22false%22%3E%3Cnick%3Edrugi+lokal%3C%2Fnick%3E%3C%2Fconference%3E%3C%2Fstorage%3E" type="String" key="storagestorage:bookmarks"/>
+    <entry value="%3Cstorage+xmlns%3D%22storage%3Abookmarks%22%3E%3Cconference+name%3D%22testowy%40muc.localhost%22+jid%3D%22testowy%40muc.localhost%22+autojoin%3D%22false%22%3E%3Cnick%3Edrugi+lokal%3C%2Fnick%3E%3C%2Fconference%3E%3Cconference+name%3D%22zzz%40muc.localhost%22+jid%3D%22zzz%40muc.localhost%22+autojoin%3D%22false%22%3E%3Cnick%3Edrugi+lokal%3C%2Fnick%3E%3C%2Fconference%3E%3C%2Fstorage%3E" type="String" key="storagestorage:bookmarks"/>
    </map>
   </node>
  </user>
