@@ -34,13 +34,6 @@ public class MucInternalException extends Exception {
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * @return Returns the serialVersionUID.
-     */
-    public static long getSerialVersionUID() {
-        return serialVersionUID;
-    }
-
     private String code;
 
     private Element item;
