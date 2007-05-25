@@ -26,7 +26,6 @@
   </map>
   <node name="affiliation">
    <map>
-    <entry value="MEMBER" type="String" key="malkowski@localhost"/>
     <entry value="OWNER" type="String" key="bmalkow@localhost"/>
    </map>
   </node>

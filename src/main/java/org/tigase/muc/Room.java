@@ -20,10 +20,14 @@
 package org.tigase.muc;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Map.Entry;
 
 import tigase.db.UserRepository;
@@ -86,20 +90,34 @@ public class Room implements Serializable {
         return result;
     }
 
+    /**
+     * @param reqRole
+     * @return
+     */
+    private Collection<String> findJidsByRole(Role reqRole) {
+        List<String> result = new ArrayList<String>();
+        for (Map.Entry<String, Role> entry : this.roles.entrySet()) {
+            if (reqRole == entry.getValue()) {
+                result.add(entry.getKey());
+            }
+        }
+        return result;
+    }
+
+    private Collection<String> getOccupantJidsByBare(String bareJid) {
+        List<String> result = new ArrayList<String>();
+        String sf = JID.getNodeID(bareJid);
+        for (Entry<String, String> entry : this.occupantsByJID.entrySet()) {
+            if (JID.getNodeID(entry.getKey()).equals(sf)) {
+                result.add(entry.getKey());
+            }
+        }
+        return result;
+    }
+
     private Role getRole(String jid) {
         Role result = this.roles.get(JID.getNodeID(jid));
         return result == null ? Role.NONE : result;
-    }
-
-    private boolean isAllowedRoleChange(String changerJid, String changingJid) {
-        Role changerRole = getRole(changerJid);
-        Affiliation changerAffiliation = this.configuration.getAffiliation(changerJid);
-        Role changingRole = getRole(changingJid);
-        Affiliation changingAffiliation = this.configuration.getAffiliation(changingJid);
-
-        boolean result = changerAffiliation.getWeight() >= changingAffiliation.getWeight();
-
-        return result;
     }
 
     private Element makeErrorStanza(Element source, String code, String type, String errorName) {
@@ -134,6 +152,11 @@ public class Room implements Serializable {
         Affiliation receiverAffiliation = this.configuration.getAffiliation(JID.getNodeID(sendingTo));
         if (receiverAffiliation != null && configuration.getAffiliationsViewsJID().contains(receiverAffiliation)) {
             item.setAttribute("jid", jid);
+        }
+
+        String nick = this.occupantsByJID.get(jid);
+        if (nick != null) {
+            item.setAttribute("nick", nick);
         }
 
         return item;
@@ -268,15 +291,85 @@ public class Room implements Serializable {
         return result;
     }
 
-    // alternative version
-    private List<Element> processIqA(Element iq) {
+    private List<Element> processIqGet(Element iq) {
+        List<Element> result = new LinkedList<Element>();
+        Element query = iq.getChild("query", "http://jabber.org/protocol/muc#admin");
+        List<Element> items = query.getChildren("/query");
+
+        // Service Informs Admin or Owner of Success
+        Element answer = new Element("iq");
+        answer.addAttribute("id", iq.getAttribute("id"));
+        answer.addAttribute("type", "result");
+        answer.addAttribute("to", iq.getAttribute("from"));
+        answer.addAttribute("from", roomID);
+
+        Element answerQuery = new Element("query");
+        answer.addChild(answerQuery);
+        answerQuery.setAttribute("query", "http://jabber.org/protocol/muc#admin");
+
+        Set<String> occupantsJid = new HashSet<String>();
+        for (Element item : items) {
+
+            try {
+                Affiliation reqAffiliation = Affiliation.valueOf(item.getAttribute("affiliation").toUpperCase());
+                occupantsJid.addAll(this.configuration.findBareJidsByAffiliations(reqAffiliation));
+                if (reqAffiliation == Affiliation.NONE) {
+                    occupantsJid.addAll(findBareJidsWithoutAffiliations());
+                }
+            } catch (Exception e) {
+                ;
+            }
+
+            try {
+                Role reqRole = Role.valueOf(item.getAttribute("role").toUpperCase());
+                occupantsJid.addAll(findJidsByRole(reqRole));
+            } catch (Exception e) {
+                ;
+            }
+
+        }
+
+        for (String jid : occupantsJid) {
+            Element answerItem = preparePresenceSubItem(jid, iq.getAttribute("from"));
+            answerQuery.addChild(answerItem);
+        }
+
+        result.add(answer);
+        return result;
+    }
+
+    /**
+     * @return
+     */
+    private Collection<? extends String> findBareJidsWithoutAffiliations() {
+        List<String> result = new ArrayList<String>();
+        for (Map.Entry<String, String> entry : this.occupantsByJID.entrySet()) {
+            if (this.configuration.getAffiliation(entry.getKey()) == Affiliation.NONE) {
+                result.add(entry.getKey());
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Changing roles and affiliations
+     * 
+     * @param iq
+     * @return
+     */
+    private List<Element> processIqSet(Element iq) {
         List<Element> result = new LinkedList<Element>();
 
         Element query = iq.getChild("query", "http://jabber.org/protocol/muc#admin");
         List<Element> items = query.getChildren("/query");
 
         for (Element item : items) {
+            Set<String> occupantJids = new HashSet<String>();
+
             String occupantNick = item.getAttribute("nick");
+            if (occupantNick != null) {
+                occupantJids.add(this.occupantsByNick.get(occupantNick));
+            }
             Role newRole;
             try {
                 newRole = Role.valueOf(item.getAttribute("role").toUpperCase());
@@ -284,8 +377,10 @@ public class Room implements Serializable {
                 newRole = null;
             }
 
-            String occupantJid = item.getAttribute("jid");
-
+            String occupantBareJid = item.getAttribute("jid");
+            if (occupantBareJid != null) {
+                occupantJids.addAll(getOccupantJidsByBare(occupantBareJid));
+            }
             Affiliation newAffiliation;
             try {
                 newAffiliation = Affiliation.valueOf(item.getAttribute("affiliation").toUpperCase());
@@ -293,238 +388,70 @@ public class Room implements Serializable {
                 newAffiliation = null;
             }
 
+            // process bussines logic ;-)
+            if (newAffiliation != null && occupantBareJid != null) {
+                this.configuration.setAffiliation(occupantBareJid, newAffiliation);
+            }
+            if (newRole != null && occupantNick != null) {
+                setRoleByNick(occupantNick, newRole);
+            }
+
             List<Element> reasons = item.getChildren("/item");
 
-            // Service Informs all Occupants
-            for (Entry<String, String> entry : this.occupantsByNick.entrySet()) {
-                // preparing presence stanza
-                Element presence = this.lastReceivedPresence.get(occupantJid);
-                presence = presence == null ? new Element("presence") : presence.clone();
-                presence.setAttribute("from", roomID + "/" + occupantNick);
-                presence.setAttribute("to", entry.getValue());
+            for (String occupantJid : occupantJids) {
+                occupantNick = this.occupantsByJID.get(occupantJid);
+                // Service Informs all Occupants
+                for (Entry<String, String> entry : this.occupantsByNick.entrySet()) {
+                    // preparing presence stanza
+                    Element presence = this.lastReceivedPresence.get(occupantJid);
+                    if (presence == null) {
+                        continue;
+                    } else {
+                        presence = presence.clone();
+                    }
+                    presence.setAttribute("from", roomID + "/" + occupantNick);
+                    presence.setAttribute("to", entry.getValue());
 
-                // preparing <x> element
-                Element x = new Element("x");
-                presence.addChild(x);
-                x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
+                    // preparing <x> element
+                    Element x = new Element("x");
+                    presence.addChild(x);
+                    x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
+                    if (newRole == Role.NONE) {
+                        // kick
+                        x.addChild(new Element("status", new String[] { "code" }, new String[] { "307" }));
+                        presence.setAttribute("type", "unavailable");
+                    }
+                    if (newAffiliation == Affiliation.OUTCAST) {
+                        // ban
+                        x.addChild(new Element("status", new String[] { "code" }, new String[] { "301" }));
+                        presence.setAttribute("type", "unavailable");
+                    }
+                    if (occupantJid.equals(entry.getValue())) {
+                        x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
+                    }
 
-                // preparing item element
-                Element subItem = preparePresenceSubItem(occupantJid, entry.getValue());
-                x.addChild(subItem);
+                    // preparing <item> element
+                    Element subItem = preparePresenceSubItem(occupantJid, entry.getValue());
+                    x.addChild(subItem);
+                    if (reasons != null && reasons.size() > 0) {
+                        subItem.addChildren(reasons);
+                    }
 
-                if (reasons != null && reasons.size() > 0) {
-                    subItem.addChildren(reasons);
+                    result.add(presence);
                 }
-
-                if (newAffiliation == Affiliation.OUTCAST) {
-                    x.addChild(new Element("status", new String[] { "code" }, new String[] { "301" }));
-                    presence.setAttribute("type", "unavailable");
+                if (newAffiliation == Affiliation.NONE || newRole == Role.NONE) {
+                    removeOccupantByJID(occupantJid);
                 }
-                // XXX x.addChild(new Element("status", new String[] { "code" },
-                // new String[] { "110" }));
-
-                result.add(presence);
             }
-        }
-
-        return result;
-    }
-
-    private List<Element> processIq(Element element) {
-        List<Element> result = new LinkedList<Element>();
-        System.out.println("I:" + element);
-        Element query = element.getChild("query", "http://jabber.org/protocol/muc#admin");
-        Element item = query.getChild("item");
-
-        String nick = item.getAttribute("nick");
-        String role = item.getAttribute("role");
-
-        String jid = item.getAttribute("jid");
-        String affiliation = item.getAttribute("affiliation");
-
-        if (nick != null && role != null && role.equals("none")) {
-            jid = this.occupantsByNick.get(nick);
-            return processIqKick(jid, element);
-        } else if (nick != null && role != null) {
-            // changing role
-            jid = this.occupantsByNick.get(nick);
-            Role r = Role.valueOf(role.toUpperCase());
-            this.roles.put(JID.getNodeID(jid), r);
-            publishNewPresence(result, jid);
-            Element answer = new Element("iq");
-            answer.addAttribute("id", element.getAttribute("id"));
-            answer.addAttribute("type", "result");
-            answer.addAttribute("to", element.getAttribute("from"));
-            answer.addAttribute("from", roomID);
-
-            result.add(answer);
-        } else if (jid != null && affiliation != null) {
-            // changing affiliation
-            return processIqChangeAffiliation(element);
-        }
-
-        return result;
-    }
-
-    private List<Element> processIqChangeAffiliation(Element element) {
-        Element queryR = element.getChild("query", "http://jabber.org/protocol/muc#admin");
-        Element itemR = queryR.getChild("item");
-        List<Element> result = new LinkedList<Element>();
-        Element reason = itemR.getChild("reason");
-
-        String affiliation = itemR.getAttribute("affiliation");
-
-        Affiliation aff = "none".equals(affiliation) ? null : Affiliation.valueOf(affiliation.toUpperCase());
-
-        String whoSendCommand = element.getAttribute("from");
-
-        String modifiedBareJID = JID.getNodeID(itemR.getAttribute("jid"));
-
-        List<String> modifiedsJIDs = new LinkedList<String>();
-        for (String jid : this.occupantsByJID.keySet()) {
-            if (modifiedBareJID.equals(JID.getNodeID(jid))) {
-                modifiedsJIDs.add(jid);
-            }
-        }
-
-        this.configuration.setAffiliation(modifiedBareJID, aff);
-
-        for (String jid : modifiedsJIDs) {
-            String nick = this.occupantsByJID.get(jid);
-            {
-                Element kick = this.lastReceivedPresence.get(jid);
-                kick = kick == null ? new Element("presence") : kick.clone();
-                kick.setAttribute("from", roomID + "/" + nick);
-                kick.setAttribute("to", jid);
-                if ("outcast".equals(affiliation)) {
-                    kick.setAttribute("type", "unavailable");
-                }
-                Element x = new Element("x");
-                kick.addChild(x);
-                x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
-                Element item = preparePresenceSubItem(jid, jid);
-                item.addChild(new Element("actor", new String[] { "jid" },
-                        new String[] { JID.getNodeID(whoSendCommand) }));
-                if (reason != null) {
-                    item.addChild(reason);
-                }
-                x.addChild(item);
-                if ("outcast".equals(affiliation)) {
-                    x.addChild(new Element("status", new String[] { "code" }, new String[] { "301" }));
-                }
-                x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
-                result.add(kick);
-            }
-
-            if ("outcast".equals(affiliation)) {
-                removeOccupantByJID(jid);
-            }
-
-            // Service Informs Remaining Occupants
-            for (Entry<String, String> entry : this.occupantsByNick.entrySet()) {
-                if (jid.equals(entry.getValue()))
-                    continue;
-                Element kick = this.lastReceivedPresence.get(jid);
-                kick = kick == null ? new Element("presence") : kick.clone();
-                kick.setAttribute("from", roomID + "/" + nick);
-                kick.setAttribute("to", entry.getValue());
-                if ("outcast".equals(affiliation)) {
-                    kick.setAttribute("type", "unavailable");
-                }
-                Element x = new Element("x");
-                kick.addChild(x);
-                x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
-                Element item = preparePresenceSubItem(jid, entry.getValue());
-                if (reason != null) {
-                    item.addChild(reason);
-                }
-
-                x.addChild(item);
-                if ("outcast".equals(affiliation)) {
-                    x.addChild(new Element("status", new String[] { "code" }, new String[] { "301" }));
-                }
-                result.add(kick);
-            }
-
         }
 
         // Service Informs Admin or Owner of Success
         Element answer = new Element("iq");
-        answer.addAttribute("id", element.getAttribute("id"));
+        answer.addAttribute("id", iq.getAttribute("id"));
         answer.addAttribute("type", "result");
-        answer.addAttribute("to", element.getAttribute("from"));
+        answer.addAttribute("to", iq.getAttribute("from"));
         answer.addAttribute("from", roomID);
         result.add(answer);
-
-        return result;
-    }
-
-    private List<Element> processIqKick(String kickedJID, Element element) {
-        List<Element> result = new LinkedList<Element>();
-
-        Element query = element.getChild("query", "http://jabber.org/protocol/muc#admin");
-        Element itemReceived = query.getChild("item");
-        Element reason = itemReceived.getChild("reason");
-
-        String nick = itemReceived.getAttribute("nick");
-        String whoKickJid = element.getAttribute("from");
-
-        Role whoKickRole = getRole(element.getAttribute("from"));
-        Affiliation kickedAffiliation = this.configuration.getAffiliation(kickedJID);
-        Affiliation whoKickAffiliation = this.configuration.getAffiliation(element.getAttribute("from"));
-
-        if (whoKickRole != Role.MODERATOR || whoKickAffiliation.getWeight() < kickedAffiliation.getWeight()) {
-            result.add(makeErrorStanza(element, "405", "cancel", "not-allowed"));
-            return result;
-        }
-
-        // Service Removes Kicked Occupant
-        {
-            Element kick = new Element("presence");
-            kick.setAttribute("from", roomID + "/" + nick);
-            kick.setAttribute("to", kickedJID);
-            kick.setAttribute("type", "unavailable");
-            Element x = new Element("x");
-            kick.addChild(x);
-            x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
-            Element item = preparePresenceSubItem(kickedJID, kickedJID);
-            item.addChild(new Element("actor", new String[] { "jid" }, new String[] { JID.getNodeID(whoKickJid) }));
-            if (reason != null) {
-                item.addChild(reason);
-            }
-            x.addChild(item);
-            x.addChild(new Element("status", new String[] { "code" }, new String[] { "307" }));
-            x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
-            result.add(kick);
-        }
-
-        removeOccupantByJID(kickedJID);
-
-        // Service Informs Moderator of Success
-        Element answer = new Element("iq");
-        answer.addAttribute("id", element.getAttribute("id"));
-        answer.addAttribute("type", "result");
-        answer.addAttribute("to", element.getAttribute("from"));
-        answer.addAttribute("from", roomID);
-        result.add(answer);
-
-        // Service Informs Remaining Occupants
-        for (Entry<String, String> entry : this.occupantsByNick.entrySet()) {
-            Element kick = new Element("presence");
-            kick.setAttribute("from", roomID + "/" + nick);
-            kick.setAttribute("to", entry.getValue());
-            kick.setAttribute("type", "unavailable");
-            Element x = new Element("x");
-            kick.addChild(x);
-            x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
-            Element item = preparePresenceSubItem(kickedJID, entry.getValue());
-            if (reason != null) {
-                item.addChild(reason);
-            }
-            x.addChild(item);
-            x.addChild(new Element("status", new String[] { "code" }, new String[] { "307" }));
-            result.add(kick);
-        }
 
         return result;
     }
@@ -598,44 +525,28 @@ public class Room implements Serializable {
             return processMessage(element);
         } else if ("presence".equals(element.getName())) {
             return processPresence(element);
-        } else if ("iq".equals(element.getName())) {
-            return processIq(element);
+        } else if ("iq".equals(element.getName()) && "set".equals(element.getAttribute("type"))) {
+            return processIqSet(element);
+        } else if ("iq".equals(element.getName()) && "get".equals(element.getAttribute("type"))) {
+            return processIqGet(element);
         }
 
         return null;
-    }
-
-    private void publishNewPresence(List<Element> out, String jid, String... additionalStatuses) {
-        String nick = this.occupantsByJID.get(jid);
-        for (Entry<String, String> entry : this.occupantsByNick.entrySet()) {
-            Element presence = this.lastReceivedPresence.get(jid).clone();
-            presence.setAttribute("to", entry.getValue());
-            presence.setAttribute("from", roomID + "/" + nick);
-
-            Element x = new Element("x");
-            x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
-            Element item = preparePresenceSubItem(jid, entry.getValue());
-            item.addChild(new Element("reason", "bo kurwa takk cgcuiał"));
-            x.addChild(item);
-            if (additionalStatuses != null) {
-                for (String code : additionalStatuses) {
-                    x.addChild(new Element("status", new String[] { "code" }, new String[] { code }));
-                }
-            }
-            if (entry.getValue().equals(jid)) {
-                x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
-            }
-
-            presence.addChild(x);
-
-            out.add(presence);
-        }
     }
 
     private void removeOccupantByJID(String jid) {
         String nick = this.occupantsByJID.remove(jid);
         this.occupantsByNick.remove(nick);
         this.roles.remove(jid);
+    }
+
+    private void setRoleByNick(String nick, Role role) {
+        String jid = this.occupantsByNick.get(nick);
+        if (role == null) {
+            this.roles.remove(JID.getNodeID(jid));
+        } else {
+            this.roles.put(JID.getNodeID(jid), role);
+        }
     }
 
 }

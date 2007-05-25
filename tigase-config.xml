@@ -233,6 +233,8 @@
      </entry>
      <entry value="true" type="Boolean" key="stat_1.active"/>
      <entry value="tigase.stats.StatisticsCollector" type="String" key="stat_1.class"/>
+     <entry value="true" type="Boolean" key="stat-1.active"/>
+     <entry value="tigase.stats.StatisticsCollector" type="String" key="stat-1.class"/>
     </map>
    </node>
   </node>

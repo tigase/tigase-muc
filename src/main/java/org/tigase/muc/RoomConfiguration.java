@@ -20,10 +20,12 @@
 package org.tigase.muc;
 
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -460,6 +462,20 @@ public class RoomConfiguration implements Serializable {
 
     public void setRoomShortName(String roomShortName) {
         this.roomShortName = roomShortName;
+    }
+
+    /**
+     * @param reqAffiliation
+     * @return
+     */
+    public Collection<String> findBareJidsByAffiliations(Affiliation reqAffiliation) {
+        List<String> result = new ArrayList<String>();
+        for (Map.Entry<String, Affiliation> entry : this.affiliations.entrySet()) {
+            if (reqAffiliation == entry.getValue()) {
+                result.add(entry.getKey());
+            }
+        }
+        return result;
     }
 
 }
