@@ -89,6 +89,19 @@ public class Form {
             return null;
     }
 
+    /**
+     * @param var
+     * @return
+     */
+    public Integer getAsInteger(String var) {
+        Field f = get(var);
+        if (f != null) {
+            String v = f.getValue();
+            return Integer.parseInt(v);
+        } else
+            return null;
+    }
+
     public String getAsString(String var) {
         Field f = get(var);
         if (f != null) {
@@ -96,10 +109,6 @@ public class Form {
             return v;
         } else
             return null;
-    }
-
-    public boolean is(String var) {
-        return this.fieldsByVar.containsKey(var);
     }
 
     public String[] getAsStrings(String var) {
@@ -149,6 +158,10 @@ public class Form {
         return type;
     }
 
+    public boolean is(String var) {
+        return this.fieldsByVar.containsKey(var);
+    }
+
     /**
      * @param instruction
      *            The instruction to set.
@@ -171,18 +184,5 @@ public class Form {
      */
     public void setType(String type) {
         this.type = type;
-    }
-
-    /**
-     * @param var
-     * @return
-     */
-    public Integer getAsInteger(String var) {
-        Field f = get(var);
-        if (f != null) {
-            String v = f.getValue();
-            return Integer.parseInt(v);
-        } else
-            return null;
     }
 }

@@ -34,7 +34,7 @@ import tigase.xml.Element;
  * @version $Rev$
  */
 public class Field {
-    public static Field fieldBoolean(String label, String var, Boolean value) {
+    public static Field fieldBoolean(String var, String label, Boolean value) {
         Field field = new Field("boolean");
         field.label = label;
         field.var = var;
@@ -59,7 +59,7 @@ public class Field {
         return field;
     }
 
-    public static Field fieldListMulti(String label, String var, String[] values, String[] optionsLabel,
+    public static Field fieldListMulti(String var, String label, String[] values, String[] optionsLabel,
             String optionsValue) {
         if (optionsLabel.length != optionsValue.length()) {
             throw new RuntimeException("Invalid optionsLabel and optinsValue length");
@@ -72,7 +72,7 @@ public class Field {
         return field;
     }
 
-    public static Field fieldListSingle(String label, String var, String value, String[] optionsLabel,
+    public static Field fieldListSingle(String var, String label, String value, String[] optionsLabel,
             String[] optionsValue) {
         if (optionsLabel.length != optionsValue.length) {
             throw new RuntimeException("Invalid optionsLabel and optinsValue length");
@@ -85,21 +85,21 @@ public class Field {
         return field;
     }
 
-    public static Field fieldTextMulti(String label, String var, String value) {
+    public static Field fieldTextMulti(String var, String label, String value) {
         Field field = new Field("text-multi", var);
         field.label = label;
         field.values = new String[] { value };
         return field;
     }
 
-    public static Field fieldTextPrivate(String label, String var, String value) {
+    public static Field fieldTextPrivate(String var, String label, String value) {
         Field field = new Field("text-private", var);
         field.label = label;
         field.values = new String[] { value };
         return field;
     }
 
-    public static Field fieldTextSingle(String label, String var, String value) {
+    public static Field fieldTextSingle(String var, String label, String value) {
         Field field = new Field("text-single", var);
         field.label = label;
         field.values = new String[] { value };

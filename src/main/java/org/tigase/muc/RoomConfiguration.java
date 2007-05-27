@@ -535,24 +535,24 @@ public class RoomConfiguration implements Serializable {
         x.addField(Field.fieldHidden("FORM_TYPE", "http://jabber.org/protocol/muc#roomconfig"));
         String once = UUID.randomUUID().toString();
         x.addField(Field.fieldHidden("once", once));
-        x.addField(Field.fieldTextSingle("Natural-Language Room Name", "muc#roomconfig_roomname", this.roomShortName));
-        x.addField(Field.fieldTextMulti("Short Description of Room", "muc#roomconfig_roomdesc", this.roomFullName));
-        x.addField(Field.fieldBoolean("Allow Occupants to Change Subject", "muc#roomconfig_changesubject",
+        x.addField(Field.fieldTextSingle("muc#roomconfig_roomname", "Natural-Language Room Name", this.roomShortName));
+        x.addField(Field.fieldTextMulti("muc#roomconfig_roomdesc", "Short Description of Room", this.roomFullName));
+        x.addField(Field.fieldBoolean("muc#roomconfig_changesubject", "Allow Occupants to Change Subject",
                 this.allowedOccupantChangeSubject));
-        x.addField(Field.fieldListSingle("Maximum Number of Room Occupants", "muc#roomconfig_maxusers",
+        x.addField(Field.fieldListSingle("muc#roomconfig_maxusers", "Maximum Number of Room Occupants",
                 String.valueOf(this.maxOccupantNumber), new String[] { "1", "10", "20", "30", "50", "100", "150" },
                 new String[] { "1", "10", "20", "30", "50", "100", "150" }));
-        x.addField(Field.fieldBoolean("Allow Public Searching for Room", "muc#roomconfig_publicroom",
+        x.addField(Field.fieldBoolean("muc#roomconfig_publicroom", "Allow Public Searching for Room",
                 this.allowedPublicSearch));
-        x.addField(Field.fieldBoolean("Make Room Persistent", "muc#roomconfig_persistentroom", this.persist));
-        x.addField(Field.fieldBoolean("Make Room Moderated", "muc#roomconfig_moderatedroom", this.moderated));
-        x.addField(Field.fieldBoolean("An Invitation is Required to Enter", "muc#roomconfig_membersonly",
+        x.addField(Field.fieldBoolean("muc#roomconfig_persistentroom", "Make Room Persistent", this.persist));
+        x.addField(Field.fieldBoolean("muc#roomconfig_moderatedroom", "Make Room Moderated", this.moderated));
+        x.addField(Field.fieldBoolean("muc#roomconfig_membersonly", "An Invitation is Required to Enter",
                 this.invitationRequired));
-        x.addField(Field.fieldBoolean("Allow Occupants to Invite Others", "muc#roomconfig_allowinvites",
+        x.addField(Field.fieldBoolean("muc#roomconfig_allowinvites", "Allow Occupants to Invite Others",
                 this.allowedOccupantsToInvite));
-        x.addField(Field.fieldBoolean("A Password is required to enter", "muc#roomconfig_passwordprotectedroom",
+        x.addField(Field.fieldBoolean("muc#roomconfig_passwordprotectedroom", "A Password is required to enter",
                 this.passwordRequired));
-        x.addField(Field.fieldTextPrivate("The Room Password", "muc#roomconfig_roomsecret", this.password));
+        x.addField(Field.fieldTextPrivate("muc#roomconfig_roomsecret", "The Room Password", this.password));
         /*
          * x.addField(Field.fieldListSingle("Affiliations that May Discover Real
          * JIDs of Occupants", "muc#roomconfig_whois", this.af, new String[] {
@@ -560,7 +560,7 @@ public class RoomConfiguration implements Serializable {
          * "anyone" }));
          */x.addField(Field.fieldBoolean("", "", false));
         x.addField(Field.fieldBoolean("", "", false));
-        x.addField(Field.fieldBoolean("Enable Logging of Room Conversations", "muc#roomconfig_enablelogging",
+        x.addField(Field.fieldBoolean("muc#roomconfig_enablelogging", "Enable Logging of Room Conversations",
                 this.logging));
 
         return x;
