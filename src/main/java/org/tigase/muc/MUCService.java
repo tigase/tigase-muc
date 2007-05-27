@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 import tigase.conf.Configurable;
@@ -114,6 +115,26 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 
         String roomID = JIDUtils.getNodeID(packet.getElemTo());
         String username = JIDUtils.getNodeResource(packet.getElemTo());
+
+        if (roomName == null && "iq".equals(packet.getElemName())
+                && packet.getElement().getChild("unique", "http://jabber.org/protocol/muc#unique") != null) {
+            Element iq = new Element("iq");
+            iq.setAttribute("to", packet.getElemFrom());
+            iq.setAttribute("from", packet.getElemTo());
+            iq.setAttribute("id", packet.getElemId());
+            iq.setAttribute("type", "result");
+
+            String id;
+            do {
+                id = (UUID.randomUUID().toString() + UUID.randomUUID().toString()).replace('-', 'x');
+            } while (this.rooms.containsKey(id));
+
+            Element unique = new Element("unique", id, new String[] { "xmlns" },
+                    new String[] { "http://jabber.org/protocol/muc#unique" });
+            iq.addChild(unique);
+            addOutPacket(new Packet(iq));
+            return;
+        }
 
         Room room = this.rooms.get(roomID);
 
