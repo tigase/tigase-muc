@@ -25,11 +25,17 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+
+import org.tigase.form.Field;
+import org.tigase.form.Form;
 
 import tigase.db.TigaseDBException;
+import tigase.db.UserExistsException;
 import tigase.db.UserNotFoundException;
 import tigase.db.UserRepository;
 import tigase.util.JIDUtils;
@@ -275,11 +281,11 @@ public class RoomConfiguration implements Serializable {
                 tmp[c++] = a.name();
             }
             this.mucRepocitory.setDataList(id, "", "affiliationsViewsJID", tmp);
-            this.mucRepocitory.setData(id, "allowedOccupantChangeSubject", Boolean
-                    .toString(allowedOccupantChangeSubject));
+            this.mucRepocitory.setData(id, "allowedOccupantChangeSubject",
+                    Boolean.toString(allowedOccupantChangeSubject));
             this.mucRepocitory.setData(id, "allowedOccupantsToInvite", Boolean.toString(allowedOccupantsToInvite));
-            this.mucRepocitory.setData(id, "allowedOccupantsToQueryOccupants", Boolean
-                    .toString(allowedOccupantsToQueryOccupants));
+            this.mucRepocitory.setData(id, "allowedOccupantsToQueryOccupants",
+                    Boolean.toString(allowedOccupantsToQueryOccupants));
             this.mucRepocitory.setData(id, "allowedPublicSearch", Boolean.toString(allowedPublicSearch));
             this.mucRepocitory.setData(id, "invitationRequired", Boolean.toString(invitationRequired));
             this.mucRepocitory.setData(id, "lockNicknames", Boolean.toString(lockNicknames));
@@ -480,18 +486,172 @@ public class RoomConfiguration implements Serializable {
         return result;
     }
 
+    private Element field(String type, String label, String var, Boolean value) {
+        String v = null;
+        if (value != null && value) {
+            v = "1";
+        } else if (value != null && !value) {
+            v = "0";
+        }
+        return field(type, label, var, v, null, null);
+    }
+
+    private Element field(String type, String label, String var, String value) {
+        return field(type, label, var, value, null, null);
+    }
+
+    private Element field(String type, String label, String var, String value, String[] labels, String[] values) {
+        Element field = new Element("field");
+        if (var != null)
+            field.setAttribute("var", var);
+        if (label != null)
+            field.setAttribute("label", label);
+        field.setAttribute("type", type);
+
+        Element v = new Element("value");
+        if (value != null) {
+            v.setCData(value);
+        }
+        field.addChild(v);
+
+        if (labels != null) {
+            for (int i = 0; i < labels.length; i++) {
+                Element option = new Element("option");
+                option.setAttribute("label", labels[i]);
+                Element vo = new Element("value", values[i]);
+                option.addChild(vo);
+                field.addChild(option);
+            }
+        }
+
+        return field;
+    }
+
     /**
      * @return
      */
-    public Element getFormElement() {
-        Element x = new Element("q", new String[] { "xmlns", "type" }, new String[] { "jabber:x:data", "form" });
+    public Form getFormElement() {
+        Form x = new Form("form", "Room configuration", "Please configure");
+        x.addField(Field.fieldHidden("FORM_TYPE", "http://jabber.org/protocol/muc#roomconfig"));
+        String once = UUID.randomUUID().toString();
+        x.addField(Field.fieldHidden("once", once));
+        x.addField(Field.fieldTextSingle("Natural-Language Room Name", "muc#roomconfig_roomname", this.roomShortName));
+        x.addField(Field.fieldTextMulti("Short Description of Room", "muc#roomconfig_roomdesc", this.roomFullName));
+        x.addField(Field.fieldBoolean("Allow Occupants to Change Subject", "muc#roomconfig_changesubject",
+                this.allowedOccupantChangeSubject));
+        x.addField(Field.fieldListSingle("Maximum Number of Room Occupants", "muc#roomconfig_maxusers",
+                String.valueOf(this.maxOccupantNumber), new String[] { "1", "10", "20", "30", "50", "100", "150" },
+                new String[] { "1", "10", "20", "30", "50", "100", "150" }));
+        x.addField(Field.fieldBoolean("Allow Public Searching for Room", "muc#roomconfig_publicroom",
+                this.allowedPublicSearch));
+        x.addField(Field.fieldBoolean("Make Room Persistent", "muc#roomconfig_persistentroom", this.persist));
+        x.addField(Field.fieldBoolean("Make Room Moderated", "muc#roomconfig_moderatedroom", this.moderated));
+        x.addField(Field.fieldBoolean("An Invitation is Required to Enter", "muc#roomconfig_membersonly",
+                this.invitationRequired));
+        x.addField(Field.fieldBoolean("Allow Occupants to Invite Others", "muc#roomconfig_allowinvites",
+                this.allowedOccupantsToInvite));
+        x.addField(Field.fieldBoolean("A Password is required to enter", "muc#roomconfig_passwordprotectedroom",
+                this.passwordRequired));
+        x.addField(Field.fieldTextPrivate("The Room Password", "muc#roomconfig_roomsecret", this.password));
+        /*
+         * x.addField(Field.fieldListSingle("Affiliations that May Discover Real
+         * JIDs of Occupants", "muc#roomconfig_whois", this.af, new String[] {
+         * "Room Owner and Admins Only", "Anyone" }, new String[] { "admins",
+         * "anyone" }));
+         */x.addField(Field.fieldBoolean("", "", false));
+        x.addField(Field.fieldBoolean("", "", false));
+        x.addField(Field.fieldBoolean("Enable Logging of Room Conversations", "muc#roomconfig_enablelogging",
+                this.logging));
 
-        x.addChild(new Element("title", "Room configuration"));
-        x.addChild(new Element("instructions", "Room created"));
-
-        x.addChild(new Element("field", new String[] { "label", "type","var" }, new String[] { "Natural-Language Room Name", "text-single","roomconfigroomname" }));
-        
         return x;
     }
 
+    /**
+     * @param iq
+     * @return
+     */
+    public List<Element> parseConfig(Element iq) {
+        List<Element> result = new LinkedList<Element>();
+        Element query = iq.getChild("query");
+        Element x = query.getChild("x", "jabber:x:data");
+
+        Form form = new Form(x);
+        if ("set".equals(iq.getAttribute("type"))) {
+            boolean oldPersist = this.persist;
+            String once = form.getAsString("once");
+
+            String var;
+            var = "muc#roomconfig_roomname";
+            if (form.is(var)) {
+                this.roomShortName = form.getAsString(var);
+            }
+            var = "muc#roomconfig_roomdesc";
+            if (form.is(var)) {
+                this.roomFullName = form.getAsString(var);
+            }
+            var = "muc#roomconfig_changesubject";
+            if (form.is(var)) {
+                this.allowedOccupantChangeSubject = form.getAsBoolean(var);
+            }
+            var = "muc#roomconfig_maxusers";
+            if (form.is(var)) {
+                this.maxOccupantNumber = form.getAsInteger(var);
+            }
+            var = "muc#roomconfig_publicroom";
+            if (form.is(var)) {
+                this.allowedPublicSearch = form.getAsBoolean(var);
+            }
+            var = "muc#roomconfig_persistentroom";
+            if (form.is(var)) {
+                this.persist = form.getAsBoolean(var);
+            }
+            var = "muc#roomconfig_moderatedroom";
+            if (form.is(var)) {
+                this.moderated = form.getAsBoolean(var);
+            }
+            var = "muc#roomconfig_membersonly";
+            if (form.is(var)) {
+                this.invitationRequired = form.getAsBoolean(var);
+            }
+            var = "muc#roomconfig_allowinvites";
+            if (form.is(var)) {
+                this.allowedOccupantsToInvite = form.getAsBoolean(var);
+            }
+            var = "muc#roomconfig_passwordprotectedroom";
+            if (form.is(var)) {
+                this.passwordRequired = form.getAsBoolean(var);
+            }
+            var = "muc#roomconfig_roomsecret";
+            if (form.is(var)) {
+                this.password = form.getAsString(var);
+            }
+            var = "muc#roomconfig_enablelogging";
+            if (form.is(var)) {
+                this.logging = form.getAsBoolean(var);
+            }
+
+            try {
+                if (oldPersist != this.persist && this.persist) {
+                    this.mucRepocitory.addUser(id);
+                } else if (oldPersist != this.persist && !this.persist) {
+                    this.mucRepocitory.removeUser(id);
+                }
+                if (this.persist) {
+                    flushConfig();
+                }
+            } catch (UserExistsException e) {
+                e.printStackTrace();
+            } catch (TigaseDBException e) {
+                e.printStackTrace();
+            }
+
+        }
+        Element answer = new Element("iq");
+        answer.addAttribute("id", iq.getAttribute("id"));
+        answer.addAttribute("type", "result");
+        answer.addAttribute("to", iq.getAttribute("from"));
+        answer.addAttribute("from", this.id);
+        result.add(answer);
+        return result;
+    }
 }

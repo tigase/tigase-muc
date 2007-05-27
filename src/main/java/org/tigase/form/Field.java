@@ -73,15 +73,15 @@ public class Field {
     }
 
     public static Field fieldListSingle(String label, String var, String value, String[] optionsLabel,
-            String optionsValue) {
-        if (optionsLabel.length != optionsValue.length()) {
+            String[] optionsValue) {
+        if (optionsLabel.length != optionsValue.length) {
             throw new RuntimeException("Invalid optionsLabel and optinsValue length");
         }
         Field field = new Field("list-single", var);
         field.label = label;
         field.values = new String[] { value };
         field.optionLabels = optionsLabel;
-        field.optionValues = optionsLabel;
+        field.optionValues = optionsValue;
         return field;
     }
 
