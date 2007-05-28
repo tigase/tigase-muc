@@ -1,0 +1,3 @@
+Specification-Title: XEP-0045
+Specification-Vendor: XMPP Standards Foundation
+Specification-Version: 1.22
