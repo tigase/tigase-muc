@@ -156,6 +156,7 @@ public class Field {
 
     private Field(String type, String var) {
         this.type = type;
+        this.var = var;
     }
 
     /**
