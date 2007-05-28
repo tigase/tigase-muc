@@ -16,10 +16,12 @@
  */
 package org.tigase.muc;
 
+import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -47,6 +49,8 @@ import tigase.xml.Element;
  */
 public class MUCService extends AbstractMessageReceiver implements XMPPService, Configurable {
 
+    private final static String LETTERS_TO_UNIQUE_NAME = "abcdefghijklmnopqrstuvwxyz0123456789";
+
     private static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
 
     private static final String MUC_REPO_CLASS_PROP_VAL = "tigase.db.xml.XMLRepository";
@@ -55,7 +59,43 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 
     private static final String MUC_REPO_URL_PROP_VAL = "muc-repository.xml";
 
+    private static Random random = new SecureRandom();
+
+    static Packet error400(String roomID, Packet packet) {
+        return new Packet(errorPresence(roomID, packet.getElemFrom(), "modify", "400", "jid-malformed"));
+    }
+
+    static Element errorPresence(String from, String to, String type, String code, String errorElement) {
+        Element p = new Element("presence");
+        p.setAttribute("from", from);
+        p.setAttribute("to", to);
+        p.setAttribute("type", "error");
+
+        Element error = new Element("error");
+        error.setAttribute("code", code);
+        error.setAttribute("type", type);
+        error.addChild(new Element(errorElement, new String[] { "xmlns" },
+                new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
+        p.addChild(error);
+
+        return p;
+    }
+
+    private static String generateUniqueName() {
+        String result = "";
+        for (int i = 0; i < 32; i++) {
+            result += LETTERS_TO_UNIQUE_NAME.charAt(random.nextInt(LETTERS_TO_UNIQUE_NAME.length()));
+        }
+        return result;
+    };
+
     private Logger log = Logger.getLogger(this.getClass().getName());
+
+    private UserRepository mucRepository;
+
+    private Map<String, Room> rooms = new HashMap<String, Room>();
+
+    private ServiceEntity serviceEntity = null;
 
     /**
      * Construct MUC service.
@@ -85,26 +125,23 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         return props;
     }
 
-    private Map<String, Room> rooms = new HashMap<String, Room>();
+    public List<Element> getDiscoFeatures() {
+        return null;
+    }
 
-    static Element errorPresence(String from, String to, String type, String code, String errorElement) {
-        Element p = new Element("presence");
-        p.setAttribute("from", from);
-        p.setAttribute("to", to);
-        p.setAttribute("type", "error");
+    public Element getDiscoInfo(String node, String jid) {
+        if (jid != null && JIDUtils.getNodeHost(jid).startsWith(getName() + ".")) {
+            return serviceEntity.getDiscoInfo(node);
+        }
+        return null;
+    }
 
-        Element error = new Element("error");
-        error.setAttribute("code", code);
-        error.setAttribute("type", type);
-        error.addChild(new Element(errorElement, new String[] { "xmlns" },
-                new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
-        p.addChild(error);
-
-        return p;
-    };
-
-    static Packet error400(String roomID, Packet packet) {
-        return new Packet(errorPresence(roomID, packet.getElemFrom(), "modify", "400", "jid-malformed"));
+    public List<Element> getDiscoItems(String node, String jid) {
+        if (JIDUtils.getNodeHost(jid).startsWith(getName() + ".")) {
+            return serviceEntity.getDiscoItems(node, null);
+        } else {
+            return Arrays.asList(serviceEntity.getDiscoItem(null, getName() + "." + jid));
+        }
     }
 
     /** {@inheritDoc} */
@@ -126,7 +163,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 
             String id;
             do {
-                id = (UUID.randomUUID().toString() + UUID.randomUUID().toString()).replace('-', 'x');
+                id = generateUniqueName();
             } while (this.rooms.containsKey(id));
 
             Element unique = new Element("unique", id, new String[] { "xmlns" },
@@ -150,8 +187,6 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
             }
         }
     }
-
-    private UserRepository mucRepository;
 
     /** {@inheritDoc} */
     @Override
@@ -179,26 +214,5 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
             addRouting(host);
         }
     }
-
-    public Element getDiscoInfo(String node, String jid) {
-        if (jid != null && JIDUtils.getNodeHost(jid).startsWith(getName() + ".")) {
-            return serviceEntity.getDiscoInfo(node);
-        }
-        return null;
-    }
-
-    public List<Element> getDiscoFeatures() {
-        return null;
-    }
-
-    public List<Element> getDiscoItems(String node, String jid) {
-        if (JIDUtils.getNodeHost(jid).startsWith(getName() + ".")) {
-            return serviceEntity.getDiscoItems(node, null);
-        } else {
-            return Arrays.asList(serviceEntity.getDiscoItem(null, getName() + "." + jid));
-        }
-    }
-
-    private ServiceEntity serviceEntity = null;
 
 }
