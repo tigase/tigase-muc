@@ -163,7 +163,7 @@ public class Room implements Serializable {
                 : occupantAffiliation.name().toLowerCase());
 
         Affiliation receiverAffiliation = this.configuration.getAffiliation(JIDUtils.getNodeID(sendingTo));
-        if (receiverAffiliation != null && configuration.getAffiliationsViewsJID().contains(receiverAffiliation)) {
+        if (receiverAffiliation != null && configuration.affiliationCanViewJid(receiverAffiliation)) {
             item.setAttribute("jid", occupantJid);
         }
 
@@ -309,6 +309,52 @@ public class Room implements Serializable {
         this.roles.remove(JIDUtils.getNodeID(realJID));
 
         return result;
+    }
+
+    public List<Element> processIq(Element iq) {
+        String nick = JIDUtils.getNodeResource(iq.getAttribute("to"));
+        Element query = iq.getChild("query");
+        String xmlns = query == null ? null : query.getAttribute("xmlns");
+
+        String sender = iq.getAttribute("from");
+
+        try {
+            if ("http://jabber.org/protocol/muc#admin".equals(xmlns) && nick == null
+                    && "set".equals(iq.getAttribute("type"))) {
+                return processIqAdminSet(iq);
+            } else if ("http://jabber.org/protocol/muc#admin".equals(xmlns) && nick == null
+                    && "get".equals(iq.getAttribute("type"))) {
+                return processIqAdminGet(iq);
+            } else if ("http://jabber.org/protocol/muc#owner".equals(xmlns) && nick == null
+                    && "get".equals(iq.getAttribute("type"))) {
+                if (Affiliation.OWNER != this.configuration.getAffiliation(sender)) {
+                    throw new MucInternalException(iq, "forbidden", "403", "auth");
+                }
+                return processIqOwnerGet(iq);
+            } else if ("http://jabber.org/protocol/muc#owner".equals(xmlns) && nick == null
+                    && "set".equals(iq.getAttribute("type"))) {
+                if (Affiliation.OWNER != this.configuration.getAffiliation(sender)) {
+                    throw new MucInternalException(iq, "forbidden", "403", "auth");
+                }
+                return processIqOwnerSet(iq);
+            } else {
+                System.err.println(" unknown <iq> stanza " + iq);
+            }
+        } catch (MucInternalException e) {
+            Element answer = new Element("iq");
+            answer.addAttribute("id", iq.getAttribute("id"));
+            answer.addAttribute("type", "error");
+            answer.addAttribute("to", iq.getAttribute("from"));
+            answer.addAttribute("from", roomID);
+
+            Element answerQuery = new Element("query");
+            answer.addChild(answerQuery);
+            answerQuery.setAttribute("query", "http://jabber.org/protocol/muc#owner");
+            answerQuery.addChild(e.getItem());
+
+            answer.addChild(e.makeErrorElement());
+        }
+        return null;
     }
 
     private List<Element> processIqAdminGet(Element iq) {
@@ -515,6 +561,33 @@ public class Room implements Serializable {
         return result;
     }
 
+    private List<Element> processIqOwnerGet(Element iq) {
+        List<Element> result = new LinkedList<Element>();
+        Element query = iq.getChild("query");
+
+        if (query.getChildren() == null || query.getChildren().size() == 0) {
+            Element answer = new Element("iq");
+            answer.addAttribute("id", iq.getAttribute("id"));
+            answer.addAttribute("type", "result");
+            answer.addAttribute("to", iq.getAttribute("from"));
+            answer.addAttribute("from", roomID);
+
+            Element answerQuery = new Element("query", new String[] { "xmlns" },
+                    new String[] { "http://jabber.org/protocol/muc#owner" });
+            answer.addChild(answerQuery);
+
+            answerQuery.addChild(this.configuration.getFormElement().getElement());
+
+            result.add(answer);
+        }
+
+        return result;
+    }
+
+    private List<Element> processIqOwnerSet(Element iq) {
+        return this.configuration.parseConfig(iq);
+    }
+
     private List<Element> processMessage(Element element) {
         String senderNick = this.occupantsByJID.get(element.getAttribute("from"));
         String recipentNick = JIDUtils.getNodeResource(element.getAttribute("to"));
@@ -576,79 +649,6 @@ public class Room implements Serializable {
         } else {
             return processEnteringToRoom(realJID, nick, element);
         }
-    }
-
-    public List<Element> processIq(Element iq) {
-        String nick = JIDUtils.getNodeResource(iq.getAttribute("to"));
-        Element query = iq.getChild("query");
-        String xmlns = query == null ? null : query.getAttribute("xmlns");
-
-        String sender = iq.getAttribute("from");
-
-        try {
-            if ("http://jabber.org/protocol/muc#admin".equals(xmlns) && nick == null
-                    && "set".equals(iq.getAttribute("type"))) {
-                return processIqAdminSet(iq);
-            } else if ("http://jabber.org/protocol/muc#admin".equals(xmlns) && nick == null
-                    && "get".equals(iq.getAttribute("type"))) {
-                return processIqAdminGet(iq);
-            } else if ("http://jabber.org/protocol/muc#owner".equals(xmlns) && nick == null
-                    && "get".equals(iq.getAttribute("type"))) {
-                if (Affiliation.OWNER != this.configuration.getAffiliation(sender)) {
-                    throw new MucInternalException(iq, "forbidden", "403", "auth");
-                }
-                return processIqOwnerGet(iq);
-            } else if ("http://jabber.org/protocol/muc#owner".equals(xmlns) && nick == null
-                    && "set".equals(iq.getAttribute("type"))) {
-                if (Affiliation.OWNER != this.configuration.getAffiliation(sender)) {
-                    throw new MucInternalException(iq, "forbidden", "403", "auth");
-                }
-                return processIqOwnerSet(iq);
-            } else {
-                System.err.println(" unknown <iq> stanza " + iq);
-            }
-        } catch (MucInternalException e) {
-            Element answer = new Element("iq");
-            answer.addAttribute("id", iq.getAttribute("id"));
-            answer.addAttribute("type", "error");
-            answer.addAttribute("to", iq.getAttribute("from"));
-            answer.addAttribute("from", roomID);
-
-            Element answerQuery = new Element("query");
-            answer.addChild(answerQuery);
-            answerQuery.setAttribute("query", "http://jabber.org/protocol/muc#owner");
-            answerQuery.addChild(e.getItem());
-
-            answer.addChild(e.makeErrorElement());
-        }
-        return null;
-    }
-
-    private List<Element> processIqOwnerSet(Element iq) {
-        return this.configuration.parseConfig(iq);
-    }
-
-    private List<Element> processIqOwnerGet(Element iq) {
-        List<Element> result = new LinkedList<Element>();
-        Element query = iq.getChild("query");
-
-        if (query.getChildren() == null || query.getChildren().size() == 0) {
-            Element answer = new Element("iq");
-            answer.addAttribute("id", iq.getAttribute("id"));
-            answer.addAttribute("type", "result");
-            answer.addAttribute("to", iq.getAttribute("from"));
-            answer.addAttribute("from", roomID);
-
-            Element answerQuery = new Element("query", new String[] { "xmlns" },
-                    new String[] { "http://jabber.org/protocol/muc#owner" });
-            answer.addChild(answerQuery);
-
-            answerQuery.addChild(this.configuration.getFormElement().getElement());
-
-            result.add(answer);
-        }
-
-        return result;
     }
 
     public List<Element> processStanza(Element element) {
