@@ -213,9 +213,11 @@ public class RoomConfiguration implements Serializable {
      */
     public boolean affiliationCanViewJid(Affiliation affiliation) {
         if ("owner".equals(this.affiliationsViewsJID)) {
-            return affiliation == Affiliation.OWNER;
+            return affiliation.getWeight() >= Affiliation.OWNER.getWeight();
         } else if ("admin".equals(this.affiliationsViewsJID)) {
-            return affiliation == Affiliation.OWNER || affiliation == Affiliation.ADMIN;
+            return affiliation.getWeight() >= Affiliation.ADMIN.getWeight();
+        } else if ("member".equals(this.affiliationsViewsJID)) {
+            return affiliation.getWeight() >= Affiliation.MEMBER.getWeight();
         } else if ("anyone".equals(this.affiliationsViewsJID)) {
             return true;
         }
@@ -352,9 +354,11 @@ public class RoomConfiguration implements Serializable {
         x.addField(Field.fieldBoolean("muc#roomconfig_passwordprotectedroom", "A Password is required to enter",
                 this.passwordRequired));
         x.addField(Field.fieldTextPrivate("muc#roomconfig_roomsecret", "The Room Password", this.password));
-        x.addField(Field.fieldListSingle("Affiliations that May Discover Real JIDs of Occupants",
-                "muc#roomconfig_whois", this.affiliationsViewsJID, new String[] { "Room Owner and Admins Only",
-                        "Anyone" }, new String[] { "admins", "anyone" }));
+        x.addField(Field
+                .fieldListSingle("Affiliations that May Discover Real JIDs of Occupants", "muc#roomconfig_whois",
+                        this.affiliationsViewsJID, new String[] { "Room Owner and Admins Only",
+                                "Room Owner, Admins and Members Only", "Anyone" }, new String[] { "admin", "member",
+                                "anyone" }));
         x.addField(Field.fieldBoolean("", "", false));
         x.addField(Field.fieldBoolean("", "", false));
         x.addField(Field.fieldBoolean("muc#roomconfig_enablelogging", "Enable Logging of Room Conversations",
