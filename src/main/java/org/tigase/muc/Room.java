@@ -127,7 +127,8 @@ public class Room implements Serializable {
         List<String> result = new ArrayList<String>();
         String sf = JIDUtils.getNodeID(bareJid);
         for (Entry<String, String> entry : this.occupantsByJID.entrySet()) {
-            if (JIDUtils.getNodeID(entry.getKey()).equals(sf)) {
+            String k = JIDUtils.getNodeID(entry.getKey());
+            if (k.equals(sf)) {
                 result.add(entry.getKey());
             }
         }
@@ -526,7 +527,7 @@ public class Room implements Serializable {
                         // preparing <x> element
                         Element x = new Element("x");
                         presence.addChild(x);
-                        x.setAttribute("xmlns", "http://jabber.org/protocol/muc#admin");
+                        x.setAttribute("xmlns", "http://jabber.org/protocol/muc#user");
                         if (newRole == Role.NONE) {
                             // kick
                             x.addChild(new Element("status", new String[] { "code" }, new String[] { "307" }));
