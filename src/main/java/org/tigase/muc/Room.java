@@ -68,12 +68,12 @@ public class Room implements Serializable {
 
     private String roomID;
 
-    private boolean reservedRoom;
+    private boolean lockedRoom;
 
     public Room(UserRepository mucRepository, String roomID, String ownerJID, boolean roomCreated) {
         this.roomID = roomID;
         this.configuration = new RoomConfiguration(roomID, mucRepository, ownerJID);
-        this.reservedRoom = roomCreated;
+        this.lockedRoom = roomCreated;
         if (roomCreated) {
             this.configuration.setAffiliation(ownerJID, Affiliation.OWNER);
         }
@@ -248,11 +248,32 @@ public class Room implements Serializable {
     private List<Element> processEnteringToRoom(String realJID, String nick, Element element, boolean roomCreated) {
         List<Element> result = new LinkedList<Element>();
 
-        if (reservedRoom && this.configuration.getAffiliation(realJID) != Affiliation.OWNER) {
+        Element incomX = element.getChild("x", "http://jabber.org/protocol/muc");
+
+        if (this.configuration.getAffiliation(realJID) == Affiliation.OUTCAST) {
+            result.add(MUCService.errorPresence(roomID, realJID, "auth", "403", "forbidden"));
+            return result;
+        }
+        if (lockedRoom && this.configuration.getAffiliation(realJID) != Affiliation.OWNER) {
             result.add(MUCService.errorPresence(roomID, realJID, "cancel", "404", "item-not-found"));
             return result;
         }
-
+        if (this.configuration.isInvitationRequired()
+                && this.configuration.getAffiliation(realJID).getWeight() < Affiliation.MEMBER.getWeight()) {
+            result.add(MUCService.errorPresence(roomID, realJID, "auth", "407", "registration-required"));
+            return result;
+        }
+        if (this.configuration.isPasswordRequired()) {
+            boolean auth = false;
+            if (incomX != null) {
+                Element pass = incomX.getChild("password");
+                auth = pass != null && this.configuration.checkPassword(pass.getCData());
+            }
+            if (!auth) {
+                result.add(MUCService.errorPresence(roomID, realJID, "auth", "401", "not-authorized"));
+                return result;
+            }
+        }
         if (this.occupantsByNick.containsKey(nick)) {
             result.add(MUCService.errorPresence(roomID, realJID, "cancel", "409", "conflict"));
             return result;
@@ -290,6 +311,9 @@ public class Room implements Serializable {
                 x.addChild(new Element("status", new String[] { "code" }, new String[] { "201" }));
             }
             if (entry.getValue().equals(realJID)) {
+                if (this.configuration.isLogging()) {
+                    x.addChild(new Element("status", new String[] { "code" }, new String[] { "170" }));
+                }
                 x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
             }
             presence.addChild(x);
@@ -598,7 +622,7 @@ public class Room implements Serializable {
 
     private List<Element> processIqOwnerSet(Element iq) {
         List<Element> result = this.configuration.parseConfig(iq);
-        this.reservedRoom = false;
+        this.lockedRoom = false;
         return result;
     }
 
@@ -621,6 +645,10 @@ public class Room implements Serializable {
                     new String[] { "xmlns" }, new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
 
             result.add(errMsg);
+            return result;
+        }
+
+        if (getRole(element.getAttribute("from")) == Role.VISITOR) {
             return result;
         }
 

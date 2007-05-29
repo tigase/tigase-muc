@@ -204,7 +204,7 @@ public class RoomConfiguration implements Serializable {
             this.affiliations.putAll(tmp);
         } catch (Exception e) {
             this.affiliations.put(JIDUtils.getNodeID(constructorJid), Affiliation.OWNER);
-        }        
+        }
     }
 
     /**
@@ -222,6 +222,14 @@ public class RoomConfiguration implements Serializable {
             return true;
         }
         return false;
+    }
+
+    /**
+     * @param data
+     * @return
+     */
+    public boolean checkPassword(String password) {
+        return password != null && this.password != null && password.equals(this.password);
     }
 
     private Element field(String type, String label, String var, Boolean value) {
