@@ -40,22 +40,27 @@ public class Form {
     private List<Field> fields = new LinkedList<Field>();
 
     private Map<String, Field> fieldsByVar = new HashMap<String, Field>();
+
     private String instruction;
+
     private String title;
 
     private String type;
 
     public Form(Element form) {
         this.type = form.getAttribute("type");
-        for (Element sub : form.getChildren()) {
-            if ("title".equals(sub.getName())) {
-                this.title = sub.getCData();
-            } else if ("instructions".equals(sub.getName())) {
-                this.instruction = sub.getCData();
-            } else if ("field".equals(sub.getName())) {
-                Field field = new Field(sub);
-                this.fields.add(field);
-                this.fieldsByVar.put(field.getVar(), field);
+        List<Element> children = form.getChildren();
+        if (children != null) {
+            for (Element sub : children) {
+                if ("title".equals(sub.getName())) {
+                    this.title = sub.getCData();
+                } else if ("instructions".equals(sub.getName())) {
+                    this.instruction = sub.getCData();
+                } else if ("field".equals(sub.getName())) {
+                    Field field = new Field(sub);
+                    this.fields.add(field);
+                    this.fieldsByVar.put(field.getVar(), field);
+                }
             }
         }
     }

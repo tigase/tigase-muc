@@ -204,7 +204,7 @@ public class RoomConfiguration implements Serializable {
             this.affiliations.putAll(tmp);
         } catch (Exception e) {
             this.affiliations.put(JIDUtils.getNodeID(constructorJid), Affiliation.OWNER);
-        }
+        }        
     }
 
     /**

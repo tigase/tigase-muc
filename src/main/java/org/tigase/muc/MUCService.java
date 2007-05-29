@@ -19,14 +19,18 @@ package org.tigase.muc;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Logger;
 
 import tigase.conf.Configurable;
 import tigase.db.RepositoryFactory;
+import tigase.db.TigaseDBException;
 import tigase.db.UserRepository;
 import tigase.disco.ServiceEntity;
 import tigase.disco.ServiceIdentity;
@@ -164,7 +168,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
             String id;
             do {
                 id = generateUniqueName();
-            } while (this.rooms.containsKey(id));
+            } while (this.rooms.containsKey(id + "@" + roomHost));
 
             Element unique = new Element("unique", id, new String[] { "xmlns" },
                     new String[] { "http://jabber.org/protocol/muc#unique" });
@@ -174,17 +178,34 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         }
 
         Room room = this.rooms.get(roomID);
-
+        List<Element> stanzasToSend = new LinkedList<Element>();
         if (room == null) {
-            room = new Room(mucRepository, roomID, packet.getElemFrom());
+            boolean newRoom = !this.allRooms.contains(roomID);
+            room = new Room(mucRepository, roomID, packet.getElemFrom(), newRoom);
             this.rooms.put(roomID, room);
+            if (newRoom) {
+                stanzasToSend = room.processInitialStanza(packet.getElement());
+            }
         }
+        stanzasToSend.addAll(room.processStanza(packet.getElement()));
 
-        List<Element> stanzasToSend = room.processStanza(packet.getElement());
         if (stanzasToSend != null) {
             for (Element element : stanzasToSend) {
                 addOutPacket(new Packet(element));
             }
+        }
+    }
+
+    private Set<String> allRooms = new HashSet<String>();;
+
+    private void readAllRomms() {
+        try {
+            List<String> roomsJid = this.mucRepository.getUsers();
+            allRooms.clear();
+            if (roomsJid != null)
+                allRooms.addAll(roomsJid);
+        } catch (TigaseDBException e) {
+            e.printStackTrace();
         }
     }
 
@@ -213,6 +234,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         for (String host : hostnames) {
             addRouting(host);
         }
+        readAllRomms();
     }
 
 }
