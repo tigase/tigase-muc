@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program; if not,
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  * 
- * $Id$
+ * $Id:MUCService.java 43 2007-05-31 07:35:05Z bmalkow $
  */
 package tigase.muc;
 
@@ -48,7 +48,7 @@ import tigase.xml.Element;
  * </p>
  * 
  * @author bmalkow
- * @version $Rev$
+ * @version $Rev:43 $
  */
 public class MUCService extends AbstractMessageReceiver implements XMPPService, Configurable {
 
@@ -191,6 +191,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
                 }
             }
         } catch (Exception e) {
+            e.printStackTrace();
             log.throwing("Muc Service", "processPacket", e);
         }
     }

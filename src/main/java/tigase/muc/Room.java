@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software Foundation,
  *  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  $Id$
+ *  $Id:Room.java 43 2007-05-31 07:35:05Z bmalkow $
  */
 package tigase.muc;
 
@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,7 @@ import tigase.xml.Element;
  * </p>
  * 
  * @author bmalkow
- * @version $Rev$
+ * @version $Rev:43 $
  */
 public class Room implements Serializable {
 
@@ -51,6 +52,8 @@ public class Room implements Serializable {
     private final RoomConfiguration configuration;
 
     private Map<String, Element> lastReceivedPresence = new HashMap<String, Element>();
+
+    private History conversationHistory;
 
     /**
      * <realJID, nick>
@@ -74,6 +77,7 @@ public class Room implements Serializable {
     private Logger log = Logger.getLogger(this.getClass().getName());
 
     public Room(UserRepository mucRepository, String roomID, String ownerJID, boolean roomCreated) {
+        this.conversationHistory = new History(20);
         this.roomID = roomID;
         this.configuration = new RoomConfiguration(roomID, mucRepository, ownerJID);
         this.lockedRoom = roomCreated;
@@ -319,11 +323,21 @@ public class Room implements Serializable {
                 if (this.configuration.isLogging()) {
                     x.addChild(new Element("status", new String[] { "code" }, new String[] { "170" }));
                 }
+                if (this.configuration.affiliationCanViewJid(Affiliation.NONE)) {
+                    x.addChild(new Element("status", new String[] { "code" }, new String[] { "100" }));
+                }
                 x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
             }
             presence.addChild(x);
 
             result.add(presence);
+        }
+        // service Sends new occupant conversation history
+        Iterator<Element> iterator = this.conversationHistory.iterator();
+        while (iterator.hasNext()) {
+            Element message = iterator.next().clone();
+            message.setAttribute("to", realJID);
+            result.add(message);
         }
         return result;
     }
@@ -659,6 +673,7 @@ public class Room implements Serializable {
 
         if (recipentNick == null) {
             // broadcast message
+            this.conversationHistory.add(element, this.roomID + "/" + senderNick, roomID);
             for (Entry<String, String> entry : this.occupantsByNick.entrySet()) {
                 Element message = element.clone();
                 message.setAttribute("from", this.roomID + "/" + senderNick);

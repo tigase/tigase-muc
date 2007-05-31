@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software Foundation,
  *  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  $Id$
+ *  $Id:RoomConfiguration.java 43 2007-05-31 07:35:05Z bmalkow $
  */
 package tigase.muc;
 
@@ -23,14 +23,10 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
-
 
 import tigase.db.TigaseDBException;
 import tigase.db.UserExistsException;
@@ -48,7 +44,7 @@ import tigase.xml.Element;
  * </p>
  * 
  * @author bmalkow
- * @version $Rev$
+ * @version $Rev:43 $
  */
 public class RoomConfiguration implements Serializable {
 
@@ -231,48 +227,7 @@ public class RoomConfiguration implements Serializable {
     public boolean checkPassword(String password) {
         return password != null && this.password != null && password.equals(this.password);
     }
-
-    private Element field(String type, String label, String var, Boolean value) {
-        String v = null;
-        if (value != null && value) {
-            v = "1";
-        } else if (value != null && !value) {
-            v = "0";
-        }
-        return field(type, label, var, v, null, null);
-    }
-
-    private Element field(String type, String label, String var, String value) {
-        return field(type, label, var, value, null, null);
-    }
-
-    private Element field(String type, String label, String var, String value, String[] labels, String[] values) {
-        Element field = new Element("field");
-        if (var != null)
-            field.setAttribute("var", var);
-        if (label != null)
-            field.setAttribute("label", label);
-        field.setAttribute("type", type);
-
-        Element v = new Element("value");
-        if (value != null) {
-            v.setCData(value);
-        }
-        field.addChild(v);
-
-        if (labels != null) {
-            for (int i = 0; i < labels.length; i++) {
-                Element option = new Element("option");
-                option.setAttribute("label", labels[i]);
-                Element vo = new Element("value", values[i]);
-                option.addChild(vo);
-                field.addChild(option);
-            }
-        }
-
-        return field;
-    }
-
+   
     /**
      * @param reqAffiliation
      * @return
