@@ -17,7 +17,7 @@
  *
  *  $Id$
  */
-package org.tigase.muc;
+package tigase.muc;
 
 /**
  * A long-lived association or connection with a room; the possible affiliations

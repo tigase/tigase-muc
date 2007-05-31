@@ -17,7 +17,7 @@
  *
  *  $Id$
  */
-package org.tigase.muc;
+package tigase.muc;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -31,13 +31,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-import org.tigase.form.Field;
-import org.tigase.form.Form;
 
 import tigase.db.TigaseDBException;
 import tigase.db.UserExistsException;
 import tigase.db.UserNotFoundException;
 import tigase.db.UserRepository;
+import tigase.form.Field;
+import tigase.form.Form;
 import tigase.util.JIDUtils;
 import tigase.xml.Element;
 

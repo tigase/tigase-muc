@@ -17,7 +17,7 @@
  *
  *  $Id$
  */
-package org.tigase.muc;
+package tigase.muc;
 
 import tigase.xml.Element;
 

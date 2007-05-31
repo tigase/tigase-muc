@@ -14,7 +14,7 @@
  * 
  * $Id$
  */
-package org.tigase.muc;
+package tigase.muc;
 
 import java.security.SecureRandom;
 import java.util.Arrays;
@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.UUID;
 import java.util.logging.Logger;
 
 import tigase.conf.Configurable;
@@ -65,10 +64,6 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 
     private static Random random = new SecureRandom();
 
-    static Packet error400(String roomID, Packet packet) {
-        return new Packet(errorPresence(roomID, packet.getElemFrom(), "modify", "400", "jid-malformed"));
-    }
-
     static Element errorPresence(String from, String to, String type, String code, String errorElement) {
         Element p = new Element("presence");
         p.setAttribute("from", from);
@@ -105,7 +100,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
      * Construct MUC service.
      */
     public MUCService() {
-
+        log.info("Creating MUC Service");
     }
 
     /** {@inheritDoc} */
@@ -151,54 +146,59 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
     /** {@inheritDoc} */
     @Override
     public void processPacket(Packet packet) {
-        String roomName = JIDUtils.getNodeNick(packet.getElemTo());
-        String roomHost = JIDUtils.getNodeHost(packet.getElemTo());
+        try {
+            String roomName = JIDUtils.getNodeNick(packet.getElemTo());
+            String roomHost = JIDUtils.getNodeHost(packet.getElemTo());
 
-        String roomID = JIDUtils.getNodeID(packet.getElemTo());
-        String username = JIDUtils.getNodeResource(packet.getElemTo());
+            String roomID = JIDUtils.getNodeID(packet.getElemTo());
+            String username = JIDUtils.getNodeResource(packet.getElemTo());
 
-        if (roomName == null && "iq".equals(packet.getElemName())
-                && packet.getElement().getChild("unique", "http://jabber.org/protocol/muc#unique") != null) {
-            Element iq = new Element("iq");
-            iq.setAttribute("to", packet.getElemFrom());
-            iq.setAttribute("from", packet.getElemTo());
-            iq.setAttribute("id", packet.getElemId());
-            iq.setAttribute("type", "result");
+            if (roomName == null && "iq".equals(packet.getElemName())
+                    && packet.getElement().getChild("unique", "http://jabber.org/protocol/muc#unique") != null) {
+                Element iq = new Element("iq");
+                iq.setAttribute("to", packet.getElemFrom());
+                iq.setAttribute("from", packet.getElemTo());
+                iq.setAttribute("id", packet.getElemId());
+                iq.setAttribute("type", "result");
 
-            String id;
-            do {
-                id = generateUniqueName();
-            } while (this.rooms.containsKey(id + "@" + roomHost));
+                String id;
+                do {
+                    id = generateUniqueName();
+                } while (this.rooms.containsKey(id + "@" + roomHost));
 
-            Element unique = new Element("unique", id, new String[] { "xmlns" },
-                    new String[] { "http://jabber.org/protocol/muc#unique" });
-            iq.addChild(unique);
-            addOutPacket(new Packet(iq));
-            return;
-        }
-
-        Room room = this.rooms.get(roomID);
-        List<Element> stanzasToSend = new LinkedList<Element>();
-        if (room == null) {
-            boolean newRoom = !this.allRooms.contains(roomID);
-            room = new Room(mucRepository, roomID, packet.getElemFrom(), newRoom);
-            this.rooms.put(roomID, room);
-            if (newRoom) {
-                stanzasToSend = room.processInitialStanza(packet.getElement());
+                Element unique = new Element("unique", id, new String[] { "xmlns" },
+                        new String[] { "http://jabber.org/protocol/muc#unique" });
+                iq.addChild(unique);
+                addOutPacket(new Packet(iq));
+                return;
             }
-        }
-        stanzasToSend.addAll(room.processStanza(packet.getElement()));
 
-        if (stanzasToSend != null) {
-            for (Element element : stanzasToSend) {
-                addOutPacket(new Packet(element));
+            Room room = this.rooms.get(roomID);
+            List<Element> stanzasToSend = new LinkedList<Element>();
+            if (room == null) {
+                boolean newRoom = !this.allRooms.contains(roomID);
+                room = new Room(mucRepository, roomID, packet.getElemFrom(), newRoom);
+                this.rooms.put(roomID, room);
+                if (newRoom) {
+                    stanzasToSend = room.processInitialStanza(packet.getElement());
+                }
             }
+            stanzasToSend.addAll(room.processStanza(packet.getElement()));
+
+            if (stanzasToSend != null) {
+                for (Element element : stanzasToSend) {
+                    addOutPacket(new Packet(element));
+                }
+            }
+        } catch (Exception e) {
+            log.throwing("Muc Service", "processPacket", e);
         }
     }
 
     private Set<String> allRooms = new HashSet<String>();;
 
     private void readAllRomms() {
+        log.config("Reading rooms...");
         try {
             List<String> roomsJid = this.mucRepository.getUsers();
             allRooms.clear();
@@ -207,6 +207,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         } catch (TigaseDBException e) {
             e.printStackTrace();
         }
+        log.config(allRooms.size() + " known rooms.");
     }
 
     /** {@inheritDoc} */
@@ -235,6 +236,8 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
             addRouting(host);
         }
         readAllRomms();
+        log.info("MUC Service started.");
+        System.out.println(".");
     }
 
 }

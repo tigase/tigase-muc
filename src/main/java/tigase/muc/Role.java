@@ -17,7 +17,7 @@
  *
  *  $Id$
  */
-package org.tigase.muc;
+package tigase.muc;
 
 /**
  * A temporary position or privilege level within a room, distinct from a user's

@@ -17,7 +17,7 @@
  *
  *  $Id$
  */
-package org.tigase.muc;
+package tigase.muc;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.logging.Logger;
 
 import tigase.db.UserRepository;
 import tigase.util.JIDUtils;
@@ -70,10 +71,13 @@ public class Room implements Serializable {
 
     private boolean lockedRoom;
 
+    private Logger log = Logger.getLogger(this.getClass().getName());
+
     public Room(UserRepository mucRepository, String roomID, String ownerJID, boolean roomCreated) {
         this.roomID = roomID;
         this.configuration = new RoomConfiguration(roomID, mucRepository, ownerJID);
         this.lockedRoom = roomCreated;
+        log.info((roomCreated ? "Creating " : "Retriving ") + " room " + roomID);
         if (roomCreated) {
             this.configuration.setAffiliation(ownerJID, Affiliation.OWNER);
         }

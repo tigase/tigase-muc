@@ -17,7 +17,7 @@
  *
  *  $Id$
  */
-package org.tigase.form;
+package tigase.form;
 
 import java.util.HashMap;
 import java.util.LinkedList;
