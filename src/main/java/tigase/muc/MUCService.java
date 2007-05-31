@@ -36,7 +36,6 @@ import tigase.disco.ServiceIdentity;
 import tigase.disco.XMPPService;
 import tigase.server.AbstractMessageReceiver;
 import tigase.server.Packet;
-import tigase.server.xmppsession.SessionManagerConfig;
 import tigase.util.DNSResolver;
 import tigase.util.JIDUtils;
 import tigase.xml.Element;
@@ -114,13 +113,39 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
             hostnamesPropVal = DNSResolver.getDefHostNames();
         }
         for (int i = 0; i < hostnamesPropVal.length; i++) {
-            hostnamesPropVal[i] = "muc." + hostnamesPropVal[i];
+					if (((String)params.get("config-type")).equals(GEN_CONFIG_COMP)) {
+						// This is specialized configuration for a single
+						// external component and on specialized component like MUC
+						hostnamesPropVal[i] = hostnamesPropVal[i];
+					} else {
+						hostnamesPropVal[i] = "muc." + hostnamesPropVal[i];
+					}
         }
 
-        props.put(MUC_REPO_CLASS_PROP_KEY, MUC_REPO_CLASS_PROP_VAL);
-        props.put(MUC_REPO_URL_PROP_KEY, MUC_REPO_URL_PROP_VAL);
+				// By default use the same repository as all other components:
+				String repo_class = XML_REPO_CLASS_PROP_VAL;
+				String repo_uri = XML_REPO_URL_PROP_VAL;
+				String conf_db = null;
+				if (params.get(GEN_USER_DB) != null) {
+					conf_db = (String)params.get(GEN_USER_DB);
+				} // end of if (params.get(GEN_USER_DB) != null)
+				if (conf_db != null) {
+					if (conf_db.equals("mysql")) {
+						repo_class = MYSQL_REPO_CLASS_PROP_VAL;
+						repo_uri = MYSQL_REPO_URL_PROP_VAL;
+					}
+					if (conf_db.equals("pgsql")) {
+						repo_class = PGSQL_REPO_CLASS_PROP_VAL;
+						repo_uri = PGSQL_REPO_URL_PROP_VAL;
+					}
+				} // end of if (conf_db != null)
+				if (params.get(GEN_USER_DB_URI) != null) {
+					repo_uri = (String)params.get(GEN_USER_DB_URI);
+				} // end of if (params.get(GEN_USER_DB_URI) != null)
+				props.put(MUC_REPO_CLASS_PROP_KEY, repo_class);
+        props.put(MUC_REPO_URL_PROP_KEY, repo_uri);
 
-        props.put(SessionManagerConfig.HOSTNAMES_PROP_KEY, hostnamesPropVal);
+        props.put(HOSTNAMES_PROP_KEY, hostnamesPropVal);
         return props;
     }
 
@@ -231,7 +256,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
             e.printStackTrace();
             System.exit(1);
         }
-        String[] hostnames = (String[]) props.get(SessionManagerConfig.HOSTNAMES_PROP_KEY);
+        String[] hostnames = (String[]) props.get(HOSTNAMES_PROP_KEY);
         clearRoutings();
         for (String host : hostnames) {
             addRouting(host);
