@@ -34,6 +34,10 @@ import tigase.db.UserRepository;
 import tigase.disco.ServiceEntity;
 import tigase.disco.ServiceIdentity;
 import tigase.disco.XMPPService;
+import tigase.muc.xmpp.JID;
+import tigase.muc.xmpp.stanzas.IQ;
+import tigase.muc.xmpp.stanzas.Message;
+import tigase.muc.xmpp.stanzas.Presence;
 import tigase.server.AbstractMessageReceiver;
 import tigase.server.Packet;
 import tigase.util.DNSResolver;
@@ -63,10 +67,10 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 
     private static Random random = new SecureRandom();
 
-    static Element errorPresence(String from, String to, String type, String code, String errorElement) {
+    static Element errorPresence(JID from, JID to, String type, String code, String errorElement) {
         Element p = new Element("presence");
-        p.setAttribute("from", from);
-        p.setAttribute("to", to);
+        p.setAttribute("from", from.toString());
+        p.setAttribute("to", to.toString());
         p.setAttribute("type", "error");
 
         Element error = new Element("error");
@@ -113,36 +117,36 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
             hostnamesPropVal = DNSResolver.getDefHostNames();
         }
         for (int i = 0; i < hostnamesPropVal.length; i++) {
-					if (((String)params.get("config-type")).equals(GEN_CONFIG_COMP)) {
-						// This is specialized configuration for a single
-						// external component and on specialized component like MUC
-						hostnamesPropVal[i] = hostnamesPropVal[i];
-					} else {
-						hostnamesPropVal[i] = "muc." + hostnamesPropVal[i];
-					}
+            if (((String) params.get("config-type")).equals(GEN_CONFIG_COMP)) {
+                // This is specialized configuration for a single
+                // external component and on specialized component like MUC
+                hostnamesPropVal[i] = hostnamesPropVal[i];
+            } else {
+                hostnamesPropVal[i] = "muc." + hostnamesPropVal[i];
+            }
         }
 
-				// By default use the same repository as all other components:
-				String repo_class = XML_REPO_CLASS_PROP_VAL;
-				String repo_uri = XML_REPO_URL_PROP_VAL;
-				String conf_db = null;
-				if (params.get(GEN_USER_DB) != null) {
-					conf_db = (String)params.get(GEN_USER_DB);
-				} // end of if (params.get(GEN_USER_DB) != null)
-				if (conf_db != null) {
-					if (conf_db.equals("mysql")) {
-						repo_class = MYSQL_REPO_CLASS_PROP_VAL;
-						repo_uri = MYSQL_REPO_URL_PROP_VAL;
-					}
-					if (conf_db.equals("pgsql")) {
-						repo_class = PGSQL_REPO_CLASS_PROP_VAL;
-						repo_uri = PGSQL_REPO_URL_PROP_VAL;
-					}
-				} // end of if (conf_db != null)
-				if (params.get(GEN_USER_DB_URI) != null) {
-					repo_uri = (String)params.get(GEN_USER_DB_URI);
-				} // end of if (params.get(GEN_USER_DB_URI) != null)
-				props.put(MUC_REPO_CLASS_PROP_KEY, repo_class);
+        // By default use the same repository as all other components:
+        String repo_class = XML_REPO_CLASS_PROP_VAL;
+        String repo_uri = XML_REPO_URL_PROP_VAL;
+        String conf_db = null;
+        if (params.get(GEN_USER_DB) != null) {
+            conf_db = (String) params.get(GEN_USER_DB);
+        } // end of if (params.get(GEN_USER_DB) != null)
+        if (conf_db != null) {
+            if (conf_db.equals("mysql")) {
+                repo_class = MYSQL_REPO_CLASS_PROP_VAL;
+                repo_uri = MYSQL_REPO_URL_PROP_VAL;
+            }
+            if (conf_db.equals("pgsql")) {
+                repo_class = PGSQL_REPO_CLASS_PROP_VAL;
+                repo_uri = PGSQL_REPO_URL_PROP_VAL;
+            }
+        } // end of if (conf_db != null)
+        if (params.get(GEN_USER_DB_URI) != null) {
+            repo_uri = (String) params.get(GEN_USER_DB_URI);
+        } // end of if (params.get(GEN_USER_DB_URI) != null)
+        props.put(MUC_REPO_CLASS_PROP_KEY, repo_class);
         props.put(MUC_REPO_URL_PROP_KEY, repo_uri);
 
         props.put(HOSTNAMES_PROP_KEY, hostnamesPropVal);
@@ -202,13 +206,23 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
             List<Element> stanzasToSend = new LinkedList<Element>();
             if (room == null) {
                 boolean newRoom = !this.allRooms.contains(roomID);
-                room = new Room(mucRepository, roomID, packet.getElemFrom(), newRoom);
+                room = new Room(mucRepository, roomID, JID.fromString(packet.getElemFrom()), newRoom);
                 this.rooms.put(roomID, room);
                 if (newRoom) {
                     stanzasToSend = room.processInitialStanza(packet.getElement());
                 }
             }
-            stanzasToSend.addAll(room.processStanza(packet.getElement()));
+
+            if ("message".equals(packet.getElemName())) {
+                Message message = new Message(packet.getElement());
+                stanzasToSend.addAll(room.processStanza(message));
+            } else if ("presence".equals(packet.getElemName())) {
+                Presence presence = new Presence(packet.getElement());
+                stanzasToSend.addAll(room.processStanza(presence));
+            } else if ("iq".equals(packet.getElemName())) {
+                IQ iq = new IQ(packet.getElement());
+                stanzasToSend.addAll(room.processStanza(iq));
+            }
 
             if (stanzasToSend != null) {
                 for (Element element : stanzasToSend) {

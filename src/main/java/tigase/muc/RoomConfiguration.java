@@ -34,6 +34,7 @@ import tigase.db.UserNotFoundException;
 import tigase.db.UserRepository;
 import tigase.form.Field;
 import tigase.form.Form;
+import tigase.muc.xmpp.JID;
 import tigase.util.JIDUtils;
 import tigase.xml.Element;
 
@@ -53,7 +54,7 @@ public class RoomConfiguration implements Serializable {
     /**
      * Key: bareJID
      */
-    private Map<String, Affiliation> affiliations = new HashMap<String, Affiliation>();
+    private Map<JID, Affiliation> affiliations = new HashMap<JID, Affiliation>();
 
     /**
      * Affiliations that May Discover Real JIDs of Occupants.
@@ -162,7 +163,7 @@ public class RoomConfiguration implements Serializable {
      */
     private String roomShortName;
 
-    RoomConfiguration(String id, UserRepository mucRepocitory, String constructorJid) {
+    RoomConfiguration(String id, UserRepository mucRepocitory, JID constructorJid) {
         this.id = id;
         this.mucRepocitory = mucRepocitory;
         String roomName = JIDUtils.getNodeNick(id);
@@ -188,18 +189,19 @@ public class RoomConfiguration implements Serializable {
         this.affiliationsViewsJID = getString("affiliationsViewsJID", "admin");
 
         try {
-            Map<String, Affiliation> tmp = new HashMap<String, Affiliation>();
+            Map<JID, Affiliation> tmp = new HashMap<JID, Affiliation>();
             // this.mucRepocitory.setData(id, "affiliation",
             // JIDUtils.getNodeID(jid)
             String[] jids = this.mucRepocitory.getKeys(id, "affiliation");
             for (String jid : jids) {
                 String affName = this.mucRepocitory.getData(id, "affiliation", JIDUtils.getNodeID(jid));
-                tmp.put(jid, Affiliation.valueOf(affName));
+                tmp.put(JID.fromString(jid), Affiliation.valueOf(affName));
             }
             this.affiliations.clear();
             this.affiliations.putAll(tmp);
         } catch (Exception e) {
-            this.affiliations.put(JIDUtils.getNodeID(constructorJid), Affiliation.OWNER);
+            this.affiliations.put(constructorJid.getBareJID(), Affiliation.OWNER);
+            
         }
     }
 
@@ -227,14 +229,14 @@ public class RoomConfiguration implements Serializable {
     public boolean checkPassword(String password) {
         return password != null && this.password != null && password.equals(this.password);
     }
-   
+
     /**
      * @param reqAffiliation
      * @return
      */
-    public Collection<String> findBareJidsByAffiliations(Affiliation reqAffiliation) {
-        List<String> result = new ArrayList<String>();
-        for (Map.Entry<String, Affiliation> entry : this.affiliations.entrySet()) {
+    public Collection<JID> findBareJidsByAffiliations(Affiliation reqAffiliation) {
+        List<JID> result = new ArrayList<JID>();
+        for (Map.Entry<JID, Affiliation> entry : this.affiliations.entrySet()) {
             if (reqAffiliation == entry.getValue()) {
                 result.add(entry.getKey());
             }
@@ -278,8 +280,8 @@ public class RoomConfiguration implements Serializable {
         }
     }
 
-    public Affiliation getAffiliation(String jid) {
-        Affiliation result = this.affiliations.get(JIDUtils.getNodeID(jid));
+    public Affiliation getAffiliation(JID jid) {
+        Affiliation result = this.affiliations.get(jid.getBareJID().toString());
         return result == null ? Affiliation.NONE : result;
     }
 
@@ -515,18 +517,19 @@ public class RoomConfiguration implements Serializable {
         return result;
     }
 
-    public void setAffiliation(String jid, Affiliation affiliation) {
+
+    public void setAffiliation(JID jid, Affiliation affiliation) {
         if (affiliation == null || affiliation == Affiliation.NONE) {
-            this.affiliations.remove(JIDUtils.getNodeID(jid));
+            this.affiliations.remove(jid.getBareJID());
         } else {
-            this.affiliations.put(JIDUtils.getNodeID(jid), affiliation);
+            this.affiliations.put(jid.getBareJID(), affiliation);
         }
         if (isPersist()) {
             try {
                 if (affiliation == null || affiliation == Affiliation.NONE) {
-                    this.mucRepocitory.removeData(id, "affiliation", JIDUtils.getNodeID(jid));
+                    this.mucRepocitory.removeData(id, "affiliation", jid.getBareJID().toString());
                 } else {
-                    this.mucRepocitory.setData(id, "affiliation", JIDUtils.getNodeID(jid), affiliation.name());
+                    this.mucRepocitory.setData(id, "affiliation", jid.getBareJID().toString(), affiliation.name());
                 }
             } catch (UserNotFoundException e) {
                 e.printStackTrace();
