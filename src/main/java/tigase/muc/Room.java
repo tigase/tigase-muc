@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.Map.Entry;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.db.UserRepository;
@@ -38,7 +39,6 @@ import tigase.muc.xmpp.stanzas.IQ;
 import tigase.muc.xmpp.stanzas.IQType;
 import tigase.muc.xmpp.stanzas.Message;
 import tigase.muc.xmpp.stanzas.Presence;
-import tigase.util.JIDUtils;
 import tigase.xml.Element;
 
 /**
@@ -58,7 +58,7 @@ public class Room implements Serializable {
 
     private History conversationHistory;
 
-    private Map<JID, Element> lastReceivedPresence = new HashMap<JID, Element>();
+    private Map<JID, Presence> lastReceivedPresence = new HashMap<JID, Presence>();
 
     private boolean lockedRoom;
 
@@ -198,8 +198,8 @@ public class Room implements Serializable {
         return preparePresenceSubItem(jid, occupantAffiliation, occupantRole, sendingTo);
     }
 
-    private List<Element> processChangingNickname(JID realJID, String oldNick, Element element) {
-        String newNick = JIDUtils.getNodeResource(element.getAttribute("to"));
+    private List<Element> processChangingNickname(JID realJID, String oldNick, Presence element) {
+        String newNick = element.getTo().getResource();
         List<Element> result = new LinkedList<Element>();
 
         if (this.occupantsByNick.containsKey(newNick)) {
@@ -209,7 +209,7 @@ public class Room implements Serializable {
 
         // Service Sends New Occupant's Presence to All Occupants
         for (Entry<String, JID> entry : this.occupantsByNick.entrySet()) {
-            Element presence = element.clone();
+            Presence presence = clonePresence(element);
             presence.setAttribute("to", entry.getValue().toString());
             presence.setAttribute("from", roomID + "/" + oldNick);
             presence.setAttribute("type", "unavailable");
@@ -236,7 +236,7 @@ public class Room implements Serializable {
         this.occupantsByJID.put(realJID, newNick);
 
         for (Entry<String, JID> entry : this.occupantsByNick.entrySet()) {
-            Element presence = element.clone();
+            Presence presence = clonePresence(element);
             presence.setAttribute("to", entry.getValue().toString());
             presence.setAttribute("from", roomID + "/" + newNick);
 
@@ -256,7 +256,7 @@ public class Room implements Serializable {
         return result;
     }
 
-    private List<Element> processEnteringToRoom(JID realJID, String nick, Element element, boolean roomCreated) {
+    private List<Element> processEnteringToRoom(JID realJID, String nick, Presence element, boolean roomCreated) {
         List<Element> result = new LinkedList<Element>();
 
         Element incomX = element.getChild("x", "http://jabber.org/protocol/muc");
@@ -292,7 +292,7 @@ public class Room implements Serializable {
         }
         // Service Sends Presence from Existing Occupants to New Occupant
         for (Entry<String, JID> entry : this.occupantsByNick.entrySet()) {
-            Element presence = this.lastReceivedPresence.get(entry.getValue()).clone();
+            Presence presence = clonePresence(this.lastReceivedPresence.get(entry.getValue()));
             presence.setAttribute("to", realJID.toString());
             presence.setAttribute("from", roomID + "/" + entry.getKey());
 
@@ -312,7 +312,7 @@ public class Room implements Serializable {
         setRole(realJID, occupantRole);
         // Service Sends Presence from Existing Occupants to New Occupant
         for (Entry<String, JID> entry : this.occupantsByNick.entrySet()) {
-            Element presence = element.clone();
+            Presence presence = clonePresence(element);
             presence.setAttribute("to", entry.getValue().toString());
             presence.setAttribute("from", roomID + "/" + nick);
 
@@ -345,11 +345,11 @@ public class Room implements Serializable {
         return result;
     }
 
-    private List<Element> processExitingARoom(JID realJID, String nick, Element element) {
+    private List<Element> processExitingARoom(JID realJID, String nick, Presence element) {
         List<Element> result = new LinkedList<Element>();
         // Service Sends New Occupant's Presence to All Occupants
         for (Entry<String, JID> entry : this.occupantsByNick.entrySet()) {
-            Element presence = element.clone();
+            Presence presence = clonePresence(element);
             presence.setAttribute("to", entry.getValue().toString());
             presence.setAttribute("from", roomID + "/" + nick);
 
@@ -373,7 +373,7 @@ public class Room implements Serializable {
      * @param element
      * @return
      */
-    public List<Element> processInitialStanza(Element element) {
+    public List<Element> processInitialStanza(Presence element) {
         /*
          * <presence from='darkcave@macbeth.shakespeare.lit/firstwitch'
          * to='crone1@shakespeare.lit/desktop'> <x
@@ -382,9 +382,21 @@ public class Room implements Serializable {
          * </presence>
          */
         JID realJID = JID.fromString(element.getAttribute("from"));
-        String nick = JIDUtils.getNodeResource(element.getAttribute("to"));
+        String nick = element.getTo().getResource();
         return processEnteringToRoom(realJID, nick, element, true);
 
+    }
+
+    private Presence clonePresence(Presence presence) {
+        if (presence == null) {
+            return null;
+        }
+        Element p = presence.clone();
+        Element toRemove = p.getChild("x", "http://jabber.org/protocol/muc");
+        if (toRemove != null) {
+            p.removeChild(toRemove);
+        }
+        return new Presence(p);
     }
 
     private List<Element> processIqAdminGet(IQ iq) {
@@ -507,11 +519,11 @@ public class Room implements Serializable {
                     // Service Informs all Occupants
                     for (Entry<String, JID> entry : this.occupantsByNick.entrySet()) {
                         // preparing presence stanza
-                        Element presence = this.lastReceivedPresence.get(occupantJid);
+                        Presence presence = this.lastReceivedPresence.get(occupantJid);
                         if (presence == null) {
                             continue;
                         } else {
-                            presence = presence.clone();
+                            presence = clonePresence(presence);
                         }
                         presence.setAttribute("from", roomID + "/" + occupantNick);
                         presence.setAttribute("to", entry.getValue().toString());
@@ -619,10 +631,10 @@ public class Room implements Serializable {
         return result;
     }
 
-    private List<Element> processNewPresenceStatus(JID realJID, String nick, Element element) {
+    private List<Element> processNewPresenceStatus(JID realJID, String nick, Presence element) {
         List<Element> result = new LinkedList<Element>();
         for (Entry<String, JID> entry : this.occupantsByNick.entrySet()) {
-            Element presence = element.clone();
+            Presence presence = clonePresence(element);
             presence.setAttribute("to", entry.getValue().toString());
             presence.setAttribute("from", roomID + "/" + nick);
 
@@ -641,9 +653,10 @@ public class Room implements Serializable {
     }
 
     public List<Element> processStanza(IQ iq) {
-        String nick = JIDUtils.getNodeResource(iq.getAttribute("to"));
+        List<Element> result = new LinkedList<Element>();
+        String nick = iq.getTo().getResource();
         Element query = iq.getChild("query");
-        String xmlns = query == null ? null : query.getAttribute("xmlns");
+        String xmlns = query == null ? null : query.getXMLNS();
 
         JID sender = iq.getFrom();
 
@@ -667,7 +680,7 @@ public class Room implements Serializable {
                 }
                 return processIqOwnerSet(iq);
             } else {
-                System.err.println(" unknown <iq> stanza " + iq);
+                log.log(Level.SEVERE, " unknown <iq> stanza " + iq);
             }
         } catch (MucInternalException e) {
             Element answer = new Element("iq");
@@ -683,13 +696,13 @@ public class Room implements Serializable {
 
             answer.addChild(e.makeErrorElement());
         }
-        return null;
+        return result;
     }
 
     public List<Element> processStanza(Message element) {
         List<Element> result = new LinkedList<Element>();
-        String senderNick = this.occupantsByJID.get(element.getAttribute("from"));
-        String recipentNick = JIDUtils.getNodeResource(element.getAttribute("to"));
+        String senderNick = this.occupantsByJID.get(element.getFrom());
+        String recipentNick = element.getTo().getResource();
 
         if (senderNick == null) {
             Element errMsg = element.clone();
@@ -734,7 +747,7 @@ public class Room implements Serializable {
 
     public List<Element> processStanza(Presence element) {
         JID realJID = element.getFrom();
-        String nick = JIDUtils.getNodeResource(element.getAttribute("to"));
+        String nick = element.getTo().getResource();
 
         String existNick = this.occupantsByJID.get(realJID);
 
@@ -759,6 +772,11 @@ public class Room implements Serializable {
     }
 
     private void setRole(JID jid, Role role) {
+        if (role == null) {
+            this.occupantsRole.remove(jid.getBareJID());
+        } else {
+            this.occupantsRole.put(jid.getBareJID(), role);
+        }
     }
 
     private void setRole(String nick, Role role) {

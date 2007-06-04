@@ -31,5 +31,5 @@ package tigase.muc.xmpp;
 public interface StanzaType {
 
     /** {@inheritDoc} */
-    String toString();
+ //   String toString();
 }

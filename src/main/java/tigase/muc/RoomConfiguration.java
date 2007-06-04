@@ -27,6 +27,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Logger;
 
 import tigase.db.TigaseDBException;
 import tigase.db.UserExistsException;
@@ -201,7 +202,7 @@ public class RoomConfiguration implements Serializable {
             this.affiliations.putAll(tmp);
         } catch (Exception e) {
             this.affiliations.put(constructorJid.getBareJID(), Affiliation.OWNER);
-            
+
         }
     }
 
@@ -281,14 +282,17 @@ public class RoomConfiguration implements Serializable {
     }
 
     public Affiliation getAffiliation(JID jid) {
-        Affiliation result = this.affiliations.get(jid.getBareJID().toString());
+        Affiliation result = this.affiliations.get(jid.getBareJID());
         return result == null ? Affiliation.NONE : result;
     }
 
     private Boolean getBoolean(String key, Boolean defaultValue) {
         try {
-            return Boolean.valueOf(this.mucRepocitory.getData(id, key));
+            Boolean val = Boolean.valueOf(this.mucRepocitory.getData(id, key));
+            log.finest("Read from repository key " + key + " == " + val);
+            return val;
         } catch (Exception e) {
+            log.finest("Failed read from repository key " + key);
             return defaultValue;
         }
     }
@@ -334,8 +338,12 @@ public class RoomConfiguration implements Serializable {
 
     private Integer getInteger(String key, Integer defaultValue) {
         try {
-            return Integer.valueOf(this.mucRepocitory.getData(id, key));
+            Integer val = Integer.valueOf(this.mucRepocitory.getData(id, key));
+            log.finest("Read from repository key " + key + " == " + val);
+            return val;
         } catch (Exception e) {
+            log.finest("Failed read from repository key " + key);
+
             return defaultValue;
         }
     }
@@ -370,8 +378,11 @@ public class RoomConfiguration implements Serializable {
 
     private String getString(String key, String defaultValue) {
         try {
-            return this.mucRepocitory.getData(id, key);
+            String val = this.mucRepocitory.getData(id, key);
+            log.finest("Read from repository key " + key + " == " + val);
+            return val;
         } catch (Exception e) {
+            log.finest("Failed read from repository key " + key);
             return defaultValue;
         }
     }
@@ -424,6 +435,8 @@ public class RoomConfiguration implements Serializable {
         return privateMessageBanned;
     }
 
+    private Logger log = Logger.getLogger(this.getClass().getName());
+
     /**
      * @param iq
      * @return
@@ -441,7 +454,9 @@ public class RoomConfiguration implements Serializable {
             String var;
             var = "muc#roomconfig_whois";
             if (form.is(var)) {
-                this.affiliationsViewsJID = form.getAsString(var);
+                String val = form.getAsString(var);
+                this.affiliationsViewsJID = val;
+                log.finest("Set variable " + var + " to " + val);
             }
             var = "muc#roomconfig_roomname";
             if (form.is(var)) {
@@ -516,7 +531,6 @@ public class RoomConfiguration implements Serializable {
         result.add(answer);
         return result;
     }
-
 
     public void setAffiliation(JID jid, Affiliation affiliation) {
         if (affiliation == null || affiliation == Affiliation.NONE) {

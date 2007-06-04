@@ -84,7 +84,7 @@
         <dependency>
             <groupId>tigase-server</groupId>
             <artifactId>tigase-server</artifactId>
-            <version>2.9.3-SNAPSHOT</version>
+            <version>2.9.4-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
