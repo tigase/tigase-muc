@@ -53,7 +53,7 @@ import tigase.xml.Element;
  * @author bmalkow
  * @version $Rev:43 $
  */
-public class MUCService extends AbstractMessageReceiver implements XMPPService, Configurable {
+public class MUCService extends AbstractMessageReceiver implements XMPPService, Configurable, RoomListener {
 
     private final static String LETTERS_TO_UNIQUE_NAME = "abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -95,7 +95,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 
     private UserRepository mucRepository;
 
-    private Map<String, Room> rooms = new HashMap<String, Room>();
+    private final Map<String, Room> rooms = new HashMap<String, Room>();
 
     private ServiceEntity serviceEntity = null;
 
@@ -200,13 +200,25 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
                 iq.addChild(unique);
                 addOutPacket(new Packet(iq));
                 return;
+            } else if (roomName == null && "iq".equals(packet.getElemName())
+                    && packet.getElement().getChild("query", "http://jabber.org/protocol/disco#info") != null) {
+
+                Packet result = packet.okResult(this.serviceEntity.getDiscoInfo(null), 0);
+                addOutPacket(result);
+                return;
+            } else if (roomName == null && "iq".equals(packet.getElemName())
+                    && packet.getElement().getChild("query", "http://jabber.org/protocol/disco#items") != null) {
+
+                Packet result = packet.okResult(this.serviceEntity.getDiscoItem(null, null), 0);
+                addOutPacket(result);
+                return;
             }
 
             Room room = this.rooms.get(roomID);
             List<Element> stanzasToSend = new LinkedList<Element>();
             if (room == null) {
                 boolean newRoom = !this.allRooms.contains(roomID);
-                room = new Room(mucRepository, roomID, JID.fromString(packet.getElemFrom()), newRoom);
+                room = new Room(this, mucRepository, roomID, JID.fromString(packet.getElemFrom()), newRoom);
                 this.rooms.put(roomID, room);
                 if (newRoom) {
                     Presence presence = new Presence(packet.getElement());
@@ -243,8 +255,14 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         try {
             List<String> roomsJid = this.mucRepository.getUsers();
             allRooms.clear();
-            if (roomsJid != null)
+            if (roomsJid != null) {
                 allRooms.addAll(roomsJid);
+                for (String jid : roomsJid) {
+                    ServiceEntity x = new ServiceEntity(jid, null, null);
+                    x.addIdentities(new ServiceIdentity("conference", "text", "rum"));
+                    serviceEntity.addItems(x);
+                }
+            }
         } catch (TigaseDBException e) {
             e.printStackTrace();
         }
@@ -257,7 +275,8 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         super.setProperties(props);
 
         serviceEntity = new ServiceEntity(getName(), null, "Multi User Chat");
-        serviceEntity.addIdentities(new ServiceIdentity("component", "generic", "Multi User Chat"));
+        serviceEntity.addIdentities(new ServiceIdentity("conference", "text", "Multi User Chat"));
+
         try {
             String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
             String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
@@ -279,6 +298,14 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         readAllRomms();
         log.info("MUC Service started.");
         System.out.println(".");
+    }
+
+    @Override
+    public void onOccupantLeave(Room room) {
+        int c = room.countOccupants();
+        if (c == 0) {
+            this.rooms.remove(room.getRoomID());
+        }
     }
 
 }

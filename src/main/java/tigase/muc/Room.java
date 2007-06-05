@@ -81,7 +81,11 @@ public class Room implements Serializable {
 
     private String roomID;
 
-    public Room(UserRepository mucRepository, String roomID, JID ownerJID, boolean roomCreated) {
+    private RoomListener roomListener;
+
+    public Room(RoomListener roomListener, UserRepository mucRepository, String roomID, JID ownerJID,
+            boolean roomCreated) {
+        this.roomListener = roomListener;
         this.conversationHistory = new History(20);
         this.roomID = roomID;
         this.configuration = new RoomConfiguration(roomID, mucRepository, ownerJID);
@@ -108,6 +112,22 @@ public class Room implements Serializable {
             return Role.PARTICIPANT;
         }
         return result;
+    }
+
+    private Presence clonePresence(Presence presence) {
+        if (presence == null) {
+            return null;
+        }
+        Element p = presence.clone();
+        Element toRemove = p.getChild("x", "http://jabber.org/protocol/muc");
+        if (toRemove != null) {
+            p.removeChild(toRemove);
+        }
+        return new Presence(p);
+    }
+
+    public int countOccupants() {
+        return this.occupantsByJID.size();
     }
 
     /**
@@ -152,6 +172,13 @@ public class Room implements Serializable {
     private Role getRole(JID jid) {
         Role result = this.occupantsRole.get(jid.getBareJID());
         return result == null ? Role.NONE : result;
+    }
+
+    /**
+     * @return Returns the roomID.
+     */
+    public String getRoomID() {
+        return roomID;
     }
 
     private Element makeErrorStanza(Element source, String code, String type, String errorName) {
@@ -370,6 +397,9 @@ public class Room implements Serializable {
         this.occupantsByJID.remove(realJID);
         setRole(realJID, null);
         this.lastReceivedPresence.remove(realJID);
+        if (this.roomListener != null) {
+            this.roomListener.onOccupantLeave(this);
+        }
         log.fine("Occupant " + realJID + " (" + nick + ") leave room " + this.roomID);
         return result;
     }
@@ -390,18 +420,6 @@ public class Room implements Serializable {
         String nick = element.getTo().getResource();
         return processEnteringToRoom(realJID, nick, element, true);
 
-    }
-
-    private Presence clonePresence(Presence presence) {
-        if (presence == null) {
-            return null;
-        }
-        Element p = presence.clone();
-        Element toRemove = p.getChild("x", "http://jabber.org/protocol/muc");
-        if (toRemove != null) {
-            p.removeChild(toRemove);
-        }
-        return new Presence(p);
     }
 
     private List<Element> processIqAdminGet(IQ iq) {
