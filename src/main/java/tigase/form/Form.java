@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software Foundation,
  *  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  $Id$
+ *  $Id:Form.java 43 2007-05-31 07:35:05Z bmalkow $
  */
 package tigase.form;
 
@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Logger;
 
 import tigase.xml.Element;
 
@@ -33,7 +34,7 @@ import tigase.xml.Element;
  * </p>
  * 
  * @author bmalkow
- * @version $Rev$
+ * @version $Rev:43 $
  */
 public class Form {
 
@@ -47,17 +48,23 @@ public class Form {
 
     private String type;
 
+    private Logger log = Logger.getLogger(this.getClass().getName());
+
     public Form(Element form) {
         this.type = form.getAttribute("type");
+        log.finest("Retriving Data Form type " + this.type);
         List<Element> children = form.getChildren();
         if (children != null) {
             for (Element sub : children) {
                 if ("title".equals(sub.getName())) {
                     this.title = sub.getCData();
+                    log.finest("read Data Form title [" + this.title + "]");
                 } else if ("instructions".equals(sub.getName())) {
                     this.instruction = sub.getCData();
+                    log.finest("read Data Form instruction [" + this.instruction + "]");
                 } else if ("field".equals(sub.getName())) {
                     Field field = new Field(sub);
+                    log.finest("read Data Form field [" + field.getVar() + "]");
                     this.fields.add(field);
                     this.fieldsByVar.put(field.getVar(), field);
                 }

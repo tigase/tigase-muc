@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software Foundation,
  *  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  $Id$
+ *  $Id:Field.java 43 2007-05-31 07:35:05Z bmalkow $
  */
 package tigase.form;
 
@@ -31,10 +31,10 @@ import tigase.xml.Element;
  * </p>
  * 
  * @author bmalkow
- * @version $Rev$
+ * @version $Rev:43 $
  */
 public class Field {
-    public static Field fieldBoolean(String var, String label, Boolean value) {
+    public static Field fieldBoolean(String var, Boolean value, String label) {
         Field field = new Field("boolean");
         field.label = label;
         field.var = var;
@@ -59,7 +59,7 @@ public class Field {
         return field;
     }
 
-    public static Field fieldListMulti(String var, String label, String[] values, String[] optionsLabel,
+    public static Field fieldListMulti(String var, String[] values, String label, String[] optionsLabel,
             String optionsValue) {
         if (optionsLabel.length != optionsValue.length()) {
             throw new RuntimeException("Invalid optionsLabel and optinsValue length");
@@ -72,7 +72,7 @@ public class Field {
         return field;
     }
 
-    public static Field fieldListSingle(String var, String label, String value, String[] optionsLabel,
+    public static Field fieldListSingle(String var, String value, String label, String[] optionsLabel,
             String[] optionsValue) {
         if (optionsLabel.length != optionsValue.length) {
             throw new RuntimeException("Invalid optionsLabel and optinsValue length");
@@ -85,21 +85,21 @@ public class Field {
         return field;
     }
 
-    public static Field fieldTextMulti(String var, String label, String value) {
+    public static Field fieldTextMulti(String var, String value, String label) {
         Field field = new Field("text-multi", var);
         field.label = label;
         field.values = new String[] { value };
         return field;
     }
 
-    public static Field fieldTextPrivate(String var, String label, String value) {
+    public static Field fieldTextPrivate(String var, String value, String label) {
         Field field = new Field("text-private", var);
         field.label = label;
         field.values = new String[] { value };
         return field;
     }
 
-    public static Field fieldTextSingle(String var, String label, String value) {
+    public static Field fieldTextSingle(String var, String value, String label) {
         Field field = new Field("text-single", var);
         field.label = label;
         field.values = new String[] { value };

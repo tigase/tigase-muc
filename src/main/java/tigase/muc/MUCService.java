@@ -103,7 +103,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
      * Construct MUC service.
      */
     public MUCService() {
-        log.info("Creating MUC Service");
+        log.info("Creating tigase-muc ver." + MucVersion.getVersion() + " Service.");
     }
 
     /** {@inheritDoc} */

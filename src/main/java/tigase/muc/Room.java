@@ -99,7 +99,9 @@ public class Room implements Serializable {
     private Role calculateInitialRole(JID realJID) {
         Affiliation affiliation = this.configuration.getAffiliation(realJID);
         Role result;
-        result = configuration.isModerated() || configuration.isOccupantDefaultParticipant() ? Role.VISITOR : Role.PARTICIPANT;
+        result = configuration.isRoomconfigModeratedRoom()
+        // || configuration.isOccupantDefaultParticipant()
+        ? Role.VISITOR : Role.PARTICIPANT;
         if (affiliation == Affiliation.ADMIN || affiliation == Affiliation.OWNER) {
             return Role.MODERATOR;
         } else if (affiliation == Affiliation.MEMBER) {
@@ -148,7 +150,7 @@ public class Room implements Serializable {
     }
 
     private Role getRole(JID jid) {
-        Role result = this.occupantsRole.get(jid.toString());
+        Role result = this.occupantsRole.get(jid.getBareJID());
         return result == null ? Role.NONE : result;
     }
 
@@ -269,13 +271,13 @@ public class Room implements Serializable {
             result.add(MUCService.errorPresence(JID.fromString(roomID), realJID, "cancel", "404", "item-not-found"));
             return result;
         }
-        if (this.configuration.isInvitationRequired()
+        if (this.configuration.isRoomconfigMembersOnly()
                 && this.configuration.getAffiliation(realJID).getWeight() < Affiliation.MEMBER.getWeight()) {
             result.add(MUCService
                     .errorPresence(JID.fromString(roomID), realJID, "auth", "407", "registration-required"));
             return result;
         }
-        if (this.configuration.isPasswordRequired()) {
+        if (this.configuration.isRoomconfigPasswordProtectedRoom()) {
             boolean auth = false;
             if (incomX != null) {
                 Element pass = incomX.getChild("password");
@@ -323,7 +325,7 @@ public class Room implements Serializable {
                 x.addChild(new Element("status", new String[] { "code" }, new String[] { "201" }));
             }
             if (entry.getValue().equals(realJID)) {
-                if (this.configuration.isLogging()) {
+                if (this.configuration.isRoomconfigEnableLogging()) {
                     x.addChild(new Element("status", new String[] { "code" }, new String[] { "170" }));
                 }
                 if (this.configuration.affiliationCanViewJid(Affiliation.NONE)) {
@@ -342,6 +344,8 @@ public class Room implements Serializable {
             message.setAttribute("to", realJID.toString());
             result.add(message);
         }
+        log.fine("Occupant " + realJID + " (" + nick + ") entering room " + this.roomID + ", with role " + occupantRole
+                + " and affiliation " + this.configuration.getAffiliation(realJID));
         return result;
     }
 
@@ -365,7 +369,8 @@ public class Room implements Serializable {
         this.occupantsByNick.remove(nick);
         this.occupantsByJID.remove(realJID);
         setRole(realJID, null);
-
+        this.lastReceivedPresence.remove(realJID);
+        log.fine("Occupant " + realJID + " (" + nick + ") leave room " + this.roomID);
         return result;
     }
 

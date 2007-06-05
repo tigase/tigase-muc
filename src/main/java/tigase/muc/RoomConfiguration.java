@@ -23,10 +23,14 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.Map.Entry;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.db.TigaseDBException;
@@ -58,151 +62,174 @@ public class RoomConfiguration implements Serializable {
     private Map<JID, Affiliation> affiliations = new HashMap<JID, Affiliation>();
 
     /**
-     * Affiliations that May Discover Real JIDs of Occupants.
-     */
-    private String affiliationsViewsJID = "";
-
-    /**
-     * Allow Occupants to Change Subject.
-     */
-    private boolean allowedOccupantChangeSubject;
-
-    /**
-     * Allow Occupants to Invite Others.
-     */
-    private boolean allowedOccupantsToInvite;
-
-    /**
-     * Allow Occupants to query other Occupants.
-     */
-    private boolean allowedOccupantsToQueryOccupants;
-
-    /**
-     * Allow Public Searching for Room.
-     */
-    private boolean allowedPublicSearch;
-
-    /**
      * Room ID
      */
     private String id;
 
-    /**
-     * An Invitation is Required to Enter.
-     */
-    private boolean invitationRequired;
-
-    /**
-     * Lock nicknames to JIDUtils usernames.
-     */
-    private boolean lockNicknames;
-
-    /**
-     * Enable Logging of Room Conversations.
-     */
-    private boolean logging;
-
-    /**
-     * Maximum Number of Room Occupants.
-     */
-    private int maxOccupantNumber;
-
-    /**
-     * Make Room Moderated.
-     */
-    private boolean moderated = false;
-
-    /**
-     * Message for user renaming nickname in room.
-     */
-    private String msgUserChangeNick;
-
-    /**
-     * Message for user leaving room.
-     */
-    private String msgUserExit;
-
-    /**
-     * Message for user joining room.
-     */
-    private String msgUserJoining;
+    private Logger log = Logger.getLogger(this.getClass().getName());
 
     private UserRepository mucRepocitory;
 
     /**
-     * Make Occupants in a Moderated Room Default to Participant.
+     * Allow Occupants to Invite Others.
      */
-    private boolean occupantDefaultParticipant;
+    private boolean roomconfigAllowInvites;
 
     /**
-     * The Room Password.
+     * Allow Occupants to Change Subject.
      */
-    private String password;
+    private boolean roomconfigChangeSubject;
+
+    /**
+     * Enable Logging of Room Conversations.
+     */
+    private boolean roomconfigEnableLogging;
+
+    /**
+     * Maximum Number of Room Occupants.
+     */
+    private int roomconfigMaxUsers;
+
+    /**
+     * An Invitation is Required to Enter.
+     */
+    private boolean roomconfigMembersOnly;
+
+    /**
+     * Make Room Moderated.
+     */
+    private boolean roomconfigModeratedRoom = false;
 
     /**
      * A Password is required to enter.
      */
-    private boolean passwordRequired;
+    private boolean roomconfigPasswordProtectedRoom;
 
     /**
      * Make Room Persistent.
      */
-    private boolean persist;
+    private boolean roomconfigPersistentRoom;
 
     /**
-     * Ban Private Messages between Occupants.
+     * Allow Public Searching for Room.
      */
-    private boolean privateMessageBanned;
+    private boolean roomconfigPublicRoom;
 
     /**
      * private String roomName.
      */
-    private String roomFullName;
+    private String roomconfigRoomdesc;
 
     /**
      * Short Description of Room.
      */
-    private String roomShortName;
+    private String roomconfigRoomname;
+
+    /**
+     * The Room Password.
+     */
+    private String roomconfigRoomSecret;
+
+    /**
+     * Affiliations that May Discover Real JIDs of Occupants.
+     */
+    private String roomconfigWhois = "";
 
     RoomConfiguration(String id, UserRepository mucRepocitory, JID constructorJid) {
         this.id = id;
         this.mucRepocitory = mucRepocitory;
         String roomName = JIDUtils.getNodeNick(id);
-        this.roomFullName = getString("roomFullName", roomName);
-        this.roomShortName = getString("roomShortName", roomName);
-        this.allowedOccupantChangeSubject = getBoolean("allowedOccupantChangeSubject", true);
-        this.allowedOccupantsToInvite = getBoolean("allowedOccupantsToInvite", true);
-        this.allowedOccupantsToQueryOccupants = false;
-        this.allowedPublicSearch = getBoolean("allowedPublicSearch", true);
-        this.invitationRequired = getBoolean("invitationRequired", false);
-        this.lockNicknames = getBoolean("lockNicknames", false);
-        this.logging = getBoolean("logging", false);
-        this.maxOccupantNumber = getInteger("maxOccupantNumber", 100);
-        this.moderated = getBoolean("moderated", true);
-        this.msgUserChangeNick = getString("msgUserChangeNick", "now known as");
-        this.msgUserExit = getString("msgUserExit", "leave room");
-        this.msgUserJoining = getString("msgUserJoining", "join to room");
-        this.occupantDefaultParticipant = getBoolean("occupantDefaultParticipant", true);
-        this.password = getString("password", null);
-        this.passwordRequired = getBoolean("passwordRequired", false);
-        this.persist = getBoolean("persist", false);
-        this.privateMessageBanned = getBoolean("privateMessageBanned", false);
-        this.affiliationsViewsJID = getString("affiliationsViewsJID", "admin");
+
+        this.roomconfigRoomdesc = roomName;
+        this.roomconfigRoomname = roomName;
+        this.roomconfigChangeSubject = true;
+        this.roomconfigAllowInvites = true;
+        this.roomconfigPublicRoom = true;
+        this.roomconfigMembersOnly = false;
+        this.roomconfigEnableLogging = false;
+        this.roomconfigMaxUsers = 100;
+        this.roomconfigModeratedRoom = true;
+        this.roomconfigRoomSecret = null;
+        this.roomconfigPasswordProtectedRoom = false;
+        this.roomconfigPersistentRoom = false;
+        this.roomconfigWhois = "admin";
+        this.affiliations.put(constructorJid.getBareJID(), Affiliation.OWNER);
 
         try {
-            Map<JID, Affiliation> tmp = new HashMap<JID, Affiliation>();
-            // this.mucRepocitory.setData(id, "affiliation",
-            // JIDUtils.getNodeID(jid)
-            String[] jids = this.mucRepocitory.getKeys(id, "affiliation");
+            restoreConfiguration();
+        } catch (UserNotFoundException e) {
+            log.info("Room [" + this.id + "] not found in database. Using defaults.");
+        } catch (TigaseDBException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void restoreConfiguration() throws UserNotFoundException, TigaseDBException {
+        String[] keysTable = this.mucRepocitory.getKeys(this.id);
+        Set<String> keys = new HashSet<String>();
+        for (String key : keysTable) {
+            log.finest(" Found config key: " + key);
+            if (!keys.add(key)) {
+                log.log(Level.SEVERE, "Duplicated config key for room " + id + ", key: " + key);
+            }
+        }
+
+        String var;
+
+        var = "roomconfigRoomname";
+        if (keys.contains(var)) {
+            this.roomconfigRoomname = getString(var);
+        }
+
+        var = "roomconfigChangeSubject";
+        if (keys.contains(var))
+            this.roomconfigChangeSubject = getBoolean(var);
+        var = "roomconfigMaxUsers";
+        if (keys.contains(var))
+            this.roomconfigMaxUsers = getInteger(var);
+        var = "roomconfigPublicRoom";
+        if (keys.contains(var))
+            this.roomconfigPublicRoom = getBoolean(var);
+        var = "roomconfigPersistentRoom";
+        if (keys.contains(var))
+            this.roomconfigPersistentRoom = getBoolean(var);
+        var = "roomconfigModeratedRoom";
+        if (keys.contains(var))
+            this.roomconfigModeratedRoom = getBoolean(var);
+        var = "roomconfigMembersOnly";
+        if (keys.contains(var))
+            this.roomconfigMembersOnly = getBoolean(var);
+        var = "roomconfigAllowInvites";
+        if (keys.contains(var))
+            this.roomconfigAllowInvites = getBoolean(var);
+        var = "roomconfigPasswordProtectedRoom";
+        if (keys.contains(var))
+            this.roomconfigPasswordProtectedRoom = getBoolean(var);
+        var = "roomconfigRoomSecret";
+        if (keys.contains(var))
+            this.roomconfigRoomSecret = getString(var);
+        var = "roomconfigWhois";
+        if (keys.contains(var))
+            this.roomconfigWhois = getString(var);
+        var = "roomconfigEnableLogging";
+        if (keys.contains(var))
+            this.roomconfigEnableLogging = getBoolean(var);
+
+        Map<JID, Affiliation> tmp = new HashMap<JID, Affiliation>();
+        String[] jids = this.mucRepocitory.getKeys(id, "affiliation");
+        if (jids != null) {
+            String l = "";
             for (String jid : jids) {
                 String affName = this.mucRepocitory.getData(id, "affiliation", JIDUtils.getNodeID(jid));
-                tmp.put(JID.fromString(jid), Affiliation.valueOf(affName));
+                JID j = JID.fromString(jid);
+                Affiliation a = Affiliation.valueOf(affName);
+                tmp.put(j, a);
+                l += j + "(" + a + "); ";
             }
+            log.finest("Reading room affiliations: " + l);
+
             this.affiliations.clear();
             this.affiliations.putAll(tmp);
-        } catch (Exception e) {
-            this.affiliations.put(constructorJid.getBareJID(), Affiliation.OWNER);
-
         }
     }
 
@@ -211,13 +238,13 @@ public class RoomConfiguration implements Serializable {
      * @return
      */
     public boolean affiliationCanViewJid(Affiliation affiliation) {
-        if ("owner".equals(this.affiliationsViewsJID)) {
+        if ("owner".equals(this.roomconfigWhois)) {
             return affiliation.getWeight() >= Affiliation.OWNER.getWeight();
-        } else if ("admin".equals(this.affiliationsViewsJID)) {
+        } else if ("admin".equals(this.roomconfigWhois)) {
             return affiliation.getWeight() >= Affiliation.ADMIN.getWeight();
-        } else if ("member".equals(this.affiliationsViewsJID)) {
+        } else if ("member".equals(this.roomconfigWhois)) {
             return affiliation.getWeight() >= Affiliation.MEMBER.getWeight();
-        } else if ("anyone".equals(this.affiliationsViewsJID)) {
+        } else if ("anyone".equals(this.roomconfigWhois)) {
             return true;
         }
         return false;
@@ -228,7 +255,7 @@ public class RoomConfiguration implements Serializable {
      * @return
      */
     public boolean checkPassword(String password) {
-        return password != null && this.password != null && password.equals(this.password);
+        return password != null && this.roomconfigRoomSecret != null && password.equals(this.roomconfigRoomSecret);
     }
 
     /**
@@ -246,38 +273,35 @@ public class RoomConfiguration implements Serializable {
     }
 
     public void flushConfig() {
+        log.info("Storing room configuration...");
         try {
-            this.mucRepocitory.setData(id, "roomShortName", roomShortName);
-            this.mucRepocitory.setData(id, "roomFullName", roomFullName);
-            this.mucRepocitory.setData(id, "affiliationsViewsJID", affiliationsViewsJID);
-            this.mucRepocitory.setData(id, "allowedOccupantChangeSubject", Boolean
-                    .toString(allowedOccupantChangeSubject));
-            this.mucRepocitory.setData(id, "allowedOccupantsToInvite", Boolean.toString(allowedOccupantsToInvite));
-            this.mucRepocitory.setData(id, "allowedOccupantsToQueryOccupants", Boolean
-                    .toString(allowedOccupantsToQueryOccupants));
-            this.mucRepocitory.setData(id, "allowedPublicSearch", Boolean.toString(allowedPublicSearch));
-            this.mucRepocitory.setData(id, "invitationRequired", Boolean.toString(invitationRequired));
-            this.mucRepocitory.setData(id, "lockNicknames", Boolean.toString(lockNicknames));
-            this.mucRepocitory.setData(id, "logging", Boolean.toString(logging));
-            this.mucRepocitory.setData(id, "moderated", Boolean.toString(moderated));
-            this.mucRepocitory.setData(id, "persist", Boolean.toString(persist));
-            this.mucRepocitory.setData(id, "passwordRequired", Boolean.toString(passwordRequired));
-            this.mucRepocitory.setData(id, "privateMessageBanned", Boolean.toString(privateMessageBanned));
-            this.mucRepocitory.setData(id, "occupantDefaultParticipant", Boolean.toString(occupantDefaultParticipant));
-            this.mucRepocitory.setData(id, "maxOccupantNumber", Integer.toString(maxOccupantNumber));
-            if (msgUserChangeNick != null)
-                this.mucRepocitory.setData(id, "msgUserChangeNick", msgUserChangeNick);
-            if (msgUserExit != null)
-                this.mucRepocitory.setData(id, "msgUserExit", msgUserExit);
-            if (msgUserJoining != null)
-                this.mucRepocitory.setData(id, "msgUserJoining", msgUserJoining);
-            if (password != null)
-                this.mucRepocitory.setData(id, "password", password);
+            if (roomconfigRoomname != null)
+                this.mucRepocitory.setData(id, "roomconfigRoomname", roomconfigRoomname);
+            if (roomconfigRoomdesc != null)
+                this.mucRepocitory.setData(id, "roomconfigRoomdesc", roomconfigRoomdesc);
+            if (roomconfigWhois != null)
+                this.mucRepocitory.setData(id, "roomconfigWhois", roomconfigWhois);
+            this.mucRepocitory.setData(id, "roomconfigChangeSubject", Boolean.toString(roomconfigChangeSubject));
+            this.mucRepocitory.setData(id, "roomconfigAllowInvites", Boolean.toString(roomconfigAllowInvites));
+            this.mucRepocitory.setData(id, "roomconfigPublicRoom", Boolean.toString(roomconfigPublicRoom));
+            this.mucRepocitory.setData(id, "roomconfigMembersOnly", Boolean.toString(roomconfigMembersOnly));
+            this.mucRepocitory.setData(id, "roomconfigEnableLogging", Boolean.toString(roomconfigEnableLogging));
+            this.mucRepocitory.setData(id, "roomconfigModeratedRoom", Boolean.toString(roomconfigModeratedRoom));
+            this.mucRepocitory.setData(id, "roomconfigPersistentRoom", Boolean.toString(roomconfigPersistentRoom));
+            this.mucRepocitory.setData(id, "roomconfigPasswordProtectedRoom", Boolean
+                    .toString(roomconfigPasswordProtectedRoom));
+            this.mucRepocitory.setData(id, "roomconfigMaxUsers", Integer.toString(roomconfigMaxUsers));
 
-        } catch (UserNotFoundException e) {
-            e.printStackTrace();
-        } catch (TigaseDBException e) {
-            e.printStackTrace();
+            if (roomconfigRoomSecret != null)
+                this.mucRepocitory.setData(id, "roomconfigRoomSecret", roomconfigRoomSecret);
+
+            for (Entry<JID, Affiliation> entry : this.affiliations.entrySet()) {
+                this.mucRepocitory.setData(id, "affiliation", entry.getKey().getBareJID().toString(), entry.getValue()
+                        .name());
+            }
+
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Error on storing room [" + this.id + "] configuration", e);
         }
     }
 
@@ -286,15 +310,10 @@ public class RoomConfiguration implements Serializable {
         return result == null ? Affiliation.NONE : result;
     }
 
-    private Boolean getBoolean(String key, Boolean defaultValue) {
-        try {
-            Boolean val = Boolean.valueOf(this.mucRepocitory.getData(id, key));
-            log.finest("Read from repository key " + key + " == " + val);
-            return val;
-        } catch (Exception e) {
-            log.finest("Failed read from repository key " + key);
-            return defaultValue;
-        }
+    private Boolean getBoolean(String key) throws UserNotFoundException, TigaseDBException {
+        Boolean val = Boolean.valueOf(this.mucRepocitory.getData(id, key));
+        log.finest("Read from repository key " + key + " == " + val);
+        return val;
     }
 
     /**
@@ -305,137 +324,99 @@ public class RoomConfiguration implements Serializable {
         x.addField(Field.fieldHidden("FORM_TYPE", "http://jabber.org/protocol/muc#roomconfig"));
         String once = UUID.randomUUID().toString();
         x.addField(Field.fieldHidden("once", once));
-        x.addField(Field.fieldTextSingle("muc#roomconfig_roomname", "Natural-Language Room Name", this.roomShortName));
-        x.addField(Field.fieldTextMulti("muc#roomconfig_roomdesc", "Short Description of Room", this.roomFullName));
-        x.addField(Field.fieldBoolean("muc#roomconfig_changesubject", "Allow Occupants to Change Subject",
-                this.allowedOccupantChangeSubject));
-        x.addField(Field.fieldListSingle("muc#roomconfig_maxusers", "Maximum Number of Room Occupants", String
-                .valueOf(this.maxOccupantNumber), new String[] { "1", "10", "20", "30", "50", "100", "150" },
-                new String[] { "1", "10", "20", "30", "50", "100", "150" }));
-        x.addField(Field.fieldBoolean("muc#roomconfig_publicroom", "Allow Public Searching for Room",
-                this.allowedPublicSearch));
-        x.addField(Field.fieldBoolean("muc#roomconfig_persistentroom", "Make Room Persistent", this.persist));
-        x.addField(Field.fieldBoolean("muc#roomconfig_moderatedroom", "Make Room Moderated", this.moderated));
-        x.addField(Field.fieldBoolean("muc#roomconfig_membersonly", "An Invitation is Required to Enter",
-                this.invitationRequired));
-        x.addField(Field.fieldBoolean("muc#roomconfig_allowinvites", "Allow Occupants to Invite Others",
-                this.allowedOccupantsToInvite));
-        x.addField(Field.fieldBoolean("muc#roomconfig_passwordprotectedroom", "A Password is required to enter",
-                this.passwordRequired));
-        x.addField(Field.fieldTextPrivate("muc#roomconfig_roomsecret", "The Room Password", this.password));
+        x.addField(Field.fieldTextSingle("muc#roomconfig_roomname", this.roomconfigRoomname,
+                "Natural-Language Room Name"));
         x.addField(Field
-                .fieldListSingle("Affiliations that May Discover Real JIDs of Occupants", "muc#roomconfig_whois",
-                        this.affiliationsViewsJID, new String[] { "Room Owner and Admins Only",
-                                "Room Owner, Admins and Members Only", "Anyone" }, new String[] { "admin", "member",
-                                "anyone" }));
-        x.addField(Field.fieldBoolean("", "", false));
-        x.addField(Field.fieldBoolean("", "", false));
-        x.addField(Field.fieldBoolean("muc#roomconfig_enablelogging", "Enable Logging of Room Conversations",
-                this.logging));
+                .fieldTextMulti("muc#roomconfig_roomdesc", this.roomconfigRoomdesc, "Short Description of Room"));
+        x.addField(Field.fieldBoolean("muc#roomconfig_changesubject", this.roomconfigChangeSubject,
+                "Allow Occupants to Change Subject"));
+        x.addField(Field.fieldListSingle("muc#roomconfig_maxusers", String.valueOf(this.roomconfigMaxUsers),
+                "Maximum Number of Room Occupants", new String[] { "1", "10", "20", "30", "50", "100", "150" },
+                new String[] { "1", "10", "20", "30", "50", "100", "150" }));
+        x.addField(Field.fieldBoolean("muc#roomconfig_publicroom", this.roomconfigPublicRoom,
+                "Allow Public Searching for Room"));
+        x.addField(Field.fieldBoolean("muc#roomconfig_persistentroom", this.roomconfigPersistentRoom,
+                "Make Room Persistent"));
+        x.addField(Field.fieldBoolean("muc#roomconfig_moderatedroom", this.roomconfigModeratedRoom,
+                "Make Room Moderated"));
+        x.addField(Field.fieldBoolean("muc#roomconfig_membersonly", this.roomconfigMembersOnly,
+                "An Invitation is Required to Enter"));
+        x.addField(Field.fieldBoolean("muc#roomconfig_allowinvites", this.roomconfigAllowInvites,
+                "Allow Occupants to Invite Others"));
+        x.addField(Field.fieldBoolean("muc#roomconfig_passwordprotectedroom", this.roomconfigPasswordProtectedRoom,
+                "A Password is required to enter"));
+        x.addField(Field.fieldTextPrivate("muc#roomconfig_roomsecret", this.roomconfigRoomSecret, "The Room Password"));
+        x.addField(Field
+                .fieldListSingle("muc#roomconfig_whois", this.roomconfigWhois,
+                        "Affiliations that May Discover Real JIDs of Occupants", new String[] {
+                                "Room Owner and Admins Only", "Room Owner, Admins and Members Only", "Anyone" },
+                        new String[] { "admin", "member", "anyone" }));
+        x.addField(Field.fieldBoolean("muc#roomconfig_enablelogging", this.roomconfigEnableLogging,
+                "Enable Logging of Room Conversations"));
 
         return x;
     }
 
-    private Integer getInteger(String key, Integer defaultValue) {
-        try {
-            Integer val = Integer.valueOf(this.mucRepocitory.getData(id, key));
-            log.finest("Read from repository key " + key + " == " + val);
-            return val;
-        } catch (Exception e) {
-            log.finest("Failed read from repository key " + key);
-
-            return defaultValue;
-        }
+    private Integer getInteger(String key) throws NumberFormatException, UserNotFoundException, TigaseDBException {
+        String v = this.mucRepocitory.getData(id, key);
+        log.finest("Read from repository key " + key + " == " + v);
+        Integer val = Integer.valueOf(v);
+        return val;
     }
 
-    public int getMaxOccupantNumber() {
-        return maxOccupantNumber;
+    public int getRoomconfigMaxUsers() {
+        return roomconfigMaxUsers;
     }
 
-    public String getMsgUserChangeNick() {
-        return msgUserChangeNick;
+    public String getRoomconfigRoomdesc() {
+        return roomconfigRoomdesc;
     }
 
-    public String getMsgUserExit() {
-        return msgUserExit;
+    public String getRoomconfigRoomname() {
+        return roomconfigRoomname;
     }
 
-    public String getMsgUserJoining() {
-        return msgUserJoining;
+    public String getRoomconfigRoomSecret() {
+        return roomconfigRoomSecret;
     }
 
-    public String getPassword() {
-        return password;
+    private String getString(String key) throws UserNotFoundException, TigaseDBException {
+        String val = this.mucRepocitory.getData(id, key);
+        log.finest("Read from repository key " + key + " == " + val);
+        return val;
     }
 
-    public String getRoomFullName() {
-        return roomFullName;
+    public boolean isRoomconfigAllowInvites() {
+        return roomconfigAllowInvites;
     }
 
-    public String getRoomShortName() {
-        return roomShortName;
+    public boolean isRoomconfigChangeSubject() {
+        return roomconfigChangeSubject;
     }
 
-    private String getString(String key, String defaultValue) {
-        try {
-            String val = this.mucRepocitory.getData(id, key);
-            log.finest("Read from repository key " + key + " == " + val);
-            return val;
-        } catch (Exception e) {
-            log.finest("Failed read from repository key " + key);
-            return defaultValue;
-        }
+    public boolean isRoomconfigEnableLogging() {
+        return roomconfigEnableLogging;
     }
 
-    public boolean isAllowedOccupantChangeSubject() {
-        return allowedOccupantChangeSubject;
+    public boolean isRoomconfigMembersOnly() {
+        return roomconfigMembersOnly;
     }
 
-    public boolean isAllowedOccupantsToInvite() {
-        return allowedOccupantsToInvite;
+    public boolean isRoomconfigModeratedRoom() {
+        return roomconfigModeratedRoom;
     }
 
-    public boolean isAllowedOccupantsToQueryOccupants() {
-        return allowedOccupantsToQueryOccupants;
+    public boolean isRoomconfigPasswordProtectedRoom() {
+        return roomconfigPasswordProtectedRoom;
     }
 
-    public boolean isAllowedPublicSearch() {
-        return allowedPublicSearch;
+    public boolean isRoomconfigPersistentRoom() {
+        return roomconfigPersistentRoom;
     }
 
-    public boolean isInvitationRequired() {
-        return invitationRequired;
+    public boolean isRoomconfigPublicRoom() {
+        return roomconfigPublicRoom;
     }
-
-    public boolean isLockNicknames() {
-        return lockNicknames;
-    }
-
-    public boolean isLogging() {
-        return logging;
-    }
-
-    public boolean isModerated() {
-        return moderated;
-    }
-
-    public boolean isOccupantDefaultParticipant() {
-        return occupantDefaultParticipant;
-    }
-
-    public boolean isPasswordRequired() {
-        return passwordRequired;
-    }
-
-    public boolean isPersist() {
-        return persist;
-    }
-
-    public boolean isPrivateMessageBanned() {
-        return privateMessageBanned;
-    }
-
-    private Logger log = Logger.getLogger(this.getClass().getName());
 
     /**
      * @param iq
@@ -448,72 +429,78 @@ public class RoomConfiguration implements Serializable {
 
         Form form = new Form(x);
         if ("set".equals(iq.getAttribute("type"))) {
-            boolean oldPersist = this.persist;
+            boolean oldPersist = this.roomconfigPersistentRoom;
             String once = form.getAsString("once");
 
             String var;
             var = "muc#roomconfig_whois";
             if (form.is(var)) {
                 String val = form.getAsString(var);
-                this.affiliationsViewsJID = val;
+                this.roomconfigWhois = val;
                 log.finest("Set variable " + var + " to " + val);
             }
             var = "muc#roomconfig_roomname";
             if (form.is(var)) {
-                this.roomShortName = form.getAsString(var);
+                this.roomconfigRoomname = form.getAsString(var);
             }
             var = "muc#roomconfig_roomdesc";
             if (form.is(var)) {
-                this.roomFullName = form.getAsString(var);
+                this.roomconfigRoomdesc = form.getAsString(var);
             }
             var = "muc#roomconfig_changesubject";
             if (form.is(var)) {
-                this.allowedOccupantChangeSubject = form.getAsBoolean(var);
+                this.roomconfigChangeSubject = form.getAsBoolean(var);
             }
             var = "muc#roomconfig_maxusers";
             if (form.is(var)) {
-                this.maxOccupantNumber = form.getAsInteger(var);
+                this.roomconfigMaxUsers = form.getAsInteger(var);
             }
             var = "muc#roomconfig_publicroom";
             if (form.is(var)) {
-                this.allowedPublicSearch = form.getAsBoolean(var);
+                this.roomconfigPublicRoom = form.getAsBoolean(var);
             }
             var = "muc#roomconfig_persistentroom";
             if (form.is(var)) {
-                this.persist = form.getAsBoolean(var);
+                this.roomconfigPersistentRoom = form.getAsBoolean(var);
             }
             var = "muc#roomconfig_moderatedroom";
             if (form.is(var)) {
-                this.moderated = form.getAsBoolean(var);
+                this.roomconfigModeratedRoom = form.getAsBoolean(var);
             }
             var = "muc#roomconfig_membersonly";
             if (form.is(var)) {
-                this.invitationRequired = form.getAsBoolean(var);
+                this.roomconfigMembersOnly = form.getAsBoolean(var);
             }
             var = "muc#roomconfig_allowinvites";
             if (form.is(var)) {
-                this.allowedOccupantsToInvite = form.getAsBoolean(var);
+                this.roomconfigAllowInvites = form.getAsBoolean(var);
             }
             var = "muc#roomconfig_passwordprotectedroom";
             if (form.is(var)) {
-                this.passwordRequired = form.getAsBoolean(var);
+                this.roomconfigPasswordProtectedRoom = form.getAsBoolean(var);
             }
             var = "muc#roomconfig_roomsecret";
             if (form.is(var)) {
-                this.password = form.getAsString(var);
+                this.roomconfigRoomSecret = form.getAsString(var);
             }
             var = "muc#roomconfig_enablelogging";
             if (form.is(var)) {
-                this.logging = form.getAsBoolean(var);
+                this.roomconfigEnableLogging = form.getAsBoolean(var);
             }
 
             try {
-                if (oldPersist != this.persist && this.persist) {
-                    this.mucRepocitory.addUser(id);
-                } else if (oldPersist != this.persist && !this.persist) {
+                if (oldPersist != this.roomconfigPersistentRoom && this.roomconfigPersistentRoom) {
+                    try {
+                        this.mucRepocitory.addUser(id);
+                    } catch (UserExistsException e) {
+                        log.info("Room " + id + " already exist.");
+                        this.mucRepocitory.removeUser(id);
+                        this.mucRepocitory.addUser(id);
+                    }
+                } else if (oldPersist != this.roomconfigPersistentRoom && !this.roomconfigPersistentRoom) {
                     this.mucRepocitory.removeUser(id);
                 }
-                if (this.persist) {
+                if (this.roomconfigPersistentRoom) {
                     flushConfig();
                 }
             } catch (UserExistsException e) {
@@ -538,7 +525,7 @@ public class RoomConfiguration implements Serializable {
         } else {
             this.affiliations.put(jid.getBareJID(), affiliation);
         }
-        if (isPersist()) {
+        if (isRoomconfigPersistentRoom()) {
             try {
                 if (affiliation == null || affiliation == Affiliation.NONE) {
                     this.mucRepocitory.removeData(id, "affiliation", jid.getBareJID().toString());
@@ -553,79 +540,51 @@ public class RoomConfiguration implements Serializable {
         }
     }
 
-    public void setAllowedOccupantChangeSubject(boolean allowedOccupantChangeSubject) {
-        this.allowedOccupantChangeSubject = allowedOccupantChangeSubject;
+    public void setRoomconfigAllowInvites(boolean allowedOccupantsToInvite) {
+        this.roomconfigAllowInvites = allowedOccupantsToInvite;
     }
 
-    public void setAllowedOccupantsToInvite(boolean allowedOccupantsToInvite) {
-        this.allowedOccupantsToInvite = allowedOccupantsToInvite;
+    public void setRoomconfigChangeSubject(boolean allowedOccupantChangeSubject) {
+        this.roomconfigChangeSubject = allowedOccupantChangeSubject;
     }
 
-    public void setAllowedOccupantsToQueryOccupants(boolean allowedOccupantsToQueryOccupants) {
-        this.allowedOccupantsToQueryOccupants = allowedOccupantsToQueryOccupants;
+    public void setRoomconfigEnableLogging(boolean logging) {
+        this.roomconfigEnableLogging = logging;
     }
 
-    public void setAllowedPublicSearch(boolean allowedPublicSearch) {
-        this.allowedPublicSearch = allowedPublicSearch;
+    public void setRoomconfigMaxUsers(int maxOccupantNumber) {
+        this.roomconfigMaxUsers = maxOccupantNumber;
     }
 
-    public void setInvitationRequired(boolean invitationRequired) {
-        this.invitationRequired = invitationRequired;
+    public void setRoomconfigMembersOnly(boolean invitationRequired) {
+        this.roomconfigMembersOnly = invitationRequired;
     }
 
-    public void setLockNicknames(boolean lockNicknames) {
-        this.lockNicknames = lockNicknames;
+    public void setRoomconfigModeratedRoom(boolean moderated) {
+        this.roomconfigModeratedRoom = moderated;
     }
 
-    public void setLogging(boolean logging) {
-        this.logging = logging;
+    public void setRoomconfigPasswordProtectedRoom(boolean passwordRequired) {
+        this.roomconfigPasswordProtectedRoom = passwordRequired;
     }
 
-    public void setMaxOccupantNumber(int maxOccupantNumber) {
-        this.maxOccupantNumber = maxOccupantNumber;
+    public void setRoomconfigPersistentRoom(boolean persist) {
+        this.roomconfigPersistentRoom = persist;
     }
 
-    public void setModerated(boolean moderated) {
-        this.moderated = moderated;
+    public void setRoomconfigPublicRoom(boolean allowedPublicSearch) {
+        this.roomconfigPublicRoom = allowedPublicSearch;
     }
 
-    public void setMsgUserChangeNick(String msgUserChangeNick) {
-        this.msgUserChangeNick = msgUserChangeNick;
+    public void setRoomconfigRoomdesc(String roomFullName) {
+        this.roomconfigRoomdesc = roomFullName;
     }
 
-    public void setMsgUserExit(String msgUserExit) {
-        this.msgUserExit = msgUserExit;
+    public void setRoomconfigRoomname(String roomShortName) {
+        this.roomconfigRoomname = roomShortName;
     }
 
-    public void setMsgUserJoining(String msgUserJoining) {
-        this.msgUserJoining = msgUserJoining;
-    }
-
-    public void setOccupantDefaultParticipant(boolean occupantDefaultParticipant) {
-        this.occupantDefaultParticipant = occupantDefaultParticipant;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public void setPasswordRequired(boolean passwordRequired) {
-        this.passwordRequired = passwordRequired;
-    }
-
-    public void setPersist(boolean persist) {
-        this.persist = persist;
-    }
-
-    public void setPrivateMessageBanned(boolean privateMessageBanned) {
-        this.privateMessageBanned = privateMessageBanned;
-    }
-
-    public void setRoomFullName(String roomFullName) {
-        this.roomFullName = roomFullName;
-    }
-
-    public void setRoomShortName(String roomShortName) {
-        this.roomShortName = roomShortName;
+    public void setRoomconfigRoomSecret(String password) {
+        this.roomconfigRoomSecret = password;
     }
 }
