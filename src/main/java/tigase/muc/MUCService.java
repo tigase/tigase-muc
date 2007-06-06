@@ -25,11 +25,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.conf.Configurable;
 import tigase.db.RepositoryFactory;
 import tigase.db.TigaseDBException;
+import tigase.db.UserExistsException;
+import tigase.db.UserNotFoundException;
 import tigase.db.UserRepository;
 import tigase.disco.ServiceEntity;
 import tigase.disco.ServiceIdentity;
@@ -89,9 +92,9 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
             result += LETTERS_TO_UNIQUE_NAME.charAt(random.nextInt(LETTERS_TO_UNIQUE_NAME.length()));
         }
         return result;
-    };
+    }
 
-    private Set<String> allRooms = new HashSet<String>();
+    private Set<String> allRooms = new HashSet<String>();;
 
     private Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -108,9 +111,8 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         log.info("Creating tigase-muc ver." + MucVersion.getVersion() + " Service.");
     }
 
-    private void configRoomDiscovery(String jid) {
-        RoomConfiguration config = new RoomConfiguration(jid, this.mucRepository);
-        ServiceEntity x = new ServiceEntity(jid, jid, config.getRoomconfigRoomname());
+    private void configRoomDiscovery(final RoomConfiguration config) {
+        ServiceEntity x = new ServiceEntity(config.getId(), config.getId(), config.getRoomconfigRoomname());
         x.addIdentities(new ServiceIdentity("conference", "text", config.getRoomconfigRoomname()));
 
         x.addFeatures("http://jabber.org/protocol/muc");
@@ -134,6 +136,16 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         }
 
         serviceEntity.addItems(x);
+
+    }
+
+    private void configRoomDiscovery(String jid) {
+        try {
+            RoomConfiguration config = new RoomConfiguration(myDomain(), jid, this.mucRepository);
+            configRoomDiscovery(config);
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Error on read room " + jid + " configuration", e);
+        }
     }
 
     /** {@inheritDoc} */
@@ -202,6 +214,10 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         }
     }
 
+    private String myDomain() {
+        return getName() + "." + getDefHostName();
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -213,7 +229,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         if (ent != null) {
             this.serviceEntity.removeItems(ent);
         }
-        configRoomDiscovery(room.getRoomID());
+        configRoomDiscovery(room.getConfiguration());
     };
 
     @Override
@@ -284,7 +300,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
             List<Element> stanzasToSend = new LinkedList<Element>();
             if (room == null) {
                 boolean newRoom = !this.allRooms.contains(roomID);
-                room = new Room(this, mucRepository, roomID, JID.fromString(packet.getElemFrom()), newRoom);
+                room = new Room(myDomain(), this, mucRepository, roomID, JID.fromString(packet.getElemFrom()), newRoom);
                 this.rooms.put(roomID, room);
                 if (newRoom) {
                     Presence presence = new Presence(packet.getElement());
@@ -317,13 +333,21 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
     private void readAllRomms() {
         log.config("Reading rooms...");
         try {
-            List<String> roomsJid = this.mucRepository.getUsers();
+            String[] roomsJid = this.mucRepository.getSubnodes(myDomain());
             allRooms.clear();
             if (roomsJid != null) {
-                allRooms.addAll(roomsJid);
                 for (String jid : roomsJid) {
+                    allRooms.add(jid);
                     configRoomDiscovery(jid);
                 }
+            }
+        } catch (UserNotFoundException e) {
+            try {
+                this.mucRepository.addUser(myDomain());
+            } catch (UserExistsException e1) {
+                e1.printStackTrace();
+            } catch (TigaseDBException e1) {
+                e1.printStackTrace();
             }
         } catch (TigaseDBException e) {
             e.printStackTrace();

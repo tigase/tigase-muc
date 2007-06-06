@@ -135,7 +135,8 @@ public class RoomConfiguration implements Serializable {
      */
     private String roomconfigWhois = "";
 
-    RoomConfiguration(String id, UserRepository mucRepocitory) {
+    RoomConfiguration(String namespace, String id, UserRepository mucRepocitory) {
+        this.namespace = namespace;
         this.id = id;
         this.mucRepocitory = mucRepocitory;
         String roomName = JIDUtils.getNodeNick(id);
@@ -145,7 +146,7 @@ public class RoomConfiguration implements Serializable {
             restoreConfiguration();
         } catch (Exception e) {
             log.info("Room [" + this.id + "] not found in database.");
-            throw new RuntimeException("Room [" + this.id + "] not found in database. Config object not created.");
+            throw new RuntimeException("Room [" + this.id + "] not found in database. Config object not created.", e);
         }
     }
 
@@ -165,7 +166,8 @@ public class RoomConfiguration implements Serializable {
         this.roomconfigWhois = "admin";
     }
 
-    RoomConfiguration(String id, UserRepository mucRepocitory, JID constructorJid) {
+    RoomConfiguration(String namespace, String id, UserRepository mucRepocitory, JID constructorJid) {
+        this.namespace = namespace;
         this.id = id;
         this.mucRepocitory = mucRepocitory;
         String roomName = JIDUtils.getNodeNick(id);
@@ -182,8 +184,13 @@ public class RoomConfiguration implements Serializable {
         }
     }
 
+    private String namespace;
+
     private void restoreConfiguration() throws UserNotFoundException, TigaseDBException {
-        String[] keysTable = this.mucRepocitory.getKeys(this.id);
+        String[] keysTable = this.mucRepocitory.getKeys(namespace, this.id);
+        if (keysTable == null) {
+            return;
+        }
         Set<String> keys = new HashSet<String>();
         for (String key : keysTable) {
             log.finest(" Found config key: " + key);
@@ -234,11 +241,11 @@ public class RoomConfiguration implements Serializable {
             this.roomconfigEnableLogging = getBoolean(var);
 
         Map<JID, Affiliation> tmp = new HashMap<JID, Affiliation>();
-        String[] jids = this.mucRepocitory.getKeys(id, "affiliation");
+        String[] jids = this.mucRepocitory.getKeys(namespace, id + "/affiliation");
         if (jids != null) {
             String l = "";
             for (String jid : jids) {
-                String affName = this.mucRepocitory.getData(id, "affiliation", JIDUtils.getNodeID(jid));
+                String affName = this.mucRepocitory.getData(namespace, id + "/affiliation", JIDUtils.getNodeID(jid));
                 JID j = JID.fromString(jid);
                 Affiliation a = Affiliation.valueOf(affName);
                 tmp.put(j, a);
@@ -294,27 +301,32 @@ public class RoomConfiguration implements Serializable {
         log.info("Storing room configuration...");
         try {
             if (roomconfigRoomname != null)
-                this.mucRepocitory.setData(id, "roomconfigRoomname", roomconfigRoomname);
+                this.mucRepocitory.setData(namespace, id, "roomconfigRoomname", roomconfigRoomname);
             if (roomconfigRoomdesc != null)
-                this.mucRepocitory.setData(id, "roomconfigRoomdesc", roomconfigRoomdesc);
+                this.mucRepocitory.setData(namespace, id, "roomconfigRoomdesc", roomconfigRoomdesc);
             if (roomconfigWhois != null)
-                this.mucRepocitory.setData(id, "roomconfigWhois", roomconfigWhois);
-            this.mucRepocitory.setData(id, "roomconfigChangeSubject", Boolean.toString(roomconfigChangeSubject));
-            this.mucRepocitory.setData(id, "roomconfigAllowInvites", Boolean.toString(roomconfigAllowInvites));
-            this.mucRepocitory.setData(id, "roomconfigPublicRoom", Boolean.toString(roomconfigPublicRoom));
-            this.mucRepocitory.setData(id, "roomconfigMembersOnly", Boolean.toString(roomconfigMembersOnly));
-            this.mucRepocitory.setData(id, "roomconfigEnableLogging", Boolean.toString(roomconfigEnableLogging));
-            this.mucRepocitory.setData(id, "roomconfigModeratedRoom", Boolean.toString(roomconfigModeratedRoom));
-            this.mucRepocitory.setData(id, "roomconfigPersistentRoom", Boolean.toString(roomconfigPersistentRoom));
-            this.mucRepocitory.setData(id, "roomconfigPasswordProtectedRoom", Boolean
+                this.mucRepocitory.setData(namespace, id, "roomconfigWhois", roomconfigWhois);
+            this.mucRepocitory.setData(namespace, id, "roomconfigChangeSubject", Boolean
+                    .toString(roomconfigChangeSubject));
+            this.mucRepocitory.setData(namespace, id, "roomconfigAllowInvites", Boolean
+                    .toString(roomconfigAllowInvites));
+            this.mucRepocitory.setData(namespace, id, "roomconfigPublicRoom", Boolean.toString(roomconfigPublicRoom));
+            this.mucRepocitory.setData(namespace, id, "roomconfigMembersOnly", Boolean.toString(roomconfigMembersOnly));
+            this.mucRepocitory.setData(namespace, id, "roomconfigEnableLogging", Boolean
+                    .toString(roomconfigEnableLogging));
+            this.mucRepocitory.setData(namespace, id, "roomconfigModeratedRoom", Boolean
+                    .toString(roomconfigModeratedRoom));
+            this.mucRepocitory.setData(namespace, id, "roomconfigPersistentRoom", Boolean
+                    .toString(roomconfigPersistentRoom));
+            this.mucRepocitory.setData(namespace, id, "roomconfigPasswordProtectedRoom", Boolean
                     .toString(roomconfigPasswordProtectedRoom));
-            this.mucRepocitory.setData(id, "roomconfigMaxUsers", Integer.toString(roomconfigMaxUsers));
+            this.mucRepocitory.setData(namespace, id, "roomconfigMaxUsers", Integer.toString(roomconfigMaxUsers));
             if (roomconfigRoomSecret != null)
-                this.mucRepocitory.setData(id, "roomconfigRoomSecret", roomconfigRoomSecret);
+                this.mucRepocitory.setData(namespace, id, "roomconfigRoomSecret", roomconfigRoomSecret);
 
             for (Entry<JID, Affiliation> entry : this.affiliations.entrySet()) {
-                this.mucRepocitory.setData(id, "affiliation", entry.getKey().getBareJID().toString(), entry.getValue()
-                        .name());
+                this.mucRepocitory.setData(namespace, id + "/affiliation", entry.getKey().getBareJID().toString(),
+                        entry.getValue().name());
             }
 
         } catch (Exception e) {
@@ -328,7 +340,7 @@ public class RoomConfiguration implements Serializable {
     }
 
     private Boolean getBoolean(String key) throws UserNotFoundException, TigaseDBException {
-        Boolean val = Boolean.valueOf(this.mucRepocitory.getData(id, key));
+        Boolean val = Boolean.valueOf(this.mucRepocitory.getData(namespace, id, key));
         log.finest("Read from repository key " + key + " == " + val);
         return val;
     }
@@ -375,7 +387,7 @@ public class RoomConfiguration implements Serializable {
     }
 
     private Integer getInteger(String key) throws NumberFormatException, UserNotFoundException, TigaseDBException {
-        String v = this.mucRepocitory.getData(id, key);
+        String v = this.mucRepocitory.getData(namespace, id, key);
         log.finest("Read from repository key " + key + " == " + v);
         Integer val = Integer.valueOf(v);
         return val;
@@ -398,7 +410,7 @@ public class RoomConfiguration implements Serializable {
     }
 
     private String getString(String key) throws UserNotFoundException, TigaseDBException {
-        String val = this.mucRepocitory.getData(id, key);
+        String val = this.mucRepocitory.getData(namespace, id, key);
         log.finest("Read from repository key " + key + " == " + val);
         return val;
     }
@@ -507,15 +519,8 @@ public class RoomConfiguration implements Serializable {
 
             try {
                 if (oldPersist != this.roomconfigPersistentRoom && this.roomconfigPersistentRoom) {
-                    try {
-                        this.mucRepocitory.addUser(id);
-                    } catch (UserExistsException e) {
-                        log.info("Room " + id + " already exist.");
-                        this.mucRepocitory.removeUser(id);
-                        this.mucRepocitory.addUser(id);
-                    }
                 } else if (oldPersist != this.roomconfigPersistentRoom && !this.roomconfigPersistentRoom) {
-                    this.mucRepocitory.removeUser(id);
+                    this.mucRepocitory.removeSubnode(namespace, id);
                 }
                 if (this.roomconfigPersistentRoom) {
                     flushConfig();
@@ -545,9 +550,10 @@ public class RoomConfiguration implements Serializable {
         if (isRoomconfigPersistentRoom()) {
             try {
                 if (affiliation == null || affiliation == Affiliation.NONE) {
-                    this.mucRepocitory.removeData(id, "affiliation", jid.getBareJID().toString());
+                    this.mucRepocitory.removeData(namespace, id + "/affiliation", jid.getBareJID().toString());
                 } else {
-                    this.mucRepocitory.setData(id, "affiliation", jid.getBareJID().toString(), affiliation.name());
+                    this.mucRepocitory.setData(namespace, id + "/affiliation", jid.getBareJID().toString(), affiliation
+                            .name());
                 }
             } catch (UserNotFoundException e) {
                 e.printStackTrace();
@@ -603,5 +609,12 @@ public class RoomConfiguration implements Serializable {
 
     public void setRoomconfigRoomSecret(String password) {
         this.roomconfigRoomSecret = password;
+    }
+
+    /**
+     * @return Returns the id.
+     */
+    public String getId() {
+        return id;
     }
 }

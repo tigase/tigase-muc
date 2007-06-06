@@ -83,12 +83,12 @@ public class Room implements Serializable {
 
     private RoomListener roomListener;
 
-    public Room(RoomListener roomListener, UserRepository mucRepository, String roomID, JID ownerJID,
+    public Room(String namespace, RoomListener roomListener, UserRepository mucRepository, String roomID, JID ownerJID,
             boolean roomCreated) {
         this.roomListener = roomListener;
         this.conversationHistory = new History(20);
         this.roomID = roomID;
-        this.configuration = new RoomConfiguration(roomID, mucRepository, ownerJID);
+        this.configuration = new RoomConfiguration(namespace, roomID, mucRepository, ownerJID);
         this.lockedRoom = roomCreated;
         log.info((roomCreated ? "Creating " : "Retriving ") + " room " + roomID);
         if (roomCreated) {
@@ -812,6 +812,13 @@ public class Room implements Serializable {
         } else {
             this.occupantsRole.put(jid.getBareJID(), role);
         }
+    }
+
+    /**
+     * @return Returns the configuration.
+     */
+    public RoomConfiguration getConfiguration() {
+        return configuration;
     }
 
 }
