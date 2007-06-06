@@ -251,7 +251,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
             String roomHost = JIDUtils.getNodeHost(packet.getElemTo());
 
             String roomID = JIDUtils.getNodeID(packet.getElemTo());
-            String username = JIDUtils.getNodeResource(packet.getElemTo());
+            // String username = JIDUtils.getNodeResource(packet.getElemTo());
 
             if (roomName == null && "iq".equals(packet.getElemName())
                     && packet.getElement().getChild("unique", "http://jabber.org/protocol/muc#unique") != null) {
@@ -339,6 +339,8 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         serviceEntity = new ServiceEntity(getName(), null, "Multi User Chat");
         serviceEntity.addIdentities(new ServiceIdentity("conference", "text", "Multi User Chat"));
         serviceEntity.addFeatures("http://jabber.org/protocol/muc", "muc_rooms");
+
+        log.config("Register Service discovery " + serviceEntity.getJID());
 
         try {
             String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
