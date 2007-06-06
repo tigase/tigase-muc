@@ -31,5 +31,7 @@ package tigase.muc;
 public interface RoomListener {
 
     void onOccupantLeave(Room room);
+    
+    void onConfigurationChange(Room room);
 
 }

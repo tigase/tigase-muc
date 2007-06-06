@@ -651,6 +651,9 @@ public class Room implements Serializable {
     private List<Element> processIqOwnerSet(Element iq) {
         List<Element> result = this.configuration.parseConfig(iq);
         this.lockedRoom = false;
+        if (this.roomListener != null) {
+            this.roomListener.onConfigurationChange(this);
+        }
         return result;
     }
 

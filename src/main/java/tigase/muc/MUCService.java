@@ -91,6 +91,8 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         return result;
     };
 
+    private Set<String> allRooms = new HashSet<String>();
+
     private Logger log = Logger.getLogger(this.getClass().getName());
 
     private UserRepository mucRepository;
@@ -104,6 +106,34 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
      */
     public MUCService() {
         log.info("Creating tigase-muc ver." + MucVersion.getVersion() + " Service.");
+    }
+
+    private void configRoomDiscovery(String jid) {
+        RoomConfiguration config = new RoomConfiguration(jid, this.mucRepository);
+        ServiceEntity x = new ServiceEntity(jid, jid, config.getRoomconfigRoomname());
+        x.addIdentities(new ServiceIdentity("conference", "text", config.getRoomconfigRoomname()));
+
+        x.addFeatures("http://jabber.org/protocol/muc");
+        if (config.isRoomconfigPasswordProtectedRoom()) {
+            x.addFeatures("muc_passwordprotected");
+        } else {
+            x.addFeatures("muc_unsecured");
+        }
+        if (config.isRoomconfigPersistentRoom()) {
+            x.addFeatures("muc_persistent");
+        } else {
+            x.addFeatures("muc_temporary");
+        }
+        if (config.isRoomconfigMembersOnly()) {
+
+        }
+        if (config.isRoomconfigModeratedRoom()) {
+            x.addFeatures("muc_moderated");
+        } else {
+            x.addFeatures("muc_unmoderated");
+        }
+
+        serviceEntity.addItems(x);
     }
 
     /** {@inheritDoc} */
@@ -172,6 +202,47 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         }
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see tigase.muc.RoomListener#onConfigurationChange(tigase.muc.Room)
+     */
+    @Override
+    public void onConfigurationChange(Room room) {
+        ServiceEntity ent = this.serviceEntity.findNode(room.getRoomID());
+        if (ent != null) {
+            this.serviceEntity.removeItems(ent);
+        }
+        configRoomDiscovery(room.getRoomID());
+    };
+
+    @Override
+    public void onOccupantLeave(Room room) {
+        int c = room.countOccupants();
+        if (c == 0) {
+            this.rooms.remove(room.getRoomID());
+        }
+    }
+
+    private Element processDisco(IQ iq) {
+        Element queryInfo = iq.getChild("query", "http://jabber.org/protocol/disco#info");
+        Element queryItems = iq.getChild("query", "http://jabber.org/protocol/disco#items");
+
+        String jid = iq.getTo().getBareJID().toString();
+
+        if (queryInfo != null) {
+            String node = queryInfo.getAttribute("node");
+            Element result = getDiscoInfo(node, jid);
+            return result;
+        } else if (queryItems != null) {
+            String node = queryItems.getAttribute("node");
+            Element result = serviceEntity.getDiscoItem(node, jid);
+            return result;
+        }
+
+        return null;
+    }
+
     /** {@inheritDoc} */
     @Override
     public void processPacket(Packet packet) {
@@ -201,15 +272,10 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
                 addOutPacket(new Packet(iq));
                 return;
             } else if ("iq".equals(packet.getElemName())
-                    && packet.getElement().getChild("query", "http://jabber.org/protocol/disco#info") != null) {
+                    && (packet.getElement().getChild("query", "http://jabber.org/protocol/disco#info") != null)
+                    || packet.getElement().getChild("query", "http://jabber.org/protocol/disco#items") != null) {
 
-                Packet result = packet.okResult(this.serviceEntity.getDiscoInfo(roomName == null ? null : roomID), 0);
-                addOutPacket(result);
-                return;
-            } else if ("iq".equals(packet.getElemName())
-                    && packet.getElement().getChild("query", "http://jabber.org/protocol/disco#items") != null) {
-
-                Packet result = packet.okResult(this.serviceEntity.getDiscoItem(null, null), 0);
+                Packet result = packet.okResult(processDisco(new IQ(packet.getElement())), 0);
                 addOutPacket(result);
                 return;
             }
@@ -248,8 +314,6 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         }
     }
 
-    private Set<String> allRooms = new HashSet<String>();;
-
     private void readAllRomms() {
         log.config("Reading rooms...");
         try {
@@ -258,9 +322,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
             if (roomsJid != null) {
                 allRooms.addAll(roomsJid);
                 for (String jid : roomsJid) {
-                    ServiceEntity x = new ServiceEntity(jid, null, "some room name");
-                    x.addIdentities(new ServiceIdentity("conference", "text", "some room name"));
-                    serviceEntity.addItems(x);
+                    configRoomDiscovery(jid);
                 }
             }
         } catch (TigaseDBException e) {
@@ -276,6 +338,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 
         serviceEntity = new ServiceEntity(getName(), null, "Multi User Chat");
         serviceEntity.addIdentities(new ServiceIdentity("conference", "text", "Multi User Chat"));
+        serviceEntity.addFeatures("http://jabber.org/protocol/muc", "muc_rooms");
 
         try {
             String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
@@ -299,13 +362,4 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         log.info("MUC Service started.");
         System.out.println(".");
     }
-
-    @Override
-    public void onOccupantLeave(Room room) {
-        int c = room.countOccupants();
-        if (c == 0) {
-            this.rooms.remove(room.getRoomID());
-        }
-    }
-
 }

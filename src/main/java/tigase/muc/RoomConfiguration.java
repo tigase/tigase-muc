@@ -135,11 +135,21 @@ public class RoomConfiguration implements Serializable {
      */
     private String roomconfigWhois = "";
 
-    RoomConfiguration(String id, UserRepository mucRepocitory, JID constructorJid) {
+    RoomConfiguration(String id, UserRepository mucRepocitory) {
         this.id = id;
         this.mucRepocitory = mucRepocitory;
         String roomName = JIDUtils.getNodeNick(id);
 
+        defaultSettings(roomName);
+        try {
+            restoreConfiguration();
+        } catch (Exception e) {
+            log.info("Room [" + this.id + "] not found in database.");
+            throw new RuntimeException("Room [" + this.id + "] not found in database. Config object not created.");
+        }
+    }
+
+    private void defaultSettings(final String roomName) {
         this.roomconfigRoomdesc = roomName;
         this.roomconfigRoomname = roomName;
         this.roomconfigChangeSubject = true;
@@ -153,6 +163,14 @@ public class RoomConfiguration implements Serializable {
         this.roomconfigPasswordProtectedRoom = false;
         this.roomconfigPersistentRoom = false;
         this.roomconfigWhois = "admin";
+    }
+
+    RoomConfiguration(String id, UserRepository mucRepocitory, JID constructorJid) {
+        this.id = id;
+        this.mucRepocitory = mucRepocitory;
+        String roomName = JIDUtils.getNodeNick(id);
+
+        defaultSettings(roomName);
         this.affiliations.put(constructorJid.getBareJID(), Affiliation.OWNER);
 
         try {
@@ -291,7 +309,6 @@ public class RoomConfiguration implements Serializable {
             this.mucRepocitory.setData(id, "roomconfigPasswordProtectedRoom", Boolean
                     .toString(roomconfigPasswordProtectedRoom));
             this.mucRepocitory.setData(id, "roomconfigMaxUsers", Integer.toString(roomconfigMaxUsers));
-
             if (roomconfigRoomSecret != null)
                 this.mucRepocitory.setData(id, "roomconfigRoomSecret", roomconfigRoomSecret);
 
