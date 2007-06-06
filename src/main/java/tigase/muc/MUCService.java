@@ -200,13 +200,13 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
                 iq.addChild(unique);
                 addOutPacket(new Packet(iq));
                 return;
-            } else if (roomName == null && "iq".equals(packet.getElemName())
+            } else if ("iq".equals(packet.getElemName())
                     && packet.getElement().getChild("query", "http://jabber.org/protocol/disco#info") != null) {
 
-                Packet result = packet.okResult(this.serviceEntity.getDiscoInfo(null), 0);
+                Packet result = packet.okResult(this.serviceEntity.getDiscoInfo(roomName == null ? null : roomID), 0);
                 addOutPacket(result);
                 return;
-            } else if (roomName == null && "iq".equals(packet.getElemName())
+            } else if ("iq".equals(packet.getElemName())
                     && packet.getElement().getChild("query", "http://jabber.org/protocol/disco#items") != null) {
 
                 Packet result = packet.okResult(this.serviceEntity.getDiscoItem(null, null), 0);
@@ -258,8 +258,8 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
             if (roomsJid != null) {
                 allRooms.addAll(roomsJid);
                 for (String jid : roomsJid) {
-                    ServiceEntity x = new ServiceEntity(jid, null, null);
-                    x.addIdentities(new ServiceIdentity("conference", "text", "rum"));
+                    ServiceEntity x = new ServiceEntity(jid, null, "some room name");
+                    x.addIdentities(new ServiceIdentity("conference", "text", "some room name"));
                     serviceEntity.addItems(x);
                 }
             }
