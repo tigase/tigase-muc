@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program; if not,
  * write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  * 
- * $Id: Message.java 125 2007-01-24 07:50:51Z bmalkow $
+ * $Id$
  */
 package tigase.muc.xmpp.stanzas;
 
@@ -26,7 +26,7 @@ import tigase.xml.Element;
  * </p>
  * 
  * @author bmalkow
- * @version $Rev: 125 $
+ * @version $Rev$
  */
 public class Message extends AbstractStanza<MessageType> {
     /**

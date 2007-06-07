@@ -34,4 +34,6 @@ public interface RoomListener {
     
     void onConfigurationChange(Room room);
 
+    void onDestroy(Room room);
+
 }

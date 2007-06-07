@@ -451,13 +451,12 @@ public class RoomConfiguration implements Serializable {
      * @param iq
      * @return
      */
-    public List<Element> parseConfig(Element iq) {
+    public boolean parseConfig(Element x ) {
         List<Element> result = new LinkedList<Element>();
-        Element query = iq.getChild("query");
-        Element x = query.getChild("x", "jabber:x:data");
+        //Element query = iq.getChild("query");
+        //Element x = query.getChild("x", "jabber:x:data");
 
         Form form = new Form(x);
-        if ("set".equals(iq.getAttribute("type"))) {
             boolean oldPersist = this.roomconfigPersistentRoom;
             String once = form.getAsString("once");
 
@@ -531,14 +530,7 @@ public class RoomConfiguration implements Serializable {
                 e.printStackTrace();
             }
 
-        }
-        Element answer = new Element("iq");
-        answer.addAttribute("id", iq.getAttribute("id"));
-        answer.addAttribute("type", "result");
-        answer.addAttribute("to", iq.getAttribute("from"));
-        answer.addAttribute("from", this.id);
-        result.add(answer);
-        return result;
+        return true;
     }
 
     public void setAffiliation(JID jid, Affiliation affiliation) {

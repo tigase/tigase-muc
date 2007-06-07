@@ -127,12 +127,19 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
             x.addFeatures("muc_temporary");
         }
         if (config.isRoomconfigMembersOnly()) {
-
+            x.addFeatures("muc_membersonly");
+        } else {
+            x.addFeatures("muc_open");
         }
         if (config.isRoomconfigModeratedRoom()) {
             x.addFeatures("muc_moderated");
         } else {
             x.addFeatures("muc_unmoderated");
+        }
+        if (config.affiliationCanViewJid(Affiliation.NONE)) {
+            x.addFeatures("muc_nonanonymous");
+        } else {
+            x.addFeatures("muc_semianonymous");
         }
 
         serviceEntity.addItems(x);
@@ -301,14 +308,16 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
             if (room == null) {
                 boolean newRoom = !this.allRooms.contains(roomID);
                 room = new Room(myDomain(), this, mucRepository, roomID, JID.fromString(packet.getElemFrom()), newRoom);
+                this.allRooms.add(roomID);
                 this.rooms.put(roomID, room);
                 if (newRoom) {
                     Presence presence = new Presence(packet.getElement());
                     stanzasToSend = room.processInitialStanza(presence);
+                } else {
+                    Presence presence = new Presence(packet.getElement());
+                    stanzasToSend.addAll(room.processStanza(presence));
                 }
-            }
-
-            if ("message".equals(packet.getElemName())) {
+            } else if ("message".equals(packet.getElemName())) {
                 Message message = new Message(packet.getElement());
                 stanzasToSend.addAll(room.processStanza(message));
             } else if ("presence".equals(packet.getElemName())) {
@@ -387,5 +396,21 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
         readAllRomms();
         log.info("MUC Service started.");
         System.out.println(".");
+    }
+
+    @Override
+    public void onDestroy(Room room) {
+        ServiceEntity ent = this.serviceEntity.findNode(room.getRoomID());
+        if (ent != null) {
+            this.serviceEntity.removeItems(ent);
+        }
+        this.allRooms.remove(room.getRoomID());
+        try {
+            this.mucRepository.removeSubnode(myDomain(), room.getRoomID());
+        } catch (UserNotFoundException e) {
+            e.printStackTrace();
+        } catch (TigaseDBException e) {
+            e.printStackTrace();
+        }
     }
 }

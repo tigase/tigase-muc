@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software Foundation,
  *  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  $Id: AbstractStanza.java 80 2007-01-04 11:05:50Z bmalkow $
+ *  $Id$
  */
 package tigase.muc.xmpp.stanzas;
 
@@ -31,7 +31,7 @@ import tigase.xml.Element;
  * </p>
  * 
  * @author bmalkow
- * @version $Rev: 80 $
+ * @version $Rev$
  */
 public abstract class AbstractStanza<E extends StanzaType> extends Element implements Stanza<E> {
 

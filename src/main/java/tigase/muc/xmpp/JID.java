@@ -15,7 +15,7 @@
  *  along with this program; if not, write to the Free Software Foundation,
  *  Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
  *
- *  $Id: JID.java 78 2007-01-03 14:20:33Z bmalkow $
+ *  $Id$
  */
 package tigase.muc.xmpp;
 
@@ -28,7 +28,7 @@ import java.io.Serializable;
  * </p>
  * 
  * @author bmalkow
- * @version $Rev: 78 $
+ * @version $Rev$
  */
 public class JID implements Serializable {
 
