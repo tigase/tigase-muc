@@ -1,0 +1,78 @@
+
+# creating room
+send: {
+<presence 
+    from='crone1@shakespeare.lit/desktop'
+    to='darkcave@macbeth.shakespeare.lit/firstwitch'>
+  <x xmlns='http://jabber.org/protocol/muc'/>
+</presence>
+}
+expect: {
+<presence 
+    from='darkcave@macbeth.shakespeare.lit/firstwitch'
+    to='crone1@shakespeare.lit/desktop'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='owner'
+          role='moderator'/>
+    <status code='201'/>
+  </x>
+</presence>
+}
+
+# User try to enter to locked room
+send: {
+<presence
+    from='hag66@shakespeare.lit/pda'
+    to='darkcave@macbeth.shakespeare.lit/thirdwitch'/>
+      
+}
+expect: {
+<presence
+    from='darkcave@macbeth.shakespeare.lit'
+    to='hag66@shakespeare.lit/pda'
+    type='error'>
+  <error code='404' type='cancel'>
+    <item-not-found xmlns='urn:ietf:params:xml:ns:xmpp-stanzas'/>
+  </error>
+</presence>
+}
+
+# owner create instant room
+send: {
+<iq from='crone1@shakespeare.lit/desktop'
+    id='create1'
+    to='darkcave@macbeth.shakespeare.lit'
+    type='set'>
+  <query xmlns='http://jabber.org/protocol/muc#owner'>
+    <x xmlns='jabber:x:data' type='submit'/>
+  </query>
+</iq>
+}
+expect: {
+<iq from ='darkcave@macbeth.shakespeare.lit' to='crone1@shakespeare.lit/desktop' type='result' id='create1'/>
+}
+
+send: {
+<presence
+    from='hag66@shakespeare.lit/pda'
+    to='darkcave@macbeth.shakespeare.lit/thirdwitch'>
+  <x xmlns='http://jabber.org/protocol/muc'/>
+</presence>
+}
+expect: {
+
+<presence
+    from='darkcave@macbeth.shakespeare.lit/firstwitch'
+    to='hag66@shakespeare.lit/pda'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='owner' role='moderator'/>
+  </x>
+</presence>
+<presence
+    from='darkcave@macbeth.shakespeare.lit/thirdwitch'
+    to='crone1@shakespeare.lit/desktop'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='member' role='participant'/>
+  </x>
+</presence>
+}
