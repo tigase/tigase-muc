@@ -60,7 +60,6 @@ send: {
 </presence>
 }
 expect: {
-
 <presence
     from='darkcave@macbeth.shakespeare.lit/firstwitch'
     to='hag66@shakespeare.lit/pda'>

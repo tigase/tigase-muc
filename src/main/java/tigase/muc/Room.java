@@ -81,6 +81,8 @@ public class Room implements Serializable {
      */
     private Map<JID, Role> occupantsRole = new HashMap<JID, Role>();
 
+    private boolean roomCreated = false;
+
     private String roomID;
 
     private RoomListener roomListener;
@@ -96,6 +98,7 @@ public class Room implements Serializable {
         if (roomCreated) {
             this.configuration.setAffiliation(ownerJID, Affiliation.OWNER);
         }
+        this.roomCreated = roomCreated;
     }
 
     /**
@@ -107,7 +110,8 @@ public class Room implements Serializable {
         Role result;
         result = configuration.isRoomconfigModeratedRoom()
         // || configuration.isOccupantDefaultParticipant()
-        ? Role.VISITOR : Role.PARTICIPANT;
+        ? Role.VISITOR
+                : Role.PARTICIPANT;
         if (affiliation == Affiliation.ADMIN || affiliation == Affiliation.OWNER) {
             return Role.MODERATOR;
         } else if (affiliation == Affiliation.MEMBER) {
@@ -159,6 +163,13 @@ public class Room implements Serializable {
         return result;
     }
 
+    /**
+     * @return Returns the configuration.
+     */
+    public RoomConfiguration getConfiguration() {
+        return configuration;
+    }
+
     private Collection<JID> getOccupantJidsByBare(JID jid) {
         List<JID> result = new ArrayList<JID>();
         JID sf = jid.getBareJID();
@@ -207,8 +218,8 @@ public class Room implements Serializable {
         // item.setAttribute("affiliation", nick);
         item.setAttribute("role", occupantRole == null ? "none" : occupantRole.name().toLowerCase());
 
-        item.setAttribute("affiliation", occupantAffiliation == null ? "none" : occupantAffiliation.name()
-                .toLowerCase());
+        item.setAttribute("affiliation", occupantAffiliation == null ? "none"
+                : occupantAffiliation.name().toLowerCase());
 
         Affiliation receiverAffiliation = this.configuration.getAffiliation(sendingTo);
         if (receiverAffiliation != null && configuration.affiliationCanViewJid(receiverAffiliation)) {
@@ -287,7 +298,7 @@ public class Room implements Serializable {
         return result;
     }
 
-    private List<Element> processEnteringToRoom(JID realJID, String nick, Presence element, boolean roomCreated) {
+    private List<Element> processEnteringToRoom(JID realJID, String nick, Presence element) {
         List<Element> result = new LinkedList<Element>();
 
         Element incomX = element.getChild("x", "http://jabber.org/protocol/muc");
@@ -302,8 +313,7 @@ public class Room implements Serializable {
         }
         if (this.configuration.isRoomconfigMembersOnly()
                 && this.configuration.getAffiliation(realJID).getWeight() < Affiliation.MEMBER.getWeight()) {
-            result.add(MUCService
-                    .errorPresence(JID.fromString(roomID), realJID, "auth", "407", "registration-required"));
+            result.add(MUCService.errorPresence(JID.fromString(roomID), realJID, "auth", "407", "registration-required"));
             return result;
         }
         if (this.configuration.isRoomconfigPasswordProtectedRoom()) {
@@ -377,6 +387,15 @@ public class Room implements Serializable {
             message.setAttribute("to", realJID.toString());
             result.add(message);
         }
+        if (this.roomCreated) {
+            this.roomCreated = false;
+            Message message = new Message(realJID, "Room is locked!");
+            message.setFrom(JID.fromString(this.roomID));
+            message.setType(MessageType.GROUPCHAT);
+            result.add(message);
+
+        }
+
         log.fine("Occupant " + realJID + " (" + nick + ") entering room " + this.roomID + ", with role " + occupantRole
                 + " and affiliation " + this.configuration.getAffiliation(realJID));
         return result;
@@ -408,23 +427,6 @@ public class Room implements Serializable {
         }
         log.fine("Occupant " + realJID + " (" + nick + ") leave room " + this.roomID);
         return result;
-    }
-
-    /**
-     * @param element
-     * @return
-     */
-    public List<Element> processInitialStanza(Presence element) {
-        JID realJID = JID.fromString(element.getAttribute("from"));
-        String nick = element.getTo().getResource();
-        List<Element> result = new ArrayList<Element>();
-        result.addAll(processEnteringToRoom(realJID, nick, element, true));
-        Message message = new Message(realJID, "Room is locked!");
-        message.setFrom(JID.fromString(this.roomID));
-        message.setType(MessageType.GROUPCHAT);
-        result.add(message);
-        return result;
-
     }
 
     private List<Element> processIqAdminGet(IQ iq) {
@@ -578,10 +580,10 @@ public class Room implements Serializable {
 
                         // preparing <item> element
                         Role roleToSend = newRole != null ? newRole : getRole(occupantJid);
-                        Affiliation affiliationToSend = newAffiliation != null ? newAffiliation : this.configuration
-                                .getAffiliation(occupantJid);
-                        Element subItem = preparePresenceSubItem(occupantJid, affiliationToSend, roleToSend, entry
-                                .getValue());
+                        Affiliation affiliationToSend = newAffiliation != null ? newAffiliation
+                                : this.configuration.getAffiliation(occupantJid);
+                        Element subItem = preparePresenceSubItem(occupantJid, affiliationToSend, roleToSend,
+                                entry.getValue());
                         x.addChild(subItem);
                         if (reasons != null && reasons.size() > 0) {
                             subItem.addChildren(reasons);
@@ -857,7 +859,7 @@ public class Room implements Serializable {
         } else if (existNick != null && existNick.equals(nick)) {
             return processNewPresenceStatus(realJID, nick, element);
         } else {
-            return processEnteringToRoom(realJID, nick, element, false);
+            return processEnteringToRoom(realJID, nick, element);
         }
     }
 
@@ -883,13 +885,6 @@ public class Room implements Serializable {
         } else {
             this.occupantsRole.put(jid.getBareJID(), role);
         }
-    }
-
-    /**
-     * @return Returns the configuration.
-     */
-    public RoomConfiguration getConfiguration() {
-        return configuration;
     }
 
 }

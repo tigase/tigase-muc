@@ -69,7 +69,7 @@ public class EmptyRoomTest extends XMPPTestCase {
             public void write(Element data) throws IOException {
                 String name = data.getName();
                 if ("presence".equals(name)) {
-                    send(room.processInitialStanza((new Presence(data))));
+                    send(room.processStanza((new Presence(data))));
                 } else if ("iq".equals(name)) {
                     send(room.processStanza((new IQ(data))));
                 } else if ("message".equals(name)) {

@@ -310,13 +310,8 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
                 room = new Room(myDomain(), this, mucRepository, roomID, JID.fromString(packet.getElemFrom()), newRoom);
                 this.allRooms.add(roomID);
                 this.rooms.put(roomID, room);
-                if (newRoom) {
-                    Presence presence = new Presence(packet.getElement());
-                    stanzasToSend = room.processInitialStanza(presence);
-                } else {
-                    Presence presence = new Presence(packet.getElement());
-                    stanzasToSend.addAll(room.processStanza(presence));
-                }
+                Presence presence = new Presence(packet.getElement());
+                stanzasToSend.addAll(room.processStanza(presence));
             } else if ("message".equals(packet.getElemName())) {
                 Message message = new Message(packet.getElement());
                 stanzasToSend.addAll(room.processStanza(message));
