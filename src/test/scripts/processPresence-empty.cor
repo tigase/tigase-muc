@@ -1,5 +1,6 @@
-
-# creating room
+# ------------------------------------------ #
+# creating room                              #
+# ------------------------------------------ #
 send: {
 <presence 
     from='crone1@shakespeare.lit/desktop'
@@ -7,26 +8,33 @@ send: {
   <x xmlns='http://jabber.org/protocol/muc'/>
 </presence>
 }
+
 expect: {
 <presence 
     from='darkcave@macbeth.shakespeare.lit/firstwitch'
     to='crone1@shakespeare.lit/desktop'>
   <x xmlns='http://jabber.org/protocol/muc#user'>
     <item affiliation='owner'
+          jid="crone1@shakespeare.lit/desktop" 
+          nick="firstwitch"
           role='moderator'/>
     <status code='201'/>
+    <status code="110"/>      
   </x>
 </presence>
 }
 
-# User try to enter to locked room
+# ------------------------------------------ #
+# User try to enter to locked room           #
+# ------------------------------------------ #
 send: {
 <presence
     from='hag66@shakespeare.lit/pda'
     to='darkcave@macbeth.shakespeare.lit/thirdwitch'/>
       
 }
-expect: {
+
+expect all: {
 <presence
     from='darkcave@macbeth.shakespeare.lit'
     to='hag66@shakespeare.lit/pda'
@@ -37,7 +45,10 @@ expect: {
 </presence>
 }
 
-# owner create instant room
+
+# ------------------------------------------ #
+# owner create instant room                  #
+# ------------------------------------------ #
 send: {
 <iq from='crone1@shakespeare.lit/desktop'
     id='create1'
@@ -48,10 +59,14 @@ send: {
   </query>
 </iq>
 }
+
 expect: {
 <iq from ='darkcave@macbeth.shakespeare.lit' to='crone1@shakespeare.lit/desktop' type='result' id='create1'/>
 }
 
+# ------------------------------------------ #
+# Entering a Room                            #
+# ------------------------------------------ #
 send: {
 <presence
     from='hag66@shakespeare.lit/pda'
@@ -59,19 +74,30 @@ send: {
   <x xmlns='http://jabber.org/protocol/muc'/>
 </presence>
 }
-expect: {
+
+expect strict: {
+# Service Sends Presence from Existing Occupants to New Occupant
 <presence
     from='darkcave@macbeth.shakespeare.lit/firstwitch'
     to='hag66@shakespeare.lit/pda'>
   <x xmlns='http://jabber.org/protocol/muc#user'>
-    <item affiliation='owner' role='moderator'/>
+    <item affiliation='owner' nick="firstwitch" role='moderator'/>
+  </x>
+</presence>
+# Service Sends New Occupant's Presence to All Occupants
+<presence
+    from='darkcave@macbeth.shakespeare.lit/thirdwitch'
+    to='hag66@shakespeare.lit/pda'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='none' nick="thirdwitch" role='visitor'/>
+    <status code="110"/>
   </x>
 </presence>
 <presence
     from='darkcave@macbeth.shakespeare.lit/thirdwitch'
     to='crone1@shakespeare.lit/desktop'>
   <x xmlns='http://jabber.org/protocol/muc#user'>
-    <item affiliation='member' role='participant'/>
+    <item affiliation='none' nick="thirdwitch" role='visitor'/>
   </x>
 </presence>
 }
