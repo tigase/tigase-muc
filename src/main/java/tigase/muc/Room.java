@@ -87,8 +87,7 @@ public class Room implements Serializable {
 
     private RoomListener roomListener;
 
-    public Room(String namespace, RoomListener roomListener, UserRepository mucRepository, String roomID, JID ownerJID,
-            boolean roomCreated) {
+    public Room(String namespace, RoomListener roomListener, UserRepository mucRepository, String roomID, JID ownerJID, boolean roomCreated) {
         this.roomListener = roomListener;
         this.conversationHistory = new History(20);
         this.roomID = roomID;
@@ -212,14 +211,12 @@ public class Room implements Serializable {
         return errorStanza;
     }
 
-    private Element preparePresenceSubItem(JID occupantJid, Affiliation occupantAffiliation, Role occupantRole,
-            JID sendingTo) {
+    private Element preparePresenceSubItem(JID occupantJid, Affiliation occupantAffiliation, Role occupantRole, JID sendingTo) {
         Element item = new Element("item");
         // item.setAttribute("affiliation", nick);
         item.setAttribute("role", occupantRole == null ? "none" : occupantRole.name().toLowerCase());
 
-        item.setAttribute("affiliation", occupantAffiliation == null ? "none"
-                : occupantAffiliation.name().toLowerCase());
+        item.setAttribute("affiliation", occupantAffiliation == null ? "none" : occupantAffiliation.name().toLowerCase());
 
         Affiliation receiverAffiliation = this.configuration.getAffiliation(sendingTo);
         if (receiverAffiliation != null && configuration.affiliationCanViewJid(receiverAffiliation)) {
@@ -311,8 +308,7 @@ public class Room implements Serializable {
             result.add(MUCService.errorPresence(JID.fromString(roomID), realJID, "cancel", "404", "item-not-found"));
             return result;
         }
-        if (this.configuration.isRoomconfigMembersOnly()
-                && this.configuration.getAffiliation(realJID).getWeight() < Affiliation.MEMBER.getWeight()) {
+        if (this.configuration.isRoomconfigMembersOnly() && this.configuration.getAffiliation(realJID).getWeight() < Affiliation.MEMBER.getWeight()) {
             result.add(MUCService.errorPresence(JID.fromString(roomID), realJID, "auth", "407", "registration-required"));
             return result;
         }
@@ -396,8 +392,8 @@ public class Room implements Serializable {
 
         }
 
-        log.fine("Occupant " + realJID + " (" + nick + ") entering room " + this.roomID + ", with role " + occupantRole
-                + " and affiliation " + this.configuration.getAffiliation(realJID));
+        log.fine("Occupant " + realJID + " (" + nick + ") entering room " + this.roomID + ", with role " + occupantRole + " and affiliation "
+                + this.configuration.getAffiliation(realJID));
         return result;
     }
 
@@ -533,8 +529,7 @@ public class Room implements Serializable {
                     affiliationsToSet.put(occupantBareJid, newAffiliation);
                 }
                 if (newRole != null && occupantNick != null) {
-                    if (newRole == Role.MODERATOR
-                            && (senderAffiliation != Affiliation.ADMIN && senderAffiliation != Affiliation.OWNER)) {
+                    if (newRole == Role.MODERATOR && (senderAffiliation != Affiliation.ADMIN && senderAffiliation != Affiliation.OWNER)) {
                         throw new MucInternalException(item, "not-allowed", "405", "cancel");
                     } else if (senderRole != Role.MODERATOR) {
                         throw new MucInternalException(item, "not-allowed", "405", "cancel");
@@ -580,10 +575,8 @@ public class Room implements Serializable {
 
                         // preparing <item> element
                         Role roleToSend = newRole != null ? newRole : getRole(occupantJid);
-                        Affiliation affiliationToSend = newAffiliation != null ? newAffiliation
-                                : this.configuration.getAffiliation(occupantJid);
-                        Element subItem = preparePresenceSubItem(occupantJid, affiliationToSend, roleToSend,
-                                entry.getValue());
+                        Affiliation affiliationToSend = newAffiliation != null ? newAffiliation : this.configuration.getAffiliation(occupantJid);
+                        Element subItem = preparePresenceSubItem(occupantJid, affiliationToSend, roleToSend, entry.getValue());
                         x.addChild(subItem);
                         if (reasons != null && reasons.size() > 0) {
                             subItem.addChildren(reasons);
@@ -643,8 +636,7 @@ public class Room implements Serializable {
             answer.addAttribute("to", iq.getAttribute("from"));
             answer.addAttribute("from", roomID);
 
-            Element answerQuery = new Element("query", new String[] { "xmlns" },
-                    new String[] { "http://jabber.org/protocol/muc#owner" });
+            Element answerQuery = new Element("query", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#owner" });
             answer.addChild(answerQuery);
 
             answerQuery.addChild(this.configuration.getFormElement().getElement());
@@ -682,11 +674,9 @@ public class Room implements Serializable {
                 Presence presence = new Presence(PresenceType.UNAVAILABLE);
                 presence.setTo(entry.getKey());
                 presence.setAttribute("from", this.roomID + "/" + entry.getValue());
-                Element destroyX = new Element("x", new String[] { "xmlns" },
-                        new String[] { "http://jabber.org/protocol/muc#user" });
+                Element destroyX = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
                 presence.addChild(destroyX);
-                destroyX.addChild(new Element("item", new String[] { "affiliation", "role" }, new String[] { "none",
-                        "none" }));
+                destroyX.addChild(new Element("item", new String[] { "affiliation", "role" }, new String[] { "none", "none" }));
                 destroyX.addChild(destroy);
                 result.add(presence);
             }
@@ -737,20 +727,16 @@ public class Room implements Serializable {
         JID sender = iq.getFrom();
 
         try {
-            if ("http://jabber.org/protocol/muc#admin".equals(xmlns) && nick == null
-                    && "set".equals(iq.getAttribute("type"))) {
+            if ("http://jabber.org/protocol/muc#admin".equals(xmlns) && nick == null && "set".equals(iq.getAttribute("type"))) {
                 return processIqAdminSet(iq);
-            } else if ("http://jabber.org/protocol/muc#admin".equals(xmlns) && nick == null
-                    && "get".equals(iq.getAttribute("type"))) {
+            } else if ("http://jabber.org/protocol/muc#admin".equals(xmlns) && nick == null && "get".equals(iq.getAttribute("type"))) {
                 return processIqAdminGet(iq);
-            } else if ("http://jabber.org/protocol/muc#owner".equals(xmlns) && nick == null
-                    && "get".equals(iq.getAttribute("type"))) {
+            } else if ("http://jabber.org/protocol/muc#owner".equals(xmlns) && nick == null && "get".equals(iq.getAttribute("type"))) {
                 if (Affiliation.OWNER != this.configuration.getAffiliation(sender)) {
                     throw new MucInternalException(iq, "forbidden", "403", "auth");
                 }
                 return processIqOwnerGet(iq);
-            } else if ("http://jabber.org/protocol/muc#owner".equals(xmlns) && nick == null
-                    && "set".equals(iq.getAttribute("type"))) {
+            } else if ("http://jabber.org/protocol/muc#owner".equals(xmlns) && nick == null && "set".equals(iq.getAttribute("type"))) {
                 if (Affiliation.OWNER != this.configuration.getAffiliation(sender)) {
                     throw new MucInternalException(iq, "forbidden", "403", "auth");
                 }
@@ -777,69 +763,108 @@ public class Room implements Serializable {
 
     public List<Element> processStanza(Message element) {
         List<Element> result = new LinkedList<Element>();
-        String senderNick = this.occupantsByJID.get(element.getFrom());
-        String recipentNick = element.getTo().getResource();
+        try {
+            String senderNick = this.occupantsByJID.get(element.getFrom());
+            String recipentNick = element.getTo().getResource();
 
-        if (senderNick == null) {
-            Element errMsg = element.clone();
-            errMsg.setAttribute("from", roomID);
-            errMsg.setAttribute("to", element.getAttribute("from"));
-            errMsg.setAttribute("type", "error");
+            Element x = element.getChild("x", "http://jabber.org/protocol/muc#user");
 
-            Element error = new Element("error", new String[] { "code", "type" }, new String[] { "406", "modify" });
-            errMsg.addChild(error);
-            error.addChild(new Element("not-acceptable", new String[] { "xmlns" },
-                    new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
-            error.addChild(new Element("text", "Only occupants are allowed to send messages to the conference",
-                    new String[] { "xmlns" }, new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
-
-            result.add(errMsg);
-            return result;
-        }
-
-        if (recipentNick == null) {
-            // broadcast message
-            if (getRole(JID.fromString(element.getAttribute("from"))) == Role.VISITOR) {
-                return result;
-            }
-            this.conversationHistory.add(element, this.roomID + "/" + senderNick, roomID);
-            for (Entry<String, JID> entry : this.occupantsByNick.entrySet()) {
-                Element message = element.clone();
-                message.setAttribute("from", this.roomID + "/" + senderNick);
-                message.setAttribute("to", entry.getValue().toString());
-                result.add(message);
-            }
-        } else {
-            // private message
-            if (getRole(JID.fromString(element.getAttribute("from"))) == Role.VISITOR) {
+            if (senderNick == null) {
                 Element errMsg = element.clone();
+                errMsg.setAttribute("from", roomID);
+                errMsg.setAttribute("to", element.getAttribute("from"));
+                errMsg.setAttribute("type", "error");
+
                 Element error = new Element("error", new String[] { "code", "type" }, new String[] { "406", "modify" });
                 errMsg.addChild(error);
-                error.addChild(new Element("not-acceptable", new String[] { "xmlns" },
-                        new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
-                error.addChild(new Element("text", "Only occupants are allowed to send messages to occupants",
-                        new String[] { "xmlns" }, new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
-
-                result.add(errMsg);
-                return result;
-            }
-            JID recipentJID = this.occupantsByNick.get(recipentNick);
-
-            if (recipentJID == null) {
-                Element errMsg = element.clone();
-                Element error = new Element("error", new String[] { "code", "type" }, new String[] { "404", "cancel" });
-                errMsg.addChild(error);
-                error.addChild(new Element("item-not-found", new String[] { "xmlns" },
+                error.addChild(new Element("not-acceptable", new String[] { "xmlns" }, new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
+                error.addChild(new Element("text", "Only occupants are allowed to send messages to the conference", new String[] { "xmlns" },
                         new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
 
                 result.add(errMsg);
                 return result;
             }
 
-            Element message = element.clone();
-            message.setAttribute("from", this.roomID + "/" + senderNick);
-            message.setAttribute("to", recipentJID.toString());
-            result.add(message);
+            if (x != null) {
+                Element invite = x.getChild("invite");
+
+                if (invite != null && !this.configuration.isRoomconfigAllowInvites()
+                        && this.configuration.getAffiliation(element.getFrom()).getWeight() < Affiliation.ADMIN.getWeight()) {
+                    throw new MucInternalException(element, "forbidden", "403", "auth");
+                } else if (invite != null) {
+                    Message invitingMessage = new Message(JID.fromString(invite.getAttribute("to")), "You have been invited to " + this.roomID + " by "
+                            + element.getFrom().toString() + ".");
+                    invitingMessage.setFrom(JID.fromString(this.roomID));
+                    Element ix = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
+                    invitingMessage.addChild(ix);
+                    Element ii = new Element("invite", new String[] { "from" }, new String[] { element.getFrom().toString() });
+                    ix.addChild(ii);
+                    if (invite.getChild("reason") != null) {
+                        ii.addChild(invite.getChild("reason"));
+                    }
+                    if (this.configuration.isRoomconfigPasswordProtectedRoom()) {
+                        ix.addChild(new Element("password", this.configuration.getRoomconfigRoomSecret()));
+                    }
+
+                    // TODO modifing members list in members-only room
+
+                    result.add(invitingMessage);
+                }
+
+            } else if (x == null) {
+                if (recipentNick == null) {
+                    // broadcast message
+                    if (getRole(JID.fromString(element.getAttribute("from"))) == Role.VISITOR) {
+                        return result;
+                    }
+                    this.conversationHistory.add(element, this.roomID + "/" + senderNick, roomID);
+                    for (Entry<String, JID> entry : this.occupantsByNick.entrySet()) {
+                        Element message = element.clone();
+                        message.setAttribute("from", this.roomID + "/" + senderNick);
+                        message.setAttribute("to", entry.getValue().toString());
+                        result.add(message);
+                    }
+                } else {
+                    // private message
+                    if (getRole(JID.fromString(element.getAttribute("from"))) == Role.VISITOR) {
+                        Element errMsg = element.clone();
+                        Element error = new Element("error", new String[] { "code", "type" }, new String[] { "406", "modify" });
+                        errMsg.addChild(error);
+                        error.addChild(new Element("not-acceptable", new String[] { "xmlns" }, new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
+                        error.addChild(new Element("text", "Only occupants are allowed to send messages to occupants", new String[] { "xmlns" },
+                                new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
+
+                        result.add(errMsg);
+                        return result;
+                    }
+                    JID recipentJID = this.occupantsByNick.get(recipentNick);
+
+                    if (recipentJID == null) {
+                        Element errMsg = element.clone();
+                        Element error = new Element("error", new String[] { "code", "type" }, new String[] { "404", "cancel" });
+                        errMsg.addChild(error);
+                        error.addChild(new Element("item-not-found", new String[] { "xmlns" }, new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
+
+                        result.add(errMsg);
+                        return result;
+                    }
+
+                    Element message = element.clone();
+                    message.setAttribute("from", this.roomID + "/" + senderNick);
+                    message.setAttribute("to", recipentJID.toString());
+                    result.add(message);
+                }
+            }
+        } catch (MucInternalException e) {
+            Element answer = element.clone();
+            answer.addAttribute("id", element.getAttribute("id"));
+            answer.addAttribute("type", "error");
+            answer.addAttribute("to", element.getAttribute("from"));
+            answer.addAttribute("from", roomID);
+
+            answer.addChild(e.makeErrorElement());
+
+            result.add(answer);
         }
         return result;
     }
