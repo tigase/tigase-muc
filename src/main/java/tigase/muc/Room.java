@@ -60,6 +60,8 @@ public class Room implements Serializable {
 
     private History conversationHistory;
 
+    private Message currentSubject;
+
     private Map<JID, Presence> lastReceivedPresence = new HashMap<JID, Presence>();
 
     private boolean lockedRoom;
@@ -375,6 +377,12 @@ public class Room implements Serializable {
             presence.addChild(x);
 
             result.add(presence);
+        }
+        // service sends subject
+        if (this.currentSubject != null) {
+            Element subject = this.currentSubject.clone();
+            subject.setAttribute("to", realJID.toString());
+            result.add(subject);
         }
         // service Sends new occupant conversation history
         Iterator<Element> iterator = this.conversationHistory.iterator();
@@ -768,6 +776,7 @@ public class Room implements Serializable {
             String recipentNick = element.getTo().getResource();
 
             Element x = element.getChild("x", "http://jabber.org/protocol/muc#user");
+            Element subject = element.getChild("subject");
 
             if (senderNick == null) {
                 Element errMsg = element.clone();
@@ -816,6 +825,13 @@ public class Room implements Serializable {
                     // broadcast message
                     if (getRole(JID.fromString(element.getAttribute("from"))) == Role.VISITOR) {
                         return result;
+                    }
+                    if (subject != null) {
+                        if (!this.configuration.isRoomconfigChangeSubject() && getRole(element.getFrom()) != Role.MODERATOR) {
+                            throw new MucInternalException(element, "forbidden", "403", "auth");
+                        }
+                        this.currentSubject = new Message(element.clone());
+                        this.currentSubject.setAttribute("from", this.roomID + "/" + senderNick);
                     }
                     this.conversationHistory.add(element, this.roomID + "/" + senderNick, roomID);
                     for (Entry<String, JID> entry : this.occupantsByNick.entrySet()) {
