@@ -19,6 +19,7 @@
  */
 package tigase.criteria;
 
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.Map.Entry;
@@ -34,30 +35,80 @@ import tigase.xml.Element;
  * @author bmalkow
  * @version $Rev$
  */
-public class ElementCriteria {
+public class ElementCriteria implements Criteria {
 
-    private Map<String, String> attrs = new TreeMap<String, String>();
+	public static final ElementCriteria empty() {
+		return new ElementCriteria(null, null, null);
+	}
 
-    private String name;
+	public static final ElementCriteria name(String name) {
+		return new ElementCriteria(name, null, null);
+	}
 
-    public ElementCriteria(String name, String[] attname, String[] attValue) {
-        this.name = name;
-    }
+	public static final ElementCriteria name(String name, String xmlns) {
+		return new ElementCriteria(name, new String[] { "xmlns" }, new String[] { xmlns });
+	}
 
-    public boolean match(Element element) {
-        if (name != null && !name.equals(element.getName())) {
-            return false;
-        }
-        boolean result = true;
-        for (Entry<String, String> entry : this.attrs.entrySet()) {
-            String x = element.getAttribute(entry.getKey());
-            if (x == null || !x.equals(entry.getValue())) {
-                result = false;
-                break;
-            }
-        }
+	public static final ElementCriteria xmlns(String xmlns) {
+		return new ElementCriteria(null, new String[] { "xmlns" }, new String[] { xmlns });
+	}
 
-        return result;
-    }
+	private Map<String, String> attrs = new TreeMap<String, String>();
+
+	private String name;
+
+	private Criteria nextCriteria;
+
+	public ElementCriteria(String name, String[] attname, String[] attValue) {
+		this.name = name;
+		if (attname != null && attValue != null) {
+			for (int i = 0; i < attname.length; i++) {
+				attrs.put(attname[i], attValue[i]);
+			}
+		}
+	}
+
+	public Criteria add(Criteria criteria) {
+		if (this.nextCriteria == null) {
+			this.nextCriteria = criteria;
+		} else {
+			Criteria c = this.nextCriteria;
+			c.add(criteria);
+		}
+		return this;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see tigase.criteria.Criteria#match(tigase.xml.Element)
+	 */
+	public boolean match(Element element) {
+		if (name != null && !name.equals(element.getName())) {
+			return false;
+		}
+		boolean result = true;
+		for (Entry<String, String> entry : this.attrs.entrySet()) {
+			String x = element.getAttribute(entry.getKey());
+			if (x == null || !x.equals(entry.getValue())) {
+				result = false;
+				break;
+			}
+		}
+
+		if (this.nextCriteria != null) {
+			List<Element> children = element.getChildren();
+			boolean subres = false;
+			for (Element sub : children) {
+				if (this.nextCriteria.match(sub)) {
+					subres = true;
+					break;
+				}
+			}
+			result &= subres;
+		}
+
+		return result;
+	}
 
 }

@@ -19,9 +19,9 @@
  */
 package tigase.criteria;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import tigase.xml.Element;
@@ -37,24 +37,56 @@ import tigase.xml.Element;
  */
 public class ElementCriteriaTest {
 
-    /**
-     * @throws java.lang.Exception
-     */
-    @Before
-    public void setUp() throws Exception {
-    }
+	/**
+	 * Test method for
+	 * {@link tigase.criteria.ElementCriteria#match(tigase.xml.Element)}.
+	 */
+	@Test
+	public void testMatch1() {
+		Element e = new Element("x", new String[] { "xmlns", "type" }, new String[] { "jabber:test", "chat" });
 
-    /**
-     * Test method for
-     * {@link tigase.criteria.ElementCriteria#match(tigase.xml.Element)}.
-     */
-    @Test
-    public void testMatch() {
-        Element e = new Element("x", new String[] { "xmpns", "type" }, new String[] { "jabber:test", "chat" });
+		Criteria crit1 = new ElementCriteria("x", new String[] {}, new String[] {});
+		Criteria crit2 = new ElementCriteria("z", new String[] {}, new String[] {});
+		Criteria crit3 = new ElementCriteria("x", new String[] { "type" }, new String[] { "chat" });
+		Criteria crit4 = new ElementCriteria("x", new String[] { "type" }, new String[] { "normal" });
+		Criteria crit5 = new ElementCriteria("x", new String[] { "notexist" }, new String[] { "normal" });
+		Criteria crit6 = new ElementCriteria("x", new String[] { "type", "xmlns" }, new String[] { "chat", "jabber:test" });
+		Criteria crit7 = new ElementCriteria("x", new String[] { "type", "xmlns" }, new String[] { "chat", "jabber" });
 
-        ElementCriteria crit1 = new ElementCriteria("x", new String[] {}, new String[] {});
+		assertTrue(crit1.match(e));
+		assertFalse(crit2.match(e));
+		assertTrue(crit3.match(e));
+		assertFalse(crit4.match(e));
+		assertFalse(crit5.match(e));
+		assertTrue(crit6.match(e));
+		assertFalse(crit7.match(e));
+	}
 
-        assertTrue(crit1.match(e));
-    }
+	@Test
+	public void testMatch2() {
+		Element e1 = new Element("x", new String[] { "xmlns", "type" }, new String[] { "jabber:test", "chat" });
+		Element e2 = new Element("reason", new String[] { "to", "type" }, new String[] { "test@tester.com", "normal" });
+		e1.addChild(e2);
+
+		Criteria crit1 = new ElementCriteria("x", new String[] {}, new String[] {});
+		Criteria crit3 = new ElementCriteria("x", new String[] { "type" }, new String[] { "chat" });
+
+		Criteria crit4 = (new ElementCriteria("x", new String[] {}, new String[] {})).add(new ElementCriteria("reason", null, null));
+
+		Criteria crit5 = ElementCriteria.xmlns("jabber:test").add(ElementCriteria.name("reason"));
+
+		Criteria crit6 = ElementCriteria.xmlns("jabber:test:no").add(ElementCriteria.name("reason"));
+		Criteria crit7 = ElementCriteria.empty().add(ElementCriteria.xmlns("dupa"));
+		Criteria crit8 = ElementCriteria.empty().add(new ElementCriteria("reason", new String[] { "to" }, new String[] { "inny@tester.com" }));
+
+		assertTrue(crit1.match(e1));
+		assertTrue(crit3.match(e1));
+		assertTrue(crit4.match(e1));
+		assertTrue(crit5.match(e1));
+		assertFalse(crit6.match(e1));
+		assertFalse(crit7.match(e1));
+		assertFalse(crit8.match(e1));
+
+	}
 
 }
