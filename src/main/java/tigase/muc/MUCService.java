@@ -37,10 +37,19 @@ import tigase.db.UserRepository;
 import tigase.disco.ServiceEntity;
 import tigase.disco.ServiceIdentity;
 import tigase.disco.XMPPService;
+import tigase.muc.modules.BroadcastMessageModule;
+import tigase.muc.modules.ChangeSubjectModule;
+import tigase.muc.modules.InvitationModule;
+import tigase.muc.modules.RoomModule;
+import tigase.muc.modules.PresenceModule;
+import tigase.muc.modules.PrivateMessageModule;
+import tigase.muc.modules.admin.AdminGetModule;
+import tigase.muc.modules.admin.AdminSetModule;
+import tigase.muc.modules.owner.OwnerGetModule;
+import tigase.muc.modules.owner.OwnerSetModule;
 import tigase.muc.xmpp.JID;
 import tigase.muc.xmpp.stanzas.IQ;
-import tigase.muc.xmpp.stanzas.Message;
-import tigase.muc.xmpp.stanzas.Presence;
+import tigase.muc.xmpp.stanzas.IQType;
 import tigase.server.AbstractMessageReceiver;
 import tigase.server.Packet;
 import tigase.util.DNSResolver;
@@ -58,354 +67,254 @@ import tigase.xml.Element;
  */
 public class MUCService extends AbstractMessageReceiver implements XMPPService, Configurable, RoomListener {
 
-    private final static String LETTERS_TO_UNIQUE_NAME = "abcdefghijklmnopqrstuvwxyz0123456789";
+	private static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
 
-    private static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
+	private static final String MUC_REPO_CLASS_PROP_VAL = "tigase.db.xml.XMLRepository";
 
-    private static final String MUC_REPO_CLASS_PROP_VAL = "tigase.db.xml.XMLRepository";
+	private static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
 
-    private static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
+	private static final String MUC_REPO_URL_PROP_VAL = "muc-repository.xml";
 
-    private static final String MUC_REPO_URL_PROP_VAL = "muc-repository.xml";
+	public static Element errorPresence(JID from, JID to, String type, String code, String errorElement) {
+		Element p = new Element("presence");
+		p.setAttribute("from", from.toString());
+		p.setAttribute("to", to.toString());
+		p.setAttribute("type", "error");
 
-    private static Random random = new SecureRandom();
+		Element error = new Element("error");
+		error.setAttribute("code", code);
+		error.setAttribute("type", type);
+		error.addChild(new Element(errorElement, new String[] { "xmlns" }, new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
+		p.addChild(error);
 
-    static Element errorPresence(JID from, JID to, String type, String code, String errorElement) {
-        Element p = new Element("presence");
-        p.setAttribute("from", from.toString());
-        p.setAttribute("to", to.toString());
-        p.setAttribute("type", "error");
+		return p;
+	}
 
-        Element error = new Element("error");
-        error.setAttribute("code", code);
-        error.setAttribute("type", type);
-        error.addChild(new Element(errorElement, new String[] { "xmlns" },
-                new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
-        p.addChild(error);
+	private Logger log = Logger.getLogger(this.getClass().getName());
 
-        return p;
-    }
+	private UserRepository mucRepository;
 
-    private static String generateUniqueName() {
-        String result = "";
-        for (int i = 0; i < 32; i++) {
-            result += LETTERS_TO_UNIQUE_NAME.charAt(random.nextInt(LETTERS_TO_UNIQUE_NAME.length()));
-        }
-        return result;
-    }
+	private ModulesProcessor processor;
 
-    private Set<String> allRooms = new HashSet<String>();;
+	private RoomsContainer rooms;
 
-    private Logger log = Logger.getLogger(this.getClass().getName());
+	private ServiceEntity serviceEntity = null;
 
-    private UserRepository mucRepository;
+	/**
+	 * Construct MUC service.
+	 */
+	public MUCService() {
+		log.info("Creating tigase-muc ver." + MucVersion.getVersion() + " Service.");
 
-    private final Map<String, Room> rooms = new HashMap<String, Room>();
+		this.processor = new ModulesProcessor(this);
+	}
 
-    private ServiceEntity serviceEntity = null;
+	/** {@inheritDoc} */
+	@Override
+	public Map<String, Object> getDefaults(Map<String, Object> params) {
+		Map<String, Object> props = super.getDefaults(params);
+		String[] hostnamesPropVal = null;
+		if (params.get("--virt-hosts") != null) {
+			hostnamesPropVal = ((String) params.get("--virt-hosts")).split(",");
+		} else {
+			hostnamesPropVal = DNSResolver.getDefHostNames();
+		}
+		for (int i = 0; i < hostnamesPropVal.length; i++) {
+			if (((String) params.get("config-type")).equals(GEN_CONFIG_COMP)) {
+				// This is specialized configuration for a single
+				// external component and on specialized component like MUC
+				hostnamesPropVal[i] = hostnamesPropVal[i];
+			} else {
+				hostnamesPropVal[i] = "muc." + hostnamesPropVal[i];
+			}
+		}
 
-    /**
-     * Construct MUC service.
-     */
-    public MUCService() {
-        log.info("Creating tigase-muc ver." + MucVersion.getVersion() + " Service.");
-    }
+		// By default use the same repository as all other components:
+		String repo_class = XML_REPO_CLASS_PROP_VAL;
+		String repo_uri = XML_REPO_URL_PROP_VAL;
+		String conf_db = null;
+		if (params.get(GEN_USER_DB) != null) {
+			conf_db = (String) params.get(GEN_USER_DB);
+		} // end of if (params.get(GEN_USER_DB) != null)
+		if (conf_db != null) {
+			if (conf_db.equals("mysql")) {
+				repo_class = MYSQL_REPO_CLASS_PROP_VAL;
+				repo_uri = MYSQL_REPO_URL_PROP_VAL;
+			}
+			if (conf_db.equals("pgsql")) {
+				repo_class = PGSQL_REPO_CLASS_PROP_VAL;
+				repo_uri = PGSQL_REPO_URL_PROP_VAL;
+			}
+		} // end of if (conf_db != null)
+		if (params.get(GEN_USER_DB_URI) != null) {
+			repo_uri = (String) params.get(GEN_USER_DB_URI);
+		} // end of if (params.get(GEN_USER_DB_URI) != null)
+		props.put(MUC_REPO_CLASS_PROP_KEY, repo_class);
+		props.put(MUC_REPO_URL_PROP_KEY, repo_uri);
 
-    private void configRoomDiscovery(final RoomConfiguration config) {
-        ServiceEntity x = new ServiceEntity(config.getId(), config.getId(), config.getRoomconfigRoomname());
-        x.addIdentities(new ServiceIdentity("conference", "text", config.getRoomconfigRoomname()));
+		props.put(HOSTNAMES_PROP_KEY, hostnamesPropVal);
+		return props;
+	}
 
-        x.addFeatures("http://jabber.org/protocol/muc");
-        if (config.isRoomconfigPasswordProtectedRoom()) {
-            x.addFeatures("muc_passwordprotected");
-        } else {
-            x.addFeatures("muc_unsecured");
-        }
-        if (config.isRoomconfigPersistentRoom()) {
-            x.addFeatures("muc_persistent");
-        } else {
-            x.addFeatures("muc_temporary");
-        }
-        if (config.isRoomconfigMembersOnly()) {
-            x.addFeatures("muc_membersonly");
-        } else {
-            x.addFeatures("muc_open");
-        }
-        if (config.isRoomconfigModeratedRoom()) {
-            x.addFeatures("muc_moderated");
-        } else {
-            x.addFeatures("muc_unmoderated");
-        }
-        if (config.affiliationCanViewJid(Affiliation.NONE)) {
-            x.addFeatures("muc_nonanonymous");
-        } else {
-            x.addFeatures("muc_semianonymous");
-        }
+	public List<Element> getDiscoFeatures() {
+		return null;
+	}
 
-        serviceEntity.addItems(x);
+	public Element getDiscoInfo(String node, String jid) {
+		if (jid != null && JIDUtils.getNodeHost(jid).startsWith(getName() + ".")) {
+			return serviceEntity.getDiscoInfo(node);
+		}
+		return null;
+	}
 
-    }
+	public List<Element> getDiscoItems(String node, String jid) {
+		if (JIDUtils.getNodeHost(jid).startsWith(getName() + ".")) {
+			return serviceEntity.getDiscoItems(node, null);
+		} else {
+			return Arrays.asList(serviceEntity.getDiscoItem(null, getName() + "." + jid));
+		}
+	}
 
-    private void configRoomDiscovery(String jid) {
-        try {
-            RoomConfiguration config = new RoomConfiguration(myDomain(), jid, this.mucRepository);
-            configRoomDiscovery(config);
-        } catch (Exception e) {
-            log.log(Level.SEVERE, "Error on read room " + jid + " configuration", e);
-        }
-    }
+	private String myDomain() {
+		return getName() + "." + getDefHostName();
+	};
 
-    /** {@inheritDoc} */
-    @Override
-    public Map<String, Object> getDefaults(Map<String, Object> params) {
-        Map<String, Object> props = super.getDefaults(params);
-        String[] hostnamesPropVal = null;
-        if (params.get("--virt-hosts") != null) {
-            hostnamesPropVal = ((String) params.get("--virt-hosts")).split(",");
-        } else {
-            hostnamesPropVal = DNSResolver.getDefHostNames();
-        }
-        for (int i = 0; i < hostnamesPropVal.length; i++) {
-            if (((String) params.get("config-type")).equals(GEN_CONFIG_COMP)) {
-                // This is specialized configuration for a single
-                // external component and on specialized component like MUC
-                hostnamesPropVal[i] = hostnamesPropVal[i];
-            } else {
-                hostnamesPropVal[i] = "muc." + hostnamesPropVal[i];
-            }
-        }
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see tigase.muc.RoomListener#onConfigurationChange(tigase.muc.Room)
+	 */
+	@Override
+	public void onConfigurationChange(RoomContext room) {
+		ServiceEntity ent = this.serviceEntity.findNode(room.getRoomID());
+		if (ent != null) {
+			this.serviceEntity.removeItems(ent);
+		}
+		this.rooms.configRoomDiscovery(room);
+	}
 
-        // By default use the same repository as all other components:
-        String repo_class = XML_REPO_CLASS_PROP_VAL;
-        String repo_uri = XML_REPO_URL_PROP_VAL;
-        String conf_db = null;
-        if (params.get(GEN_USER_DB) != null) {
-            conf_db = (String) params.get(GEN_USER_DB);
-        } // end of if (params.get(GEN_USER_DB) != null)
-        if (conf_db != null) {
-            if (conf_db.equals("mysql")) {
-                repo_class = MYSQL_REPO_CLASS_PROP_VAL;
-                repo_uri = MYSQL_REPO_URL_PROP_VAL;
-            }
-            if (conf_db.equals("pgsql")) {
-                repo_class = PGSQL_REPO_CLASS_PROP_VAL;
-                repo_uri = PGSQL_REPO_URL_PROP_VAL;
-            }
-        } // end of if (conf_db != null)
-        if (params.get(GEN_USER_DB_URI) != null) {
-            repo_uri = (String) params.get(GEN_USER_DB_URI);
-        } // end of if (params.get(GEN_USER_DB_URI) != null)
-        props.put(MUC_REPO_CLASS_PROP_KEY, repo_class);
-        props.put(MUC_REPO_URL_PROP_KEY, repo_uri);
+	@Override
+	public void onDestroy(RoomContext room) {
+		ServiceEntity ent = this.serviceEntity.findNode(room.getRoomID());
+		if (ent != null) {
+			this.serviceEntity.removeItems(ent);
+		}
+		this.rooms.destroyRoom(JID.fromString(room.getRoomID()));
+		try {
+			this.mucRepository.removeSubnode(myDomain(), room.getRoomID());
+		} catch (UserNotFoundException e) {
+			e.printStackTrace();
+		} catch (TigaseDBException e) {
+			e.printStackTrace();
+		}
+	}
 
-        props.put(HOSTNAMES_PROP_KEY, hostnamesPropVal);
-        return props;
-    }
+	@Override
+	public void onOccupantLeave(RoomContext room) {
+		int c = room.getOccupantsByJID().size();
+		if (c == 0) {
+			this.rooms.removeRoom(JID.fromString(room.getRoomID()));
+		}
+	}
 
-    public List<Element> getDiscoFeatures() {
-        return null;
-    }
+	private Element processDisco(IQ iq) {
+		Element queryInfo = iq.getChild("query", "http://jabber.org/protocol/disco#info");
+		Element queryItems = iq.getChild("query", "http://jabber.org/protocol/disco#items");
 
-    public Element getDiscoInfo(String node, String jid) {
-        if (jid != null && JIDUtils.getNodeHost(jid).startsWith(getName() + ".")) {
-            return serviceEntity.getDiscoInfo(node);
-        }
-        return null;
-    }
+		String jid = iq.getTo().getBareJID().toString();
 
-    public List<Element> getDiscoItems(String node, String jid) {
-        if (JIDUtils.getNodeHost(jid).startsWith(getName() + ".")) {
-            return serviceEntity.getDiscoItems(node, null);
-        } else {
-            return Arrays.asList(serviceEntity.getDiscoItem(null, getName() + "." + jid));
-        }
-    }
+		if (queryInfo != null) {
+			String node = queryInfo.getAttribute("node");
+			Element result = getDiscoInfo(node, jid);
+			return result;
+		} else if (queryItems != null) {
+			String node = queryItems.getAttribute("node");
+			Element result = serviceEntity.getDiscoItem(node, jid);
+			return result;
+		}
 
-    private String myDomain() {
-        return getName() + "." + getDefHostName();
-    }
+		return null;
+	}
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see tigase.muc.RoomListener#onConfigurationChange(tigase.muc.Room)
-     */
-    @Override
-    public void onConfigurationChange(Room room) {
-        ServiceEntity ent = this.serviceEntity.findNode(room.getRoomID());
-        if (ent != null) {
-            this.serviceEntity.removeItems(ent);
-        }
-        configRoomDiscovery(room.getConfiguration());
-    };
+	/** {@inheritDoc} */
+	@Override
+	public void processPacket(Packet packet) {
+		try {
+			String roomID = JIDUtils.getNodeID(packet.getElemTo());
+			// String username = JIDUtils.getNodeResource(packet.getElemTo());
 
-    @Override
-    public void onOccupantLeave(Room room) {
-        int c = room.countOccupants();
-        if (c == 0) {
-            this.rooms.remove(room.getRoomID());
-        }
-    }
+			if ("iq".equals(packet.getElemName()) && (packet.getElement().getChild("query", "http://jabber.org/protocol/disco#info") != null)
+					|| packet.getElement().getChild("query", "http://jabber.org/protocol/disco#items") != null) {
 
-    private Element processDisco(IQ iq) {
-        Element queryInfo = iq.getChild("query", "http://jabber.org/protocol/disco#info");
-        Element queryItems = iq.getChild("query", "http://jabber.org/protocol/disco#items");
+				Packet result = packet.okResult(processDisco(new IQ(packet.getElement())), 0);
+				addOutPacket(result);
+				return;
+			}
 
-        String jid = iq.getTo().getBareJID().toString();
+			List<Element> stanzasToSend = new LinkedList<Element>();
 
-        if (queryInfo != null) {
-            String node = queryInfo.getAttribute("node");
-            Element result = getDiscoInfo(node, jid);
-            return result;
-        } else if (queryItems != null) {
-            String node = queryItems.getAttribute("node");
-            Element result = serviceEntity.getDiscoItem(node, jid);
-            return result;
-        }
+			RoomContext room = null;
+			if (roomID != null) {
+				room = this.rooms.getRoomContext(roomID);
+				if (room == null && "presence".equals(packet.getElemName())) {
+					boolean newRoom = !this.rooms.isRoomExists(JID.fromString(roomID));
+					room = new RoomContext(myDomain(), roomID, mucRepository, JID.fromString(packet.getElemFrom()), newRoom);
+					this.rooms.addRoom(room);
+				} else if (room == null && !"presence".equals(packet.getElemName())) {
+					addOutPacket(packet.errorResult("cancel", "item-not-found", null, true));
+					return;
+				}
+			}
 
-        return null;
-    }
+			List<Element> result = this.processor.processStanza(room, this.rooms, packet.getElement());
+			stanzasToSend.addAll(result);
 
-    /** {@inheritDoc} */
-    @Override
-    public void processPacket(Packet packet) {
-        try {
-            String roomName = JIDUtils.getNodeNick(packet.getElemTo());
-            String roomHost = JIDUtils.getNodeHost(packet.getElemTo());
+			if (stanzasToSend != null && stanzasToSend.size() > 0) {
+				for (Element element : stanzasToSend) {
+					addOutPacket(new Packet(element));
+				}
+			} else {
+				addOutPacket(packet.errorResult("cancel", "feature-not-implemented", "Stanza is not processed", true));
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+			log.throwing("Muc Service", "processPacket", e);
+		}
+	}
 
-            String roomID = JIDUtils.getNodeID(packet.getElemTo());
-            // String username = JIDUtils.getNodeResource(packet.getElemTo());
+	/** {@inheritDoc} */
+	@Override
+	public void setProperties(Map<String, Object> props) {
+		super.setProperties(props);
 
-            if (roomName == null && "iq".equals(packet.getElemName())
-                    && packet.getElement().getChild("unique", "http://jabber.org/protocol/muc#unique") != null) {
-                Element iq = new Element("iq");
-                iq.setAttribute("to", packet.getElemFrom());
-                iq.setAttribute("from", packet.getElemTo());
-                iq.setAttribute("id", packet.getElemId());
-                iq.setAttribute("type", "result");
+		serviceEntity = new ServiceEntity(getName(), null, "Multi User Chat");
+		serviceEntity.addIdentities(new ServiceIdentity("conference", "text", "Multi User Chat"));
+		serviceEntity.addFeatures("http://jabber.org/protocol/muc", "muc_rooms");
 
-                String id;
-                do {
-                    id = generateUniqueName();
-                } while (this.rooms.containsKey(id + "@" + roomHost));
+		log.config("Register Service discovery " + serviceEntity.getJID());
 
-                Element unique = new Element("unique", id, new String[] { "xmlns" },
-                        new String[] { "http://jabber.org/protocol/muc#unique" });
-                iq.addChild(unique);
-                addOutPacket(new Packet(iq));
-                return;
-            } else if ("iq".equals(packet.getElemName())
-                    && (packet.getElement().getChild("query", "http://jabber.org/protocol/disco#info") != null)
-                    || packet.getElement().getChild("query", "http://jabber.org/protocol/disco#items") != null) {
+		try {
+			String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
+			String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
 
-                Packet result = packet.okResult(processDisco(new IQ(packet.getElement())), 0);
-                addOutPacket(result);
-                return;
-            }
+			mucRepository = RepositoryFactory.getUserRepository("muc", cls_name, res_uri);
+			mucRepository.initRepository(res_uri);
 
-            Room room = this.rooms.get(roomID);
-            List<Element> stanzasToSend = new LinkedList<Element>();
-            if (room == null) {
-                boolean newRoom = !this.allRooms.contains(roomID);
-                room = new Room(myDomain(), this, mucRepository, roomID, JID.fromString(packet.getElemFrom()), newRoom);
-                this.allRooms.add(roomID);
-                this.rooms.put(roomID, room);
-                Presence presence = new Presence(packet.getElement());
-                stanzasToSend.addAll(room.processStanza(presence));
-            } else if ("message".equals(packet.getElemName())) {
-                Message message = new Message(packet.getElement());
-                stanzasToSend.addAll(room.processStanza(message));
-            } else if ("presence".equals(packet.getElemName())) {
-                Presence presence = new Presence(packet.getElement());
-                stanzasToSend.addAll(room.processStanza(presence));
-            } else if ("iq".equals(packet.getElemName())) {
-                IQ iq = new IQ(packet.getElement());
-                stanzasToSend.addAll(room.processStanza(iq));
-            }
+			log.config("Initialized " + cls_name + " as user repository: " + res_uri);
+		} catch (Exception e) {
+			log.severe("Can't initialize user repository: " + e);
+			e.printStackTrace();
+			System.exit(1);
+		}
+		String[] hostnames = (String[]) props.get(HOSTNAMES_PROP_KEY);
+		clearRoutings();
+		for (String host : hostnames) {
+			addRouting(host);
+		}
+		this.rooms = new RoomsContainer(myDomain(), this.mucRepository, this.serviceEntity);
+		this.rooms.readAllRomms();
 
-            if (stanzasToSend != null) {
-                for (Element element : stanzasToSend) {
-                    addOutPacket(new Packet(element));
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            log.throwing("Muc Service", "processPacket", e);
-        }
-    }
-
-    private void readAllRomms() {
-        log.config("Reading rooms...");
-        try {
-            String[] roomsJid = this.mucRepository.getSubnodes(myDomain());
-            allRooms.clear();
-            if (roomsJid != null) {
-                for (String jid : roomsJid) {
-                    allRooms.add(jid);
-                    configRoomDiscovery(jid);
-                }
-            }
-        } catch (UserNotFoundException e) {
-            try {
-                this.mucRepository.addUser(myDomain());
-            } catch (UserExistsException e1) {
-                e1.printStackTrace();
-            } catch (TigaseDBException e1) {
-                e1.printStackTrace();
-            }
-        } catch (TigaseDBException e) {
-            e.printStackTrace();
-        }
-        log.config(allRooms.size() + " known rooms.");
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void setProperties(Map<String, Object> props) {
-        super.setProperties(props);
-
-        serviceEntity = new ServiceEntity(getName(), null, "Multi User Chat");
-        serviceEntity.addIdentities(new ServiceIdentity("conference", "text", "Multi User Chat"));
-        serviceEntity.addFeatures("http://jabber.org/protocol/muc", "muc_rooms");
-
-        log.config("Register Service discovery " + serviceEntity.getJID());
-
-        try {
-            String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
-            String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
-
-            mucRepository = RepositoryFactory.getUserRepository("muc", cls_name, res_uri);
-            mucRepository.initRepository(res_uri);
-
-            log.config("Initialized " + cls_name + " as user repository: " + res_uri);
-        } catch (Exception e) {
-            log.severe("Can't initialize user repository: " + e);
-            e.printStackTrace();
-            System.exit(1);
-        }
-        String[] hostnames = (String[]) props.get(HOSTNAMES_PROP_KEY);
-        clearRoutings();
-        for (String host : hostnames) {
-            addRouting(host);
-        }
-        readAllRomms();
-        log.info("MUC Service started.");
-        System.out.println(".");
-    }
-
-    @Override
-    public void onDestroy(Room room) {
-        ServiceEntity ent = this.serviceEntity.findNode(room.getRoomID());
-        if (ent != null) {
-            this.serviceEntity.removeItems(ent);
-        }
-        this.allRooms.remove(room.getRoomID());
-        try {
-            this.mucRepository.removeSubnode(myDomain(), room.getRoomID());
-        } catch (UserNotFoundException e) {
-            e.printStackTrace();
-        } catch (TigaseDBException e) {
-            e.printStackTrace();
-        }
-    }
+		log.info("MUC Service started.");
+		System.out.println(".");
+	}
 }

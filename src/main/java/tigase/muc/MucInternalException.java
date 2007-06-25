@@ -19,6 +19,7 @@
  */
 package tigase.muc;
 
+import tigase.muc.xmpp.stanzas.Message;
 import tigase.xml.Element;
 
 /**
@@ -32,68 +33,98 @@ import tigase.xml.Element;
  */
 public class MucInternalException extends Exception {
 
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    private String code;
+	private String code;
 
-    private Element item;
+	private Element item;
 
-    private String name;
+	private String name;
 
-    private String type;
+	private String type;
 
-    private String xmlns = "urn:ietf:params:xml:ns:xmpp-stanzas";
+	private String xmlns = "urn:ietf:params:xml:ns:xmpp-stanzas";
 
-    /**
-     * @param item
-     * @param string
-     * @param string2
-     * @param string3
-     */
-    public MucInternalException(Element item, String name, String code, String type) {
-        this.item = item;
-        this.name = name;
-        this.code = code;
-        this.type = type;
-    }
+	private String message;
 
-    /**
-     * @return Returns the code.
-     */
-    public String getCode() {
-        return code;
-    }
+	/**
+	 * @param item
+	 * @param string
+	 * @param string2
+	 * @param string3
+	 */
+	public MucInternalException(Element item, String name, String code, String type) {
+		this.item = item;
+		this.name = name;
+		this.code = code;
+		this.type = type;
+	}
 
-    /**
-     * @return Returns the item.
-     */
-    public Element getItem() {
-        return item;
-    }
+	public MucInternalException(Element item, String name, String code, String type, String message) {
+		this.item = item;
+		this.name = name;
+		this.code = code;
+		this.type = type;
+		this.message = message;
+	}
 
-    /**
-     * @return Returns the name.
-     */
-    public String getName() {
-        return name;
-    }
+	/**
+	 * @return Returns the code.
+	 */
+	public String getCode() {
+		return code;
+	}
 
-    /**
-     * @return Returns the type.
-     */
-    public String getType() {
-        return type;
-    }
+	/**
+	 * @return Returns the item.
+	 */
+	public Element getItem() {
+		return item;
+	}
 
-    /**
-     * @return
-     */
-    public Element makeErrorElement() {
-        Element error = new Element("error");
-        error.setAttribute("code", code);
-        error.setAttribute("type", type);
-        error.addChild(new Element(name, new String[] { "xmlns" }, new String[] { xmlns }));
-        return error;
-    }
+	/**
+	 * @return Returns the name.
+	 */
+	public String getName() {
+		return name;
+	}
+
+	/**
+	 * @return Returns the type.
+	 */
+	public String getType() {
+		return type;
+	}
+
+	public Element makeElement() {
+		return makeElement(true);
+	}
+
+	public Element makeElement(boolean insertOriginal) {
+		Element answer = insertOriginal ? item.clone() : new Element(item.getName());
+		answer.addAttribute("id", item.getAttribute("id"));
+		answer.addAttribute("type", "error");
+		answer.addAttribute("to", item.getAttribute("from"));
+		answer.addAttribute("from", item.getAttribute("to"));
+
+		if (this.message != null) {
+			Element text = new Element("text", this.message, new String[] { "xmlns" }, new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" });
+			answer.addChild(text);
+		}
+
+		answer.addChild(makeErrorElement());
+		return answer;
+	}
+
+	/**
+	 * @return
+	 */
+	public Element makeErrorElement() {
+		Element error = new Element("error");
+		error.setAttribute("code", code);
+		error.setAttribute("type", type);
+		error.addChild(new Element(name, new String[] { "xmlns" }, new String[] { xmlns }));
+		return error;
+	}
 
 }

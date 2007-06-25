@@ -17,23 +17,23 @@
  *
  *  $Id$
  */
-package tigase.muc;
+package tigase.muc.modules;
+
+import java.util.List;
+
+import tigase.muc.RoomContext;
+import tigase.xml.Element;
 
 /**
  * 
  * <p>
- * Created: 2007-06-05 15:03:06
+ * Created: 2007-06-20 08:44:30
  * </p>
  * 
  * @author bmalkow
  * @version $Rev$
  */
-public interface RoomListener {
+public interface RoomModule extends Module {
 
-    void onOccupantLeave(RoomContext roomContext);
-
-    void onConfigurationChange(RoomContext roomContext);
-
-    void onDestroy(RoomContext roomContext);
-
+	List<Element> process(RoomContext roomContext, Element element);
 }

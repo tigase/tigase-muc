@@ -47,39 +47,33 @@ import tigase.xml.Element;
  */
 public class EmptyRoomTest extends XMPPTestCase {
 
-    private Room room;
+	private RoomContext room;
 
-    @Before
-    public void init() {
-        UserRepository repository = new XMLRepository();
-        try {
-            repository.initRepository("dupa.xml");
-        } catch (DBInitException e) {
-            e.printStackTrace();
-            Assert.fail(e.getMessage());
-        }
-        this.room = new Room("namespace", null, repository, "darkcave@macbeth.shakespeare.lit", JID
-                .fromString("crone1@shakespeare.lit/desktop"), true);
-    }
+	private ModulesProcessor processor;
 
-    @Test
-    public void test_1() {
-        JUnitXMLIO xmlio = new JUnitXMLIO() {
-            @Override
-            public void write(Element data) throws IOException {
-                String name = data.getName();
-                if ("presence".equals(name)) {
-                    send(room.processStanza((new Presence(data))));
-                } else if ("iq".equals(name)) {
-                    send(room.processStanza((new IQ(data))));
-                } else if ("message".equals(name)) {
-                    send(room.processStanza((new Message(data))));
-                } else {
-                    Assert.fail("Unknown stanza type");
-                }
-            }
-        };
-        test("src/test/scripts/processPresence-empty.cor", xmlio);
-    }
+	@Before
+	public void init() {
+		UserRepository repository = new XMLRepository();
+		try {
+			repository.initRepository("dupa.xml");
+		} catch (DBInitException e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		}
+		this.room = new RoomContext("namespace", "darkcave@macbeth.shakespeare.lit", repository, JID.fromString("crone1@shakespeare.lit/desktop"), true);
+		this.processor = new ModulesProcessor(null);
+	}
+
+	@Test
+	public void test_1() {
+		JUnitXMLIO xmlio = new JUnitXMLIO() {
+			@Override
+			public void write(Element data) throws IOException {
+				String name = data.getName();
+				send(processor.processStanza(room, null, data));
+			}
+		};
+		test("src/test/scripts/processPresence-empty.cor", xmlio);
+	}
 
 }

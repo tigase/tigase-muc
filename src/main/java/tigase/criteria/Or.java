@@ -17,23 +17,40 @@
  *
  *  $Id$
  */
-package tigase.muc;
+package tigase.criteria;
+
+import tigase.xml.Element;
 
 /**
  * 
  * <p>
- * Created: 2007-06-05 15:03:06
+ * Created: 2007-06-20 09:32:29
  * </p>
  * 
  * @author bmalkow
  * @version $Rev$
  */
-public interface RoomListener {
+public class Or implements Criteria {
 
-    void onOccupantLeave(RoomContext roomContext);
+	@Override
+	public Criteria add(Criteria criteria) {
+		throw new RuntimeException("Or.add() is not implemented!");
+	}
 
-    void onConfigurationChange(RoomContext roomContext);
+	private Criteria[] crits;
 
-    void onDestroy(RoomContext roomContext);
+	public Or(Criteria... criteria) {
+		this.crits = criteria;
+	}
+
+	@Override
+	public boolean match(Element element) {
+		for (Criteria c : this.crits) {
+			if (c.match(element)) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 }
