@@ -82,6 +82,7 @@ public class RoomContext extends RoomConfiguration {
 	public RoomContext(String namespace, String id, UserRepository mucRepocitory, JID constructorJid, boolean roomCreated) {
 		super(namespace, id, mucRepocitory, constructorJid);
 		this.roomCreated = roomCreated;
+		this.lockedRoom = roomCreated;
 	}
 
 	public Role calculateInitialRole(JID realJID) {
