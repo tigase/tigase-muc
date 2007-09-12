@@ -180,7 +180,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 		}
 	}
 
-	private String myDomain() {
+	public String myDomain() {
 		return getName() + "." + getDefHostName();
 	};
 
