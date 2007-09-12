@@ -77,9 +77,9 @@
     </repositories>
     <dependencies>
         <dependency>
-            <groupId>tigase-server</groupId>
+            <groupId>tigase</groupId>
             <artifactId>tigase-server</artifactId>
-            <version>3.0.0</version>
+            <version>3.0.1-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
