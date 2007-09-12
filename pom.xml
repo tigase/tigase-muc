@@ -1,12 +1,9 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>tigase</groupId>
     <artifactId>tigase-muc</artifactId>
     <name>tigase-muc</name>
-    <version>0.1.5-SNAPSHOT</version>
+    <version>0.1.5</version>
     <description>Multi User Chat component for Tigase</description>
     <url>http://www.tigase.org</url>
     <inceptionYear>2007</inceptionYear>
@@ -30,13 +27,9 @@
         </license>
     </licenses>
     <scm>
-        <connection>
-            scm:svn:https://svn.tigase.org/reps/tigase-muc/trunk
-        </connection>
-        <developerConnection>
-            scm:svn:https://svn.tigase.org/reps/tigase-muc/trunk
-        </developerConnection>
-        <url>https://svn.tigase.org/reps/tigase-muc</url>
+        <connection>scm:svn:https://svn.tigase.org/reps/tigase-muc/tags/tigase-muc-0.1.5</connection>
+        <developerConnection>scm:svn:https://svn.tigase.org/reps/tigase-muc/tags/tigase-muc-0.1.5</developerConnection>
+        <url>https://svn.tigase.org/reps/tigase-muc/tags/tigase-muc-0.1.5</url>
     </scm>
     <organization>
         <name>Tigase</name>
@@ -130,4 +123,3 @@
         </snapshotRepository>
     </distributionManagement>
 </project>
-
