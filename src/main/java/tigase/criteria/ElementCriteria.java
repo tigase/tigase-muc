@@ -101,10 +101,12 @@ public class ElementCriteria implements Criteria {
 		if (this.nextCriteria != null) {
 			List<Element> children = element.getChildren();
 			boolean subres = false;
-			for (Element sub : children) {
-				if (this.nextCriteria.match(sub)) {
-					subres = true;
-					break;
+			if (children != null) {
+				for (Element sub : children) {
+					if (this.nextCriteria.match(sub)) {
+						subres = true;
+						break;
+					}
 				}
 			}
 			result &= subres;
