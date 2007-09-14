@@ -16,8 +16,8 @@
  * If not, see http://www.gnu.org/licenses/.
  *
  * $Rev$
- * Last modified by $Author: $
- * $Date: $
+ * Last modified by $Author$
+ * $Date$
  */
 package tigase.criteria;
 
