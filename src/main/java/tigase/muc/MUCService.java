@@ -89,7 +89,8 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 		Element error = new Element("error");
 		error.setAttribute("code", code);
 		error.setAttribute("type", type);
-		error.addChild(new Element(errorElement, new String[] { "xmlns" }, new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
+		error.addChild(new Element(errorElement, new String[] { "xmlns" },
+				new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
 		p.addChild(error);
 
 		return p;
@@ -248,7 +249,8 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 			String roomID = JIDUtils.getNodeID(packet.getElemTo());
 			// String username = JIDUtils.getNodeResource(packet.getElemTo());
 
-			if ("iq".equals(packet.getElemName()) && (packet.getElement().getChild("query", "http://jabber.org/protocol/disco#info") != null)
+			if ("iq".equals(packet.getElemName())
+					&& (packet.getElement().getChild("query", "http://jabber.org/protocol/disco#info") != null)
 					|| packet.getElement().getChild("query", "http://jabber.org/protocol/disco#items") != null) {
 
 				Packet result = packet.okResult(processDisco(new IQ(packet.getElement())), 0);
@@ -263,7 +265,8 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 				room = this.rooms.getRoomContext(roomID);
 				if (room == null && "presence".equals(packet.getElemName())) {
 					boolean newRoom = !this.rooms.isRoomExists(JID.fromString(roomID));
-					room = new RoomContext(myDomain(), roomID, mucRepository, JID.fromString(packet.getElemFrom()), newRoom);
+					room = new RoomContext(myDomain(), roomID, mucRepository, JID.fromString(packet.getElemFrom()),
+							newRoom);
 					this.rooms.addRoom(room);
 				} else if (room == null && !"presence".equals(packet.getElemName())) {
 					addOutPacket(packet.errorResult("cancel", "item-not-found", null, true));
@@ -272,7 +275,9 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 			}
 
 			List<Element> result = this.processor.processStanza(room, this.rooms, packet.getElement());
-			stanzasToSend.addAll(result);
+			if (result != null) {
+				stanzasToSend.addAll(result);
+			}
 
 			if (stanzasToSend != null && stanzasToSend.size() > 0) {
 				for (Element element : stanzasToSend) {
