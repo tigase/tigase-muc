@@ -33,11 +33,13 @@ package tigase.muc;
  */
 public final class MucVersion {
 
-   
-    private MucVersion() {
-    }
+	private MucVersion() {}
 
-    public static String getVersion() {
-        return MucVersion.class.getPackage().getImplementationVersion();
-    }
+	public static String getImplementationTitle() {
+		return MucVersion.class.getPackage().getImplementationTitle();
+	}
+
+	public static String getVersion() {
+		return MucVersion.class.getPackage().getImplementationVersion();
+	}
 }

@@ -21,40 +21,22 @@
  */
 package tigase.muc;
 
-import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.conf.Configurable;
 import tigase.db.RepositoryFactory;
 import tigase.db.TigaseDBException;
-import tigase.db.UserExistsException;
 import tigase.db.UserNotFoundException;
 import tigase.db.UserRepository;
 import tigase.disco.ServiceEntity;
 import tigase.disco.ServiceIdentity;
 import tigase.disco.XMPPService;
-import tigase.muc.modules.BroadcastMessageModule;
-import tigase.muc.modules.ChangeSubjectModule;
-import tigase.muc.modules.InvitationModule;
-import tigase.muc.modules.RoomModule;
-import tigase.muc.modules.PresenceModule;
-import tigase.muc.modules.PrivateMessageModule;
-import tigase.muc.modules.admin.AdminGetModule;
-import tigase.muc.modules.admin.AdminSetModule;
-import tigase.muc.modules.owner.OwnerGetModule;
-import tigase.muc.modules.owner.OwnerSetModule;
 import tigase.muc.xmpp.JID;
 import tigase.muc.xmpp.stanzas.IQ;
-import tigase.muc.xmpp.stanzas.IQType;
 import tigase.server.AbstractMessageReceiver;
 import tigase.server.Packet;
 import tigase.util.DNSResolver;
@@ -110,7 +92,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 	 * Construct MUC service.
 	 */
 	public MUCService() {
-		log.info("Creating tigase-muc ver." + MucVersion.getVersion() + " Service.");
+		log.info("Creating " + MucVersion.getImplementationTitle() + " ver." + MucVersion.getVersion() + " Service.");
 
 		this.processor = new ModulesProcessor(this);
 	}
@@ -250,6 +232,19 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 			// String username = JIDUtils.getNodeResource(packet.getElemTo());
 
 			if ("iq".equals(packet.getElemName())
+					&& (packet.getElement().getChild("query", "jabber:iq:version") != null)) {
+				JID toJid = JID.fromString(packet.getElemTo());
+				if (toJid.getResource() == null && toJid.getUsername() == null) {
+					Element query = new Element("query", new String[] { "xmlns" }, new String[] { "jabber:iq:version" });
+
+					query.addChild(new Element("name", MucVersion.getImplementationTitle()));
+					query.addChild(new Element("version", MucVersion.getVersion()));
+
+					Packet result = packet.okResult(query, 0);
+					addOutPacket(result);
+					return;
+				}
+			} else if ("iq".equals(packet.getElemName())
 					&& (packet.getElement().getChild("query", "http://jabber.org/protocol/disco#info") != null)
 					|| packet.getElement().getChild("query", "http://jabber.org/protocol/disco#items") != null) {
 
