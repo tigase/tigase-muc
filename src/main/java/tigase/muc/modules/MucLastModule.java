@@ -22,39 +22,44 @@
 package tigase.muc.modules;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
-import tigase.muc.MucVersion;
 import tigase.muc.RoomsContainer;
 import tigase.muc.xmpp.stanzas.IQ;
 import tigase.muc.xmpp.stanzas.IQType;
 import tigase.xml.Element;
 
-public class MucVersionModule implements MUCModule {
+public class MucLastModule implements MUCModule {
+
+	private static final Criteria CRIT = ElementCriteria.name("iq", new String[] { "type" }, new String[] { "get" }).add(
+			ElementCriteria.name("query", "jabber:iq:last"));
+
+	private Calendar calendar = Calendar.getInstance();
 
 	@Override
 	public List<Element> process(RoomsContainer roomsContainer, Element element) {
 		IQ iq = new IQ(element);
 
-		IQ result = new IQ(IQType.RESULT);
-		result.setTo(iq.getFrom());
-		result.setFrom(iq.getTo());
-		result.setId(iq.getId());
+		IQ response = new IQ(IQType.RESULT);
+		response.setTo(iq.getFrom());
+		response.setFrom(iq.getTo());
+		response.setId(iq.getId());
 
-		Element query = new Element("query", new String[] { "xmlns" }, new String[] { "jabber:iq:version" });
-		query.addChild(new Element("name", MucVersion.getImplementationTitle()));
-		query.addChild(new Element("version", MucVersion.getVersion()));
-		result.addChild(query);
+		Calendar now = Calendar.getInstance();
+
+		long seconds = (now.getTimeInMillis() - calendar.getTimeInMillis()) / 1000l;
+
+		Element query = new Element("query", new String[] { "xmlns" }, new String[] { "jabber:iq:last" });
+		query.setAttribute("seconds", String.valueOf(seconds));
+		response.addChild(query);
 
 		List<Element> resultArray = new ArrayList<Element>();
-		resultArray.add(result);
+		resultArray.add(response);
 		return resultArray;
 	}
-
-	private static final Criteria CRIT = ElementCriteria.name("iq", new String[] { "type" }, new String[] { "get" }).add(
-			ElementCriteria.name("query", "jabber:iq:version"));
 
 	@Override
 	public Criteria getModuleCriteria() {
