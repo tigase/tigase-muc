@@ -30,6 +30,7 @@ import tigase.muc.modules.ChangeSubjectModule;
 import tigase.muc.modules.InvitationModule;
 import tigase.muc.modules.MUCModule;
 import tigase.muc.modules.Module;
+import tigase.muc.modules.MucVersionModule;
 import tigase.muc.modules.RoomModule;
 import tigase.muc.modules.PresenceModule;
 import tigase.muc.modules.PrivateMessageModule;
@@ -57,6 +58,7 @@ public class ModulesProcessor {
 
 	public ModulesProcessor(RoomListener listener) {
 		registerModule(new UniqueRoomNameModule());
+		registerModule(new MucVersionModule());
 
 		registerModule(new InvitationModule());
 		registerModule(new ChangeSubjectModule());

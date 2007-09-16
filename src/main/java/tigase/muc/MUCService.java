@@ -229,22 +229,11 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 	public void processPacket(Packet packet) {
 		try {
 			String roomID = JIDUtils.getNodeID(packet.getElemTo());
+			String roomName = JIDUtils.getNodeNick(packet.getElemTo());
+			
 			// String username = JIDUtils.getNodeResource(packet.getElemTo());
 
 			if ("iq".equals(packet.getElemName())
-					&& (packet.getElement().getChild("query", "jabber:iq:version") != null)) {
-				JID toJid = JID.fromString(packet.getElemTo());
-				if (toJid.getResource() == null && toJid.getUsername() == null) {
-					Element query = new Element("query", new String[] { "xmlns" }, new String[] { "jabber:iq:version" });
-
-					query.addChild(new Element("name", MucVersion.getImplementationTitle()));
-					query.addChild(new Element("version", MucVersion.getVersion()));
-
-					Packet result = packet.okResult(query, 0);
-					addOutPacket(result);
-					return;
-				}
-			} else if ("iq".equals(packet.getElemName())
 					&& (packet.getElement().getChild("query", "http://jabber.org/protocol/disco#info") != null)
 					|| packet.getElement().getChild("query", "http://jabber.org/protocol/disco#items") != null) {
 
@@ -256,7 +245,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 			List<Element> stanzasToSend = new LinkedList<Element>();
 
 			RoomContext room = null;
-			if (roomID != null) {
+			if (roomName != null) {
 				room = this.rooms.getRoomContext(roomID);
 				if (room == null && "presence".equals(packet.getElemName())) {
 					boolean newRoom = !this.rooms.isRoomExists(JID.fromString(roomID));

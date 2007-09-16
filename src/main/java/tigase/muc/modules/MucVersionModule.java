@@ -22,19 +22,19 @@
 package tigase.muc.modules;
 
 import java.security.SecureRandom;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.muc.MucVersion;
 import tigase.muc.RoomsContainer;
-import tigase.muc.xmpp.JID;
 import tigase.muc.xmpp.stanzas.IQ;
 import tigase.muc.xmpp.stanzas.IQType;
 import tigase.xml.Element;
 
-public class UniqueRoomNameModule implements MUCModule {
+public class MucVersionModule implements MUCModule {
 
 	private final static String LETTERS_TO_UNIQUE_NAME = "abcdefghijklmnopqrstuvwxyz0123456789";
 
@@ -44,34 +44,23 @@ public class UniqueRoomNameModule implements MUCModule {
 	public List<Element> process(RoomsContainer roomsContainer, Element element) {
 		IQ iq = new IQ(element);
 
-		if (!(iq.getTo().getResource() == null && iq.getTo().getUsername() == null)) {
-			return null;
-		}
-
 		IQ result = new IQ(IQType.RESULT);
 		result.setTo(iq.getFrom());
 		result.setFrom(iq.getTo());
 		result.setId(iq.getId());
 
-		String id;
-		String roomHost = iq.getTo().getBareJID().toString();
-		do {
-			id = "";
-			for (int i = 0; i < 32; i++) {
-				id += LETTERS_TO_UNIQUE_NAME.charAt(random.nextInt(LETTERS_TO_UNIQUE_NAME.length()));
-			}
-		} while (roomsContainer.isRoomExists(JID.fromString((id + "@" + roomHost))));
-
-		Element unique = new Element("unique", id, new String[] { "xmlns" },
-				new String[] { "http://jabber.org/protocol/muc#unique" });
-		result.addChild(unique);
-		List<Element> resultS = new LinkedList<Element>();
-		resultS.add(result);
-		return resultS;
+		Element query = new Element("query", new String[] { "xmlns" }, new String[] { "jabber:iq:version" });
+		query.addChild(new Element("name", MucVersion.getImplementationTitle()));
+		query.addChild(new Element("version", MucVersion.getVersion()));
+		result.addChild(query);
+		
+		List<Element> resultArray = new ArrayList<Element>();
+		resultArray.add(result);
+		return resultArray;
 	}
 
 	private static final Criteria CRIT = ElementCriteria.name("iq", new String[] { "type" }, new String[] { "get" }).add(
-			ElementCriteria.name("unique", "http://jabber.org/protocol/muc#unique"));
+			ElementCriteria.name("query", "jabber:iq:version"));
 
 	@Override
 	public Criteria getModuleCriteria() {
