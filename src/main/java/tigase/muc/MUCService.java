@@ -174,7 +174,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 	 */
 	@Override
 	public void onConfigurationChange(RoomContext room) {
-		ServiceEntity ent = this.serviceEntity.findNode(room.getRoomID());
+		ServiceEntity ent = this.serviceEntity.findNode(room.getId());
 		if (ent != null) {
 			this.serviceEntity.removeItems(ent);
 		}
@@ -183,13 +183,13 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 
 	@Override
 	public void onDestroy(RoomContext room) {
-		ServiceEntity ent = this.serviceEntity.findNode(room.getRoomID());
+		ServiceEntity ent = this.serviceEntity.findNode(room.getId());
 		if (ent != null) {
 			this.serviceEntity.removeItems(ent);
 		}
-		this.rooms.destroyRoom(JID.fromString(room.getRoomID()));
+		this.rooms.destroyRoom(JID.fromString(room.getId()));
 		try {
-			this.mucRepository.removeSubnode(myDomain(), room.getRoomID());
+			this.mucRepository.removeSubnode(myDomain(), room.getId());
 		} catch (UserNotFoundException e) {
 			e.printStackTrace();
 		} catch (TigaseDBException e) {
@@ -201,7 +201,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 	public void onOccupantLeave(RoomContext room) {
 		int c = room.getOccupantsByJID().size();
 		if (c == 0) {
-			this.rooms.removeRoom(JID.fromString(room.getRoomID()));
+			this.rooms.removeRoom(JID.fromString(room.getId()));
 		}
 	}
 

@@ -73,15 +73,14 @@ public class RoomContext extends RoomConfiguration {
 
 	private boolean roomCreated = false;
 
-	private String roomID;
-
 	/**
 	 * @param namespace
 	 * @param id
 	 * @param mucRepocitory
 	 * @param constructorJid
 	 */
-	public RoomContext(String namespace, String id, UserRepository mucRepocitory, JID constructorJid, boolean roomCreated) {
+	public RoomContext(String namespace, String id, UserRepository mucRepocitory, JID constructorJid,
+			boolean roomCreated) {
 		super(namespace, id, mucRepocitory, constructorJid);
 		this.roomCreated = roomCreated;
 		this.lockedRoom = roomCreated;
@@ -161,10 +160,6 @@ public class RoomContext extends RoomConfiguration {
 	public Role getRole(JID jid) {
 		Role result = this.occupantsRole.get(jid.getBareJID());
 		return result == null ? Role.NONE : result;
-	}
-
-	public String getRoomID() {
-		return roomID;
 	}
 
 	public boolean isLockedRoom() {

@@ -149,6 +149,7 @@ public class RoomsContainer {
 	}
 
 	public void removeRoom(JID room) {
+		log.fine("Removing room " + room);
 		this.rooms.remove(room.toString());
 	}
 
