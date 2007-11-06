@@ -103,6 +103,17 @@ public class Form {
 		}
 	}
 
+    public void copyValuesFrom(Form form) {
+		for (Field field : form.fields) {
+			Field f = fieldsByVar.get(field.getVar());
+			if (f != null) {
+				f.setValues(field.getValues());
+			} else {
+				log.warning("Field " + field.getVar() + " is not declared in form '" + title + "'!");
+			}
+		}
+	}    
+
     public Field get(String var) {
         return this.fieldsByVar.get(var);
     }
