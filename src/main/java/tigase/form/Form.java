@@ -84,6 +84,25 @@ public class Form {
         this.fields.add(field);
     }
 
+    public void copyValuesFrom(Element form) {
+		log.finest("Copying values from form ");
+		List<Element> children = form.getChildren();
+		if (children != null) {
+			for (Element sub : children) {
+				if ("field".equals(sub.getName())) {
+					Field field = new Field(sub);
+
+					Field f = fieldsByVar.get(field.getVar());
+					if (f != null) {
+						f.setValues(field.getValues());
+					} else {
+						log.warning("Field " + field.getVar() + " is not declared in form '" + title + "'!");
+					}
+				}
+			}
+		}
+	}
+
     public Field get(String var) {
         return this.fieldsByVar.get(var);
     }
