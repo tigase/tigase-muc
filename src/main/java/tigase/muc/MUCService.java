@@ -92,7 +92,8 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 	 * Construct MUC service.
 	 */
 	public MUCService() {
-		log.info("Creating " + MucVersion.getImplementationTitle() + " ver." + MucVersion.getVersion() + " Service.");
+		log.info("Creating " + MucVersion.getImplementationTitle() +
+			" ver." + MucVersion.getVersion() + " Service.");
 
 		this.processor = new ModulesProcessor(this);
 	}
