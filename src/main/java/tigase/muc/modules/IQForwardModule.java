@@ -31,8 +31,8 @@ import tigase.muc.Role;
 import tigase.muc.RoomContext;
 import tigase.muc.xmpp.JID;
 import tigase.muc.xmpp.stanzas.IQ;
-import tigase.muc.xmpp.stanzas.IQType;
 import tigase.xml.Element;
+import tigase.xmpp.Authorization;
 
 /**
  * 
@@ -45,44 +45,45 @@ import tigase.xml.Element;
  */
 public class IQForwardModule extends AbstractModule {
 
-    @Override
-    protected List<Element> intProcess(RoomContext roomContext, Element el) throws MucInternalException {
-        IQ iq = new IQ(el);
+	private static final Criteria CRIT = ElementCriteria.name("iq");
 
-        List<Element> result = new LinkedList<Element>();
-        String senderNick = roomContext.getOccupantsByJID().get(iq.getFrom());
-        String recipentNick = iq.getTo().getResource();
+	@Override
+	public Criteria getModuleCriteria() {
+		return CRIT;
+	}
 
-        if (recipentNick == null) {
-            return null;
-        }
+	@Override
+	protected List<Element> intProcess(RoomContext roomContext, Element el) throws MucInternalException {
+		IQ iq = new IQ(el);
 
-        JID recipentJID = roomContext.getOccupantsByNick().get(recipentNick);
+		List<Element> result = new LinkedList<Element>();
+		String senderNick = roomContext.getOccupantsByJID().get(iq.getFrom());
+		String recipentNick = iq.getTo().getResource();
 
-        if (recipentJID == null) {
-            throw new MucInternalException(iq, "item-not-found", "404", "cancel");
-        }
+		if (recipentNick == null) {
+			return null;
+		}
 
-        JID senderJID = JID.fromString(iq.getAttribute("from"));
+		JID recipentJID = roomContext.getOccupantsByNick().get(recipentNick);
 
-        // broadcast message
-        if (roomContext.getOccupantsByJID().get(senderJID) == null || roomContext.getRole(senderJID) == Role.VISITOR) {
-            throw new MucInternalException(iq, "not-acceptable", "406", "modify", "Only occupants are allowed to send messages to occupants");
-        }
+		if (recipentJID == null) {
+			throw new MucInternalException(iq, Authorization.ITEM_NOT_FOUND);
+		}
 
-        Element message = iq.clone();
-        message.setAttribute("from", roomContext.getId() + "/" + senderNick);
-        message.setAttribute("to", recipentJID.toString());
-        result.add(message);
+		JID senderJID = JID.fromString(iq.getAttribute("from"));
 
-        return result;
-    }
+		// broadcast message
+		if (roomContext.getOccupantsByJID().get(senderJID) == null || roomContext.getRole(senderJID) == Role.VISITOR) {
+			throw new MucInternalException(iq, Authorization.NOT_ACCEPTABLE,
+					"Only occupants are allowed to send messages to occupants");
+		}
 
-    private static final Criteria CRIT = ElementCriteria.name("iq");
+		Element message = iq.clone();
+		message.setAttribute("from", roomContext.getId() + "/" + senderNick);
+		message.setAttribute("to", recipentJID.toString());
+		result.add(message);
 
-    @Override
-    public Criteria getModuleCriteria() {
-        return CRIT;
-    }
+		return result;
+	}
 
 }

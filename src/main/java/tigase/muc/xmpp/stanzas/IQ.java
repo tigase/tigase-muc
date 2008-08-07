@@ -34,44 +34,44 @@ import tigase.xml.Element;
  */
 public class IQ extends AbstractStanza<IQType> {
 
-    /**
-     * Construct IQ stanza with type.
-     * 
-     * @param iqType
-     *            IQ stanza type
-     */
-    public IQ(final IQType iqType) {
-        super("iq");
-        setType(iqType);
-    };
+	/**
+	 * Construct a IQ from XML element.
+	 * 
+	 * @param packet
+	 *            XML element.
+	 */
+	public IQ(final Element packet) {
+		super(packet);
+	};
 
-    /**
-     * Construct a IQ from XML element.
-     * 
-     * @param packet
-     *            XML element.
-     */
-    public IQ(final Element packet) {
-        super(packet);
-    }
+	/**
+	 * Construct IQ stanza with type.
+	 * 
+	 * @param iqType
+	 *            IQ stanza type
+	 */
+	public IQ(final IQType iqType) {
+		super("iq");
+		setType(iqType);
+	}
 
-    /**
-     * Create Result IQ stanza. TO addres is copied from FROM. ID is copied from
-     * current stanza.
-     * 
-     * @return new IQ stanza.
-     */
-    public IQ createResultIQ() {
-        IQ result = new IQ(IQType.RESULT);
-        result.setId(getId());
-        result.setTo(getFrom());
-        return result;
-    }
+	/**
+	 * Create Result IQ stanza. TO addres is copied from FROM. ID is copied from
+	 * current stanza.
+	 * 
+	 * @return new IQ stanza.
+	 */
+	public IQ createResultIQ() {
+		IQ result = new IQ(IQType.RESULT);
+		result.setId(getId());
+		result.setTo(getFrom());
+		return result;
+	}
 
-    /** {@inheritDoc} */
-    public IQType getType() {
-        String type = getAttribute("type");
-        return type == null ? null : IQType.valueOf(type.toUpperCase());
-    }
+	/** {@inheritDoc} */
+	public IQType getType() {
+		String type = getAttribute("type");
+		return type == null ? null : IQType.valueOf(type.toUpperCase());
+	}
 
 }

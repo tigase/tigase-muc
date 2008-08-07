@@ -42,6 +42,8 @@ import tigase.server.Packet;
 import tigase.util.DNSResolver;
 import tigase.util.JIDUtils;
 import tigase.xml.Element;
+import tigase.xmpp.Authorization;
+import tigase.xmpp.PacketErrorTypeException;
 
 /**
  * Implements MUC service for tigase server.
@@ -54,12 +56,11 @@ import tigase.xml.Element;
  */
 public class MUCService extends AbstractMessageReceiver implements XMPPService, Configurable, RoomListener {
 
+	private static final String MUC_ADMIN_JIDS_KEY = "muc-admin-jids";
+	private static final String MUC_ONLY_ADMIN_CAN_CREATE_ROOMS_KEY = "muc-only-admin-can-create-rooms";
 	private static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
-
 	private static final String MUC_REPO_CLASS_PROP_VAL = "tigase.db.xml.XMLRepository";
-
 	private static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
-
 	private static final String MUC_REPO_URL_PROP_VAL = "muc-repository.xml";
 
 	public static Element errorPresence(JID from, JID to, String type, String code, String errorElement) {
@@ -71,16 +72,27 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 		Element error = new Element("error");
 		error.setAttribute("code", code);
 		error.setAttribute("type", type);
-		error.addChild(new Element(errorElement, new String[] { "xmlns" },
-				new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
+		error.addChild(new Element(errorElement, new String[] { "xmlns" }, new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" }));
 		p.addChild(error);
 
 		return p;
 	}
 
+	private static boolean in(final String value, final String[] tab) {
+		for (String string : tab) {
+			if (value != null && value.equals(string))
+				return true;
+		}
+		return false;
+	}
+
+	private String[] adminJids;
+
 	private Logger log = Logger.getLogger(this.getClass().getName());
 
 	private UserRepository mucRepository;
+
+	private Boolean onlyAdminCanCreateRoom;
 
 	private ModulesProcessor processor;
 
@@ -92,8 +104,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 	 * Construct MUC service.
 	 */
 	public MUCService() {
-		log.info("Creating " + MucVersion.getImplementationTitle() +
-			" ver." + MucVersion.getVersion() + " Service.");
+		log.info("Creating " + MucVersion.getImplementationTitle() + " ver." + MucVersion.getVersion() + " Service.");
 
 		this.processor = new ModulesProcessor(this);
 	}
@@ -125,6 +136,7 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 		if (params.get(GEN_USER_DB) != null) {
 			conf_db = (String) params.get(GEN_USER_DB);
 		} // end of if (params.get(GEN_USER_DB) != null)
+
 		if (conf_db != null) {
 			if (conf_db.equals("mysql")) {
 				repo_class = MYSQL_REPO_CLASS_PROP_VAL;
@@ -135,11 +147,17 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 				repo_uri = PGSQL_REPO_URL_PROP_VAL;
 			}
 		} // end of if (conf_db != null)
+
 		if (params.get(GEN_USER_DB_URI) != null) {
 			repo_uri = (String) params.get(GEN_USER_DB_URI);
 		} // end of if (params.get(GEN_USER_DB_URI) != null)
+
 		props.put(MUC_REPO_CLASS_PROP_KEY, repo_class);
 		props.put(MUC_REPO_URL_PROP_KEY, repo_uri);
+
+		props.put(MUC_ADMIN_JIDS_KEY, new String[] { "admin@localhost" });
+
+		props.put(MUC_ONLY_ADMIN_CAN_CREATE_ROOMS_KEY, Boolean.FALSE);
 
 		props.put(HOSTNAMES_PROP_KEY, hostnamesPropVal);
 		return props;
@@ -162,11 +180,11 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 		} else {
 			return Arrays.asList(serviceEntity.getDiscoItem(null, getName() + "." + jid));
 		}
-	}
+	};
 
 	public String myDomain() {
 		return getName() + "." + getDefHostName();
-	};
+	}
 
 	/*
 	 * (non-Javadoc)
@@ -228,10 +246,11 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 	/** {@inheritDoc} */
 	@Override
 	public void processPacket(Packet packet) {
+		log.finest("Income (" + getComponentId() + "): " + packet);
 		try {
 			String roomID = JIDUtils.getNodeID(packet.getElemTo());
 			String roomName = JIDUtils.getNodeNick(packet.getElemTo());
-			
+
 			// String username = JIDUtils.getNodeResource(packet.getElemTo());
 
 			if ("iq".equals(packet.getElemName())
@@ -249,12 +268,17 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 			if (roomName != null) {
 				room = this.rooms.getRoomContext(roomID);
 				if (room == null && "presence".equals(packet.getElemName())) {
+					JID fromJID = JID.fromString(packet.getElemFrom());
 					boolean newRoom = !this.rooms.isRoomExists(JID.fromString(roomID));
-					room = new RoomContext(myDomain(), roomID, mucRepository, JID.fromString(packet.getElemFrom()),
-							newRoom);
-					this.rooms.addRoom(room);
+					if (newRoom && onlyAdminCanCreateRoom && !in(fromJID.getBareJID().toString(), adminJids)) {
+						addOutPacket(Authorization.NOT_ALLOWED.getResponseMessage(packet, null, true));
+						return;
+					} else {
+						room = new RoomContext(myDomain(), roomID, mucRepository, fromJID, newRoom);
+						this.rooms.addRoom(room);
+					}
 				} else if (room == null && !"presence".equals(packet.getElemName())) {
-					addOutPacket(packet.errorResult("cancel", "item-not-found", null, true));
+					addOutPacket(Authorization.ITEM_NOT_FOUND.getResponseMessage(packet, null, true));
 					return;
 				}
 			}
@@ -269,11 +293,17 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 					addOutPacket(new Packet(element));
 				}
 			} else {
-				addOutPacket(packet.errorResult("cancel", "feature-not-implemented", "Stanza is not processed", true));
+				addOutPacket(Authorization.FEATURE_NOT_IMPLEMENTED.getResponseMessage(packet, "Stanza is not processed", true));
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
 			log.throwing("Muc Service", "processPacket", e);
+			e.printStackTrace();
+			try {
+				addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet, e.getMessage(), true));
+			} catch (PacketErrorTypeException e1) {
+				e1.printStackTrace();
+				log.throwing("Muc Service", "processPacket (sending internal-server-error)", e);
+			}
 		}
 	}
 
@@ -292,8 +322,8 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 			String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
 			String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
 
-			mucRepository = RepositoryFactory.getUserRepository("muc", cls_name, res_uri);
-			mucRepository.initRepository(res_uri);
+			mucRepository = RepositoryFactory.getUserRepository("muc", cls_name, res_uri, null);
+			mucRepository.initRepository(res_uri, null);
 
 			log.config("Initialized " + cls_name + " as user repository: " + res_uri);
 		} catch (Exception e) {
@@ -301,6 +331,10 @@ public class MUCService extends AbstractMessageReceiver implements XMPPService, 
 			e.printStackTrace();
 			System.exit(1);
 		}
+
+		this.adminJids = (String[]) props.get(MUC_ADMIN_JIDS_KEY);
+		this.onlyAdminCanCreateRoom = (Boolean) props.get(MUC_ONLY_ADMIN_CAN_CREATE_ROOMS_KEY);
+
 		String[] hostnames = (String[]) props.get(HOSTNAMES_PROP_KEY);
 		clearRoutings();
 		for (String host : hostnames) {

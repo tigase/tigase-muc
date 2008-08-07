@@ -28,21 +28,23 @@ import tigase.muc.Role;
 import tigase.muc.RoomContext;
 import tigase.muc.xmpp.stanzas.Message;
 import tigase.xml.Element;
+import tigase.xmpp.Authorization;
 
 public class ChangeSubjectModule extends AbstractMessageModule {
 
-	private static final Criteria CRIT = (new ElementCriteria("message", new String[] { "type" }, new String[] { "groupchat" })).add(ElementCriteria.name("subject"));
+	private static final Criteria CRIT = (ElementCriteria.name("message", new String[] { "type" }, new String[] { "groupchat" })).add(ElementCriteria.name("subject"));
 
 	@Override
 	public Criteria getModuleCriteria() {
 		return CRIT;
 	}
 
+	@Override
 	protected void preProcess(RoomContext roomContext, Message element, String senderNick) throws MucInternalException {
 		Element subject = element.getChild("subject");
 
 		if (!roomContext.isRoomconfigChangeSubject() && roomContext.getRole(element.getFrom()) != Role.MODERATOR) {
-			throw new MucInternalException(element, "forbidden", "403", "auth");
+			throw new MucInternalException(element, Authorization.FORBIDDEN);
 		}
 		roomContext.setCurrentSubject(new Message(element.clone()));
 		roomContext.getCurrentSubject().setAttribute("from", roomContext.getId() + "/" + senderNick);

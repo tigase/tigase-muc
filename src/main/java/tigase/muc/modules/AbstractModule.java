@@ -33,7 +33,7 @@ public abstract class AbstractModule implements RoomModule {
 
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 
-    protected abstract List<Element> intProcess(final RoomContext roomContext, final Element element) throws MucInternalException;
+	protected abstract List<Element> intProcess(final RoomContext roomContext, final Element element) throws MucInternalException;
 
 	@Override
 	public final List<Element> process(final RoomContext roomContext, final Element element) {

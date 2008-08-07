@@ -32,80 +32,80 @@ package tigase.muc.xmpp;
  */
 public interface Stanza<E extends StanzaType> {
 
-    /**
-     * Set recipents Jabber Identifier.
-     * 
-     * @param to
-     *            JID of recipent
-     */
-    void setTo(JID to);
+	/**
+	 * Return sender Jabber Identifier.
+	 * 
+	 * @return JID of sender.
+	 */
+	JID getFrom();
 
-    /**
-     * Return recipents Jabber Identifier.
-     * 
-     * @return JID of recipent.
-     */
-    JID getTo();
+	/**
+	 * Return <code>id</code> parameter.
+	 * 
+	 * @return identifier
+	 */
+	String getId();
 
-    /**
-     * Set sender Jabber Identifier.
-     * 
-     * @param from
-     *            JID of sender.
-     */
-    void setFrom(JID from);
+	/**
+	 * Return recipents Jabber Identifier.
+	 * 
+	 * @return JID of recipent.
+	 */
+	JID getTo();
 
-    /**
-     * Return sender Jabber Identifier.
-     * 
-     * @return JID of sender.
-     */
-    JID getFrom();
+	/**
+	 * Get stanza type.
+	 * 
+	 * @see {@link StanzaType}
+	 * @return type of stanza
+	 */
+	E getType();
 
-    /**
-     * Set <code>id</code> parameter. Need in request-response.
-     * 
-     * @param id
-     *            identifier
-     */
-    void setId(String id);
+	/**
+	 * Return XML natural language name.
+	 * 
+	 * @return language name
+	 */
+	String getXmlLang();
 
-    /**
-     * Return <code>id</code> parameter.
-     * 
-     * @return identifier
-     */
-    String getId();
+	/**
+	 * Set sender Jabber Identifier.
+	 * 
+	 * @param from
+	 *            JID of sender.
+	 */
+	void setFrom(JID from);
 
-    /**
-     * Set stanza type kind of {@link StanzaType}.
-     * 
-     * @see StanzaType
-     * @param type
-     *            type of stanza
-     */
-    void setType(E type);
+	/**
+	 * Set <code>id</code> parameter. Need in request-response.
+	 * 
+	 * @param id
+	 *            identifier
+	 */
+	void setId(String id);
 
-    /**
-     * Get stanza type.
-     * 
-     * @see {@link StanzaType}
-     * @return type of stanza
-     */
-    E getType();
+	/**
+	 * Set recipents Jabber Identifier.
+	 * 
+	 * @param to
+	 *            JID of recipent
+	 */
+	void setTo(JID to);
 
-    /**
-     * Set XML natural language name.
-     * 
-     * @param xmlLang
-     *            language name.
-     */
-    void setXmlLang(String xmlLang);
+	/**
+	 * Set stanza type kind of {@link StanzaType}.
+	 * 
+	 * @see StanzaType
+	 * @param type
+	 *            type of stanza
+	 */
+	void setType(E type);
 
-    /**
-     * Return XML natural language name.
-     * 
-     * @return language name
-     */
-    String getXmlLang();
+	/**
+	 * Set XML natural language name.
+	 * 
+	 * @param xmlLang
+	 *            language name.
+	 */
+	void setXmlLang(String xmlLang);
 }

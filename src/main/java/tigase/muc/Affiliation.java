@@ -34,45 +34,45 @@ package tigase.muc;
  * @version $Rev$
  */
 public enum Affiliation {
-    /**
-     * The Jabber user who created the room or a Jabber user who has been
-     * designated by the room creator or owner as someone with owner privileges
-     * (if allowed); is allowed to change defining room features as well as
-     * perform all administrative functions.
-     */
-    OWNER(3),
-    /**
-     * A user empowered by the room owner to perform administrative functions
-     * such as banning users; however, is not allowed to change defining room
-     * features.
-     */
-    ADMIN(2),
-    /**
-     * A user who is on the "whitelist" for a members-only room or who is
-     * registered with an open room.
-     */
-    MEMBER(1),
-    /**
-     * Absence of role. Internal usage only.
-     */
-    NONE(0),
-    /**
-     * A user who has been banned from a room. An outcast has an affiliation of
-     * "outcast".
-     */
-    OUTCAST(-1);
+	/**
+	 * A user empowered by the room owner to perform administrative functions
+	 * such as banning users; however, is not allowed to change defining room
+	 * features.
+	 */
+	ADMIN(2),
+	/**
+	 * A user who is on the "whitelist" for a members-only room or who is
+	 * registered with an open room.
+	 */
+	MEMBER(1),
+	/**
+	 * Absence of role. Internal usage only.
+	 */
+	NONE(0),
+	/**
+	 * A user who has been banned from a room. An outcast has an affiliation of
+	 * "outcast".
+	 */
+	OUTCAST(-1),
+	/**
+	 * The Jabber user who created the room or a Jabber user who has been
+	 * designated by the room creator or owner as someone with owner privileges
+	 * (if allowed); is allowed to change defining room features as well as
+	 * perform all administrative functions.
+	 */
+	OWNER(3);
 
-    private int weight;
+	private int weight;
 
-    private Affiliation(int weight) {
-        this.weight = weight;
-    }
+	private Affiliation(int weight) {
+		this.weight = weight;
+	}
 
-    /**
-     * @return Returns the weight.
-     */
-    public int getWeight() {
-        return weight;
-    }
+	/**
+	 * @return Returns the weight.
+	 */
+	public int getWeight() {
+		return weight;
+	}
 
 }

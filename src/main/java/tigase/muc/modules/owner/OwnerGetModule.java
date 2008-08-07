@@ -32,44 +32,46 @@ import tigase.muc.RoomContext;
 import tigase.muc.modules.AbstractModule;
 import tigase.muc.xmpp.stanzas.IQ;
 import tigase.xml.Element;
+import tigase.xmpp.Authorization;
 
 public class OwnerGetModule extends AbstractModule {
 
-    private static final Criteria CRIT = new ElementCriteria("iq", new String[] { "type" }, new String[] { "get" }).add(ElementCriteria.name("query",
-            "http://jabber.org/protocol/muc#owner"));
+	private static final Criteria CRIT = ElementCriteria.name("iq", new String[] { "type" }, new String[] { "get" }).add(
+			ElementCriteria.name("query", "http://jabber.org/protocol/muc#owner"));
 
-    private static final String XMLNS_MUC_OWNER = "http://jabber.org/protocol/muc#owner";
+	private static final String XMLNS_MUC_OWNER = "http://jabber.org/protocol/muc#owner";
 
-    @Override
-    public Criteria getModuleCriteria() {
-        return CRIT;
-    }
+	@Override
+	public Criteria getModuleCriteria() {
+		return CRIT;
+	}
 
-    @Override
-    protected List<Element> intProcess(RoomContext roomContext, Element element) throws MucInternalException {
-        IQ iq = new IQ(element);
-        if (Affiliation.OWNER != roomContext.getAffiliation(iq.getFrom())) {
-            throw new MucInternalException(iq, "forbidden", "403", "auth");
-        }
-        List<Element> result = new LinkedList<Element>();
-        Element query = iq.getChild("query");
+	@Override
+	protected List<Element> intProcess(RoomContext roomContext, Element element) throws MucInternalException {
+		IQ iq = new IQ(element);
+		if (Affiliation.OWNER != roomContext.getAffiliation(iq.getFrom())) {
+			throw new MucInternalException(iq, Authorization.FORBIDDEN);
+		}
+		List<Element> result = new LinkedList<Element>();
+		Element query = iq.getChild("query");
 
-        if (query.getChildren() == null || query.getChildren().size() == 0) {
-            Element answer = new Element("iq");
-            answer.addAttribute("id", iq.getAttribute("id"));
-            answer.addAttribute("type", "result");
-            answer.addAttribute("to", iq.getAttribute("from"));
-            answer.addAttribute("from", roomContext.getId());
+		if (query.getChildren() == null || query.getChildren().size() == 0) {
+			Element answer = new Element("iq");
+			answer.addAttribute("id", iq.getAttribute("id"));
+			answer.addAttribute("type", "result");
+			answer.addAttribute("to", iq.getAttribute("from"));
+			answer.addAttribute("from", roomContext.getId());
 
-            Element answerQuery = new Element("query", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#owner" });
-            answer.addChild(answerQuery);
+			Element answerQuery = new Element("query", new String[] { "xmlns" },
+					new String[] { "http://jabber.org/protocol/muc#owner" });
+			answer.addChild(answerQuery);
 
-            answerQuery.addChild(roomContext.getFormElement().getElement());
+			answerQuery.addChild(roomContext.getFormElement().getElement());
 
-            result.add(answer);
-        }
+			result.add(answer);
+		}
 
-        return result;
-    }
+		return result;
+	}
 
 }

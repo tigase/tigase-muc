@@ -36,9 +36,17 @@ import tigase.xml.Element;
 
 public class UniqueRoomNameModule implements MUCModule {
 
+	private static final Criteria CRIT = ElementCriteria.name("iq", new String[] { "type" }, new String[] { "get" }).add(
+			ElementCriteria.name("unique", "http://jabber.org/protocol/muc#unique"));
+
 	private final static String LETTERS_TO_UNIQUE_NAME = "abcdefghijklmnopqrstuvwxyz0123456789";
 
 	private static Random random = new SecureRandom();
+
+	@Override
+	public Criteria getModuleCriteria() {
+		return CRIT;
+	}
 
 	@Override
 	public List<Element> process(RoomsContainer roomsContainer, Element element) {
@@ -68,14 +76,6 @@ public class UniqueRoomNameModule implements MUCModule {
 		List<Element> resultS = new LinkedList<Element>();
 		resultS.add(result);
 		return resultS;
-	}
-
-	private static final Criteria CRIT = ElementCriteria.name("iq", new String[] { "type" }, new String[] { "get" }).add(
-			ElementCriteria.name("unique", "http://jabber.org/protocol/muc#unique"));
-
-	@Override
-	public Criteria getModuleCriteria() {
-		return CRIT;
 	}
 
 }

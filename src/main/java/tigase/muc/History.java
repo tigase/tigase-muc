@@ -21,12 +21,9 @@
  */
 package tigase.muc;
 
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.Locale;
 import java.util.TimeZone;
 
 import tigase.xml.Element;
@@ -42,39 +39,39 @@ import tigase.xml.Element;
  */
 public class History {
 
-    private static final long serialVersionUID = 1L;
+	private static final long serialVersionUID = 1L;
 
-    private int maxSize;
+	private int maxSize;
 
-    private LinkedList<Element> stanzas = new LinkedList<Element>();
+	private LinkedList<Element> stanzas = new LinkedList<Element>();
 
-    public History(int maxSize) {
-        this.maxSize = maxSize;
-    }
+	public History(int maxSize) {
+		this.maxSize = maxSize;
+	}
 
-    public Iterator<Element> iterator() {
-        return this.stanzas.iterator();
-    }
+	public boolean add(final Element e, String from, String roomId) {
+		Calendar now = Calendar.getInstance();
+		now.setTimeZone(TimeZone.getTimeZone("GMT"));
+		Element message = e.clone();
 
-    public boolean add(final Element e, String from, String roomId) {
-        Calendar now = Calendar.getInstance();
-        now.setTimeZone(TimeZone.getTimeZone("GMT"));
-        Element message = e.clone();
+		message.setAttribute("from", from);
+		message.removeAttribute("to");
 
-        message.setAttribute("from", from);
-        message.removeAttribute("to");
+		if (this.stanzas.size() >= this.maxSize) {
+			this.stanzas.poll();
+		}
 
-        if (this.stanzas.size() >= this.maxSize) {
-            this.stanzas.poll();
-        }
+		Element delay = new Element("delay", new String[] { "xmlns", "stamp" }, new String[] { "urn:xmpp:delay",
+				String.format("%1$tY-%1$tm-%1$tdT%1$tH:%1$tM:%1$tSZ", now) });
+		message.addChild(delay);
+		message.addChild(new Element("x", new String[] { "xmlns", "stamp", "from" }, new String[] { "jabber:x:delay",
+				String.format("%1$tY%1$tm%1$tdT%1$tH:%1$tM:%1$tS", now), roomId }));
 
-        Element delay = new Element("delay", new String[] { "xmlns", "stamp" }, new String[] { "urn:xmpp:delay",
-                String.format("%1$tY-%1$tm-%1$tdT%1$tH:%1$tM:%1$tSZ", now) });
-        message.addChild(delay);
-        message.addChild(new Element("x", new String[] { "xmlns", "stamp", "from" }, new String[] { "jabber:x:delay",
-                String.format("%1$tY%1$tm%1$tdT%1$tH:%1$tM:%1$tS", now), roomId }));
+		return this.stanzas.add(message);
+	}
 
-        return this.stanzas.add(message);
-    }
+	public Iterator<Element> iterator() {
+		return this.stanzas.iterator();
+	}
 
 }

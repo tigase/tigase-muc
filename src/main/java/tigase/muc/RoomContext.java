@@ -22,7 +22,6 @@
 package tigase.muc;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -79,8 +78,7 @@ public class RoomContext extends RoomConfiguration {
 	 * @param mucRepocitory
 	 * @param constructorJid
 	 */
-	public RoomContext(String namespace, String id, UserRepository mucRepocitory, JID constructorJid,
-			boolean roomCreated) {
+	public RoomContext(String namespace, String id, UserRepository mucRepocitory, JID constructorJid, boolean roomCreated) {
 		super(namespace, id, mucRepocitory, constructorJid);
 		this.roomCreated = roomCreated;
 		this.lockedRoom = roomCreated;

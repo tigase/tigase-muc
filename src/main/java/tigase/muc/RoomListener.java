@@ -32,10 +32,10 @@ package tigase.muc;
  */
 public interface RoomListener {
 
-    void onOccupantLeave(RoomContext roomContext);
+	void onConfigurationChange(RoomContext roomContext);
 
-    void onConfigurationChange(RoomContext roomContext);
+	void onDestroy(RoomContext roomContext);
 
-    void onDestroy(RoomContext roomContext);
+	void onOccupantLeave(RoomContext roomContext);
 
 }

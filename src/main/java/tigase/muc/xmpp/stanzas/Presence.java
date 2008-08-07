@@ -34,91 +34,91 @@ import tigase.xml.Element;
  */
 public class Presence extends AbstractStanza<PresenceType> {
 
-    /**
-     * Construct presence stanza.
-     */
-    public Presence() {
-        super("presence");
-    }
+	/**
+	 * Construct presence stanza.
+	 */
+	public Presence() {
+		super("presence");
+	}
 
-    /**
-     * Construct presence stanza.
-     * 
-     * @param packet
-     *            packet with presence stanza.
-     */
-    public Presence(final Element packet) {
-        super(packet);
-    }
+	/**
+	 * Construct presence stanza.
+	 * 
+	 * @param packet
+	 *            packet with presence stanza.
+	 */
+	public Presence(final Element packet) {
+		super(packet);
+	}
 
-    /**
-     * Construct presence stanza.
-     * 
-     * @param type
-     *            presence show type.
-     */
-    public Presence(final PresenceType type) {
-        super("presence");
-        setType(type);
-    }
+	/**
+	 * Construct presence stanza.
+	 * 
+	 * @param type
+	 *            presence show type.
+	 */
+	public Presence(final PresenceType type) {
+		super("presence");
+		setType(type);
+	}
 
-    /**
-     * Return presence priority.
-     * 
-     * @return presence priority
-     */
-    public int getPriority() {
-        Element show = getChild("priority");
-        if (show == null) {
-            return 0;
-        }
-        try {
-            return Integer.valueOf(show.getCData());
-        } catch (Exception e) {
-            return 0;
-        }
-    }
+	/**
+	 * Return presence priority.
+	 * 
+	 * @return presence priority
+	 */
+	public int getPriority() {
+		Element show = getChild("priority");
+		if (show == null) {
+			return 0;
+		}
+		try {
+			return Integer.valueOf(show.getCData());
+		} catch (Exception e) {
+			return 0;
+		}
+	}
 
-    /**
-     * Return status message.
-     * 
-     * @return status message
-     */
-    public String getStatus() {
-        Element status = getChild("status");
-        if (status != null) {
-            return status.getCData();
-        } else {
-            return null;
-        }
-    }
+	/**
+	 * Return status message.
+	 * 
+	 * @return status message
+	 */
+	public String getStatus() {
+		Element status = getChild("status");
+		if (status != null) {
+			return status.getCData();
+		} else {
+			return null;
+		}
+	}
 
-    /** {@inheritDoc} */
-    public PresenceType getType() {
-        String type = getAttribute("type");
-        return type == null ? null : PresenceType.valueOf(type.toUpperCase());
-    }
+	/** {@inheritDoc} */
+	public PresenceType getType() {
+		String type = getAttribute("type");
+		return type == null ? null : PresenceType.valueOf(type.toUpperCase());
+	}
 
-    /**
-     * Set new status message.
-     * 
-     * @param status
-     *            status message.
-     */
-    public void setStatus(String status) {
-        if (status == null) {
-            Element el = getChild("status");
-            if (el != null) {
-                removeChild(el);
-            }
-        } else {
-            Element el = getChild("status");
-            if (el == null) {
-                el = new Element("status");
-                addChild(el);
-            }
-            el.setCData(status);
-        }
-    }
+	/**
+	 * Set new status message.
+	 * 
+	 * @param status
+	 *            status message.
+	 */
+	public void setStatus(String status) {
+		if (status == null) {
+			Element el = getChild("status");
+			if (el != null) {
+				removeChild(el);
+			}
+		} else {
+			Element el = getChild("status");
+			if (el == null) {
+				el = new Element("status");
+				addChild(el);
+			}
+			el.setCData(status);
+		}
+	}
 
 }

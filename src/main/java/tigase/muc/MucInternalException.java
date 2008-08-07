@@ -21,8 +21,8 @@
  */
 package tigase.muc;
 
-import tigase.muc.xmpp.stanzas.Message;
 import tigase.xml.Element;
+import tigase.xmpp.Authorization;
 
 /**
  * 
@@ -39,7 +39,11 @@ public class MucInternalException extends Exception {
 
 	private String code;
 
+	private Authorization errorCondition;
+
 	private Element item;
+
+	private String message;
 
 	private String name;
 
@@ -47,27 +51,18 @@ public class MucInternalException extends Exception {
 
 	private String xmlns = "urn:ietf:params:xml:ns:xmpp-stanzas";
 
-	private String message;
-
-	/**
-	 * @param item
-	 * @param string
-	 * @param string2
-	 * @param string3
-	 */
-	public MucInternalException(Element item, String name, String code, String type) {
-		this.item = item;
-		this.name = name;
-		this.code = code;
-		this.type = type;
+	public MucInternalException(final Element item, final Authorization errorCondition) {
+		this(item, errorCondition, null);
 	}
 
-	public MucInternalException(Element item, String name, String code, String type, String message) {
+	public MucInternalException(final Element item, final Authorization errorCondition, final String message) {
 		this.item = item;
-		this.name = name;
-		this.code = code;
-		this.type = type;
+		this.errorCondition = errorCondition;
 		this.message = message;
+
+		this.name = errorCondition.getCondition();
+		this.code = String.valueOf(errorCondition.getErrorCode());
+		this.type = errorCondition.getErrorType();
 	}
 
 	/**
@@ -75,6 +70,10 @@ public class MucInternalException extends Exception {
 	 */
 	public String getCode() {
 		return code;
+	}
+
+	public Authorization getErrorCondition() {
+		return errorCondition;
 	}
 
 	/**
@@ -110,7 +109,8 @@ public class MucInternalException extends Exception {
 		answer.addAttribute("from", item.getAttribute("to"));
 
 		if (this.message != null) {
-			Element text = new Element("text", this.message, new String[] { "xmlns" }, new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" });
+			Element text = new Element("text", this.message, new String[] { "xmlns" },
+					new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" });
 			answer.addChild(text);
 		}
 

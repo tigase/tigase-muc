@@ -34,6 +34,14 @@ import tigase.xml.Element;
 
 public class MucVersionModule implements MUCModule {
 
+	private static final Criteria CRIT = ElementCriteria.name("iq", new String[] { "type" }, new String[] { "get" }).add(
+			ElementCriteria.name("query", "jabber:iq:version"));
+
+	@Override
+	public Criteria getModuleCriteria() {
+		return CRIT;
+	}
+
 	@Override
 	public List<Element> process(RoomsContainer roomsContainer, Element element) {
 		IQ iq = new IQ(element);
@@ -51,14 +59,6 @@ public class MucVersionModule implements MUCModule {
 		List<Element> resultArray = new ArrayList<Element>();
 		resultArray.add(result);
 		return resultArray;
-	}
-
-	private static final Criteria CRIT = ElementCriteria.name("iq", new String[] { "type" }, new String[] { "get" }).add(
-			ElementCriteria.name("query", "jabber:iq:version"));
-
-	@Override
-	public Criteria getModuleCriteria() {
-		return CRIT;
 	}
 
 }

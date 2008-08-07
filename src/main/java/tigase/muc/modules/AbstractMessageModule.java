@@ -45,9 +45,6 @@ public abstract class AbstractMessageModule extends AbstractModule {
 		return result;
 	}
 
-	protected void preProcess(RoomContext roomContext, Message element, String senderNick) throws MucInternalException {
-	}
-
 	@Override
 	protected List<Element> intProcess(RoomContext roomContext, Element el) throws MucInternalException {
 		Message element = new Message(el);
@@ -64,5 +61,8 @@ public abstract class AbstractMessageModule extends AbstractModule {
 		result.addAll(broadCastToAll(roomContext, element, senderNick));
 
 		return result;
+	}
+
+	protected void preProcess(RoomContext roomContext, Message element, String senderNick) throws MucInternalException {
 	}
 }

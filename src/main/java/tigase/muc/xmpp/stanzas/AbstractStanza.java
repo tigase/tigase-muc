@@ -37,107 +37,107 @@ import tigase.xml.Element;
  */
 public abstract class AbstractStanza<E extends StanzaType> extends Element implements Stanza<E> {
 
-    /**
-     * Construct an empty Stanza.
-     * 
-     * @param name
-     *            name of stanza
-     */
-    public AbstractStanza(final String name) {
-        super(name);
-    }
+	/**
+	 * Construct a Stanza class from XML element.
+	 * 
+	 * @param packet
+	 *            XML element
+	 */
+	public AbstractStanza(final Element packet) {
+		super(packet);
+	}
 
-    /**
-     * Construct a Stanza.
-     * 
-     * @param argName
-     *            name of stanza.
-     * @param argCData
-     *            text stanza body.
-     * @param attNames
-     *            array of attributes names
-     * @param attValues
-     *            array of attributes values
-     */
-    public AbstractStanza(final String argName, final String argCData, final StringBuilder[] attNames,
-            final StringBuilder[] attValues) {
-        super(argName, argCData, attNames, attValues);
-    }
+	/**
+	 * Construct an empty Stanza.
+	 * 
+	 * @param name
+	 *            name of stanza
+	 */
+	public AbstractStanza(final String name) {
+		super(name);
+	}
 
-    /**
-     * Construct a Stanza class from XML element.
-     * 
-     * @param packet
-     *            XML element
-     */
-    public AbstractStanza(final Element packet) {
-        super(packet);
-    }
+	/**
+	 * Construct a Stanza.
+	 * 
+	 * @param argName
+	 *            name of stanza.
+	 * @param argCData
+	 *            text stanza body.
+	 * @param attNames
+	 *            array of attributes names
+	 * @param attValues
+	 *            array of attributes values
+	 */
+	public AbstractStanza(final String argName, final String argCData, final StringBuilder[] attNames,
+			final StringBuilder[] attValues) {
+		super(argName, argCData, attNames, attValues);
+	}
 
-    /** {@inheritDoc} */
-    public JID getFrom() {
-        String jid = getAttribute("from");
-        return jid == null ? null : JID.fromString(jid);
-    }
+	/** {@inheritDoc} */
+	public JID getFrom() {
+		String jid = getAttribute("from");
+		return jid == null ? null : JID.fromString(jid);
+	}
 
-    /** {@inheritDoc} */
-    public String getId() {
-        return getAttribute("id");
-    }
+	/** {@inheritDoc} */
+	public String getId() {
+		return getAttribute("id");
+	}
 
-    /** {@inheritDoc} */
-    public JID getTo() {
-        String jid = getAttribute("to");
-        return jid == null ? null : JID.fromString(jid);
-    }
+	/** {@inheritDoc} */
+	public JID getTo() {
+		String jid = getAttribute("to");
+		return jid == null ? null : JID.fromString(jid);
+	}
 
-    /** {@inheritDoc} */
-    public String getXmlLang() {
-        return getAttribute("xml:lang");
-    }
+	/** {@inheritDoc} */
+	public String getXmlLang() {
+		return getAttribute("xml:lang");
+	}
 
-    /** {@inheritDoc} */
-    public void setFrom(JID from) {
-        if (from == null) {
-            attributes.remove("from");
-        } else {
-            setAttribute("from", from.toString());
-        }
-    }
+	/** {@inheritDoc} */
+	public void setFrom(JID from) {
+		if (from == null) {
+			attributes.remove("from");
+		} else {
+			setAttribute("from", from.toString());
+		}
+	}
 
-    /** {@inheritDoc} */
-    public void setId(String id) {
-        if (id == null) {
-            attributes.remove("id");
-        } else {
-            setAttribute("id", id);
-        }
-    }
+	/** {@inheritDoc} */
+	public void setId(String id) {
+		if (id == null) {
+			attributes.remove("id");
+		} else {
+			setAttribute("id", id);
+		}
+	}
 
-    /** {@inheritDoc} */
-    public void setTo(JID to) {
-        if (to == null) {
-            attributes.remove("to");
-        } else {
-            setAttribute("to", to.toString());
-        }
-    }
+	/** {@inheritDoc} */
+	public void setTo(JID to) {
+		if (to == null) {
+			attributes.remove("to");
+		} else {
+			setAttribute("to", to.toString());
+		}
+	}
 
-    /** {@inheritDoc} */
-    public void setType(E type) {
-        if (type == null) {
-            attributes.remove("type");
-        } else {
-            setAttribute("type", type.toString());
-        }
-    }
+	/** {@inheritDoc} */
+	public void setType(E type) {
+		if (type == null) {
+			attributes.remove("type");
+		} else {
+			setAttribute("type", type.toString());
+		}
+	}
 
-    /** {@inheritDoc} */
-    public void setXmlLang(String xmlLang) {
-        if (xmlLang == null) {
-            attributes.remove("xml:lang");
-        } else {
-            setAttribute("xml:lang", xmlLang);
-        }
-    }
+	/** {@inheritDoc} */
+	public void setXmlLang(String xmlLang) {
+		if (xmlLang == null) {
+			attributes.remove("xml:lang");
+		} else {
+			setAttribute("xml:lang", xmlLang);
+		}
+	}
 }

@@ -40,6 +40,11 @@ public class MucLastModule implements MUCModule {
 	private Calendar calendar = Calendar.getInstance();
 
 	@Override
+	public Criteria getModuleCriteria() {
+		return CRIT;
+	}
+
+	@Override
 	public List<Element> process(RoomsContainer roomsContainer, Element element) {
 		IQ iq = new IQ(element);
 
@@ -59,11 +64,6 @@ public class MucLastModule implements MUCModule {
 		List<Element> resultArray = new ArrayList<Element>();
 		resultArray.add(response);
 		return resultArray;
-	}
-
-	@Override
-	public Criteria getModuleCriteria() {
-		return CRIT;
 	}
 
 }

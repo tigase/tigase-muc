@@ -34,40 +34,40 @@ package tigase.muc;
  * @version $Rev$
  */
 public enum Role {
-    /**
-     * A room role that is usually associated with room admins but that may be
-     * granted to non-admins; is allowed to kick users, grant and revoke voice,
-     * etc.
-     */
-    MODERATOR(3),
-    /**
-     * An occupant who does not have administrative privileges; in a moderated
-     * room, a participant is further defined as having voice (in contrast to a
-     * visitor).
-     */
-    PARTICIPANT(2),
-    /**
-     * In a moderated room, an occupant who does not have voice (in contrast to
-     * a participant).
-     */
-    VISITOR(1),
+	/**
+	 * A room role that is usually associated with room admins but that may be
+	 * granted to non-admins; is allowed to kick users, grant and revoke voice,
+	 * etc.
+	 */
+	MODERATOR(3),
+	/**
+	 * Internal usage only.
+	 */
+	NONE(0),
+	/**
+	 * An occupant who does not have administrative privileges; in a moderated
+	 * room, a participant is further defined as having voice (in contrast to a
+	 * visitor).
+	 */
+	PARTICIPANT(2),
 
-    /**
-     * Internal usage only.
-     */
-    NONE(0);
-    
-    private int weight;
+	/**
+	 * In a moderated room, an occupant who does not have voice (in contrast to
+	 * a participant).
+	 */
+	VISITOR(1);
 
-    private Role(int weight) {
-        this.weight = weight;
-    }
+	private int weight;
 
-    /**
-     * @return Returns the weight.
-     */
-    public int getWeight() {
-        return weight;
-    }
+	private Role(int weight) {
+		this.weight = weight;
+	}
+
+	/**
+	 * @return Returns the weight.
+	 */
+	public int getWeight() {
+		return weight;
+	}
 
 }

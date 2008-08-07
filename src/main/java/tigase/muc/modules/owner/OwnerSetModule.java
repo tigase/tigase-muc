@@ -39,6 +39,7 @@ import tigase.muc.xmpp.stanzas.MessageType;
 import tigase.muc.xmpp.stanzas.Presence;
 import tigase.muc.xmpp.stanzas.PresenceType;
 import tigase.xml.Element;
+import tigase.xmpp.Authorization;
 
 /**
  * 
@@ -51,87 +52,88 @@ import tigase.xml.Element;
  */
 public class OwnerSetModule extends AbstractModule {
 
-    private static final Criteria CRIT = new ElementCriteria("iq", new String[] { "type" }, new String[] { "set" }).add(ElementCriteria.name("query",
-            "http://jabber.org/protocol/muc#owner"));
+	private static final Criteria CRIT = ElementCriteria.name("iq", new String[] { "type" }, new String[] { "set" }).add(
+			ElementCriteria.name("query", "http://jabber.org/protocol/muc#owner"));
 
-    private static final String XMLNS_MUC_OWNER = "http://jabber.org/protocol/muc#owner";
+	private static final String XMLNS_MUC_OWNER = "http://jabber.org/protocol/muc#owner";
 
-    private RoomListener roomListener;
+	private RoomListener roomListener;
 
-    public OwnerSetModule(RoomListener roomListener) {
-        this.roomListener = roomListener;
-    }
+	public OwnerSetModule(RoomListener roomListener) {
+		this.roomListener = roomListener;
+	}
 
-    @Override
-    public Criteria getModuleCriteria() {
-        return CRIT;
-    }
+	@Override
+	public Criteria getModuleCriteria() {
+		return CRIT;
+	}
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see tigase.muc.modules.AbstractModule#intProcess(tigase.muc.RoomContext,
-     *      tigase.xml.Element)
-     */
-    @Override
-    protected List<Element> intProcess(RoomContext roomContext, Element element) throws MucInternalException {
-        IQ iq = new IQ(element);
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see tigase.muc.modules.AbstractModule#intProcess(tigase.muc.RoomContext,
+	 * tigase.xml.Element)
+	 */
+	@Override
+	protected List<Element> intProcess(RoomContext roomContext, Element element) throws MucInternalException {
+		IQ iq = new IQ(element);
 
-        if (Affiliation.OWNER != roomContext.getAffiliation(iq.getFrom())) {
-            throw new MucInternalException(iq, "forbidden", "403", "auth");
-        }
+		if (Affiliation.OWNER != roomContext.getAffiliation(iq.getFrom())) {
+			throw new MucInternalException(iq, Authorization.FORBIDDEN);
+		}
 
-        List<Element> result = new ArrayList<Element>();
+		List<Element> result = new ArrayList<Element>();
 
-        Element query = iq.getChild("query");
-        Element destroy = query.getChild("destroy");
-        Element x = query.getChild("x", "jabber:x:data");
+		Element query = iq.getChild("query");
+		Element destroy = query.getChild("destroy");
+		Element x = query.getChild("x", "jabber:x:data");
 
-        boolean ok = false;
-        if (x != null) {
-            ok = roomContext.parseConfig(x);
-            if (roomContext.isLockedRoom()) {
-                Message message = new Message(iq.getFrom(), "Room is unlocked!");
-                message.setFrom(JID.fromString(roomContext.getId()));
-                message.setType(MessageType.GROUPCHAT);
-                result.add(message);
-            }
-            roomContext.setLockedRoom(false);
+		boolean ok = false;
+		if (x != null) {
+			ok = roomContext.parseConfig(x);
+			if (roomContext.isLockedRoom()) {
+				Message message = new Message(iq.getFrom(), "Room is unlocked!");
+				message.setFrom(JID.fromString(roomContext.getId()));
+				message.setType(MessageType.GROUPCHAT);
+				result.add(message);
+			}
+			roomContext.setLockedRoom(false);
 
-            if (this.roomListener != null) {
-                this.roomListener.onConfigurationChange(roomContext);
-            }
+			if (this.roomListener != null) {
+				this.roomListener.onConfigurationChange(roomContext);
+			}
 
-        } else if (destroy != null) {
-            log.info("Destroying room " + roomContext.getId());
-            // Service Removes Each Occupant
-            for (Entry<JID, String> entry : roomContext.getOccupantsByJID().entrySet()) {
-                Presence presence = new Presence(PresenceType.UNAVAILABLE);
-                presence.setTo(entry.getKey());
-                presence.setAttribute("from", roomContext.getId() + "/" + entry.getValue());
-                Element destroyX = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
-                presence.addChild(destroyX);
-                destroyX.addChild(new Element("item", new String[] { "affiliation", "role" }, new String[] { "none", "none" }));
-                destroyX.addChild(destroy);
-                result.add(presence);
-            }
+		} else if (destroy != null) {
+			log.info("Destroying room " + roomContext.getId());
+			// Service Removes Each Occupant
+			for (Entry<JID, String> entry : roomContext.getOccupantsByJID().entrySet()) {
+				Presence presence = new Presence(PresenceType.UNAVAILABLE);
+				presence.setTo(entry.getKey());
+				presence.setAttribute("from", roomContext.getId() + "/" + entry.getValue());
+				Element destroyX = new Element("x", new String[] { "xmlns" },
+						new String[] { "http://jabber.org/protocol/muc#user" });
+				presence.addChild(destroyX);
+				destroyX.addChild(new Element("item", new String[] { "affiliation", "role" }, new String[] { "none", "none" }));
+				destroyX.addChild(destroy);
+				result.add(presence);
+			}
 
-            if (this.roomListener != null) {
-                this.roomListener.onDestroy(roomContext);
-            }
+			if (this.roomListener != null) {
+				this.roomListener.onDestroy(roomContext);
+			}
 
-        }
+		}
 
-        // answer OK
-        if (ok) {
-            Element answer = new Element("iq");
-            answer.addAttribute("id", iq.getAttribute("id"));
-            answer.addAttribute("type", "result");
-            answer.addAttribute("to", iq.getAttribute("from"));
-            answer.addAttribute("from", roomContext.getId());
-            result.add(answer);
-        }
-        return result;
-    }
+		// answer OK
+		if (ok) {
+			Element answer = new Element("iq");
+			answer.addAttribute("id", iq.getAttribute("id"));
+			answer.addAttribute("type", "result");
+			answer.addAttribute("to", iq.getAttribute("from"));
+			answer.addAttribute("from", roomContext.getId());
+			result.add(answer);
+		}
+		return result;
+	}
 
 }

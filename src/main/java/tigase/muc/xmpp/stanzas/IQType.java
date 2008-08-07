@@ -33,42 +33,46 @@ import tigase.muc.xmpp.StanzaType;
  * @version $Rev$
  */
 public enum IQType implements StanzaType {
-    /**
-     * The stanza is a request for information or requirements.
-     */
-    GET {
-        /** {@inheritDoc} */
-        public String toString() {
-            return "get";
-        }
-    },
-    /**
-     * The stanza provides required data, sets new values, or replaces existing
-     * values.
-     */
-    SET {
-        /** {@inheritDoc} */
-        public String toString() {
-            return "set";
-        }
-    },
-    /**
-     * The stanza is a response to a successful get or set request.
-     */
-    RESULT {
-        /** {@inheritDoc} */
-        public String toString() {
-            return "result";
-        }
-    },
-    /**
-     * An error has occurred regarding processing or delivery of a
-     * previously-sent get or set Stanza Errors.
-     */
-    ERROR {
-        /** {@inheritDoc} */
-        public String toString() {
-            return "error";
-        }
-    },
+	/**
+	 * An error has occurred regarding processing or delivery of a
+	 * previously-sent get or set Stanza Errors.
+	 */
+	ERROR {
+		/** {@inheritDoc} */
+		@Override
+		public String toString() {
+			return "error";
+		}
+	},
+	/**
+	 * The stanza is a request for information or requirements.
+	 */
+	GET {
+		/** {@inheritDoc} */
+		@Override
+		public String toString() {
+			return "get";
+		}
+	},
+	/**
+	 * The stanza is a response to a successful get or set request.
+	 */
+	RESULT {
+		/** {@inheritDoc} */
+		@Override
+		public String toString() {
+			return "result";
+		}
+	},
+	/**
+	 * The stanza provides required data, sets new values, or replaces existing
+	 * values.
+	 */
+	SET {
+		/** {@inheritDoc} */
+		@Override
+		public String toString() {
+			return "set";
+		}
+	},
 }

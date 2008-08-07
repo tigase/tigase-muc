@@ -33,6 +33,7 @@ import tigase.muc.RoomContext;
 import tigase.muc.xmpp.JID;
 import tigase.muc.xmpp.stanzas.Message;
 import tigase.xml.Element;
+import tigase.xmpp.Authorization;
 
 /**
  * 
@@ -45,11 +46,11 @@ import tigase.xml.Element;
  */
 public class InvitationModule extends AbstractModule {
 
-	private static final Criteria CRIT_DECLINE = ElementCriteria.name("message").add(ElementCriteria.name("x", "http://jabber.org/protocol/muc#user")).add(
-			ElementCriteria.name("decline"));
+	private static final Criteria CRIT_DECLINE = ElementCriteria.name("message").add(
+			ElementCriteria.name("x", "http://jabber.org/protocol/muc#user")).add(ElementCriteria.name("decline"));
 
-	private static final Criteria CRIT_INVITE = ElementCriteria.name("message").add(ElementCriteria.name("x", "http://jabber.org/protocol/muc#user")).add(
-			ElementCriteria.name("invite"));
+	private static final Criteria CRIT_INVITE = ElementCriteria.name("message").add(
+			ElementCriteria.name("x", "http://jabber.org/protocol/muc#user")).add(ElementCriteria.name("invite"));
 
 	@Override
 	public Criteria getModuleCriteria() {
@@ -64,7 +65,7 @@ public class InvitationModule extends AbstractModule {
 		String recipentNick = element.getTo().getResource();
 
 		if (recipentNick != null) {
-			throw new MucInternalException(element, "jid-malformed", "400", "modify");
+			throw new MucInternalException(element, Authorization.JID_MALFORMED);
 		}
 
 		Element x = element.getChild("x", "http://jabber.org/protocol/muc#user");
@@ -88,15 +89,15 @@ public class InvitationModule extends AbstractModule {
 		}
 
 		if (senderNick == null) {
-			throw new MucInternalException(element, "not-acceptable", "406", "modify");
+			throw new MucInternalException(element, Authorization.NOT_ACCEPTABLE);
 		}
 
 		if (invite != null && !roomContext.isRoomconfigAllowInvites()
 				&& roomContext.getAffiliation(element.getFrom()).getWeight() < Affiliation.ADMIN.getWeight()) {
-			throw new MucInternalException(element, "forbidden", "403", "auth");
+			throw new MucInternalException(element, Authorization.FORBIDDEN);
 		} else if (invite != null) {
-			Message invitingMessage = new Message(JID.fromString(invite.getAttribute("to")), "You have been invited to " + roomContext.getId() + " by "
-					+ element.getFrom().toString() + ".");
+			Message invitingMessage = new Message(JID.fromString(invite.getAttribute("to")), "You have been invited to "
+					+ roomContext.getId() + " by " + element.getFrom().toString() + ".");
 			invitingMessage.setFrom(JID.fromString(roomContext.getId()));
 			Element ix = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
 			invitingMessage.addChild(ix);
