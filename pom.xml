@@ -111,12 +111,12 @@
         <repository>
             <id>tigase</id>
             <name>Tigase Repo</name>
-            <url>scpexe://tigase.org:/home/webapp/root/public_html/htdocs/drupal/files/maven-repository</url>
+            <url>scpexe://maven.tigase.org:/home/webapp/maven-repository</url>
         </repository>
         <snapshotRepository>
             <id>tigase</id>
             <name>Tigase Repo</name>
-            <url>scpexe://tigase.org:/home/webapp/root/public_html/htdocs/drupal/files/maven-repository</url>
+            <url>scpexe://maven.tigase.org:/home/webapp/maven-repository</url>
         </snapshotRepository>
     </distributionManagement>
 </project>
