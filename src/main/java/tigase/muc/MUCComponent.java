@@ -41,6 +41,8 @@ import tigase.muc.exceptions.MUCException;
 import tigase.muc.modules.DiscoInfoModule;
 import tigase.muc.modules.DiscoItemsModule;
 import tigase.muc.modules.GroupchatMessageModule;
+import tigase.muc.modules.IqStanzaForwarderModule;
+import tigase.muc.modules.MediatedInvitationModule;
 import tigase.muc.modules.ModeratorModule;
 import tigase.muc.modules.PresenceModule;
 import tigase.muc.modules.PrivateMessageModule;
@@ -181,6 +183,10 @@ public class MUCComponent extends AbstractMessageReceiver implements XMPPService
 
 		registerModule(new DiscoItemsModule(this.config, this.mucRepository));
 		registerModule(new DiscoInfoModule(this.config, this.mucRepository, getFeaturesFromModule()));
+
+		registerModule(new MediatedInvitationModule(this.config, this.mucRepository));
+
+		registerModule(new IqStanzaForwarderModule(this.config, this.mucRepository));
 	}
 
 	@Override
