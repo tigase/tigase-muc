@@ -1,6 +1,6 @@
 /*
- * Tigase Jabber/XMPP Multi User Chatroom Component
- * Copyright (C) 2007 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
+ * Tigase Jabber/XMPP Multi-User Chat Component
+ * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,25 +22,16 @@
 package tigase.muc;
 
 /**
- * 
- * 
- * <p>
- * Created: 2007-05-28 09:00:48
- * </p>
- * 
  * @author bmalkow
- * @version $Rev$
+ * 
  */
-public final class MucVersion {
-
-	public static String getImplementationTitle() {
-		return MucVersion.class.getPackage().getImplementationTitle();
-	}
-
+public class MucVersion {
 	public static String getVersion() {
-		return MucVersion.class.getPackage().getImplementationVersion();
+		String version = MucVersion.class.getPackage().getImplementationVersion();
+		return version == null ? "0.0.0" : version;
 	}
 
 	private MucVersion() {
 	}
+
 }

@@ -1,6 +1,6 @@
 /*
- * Tigase Jabber/XMPP Multi User Chatroom Component
- * Copyright (C) 2007 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
+ * Tigase Jabber/XMPP Multi-User Chat Component
+ * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,23 +19,19 @@
  * Last modified by $Author$
  * $Date$
  */
-package tigase.muc.modules;
+package tigase.muc;
 
 import java.util.List;
 
-import tigase.muc.RoomContext;
+import tigase.criteria.Criteria;
+import tigase.muc.exceptions.MUCException;
 import tigase.xml.Element;
 
-/**
- * 
- * <p>
- * Created: 2007-06-20 08:44:30
- * </p>
- * 
- * @author bmalkow
- * @version $Rev$
- */
-public interface RoomModule extends Module {
+public interface Module {
 
-	List<Element> process(RoomContext roomContext, Element element);
+	String[] getFeatures();
+
+	Criteria getModuleCriteria();
+
+	List<Element> process(final Element element) throws MUCException;
 }

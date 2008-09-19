@@ -1,6 +1,6 @@
 /*
- * Tigase Jabber/XMPP Multi User Chatroom Component
- * Copyright (C) 2007 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
+ * Tigase Jabber/XMPP Multi-User Chat Component
+ * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,21 +21,28 @@
  */
 package tigase.muc.modules;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.muc.Module;
 import tigase.muc.MucVersion;
-import tigase.muc.RoomsContainer;
-import tigase.muc.xmpp.stanzas.IQ;
-import tigase.muc.xmpp.stanzas.IQType;
+import tigase.muc.exceptions.MUCException;
 import tigase.xml.Element;
 
-public class MucVersionModule implements MUCModule {
+/**
+ * @author bmalkow
+ * 
+ */
+public class SoftwareVersionModule implements Module {
 
-	private static final Criteria CRIT = ElementCriteria.name("iq", new String[] { "type" }, new String[] { "get" }).add(
+	private static final Criteria CRIT = ElementCriteria.nameType("iq", "get").add(
 			ElementCriteria.name("query", "jabber:iq:version"));
+
+	@Override
+	public String[] getFeatures() {
+		return new String[] { "jabber:iq:version" };
+	}
 
 	@Override
 	public Criteria getModuleCriteria() {
@@ -43,22 +50,18 @@ public class MucVersionModule implements MUCModule {
 	}
 
 	@Override
-	public List<Element> process(RoomsContainer roomsContainer, Element element) {
-		IQ iq = new IQ(element);
-
-		IQ result = new IQ(IQType.RESULT);
-		result.setTo(iq.getFrom());
-		result.setFrom(iq.getTo());
-		result.setId(iq.getId());
+	public List<Element> process(Element iq) throws MUCException {
+		Element response = AbstractModule.createResultIQ(iq);
 
 		Element query = new Element("query", new String[] { "xmlns" }, new String[] { "jabber:iq:version" });
-		query.addChild(new Element("name", MucVersion.getImplementationTitle()));
+		query.addChild(new Element("name", "Tigase Multi-User Chat Component"));
 		query.addChild(new Element("version", MucVersion.getVersion()));
-		result.addChild(query);
+		query.addChild(new Element("os", System.getProperty("os.name") + "-" + System.getProperty("os.arch") + "-"
+				+ System.getProperty("os.version") + ", " + System.getProperty("java.vm.name") + "-"
+				+ System.getProperty("java.version") + " " + System.getProperty("java.vm.vendor")));
 
-		List<Element> resultArray = new ArrayList<Element>();
-		resultArray.add(result);
-		return resultArray;
+		response.addChild(query);
+		return AbstractModule.makeArray(response);
 	}
 
 }

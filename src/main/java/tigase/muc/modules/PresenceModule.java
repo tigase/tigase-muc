@@ -1,6 +1,6 @@
 /*
- * Tigase Jabber/XMPP Multi User Chatroom Component
- * Copyright (C) 2007 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
+ * Tigase Jabber/XMPP Multi-User Chat Component
+ * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,87 +21,69 @@
  */
 package tigase.muc.modules;
 
-import java.util.Iterator;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
-import java.util.logging.Logger;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.Affiliation;
-import tigase.muc.MUCService;
-import tigase.muc.MucInternalException;
+import tigase.muc.MucConfig;
 import tigase.muc.Role;
-import tigase.muc.RoomContext;
-import tigase.muc.RoomListener;
-import tigase.muc.xmpp.JID;
-import tigase.muc.xmpp.stanzas.Message;
-import tigase.muc.xmpp.stanzas.MessageType;
-import tigase.muc.xmpp.stanzas.Presence;
+import tigase.muc.Room;
+import tigase.muc.RoomConfig;
+import tigase.muc.RoomConfig.Anonymity;
+import tigase.muc.exceptions.MUCException;
+import tigase.muc.repository.IMucRepository;
 import tigase.xml.Element;
+import tigase.xmpp.Authorization;
 
 /**
- * 
- * <p>
- * Created: 2007-06-20 08:49:49
- * </p>
- * 
  * @author bmalkow
- * @version $Rev$
+ * 
  */
 public class PresenceModule extends AbstractModule {
 
-	private final static Criteria CRIT = ElementCriteria.name("presence");
+	private static final Criteria CRIT = ElementCriteria.name("presence");
 
-	public static final String XMLNS_MUC = "http://jabber.org/protocol/muc";
-	public static final String XMLNS_MUC_USER = "http://jabber.org/protocol/muc#user";
-
-	public static Presence clonePresence(Presence presence) {
-		if (presence == null) {
-			return null;
+	private static Role getDefaultRole(final RoomConfig config, final Affiliation affiliation) {
+		Role newRole;
+		if (config.isRoomModerated() && affiliation == Affiliation.none) {
+			newRole = Role.visitor;
+		} else {
+			switch (affiliation) {
+			case admin:
+				newRole = Role.moderator;
+				break;
+			case member:
+				newRole = Role.participant;
+				break;
+			case none:
+				newRole = Role.participant;
+				break;
+			case outcast:
+				newRole = Role.none;
+				break;
+			case owner:
+				newRole = Role.moderator;
+				break;
+			default:
+				newRole = Role.none;
+				break;
+			}
 		}
-		Element p = presence.clone();
-		Element toRemove = p.getChild("x", XMLNS_MUC);
-		if (toRemove != null) {
-			p.removeChild(toRemove);
-		}
-		return new Presence(p);
+		return newRole;
 	}
 
-	public static Element preparePresenceSubItem(RoomContext roomContext, JID occupantJid, Affiliation occupantAffiliation,
-			Role occupantRole, JID sendingTo) {
-		Element item = new Element("item");
-		// item.setAttribute("affiliation", nick);
-		item.setAttribute("role", occupantRole == null ? "none" : occupantRole.name().toLowerCase());
+	private final GroupchatMessageModule messageModule;
 
-		item.setAttribute("affiliation", occupantAffiliation == null ? "none" : occupantAffiliation.name().toLowerCase());
-
-		Affiliation receiverAffiliation = roomContext.getAffiliation(sendingTo);
-		if (receiverAffiliation != null && roomContext.affiliationCanViewJid(receiverAffiliation)) {
-			item.setAttribute("jid", occupantJid.toString());
-		}
-
-		String nick = roomContext.getOccupantsByJID().get(occupantJid);
-		if (nick != null) {
-			item.setAttribute("nick", nick);
-		}
-
-		return item;
+	public PresenceModule(MucConfig config, IMucRepository mucRepository, GroupchatMessageModule messageModule) {
+		super(config, mucRepository);
+		this.messageModule = messageModule;
 	}
 
-	public static Element preparePresenceSubItem(RoomContext roomContext, JID jid, JID sendingTo) {
-		Role occupantRole = roomContext.getRole(jid);
-		Affiliation occupantAffiliation = roomContext.getAffiliation(jid);
-		return preparePresenceSubItem(roomContext, jid, occupantAffiliation, occupantRole, sendingTo);
-	}
-
-	private Logger log = Logger.getLogger(this.getClass().getName());
-
-	private RoomListener roomListener;
-
-	public PresenceModule(RoomListener roomListener) {
-		this.roomListener = roomListener;
+	@Override
+	public String[] getFeatures() {
+		return null;
 	}
 
 	@Override
@@ -109,244 +91,182 @@ public class PresenceModule extends AbstractModule {
 		return CRIT;
 	}
 
-	@Override
-	protected List<Element> intProcess(RoomContext roomContext, Element e) throws MucInternalException {
-		Presence element = new Presence(e);
-		JID realJID = element.getFrom();
-		String nick = element.getTo().getResource();
+	private List<Element> preparePresenceToAllOccupants(Room room, String roomURL, String nickName, Affiliation affiliation,
+			Role role, String senderJid, boolean newRoomCreated, String newNickName) {
+		List<Element> result = new ArrayList<Element>();
+		Anonymity anonymity = room.getConfig().getRoomAnonymity();
+		for (String occupantJid : room.getOccupantsJids()) {
+			final Affiliation occupantAffiliation = room.getAffiliation(occupantJid);
 
-		String existNick = roomContext.getOccupantsByJID().get(realJID);
+			Element presence;
+			if (newNickName != null) {
+				presence = new Element("presence");
+				presence.setAttribute("type", "unavailable");
+			} else {
+				presence = room.getLastPresenceCopyByJid(senderJid);
+			}
+			presence.setAttribute("from", roomURL + "/" + nickName);
+			presence.setAttribute("to", occupantJid);
 
-		roomContext.getLastReceivedPresence().put(realJID, element);
+			Element x = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
 
-		if (existNick != null && !existNick.equals(nick)) {
-			return processChangingNickname(roomContext, realJID, existNick, element);
-		} else if ("unavailable".equals(element.getAttribute("type"))) {
-			return processExitingARoom(roomContext, realJID, nick, element);
-		} else if (existNick != null && existNick.equals(nick)) {
-			return processNewPresenceStatus(roomContext, realJID, nick, element);
-		} else {
-			return processEnteringToRoom(roomContext, realJID, nick, element);
-		}
-	}
+			Element item = new Element("item", new String[] { "affiliation", "role" }, new String[] { affiliation.name(),
+					role.name() });
 
-	private List<Element> processChangingNickname(RoomContext roomContext, JID realJID, String oldNick, Presence element) {
-		String newNick = element.getTo().getResource();
-		List<Element> result = new LinkedList<Element>();
-
-		if (roomContext.getOccupantsByNick().containsKey(newNick)) {
-			result.add(MUCService.errorPresence(JID.fromString(roomContext.getId()), realJID, "cancel", "409", "conflict"));
-			return result;
-		}
-
-		// Service Sends New Occupant's Presence to All Occupants
-		for (Entry<String, JID> entry : roomContext.getOccupantsByNick().entrySet()) {
-			Presence presence = clonePresence(element);
-			presence.setAttribute("to", entry.getValue().toString());
-			presence.setAttribute("from", roomContext.getId() + "/" + oldNick);
-			presence.setAttribute("type", "unavailable");
-
-			Element x = new Element("x");
-			x.setAttribute("xmlns", XMLNS_MUC_USER);
-
-			Element item = preparePresenceSubItem(roomContext, realJID, entry.getValue());
-			x.addChild(item);
-			item.setAttribute("nick", newNick);
-
-			x.addChild(new Element("status", new String[] { "code" }, new String[] { "303" }));
-			if (entry.getValue().equals(realJID)) {
+			if (senderJid.equals(occupantJid)) {
 				x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
-			}
-			presence.addChild(x);
-
-			result.add(presence);
-		}
-		roomContext.getOccupantsByNick().remove(oldNick);
-		roomContext.getOccupantsByJID().remove(realJID);
-
-		roomContext.getOccupantsByNick().put(newNick, realJID);
-		roomContext.getOccupantsByJID().put(realJID, newNick);
-
-		for (Entry<String, JID> entry : roomContext.getOccupantsByNick().entrySet()) {
-			Presence presence = clonePresence(element);
-			presence.setAttribute("to", entry.getValue().toString());
-			presence.setAttribute("from", roomContext.getId() + "/" + newNick);
-
-			Element x = new Element("x");
-			Element item = preparePresenceSubItem(roomContext, realJID, entry.getValue());
-			x.addChild(item);
-
-			x.setAttribute("xmlns", XMLNS_MUC_USER);
-			if (entry.getValue().equals(realJID)) {
-				x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
-			}
-			presence.addChild(x);
-
-			result.add(presence);
-		}
-
-		return result;
-	}
-
-	private List<Element> processEnteringToRoom(RoomContext roomContext, JID realJID, String nick, Presence element) {
-		List<Element> result = new LinkedList<Element>();
-
-		Element incomX = element.getChild("x", XMLNS_MUC);
-
-		if (roomContext.getAffiliation(realJID) == Affiliation.OUTCAST) {
-			result.add(MUCService.errorPresence(JID.fromString(roomContext.getId()), realJID, "auth", "403", "forbidden"));
-			return result;
-		}
-		if (roomContext.isLockedRoom() && roomContext.getAffiliation(realJID) != Affiliation.OWNER) {
-			result.add(MUCService.errorPresence(JID.fromString(roomContext.getId()), realJID, "cancel", "404", "item-not-found"));
-			return result;
-		}
-		if (roomContext.isRoomconfigMembersOnly()
-				&& roomContext.getAffiliation(realJID).getWeight() < Affiliation.MEMBER.getWeight()) {
-			result.add(MUCService.errorPresence(JID.fromString(roomContext.getId()), realJID, "auth", "407",
-					"registration-required"));
-			return result;
-		}
-		if (roomContext.isRoomconfigPasswordProtectedRoom()) {
-			boolean auth = false;
-			if (incomX != null) {
-				Element pass = incomX.getChild("password");
-				auth = pass != null && roomContext.checkPassword(pass.getCData());
-			}
-			if (!auth) {
-				result.add(MUCService.errorPresence(JID.fromString(roomContext.getId()), realJID, "auth", "401", "not-authorized"));
-				return result;
-			}
-		}
-		if (roomContext.getOccupantsByNick().containsKey(nick)) {
-			result.add(MUCService.errorPresence(JID.fromString(roomContext.getId()), realJID, "cancel", "409", "conflict"));
-			return result;
-		}
-		if (roomContext.getOccupantsByJID().size() >= roomContext.getRoomconfigMaxUsers()) {
-			result.add(MUCService.errorPresence(JID.fromString(roomContext.getId()), realJID, "wait", "503", "service-unavailable"));
-			return result;
-		}
-		// Service Sends Presence from Existing Occupants to New Occupant
-		for (Entry<String, JID> entry : roomContext.getOccupantsByNick().entrySet()) {
-			Presence presence = clonePresence(element);
-			presence.setAttribute("to", realJID.toString());
-			presence.setAttribute("from", roomContext.getId() + "/" + entry.getKey());
-
-			Element x = new Element("x");
-			x.setAttribute("xmlns", XMLNS_MUC_USER);
-			x.addChild(preparePresenceSubItem(roomContext, entry.getValue(), realJID));
-			if (entry.getValue().equals(realJID)) {
-				x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
-			}
-			presence.addChild(x);
-
-			result.add(presence);
-		}
-		roomContext.getOccupantsByNick().put(nick, realJID);
-		roomContext.getOccupantsByJID().put(realJID, nick);
-		Role occupantRole = roomContext.calculateInitialRole(realJID);
-		roomContext.setRole(realJID, occupantRole);
-		// Service Sends Presence from Existing Occupants to New Occupant
-		for (Entry<String, JID> entry : roomContext.getOccupantsByNick().entrySet()) {
-			Presence presence = clonePresence(element);
-			presence.setAttribute("to", entry.getValue().toString());
-			presence.setAttribute("from", roomContext.getId() + "/" + nick);
-
-			Element x = new Element("x");
-			x.setAttribute("xmlns", XMLNS_MUC_USER);
-			x.addChild(preparePresenceSubItem(roomContext, realJID, entry.getValue()));
-			if (entry.getValue().equals(realJID)) {
-				if (roomContext.affiliationCanViewJid(Affiliation.NONE)) {
+				if (anonymity == Anonymity.nonanonymous) {
 					x.addChild(new Element("status", new String[] { "code" }, new String[] { "100" }));
 				}
-				x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
-				if (roomContext.isRoomconfigEnableLogging()) {
+				if (room.getConfig().isLoggingEnabled()) {
 					x.addChild(new Element("status", new String[] { "code" }, new String[] { "170" }));
 				}
-				if (roomContext.isRoomCreated()) {
-					x.addChild(new Element("status", new String[] { "code" }, new String[] { "201" }));
+			}
+			if (newRoomCreated) {
+				x.addChild(new Element("status", new String[] { "code" }, new String[] { "201" }));
+			}
+			if (anonymity == Anonymity.nonanonymous
+					|| (anonymity == Anonymity.semianonymous && occupantAffiliation.isViewOccupantsJid())) {
+				item.setAttribute("jid", senderJid);
+			}
+			if (newNickName != null) {
+				x.addChild(new Element("status", new String[] { "code" }, new String[] { "303" }));
+				item.setAttribute("nick", newNickName);
+			}
+
+			x.addChild(item);
+			presence.addChild(x);
+			result.add(presence);
+		}
+		return result;
+	}
+
+	@Override
+	public List<Element> process(Element element) throws MUCException {
+		try {
+			ArrayList<Element> result = new ArrayList<Element>();
+			final String senderJid = element.getAttribute("from");
+			final String roomId = getRoomId(element.getAttribute("to"));
+			final String nickName = getNicknameFromJid(element.getAttribute("to"));
+			final String presenceType = element.getAttribute("type");
+
+			boolean newRoomCreated = false;
+			boolean exitingRoom = presenceType != null && "unavailable".equals(presenceType);
+
+			if (nickName == null) {
+				throw new MUCException(Authorization.JID_MALFORMED);
+			}
+
+			Room room = repository.getRoom(roomId);
+			if (room == null) {
+				log.info("Creating new room '" + roomId + "' by user " + nickName + "' <" + senderJid + ">");
+				room = repository.createNewRoom(roomId, senderJid);
+				room.addAffiliationByJid(senderJid, Affiliation.owner);
+				room.setRoomLocked(true);
+				newRoomCreated = true;
+			}
+
+			if (!newRoomCreated && room.isRoomLocked() && !exitingRoom) {
+				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Room is locked");
+			}
+
+			if (exitingRoom && !room.isOccupantExistsByJid(senderJid)) {
+				throw new MUCException(Authorization.NOT_ACCEPTABLE);
+			}
+			Anonymity anonymity = room.getConfig().getRoomAnonymity();
+
+			final Affiliation affiliation = room.getAffiliation(senderJid);
+			if (!affiliation.isEnterOpenRoom()) {
+				log.info("User " + nickName + "' <" + senderJid + "> is on rooms '" + roomId + "' blacklist");
+				throw new MUCException(Authorization.FORBIDDEN);
+			} else if (room.getConfig().isRoomMembersOnly() && !affiliation.isEnterMembersOnlyRoom()) {
+				log.info("User " + nickName + "' <" + senderJid + "> is NOT on rooms '" + roomId + "' member list.");
+				throw new MUCException(Authorization.REGISTRATION_REQUIRED);
+			}
+
+			boolean newOccupant = !room.isOccupantExistsByJid(senderJid);
+			final boolean changeNickName = !newOccupant && !room.getOccupantsNickname(senderJid).equals(nickName);
+
+			if ((newOccupant || changeNickName) && room.isNickNameExists(nickName)) {
+				throw new MUCException(Authorization.CONFLICT);
+			}
+
+			if (newOccupant) {
+
+				// Service Sends Presence from Existing Occupants to New
+				// Occupant
+				for (String occupantJid : room.getOccupantsJids()) {
+					final String occupantNickname = room.getOccupantsNickname(occupantJid);
+
+					final Affiliation occupantAffiliation = room.getAffiliation(occupantJid);
+					final Role occupantRole = room.getRoleByJid(occupantJid);
+
+					Element presence = room.getLastPresenceCopyByJid(occupantJid);
+					presence.setAttribute("from", roomId + "/" + occupantNickname);
+					presence.setAttribute("to", senderJid);
+
+					Element x = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
+
+					Element item = new Element("item", new String[] { "affiliation", "role" }, new String[] {
+							occupantAffiliation.name(), occupantRole.name() });
+
+					if (anonymity == Anonymity.nonanonymous
+							|| (anonymity == Anonymity.semianonymous && (affiliation == Affiliation.admin || affiliation == Affiliation.owner))) {
+						item.setAttribute("jid", occupantJid);
+					}
+
+					x.addChild(item);
+					presence.addChild(x);
+					result.add(presence);
 				}
-			}
-			presence.addChild(x);
 
-			result.add(presence);
-		}
-		// service sends subject
-		if (roomContext.getCurrentSubject() != null) {
-			Element subject = roomContext.getCurrentSubject().clone();
-			subject.setAttribute("to", realJID.toString());
-			result.add(subject);
-		}
-		// service Sends new occupant conversation history
-		Iterator<Element> iterator = roomContext.getConversationHistory().iterator();
-		while (iterator.hasNext()) {
-			Element message = iterator.next().clone();
-			message.setAttribute("to", realJID.toString());
-			result.add(message);
-		}
-		if (roomContext.isRoomCreated()) {
-			roomContext.setRoomCreated(false);
-			Message message = new Message(realJID, "Room is locked!");
-			message.setFrom(JID.fromString(roomContext.getId()));
-			message.setType(MessageType.GROUPCHAT);
-			result.add(message);
+				final Role newRole = getDefaultRole(room.getConfig(), affiliation);
 
-		}
-
-		log.fine("Occupant " + realJID + " (" + nick + ") entering room " + roomContext.getId() + ", with role " + occupantRole
-				+ " and affiliation " + roomContext.getAffiliation(realJID));
-		return result;
-	}
-
-	private List<Element> processExitingARoom(RoomContext roomContext, JID realJID, String nick, Presence element) {
-		List<Element> result = new LinkedList<Element>();
-		// Service Sends New Occupant's Presence to All Occupants
-		for (Entry<String, JID> entry : roomContext.getOccupantsByNick().entrySet()) {
-			Presence presence = clonePresence(element);
-			presence.setAttribute("to", entry.getValue().toString());
-			presence.setAttribute("from", roomContext.getId() + "/" + nick);
-
-			Element x = new Element("x");
-			x.setAttribute("xmlns", XMLNS_MUC_USER);
-			if (entry.getValue().equals(realJID)) {
-				x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
-			}
-			presence.addChild(x);
-
-			result.add(presence);
-		}
-		roomContext.getOccupantsByNick().remove(nick);
-		roomContext.getOccupantsByJID().remove(realJID);
-		roomContext.setRole(realJID, null);
-		roomContext.getLastReceivedPresence().remove(realJID);
-
-		if (this.roomListener != null) {
-			this.roomListener.onOccupantLeave(roomContext);
-		}
-
-		log.fine("Occupant " + realJID + " (" + nick + ") leave room " + roomContext.getId());
-		return result;
-	}
-
-	private List<Element> processNewPresenceStatus(RoomContext roomContext, JID realJID, String nick, Presence element) {
-		List<Element> result = new LinkedList<Element>();
-		for (Entry<String, JID> entry : roomContext.getOccupantsByNick().entrySet()) {
-			Presence presence = clonePresence(element);
-			presence.setAttribute("to", entry.getValue().toString());
-			presence.setAttribute("from", roomContext.getId() + "/" + nick);
-
-			Element x = new Element("x");
-			x.setAttribute("xmlns", XMLNS_MUC_USER);
-			x.addChild(preparePresenceSubItem(roomContext, realJID, entry.getValue()));
-			if (entry.getValue().equals(realJID)) {
-				x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
+				log.finest("Occupant '" + nickName + "' <" + senderJid + "> is entering room " + roomId + " as role="
+						+ newRole.name() + ", affiliation=" + affiliation.name());
+				room.addOccupantByJid(senderJid, nickName, newRole);
 			}
 
-			presence.addChild(x);
+			room.updatePresenceByJid(senderJid, element);
+			final Role role = exitingRoom ? Role.none : room.getRoleByJid(senderJid);
 
-			result.add(presence);
+			if (changeNickName) {
+				String nck = room.getOccupantsNickname(senderJid);
+				log.finest("Occupant '" + nck + "' <" + senderJid + "> is changing his nickname to '" + nickName + "'");
+				result.addAll(preparePresenceToAllOccupants(room, roomId, nck, affiliation, role, senderJid, newRoomCreated,
+						nickName));
+				room.changeNickName(senderJid, nickName);
+			}
+
+			// Service Sends New Occupant's Presence to All Occupants
+			result.addAll(preparePresenceToAllOccupants(room, roomId, nickName, affiliation, role, senderJid, newRoomCreated, null));
+
+			if (exitingRoom) {
+				log.finest("Occupant '" + nickName + "' <" + senderJid + "> is leaving room " + roomId);
+				room.removeOccupantByJid(senderJid);
+			}
+
+			if (newOccupant && room.getSubject() != null && room.getSubjectChangerNick() != null) {
+				Element message = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",
+						roomId + "/" + room.getSubjectChangerNick(), senderJid });
+				message.addChild(new Element("subject", room.getSubject()));
+				result.add(message);
+			}
+
+			if (room.isRoomLocked() && newOccupant) {
+				result.add(prepateMucMessage(room, room.getOccupantsNickname(senderJid), "Room is locked. Please configure."));
+			}
+
+			final int occupantsCount = room.getOccupantsCount();
+			if (occupantsCount == 0) {
+				this.repository.leaveRoom(room);
+			}
+			return result;
+		} catch (MUCException e1) {
+			throw e1;
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
-		return result;
 	}
-
 }

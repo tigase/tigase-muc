@@ -1,6 +1,6 @@
 /*
- * Tigase Jabber/XMPP Multi User Chatroom Component
- * Copyright (C) 2007 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
+ * Tigase Jabber/XMPP Multi-User Chat Component
+ * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,19 +19,22 @@
  * Last modified by $Author$
  * $Date$
  */
-package tigase.muc.xmpp;
+package tigase.muc;
 
 /**
- * Interface for implements a stanza types.
- * <p>
- * Created: 2005-01-27 19:48:41
- * </p>
- * 
  * @author bmalkow
- * @version $Rev$
+ * 
  */
-public interface StanzaType {
+public class MucConfig {
 
-	/** {@inheritDoc} */
-	// String toString();
+	private String serviceName;
+
+	public String getServiceName() {
+		return serviceName;
+	}
+
+	void setServiceName(String serviceName) {
+		this.serviceName = serviceName;
+	}
+
 }

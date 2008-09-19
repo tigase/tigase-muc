@@ -1,5 +1,5 @@
 /*
- * Tigase Jabber/XMPP Multi User Chatroom Component
+ * Tigase Jabber/XMPP Publish Subscribe Component
  * Copyright (C) 2007 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -19,26 +19,26 @@
  * Last modified by $Author$
  * $Date$
  */
-package tigase.muc.modules;
+package tigase.muc.repository;
 
-import tigase.criteria.Criteria;
-import tigase.criteria.ElementCriteria;
-import tigase.muc.MucInternalException;
-import tigase.muc.RoomContext;
-import tigase.muc.xmpp.stanzas.Message;
+public class RepositoryException extends Exception {
 
-public class BroadcastMessageModule extends AbstractMessageModule {
+	private static final long serialVersionUID = 1L;
 
-	private static final Criteria CRIT = ElementCriteria.name("message", new String[] { "type" }, new String[] { "groupchat" });
-
-	@Override
-	public Criteria getModuleCriteria() {
-		return CRIT;
+	public RepositoryException() {
+		super();
 	}
 
-	@Override
-	protected void preProcess(RoomContext roomContext, Message element, String senderNick) throws MucInternalException {
-		roomContext.getConversationHistory().add(element, roomContext.getId() + "/" + senderNick, roomContext.getId());
+	public RepositoryException(String message) {
+		super(message);
+	}
+
+	public RepositoryException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
+	public RepositoryException(Throwable cause) {
+		super(cause);
 	}
 
 }

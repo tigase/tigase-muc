@@ -1,6 +1,6 @@
 /*
- * Tigase Jabber/XMPP Multi User Chatroom Component
- * Copyright (C) 2007 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
+ * Tigase Jabber/XMPP Multi-User Chat Component
+ * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,89 +19,61 @@
  * Last modified by $Author$
  * $Date$
  */
-package tigase.muc;
+package tigase.muc.exceptions;
 
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 
-/**
- * 
- * <p>
- * Created: 2007-05-25 11:55:48
- * </p>
- * 
- * @author bmalkow
- * @version $Rev$
- */
-public class MucInternalException extends Exception {
+public class MUCException extends Exception {
 
 	private static final long serialVersionUID = 1L;
 
-	private String code;
+	private final Authorization errorCondition;
 
-	private Authorization errorCondition;
-
-	private Element item;
-
-	private String message;
-
-	private String name;
-
-	private String type;
+	private final String message;
 
 	private String xmlns = "urn:ietf:params:xml:ns:xmpp-stanzas";
 
-	public MucInternalException(final Element item, final Authorization errorCondition) {
-		this(item, errorCondition, null);
+	public MUCException(final Authorization errorCondition) {
+		this(errorCondition, (String) null);
 	}
 
-	public MucInternalException(final Element item, final Authorization errorCondition, final String message) {
-		this.item = item;
+	public MUCException(final Authorization errorCondition, final String message) {
 		this.errorCondition = errorCondition;
 		this.message = message;
-
-		this.name = errorCondition.getCondition();
-		this.code = String.valueOf(errorCondition.getErrorCode());
-		this.type = errorCondition.getErrorType();
 	}
 
 	/**
 	 * @return Returns the code.
 	 */
 	public String getCode() {
-		return code;
+		return String.valueOf(this.errorCondition.getErrorCode());
 	}
 
 	public Authorization getErrorCondition() {
 		return errorCondition;
 	}
 
-	/**
-	 * @return Returns the item.
-	 */
-	public Element getItem() {
-		return item;
+	@Override
+	public String getMessage() {
+		return message;
 	}
 
 	/**
 	 * @return Returns the name.
 	 */
 	public String getName() {
-		return name;
+		return errorCondition.getCondition();
 	}
 
 	/**
 	 * @return Returns the type.
 	 */
 	public String getType() {
-		return type;
+		return errorCondition.getErrorType();
 	}
 
-	public Element makeElement() {
-		return makeElement(true);
-	}
-
-	public Element makeElement(boolean insertOriginal) {
+	public Element makeElement(final Element item, final boolean insertOriginal) {
 		Element answer = insertOriginal ? item.clone() : new Element(item.getName());
 		answer.addAttribute("id", item.getAttribute("id"));
 		answer.addAttribute("type", "error");
@@ -121,11 +93,11 @@ public class MucInternalException extends Exception {
 	/**
 	 * @return
 	 */
-	public Element makeErrorElement() {
+	private Element makeErrorElement() {
 		Element error = new Element("error");
-		error.setAttribute("code", code);
-		error.setAttribute("type", type);
-		error.addChild(new Element(name, new String[] { "xmlns" }, new String[] { xmlns }));
+		error.setAttribute("code", String.valueOf(this.errorCondition.getErrorCode()));
+		error.setAttribute("type", this.errorCondition.getErrorType());
+		error.addChild(new Element(this.errorCondition.getCondition(), new String[] { "xmlns" }, new String[] { xmlns }));
 		return error;
 	}
 

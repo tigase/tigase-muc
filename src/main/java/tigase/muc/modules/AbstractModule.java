@@ -1,6 +1,6 @@
 /*
- * Tigase Jabber/XMPP Multi User Chatroom Component
- * Copyright (C) 2007 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
+ * Tigase Jabber/XMPP Multi-User Chat Component
+ * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,30 +21,70 @@
  */
 package tigase.muc.modules;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import tigase.muc.MucInternalException;
-import tigase.muc.RoomContext;
+import tigase.muc.Module;
+import tigase.muc.MucConfig;
+import tigase.muc.Room;
+import tigase.muc.repository.IMucRepository;
+import tigase.util.JIDUtils;
 import tigase.xml.Element;
 
-public abstract class AbstractModule implements RoomModule {
+/**
+ * @author bmalkow
+ * 
+ */
+public abstract class AbstractModule implements Module {
+
+	public static Element createResultIQ(Element iq) {
+		return new Element("iq", new String[] { "type", "from", "to", "id" }, new String[] { "result", iq.getAttribute("to"),
+				iq.getAttribute("from"), iq.getAttribute("id") });
+	}
+
+	public static String getNicknameFromJid(String jid) {
+		if (jid != null) {
+			return JIDUtils.getNodeResource(jid);
+		} else
+			return null;
+	}
+
+	public static String getRoomId(String jid) {
+		if (jid != null) {
+			return JIDUtils.getNodeNick(jid) == null ? null : JIDUtils.getNodeID(jid);
+		} else
+			return null;
+	}
+
+	public static List<Element> makeArray(Element... elements) {
+		ArrayList<Element> result = new ArrayList<Element>();
+		for (Element element : elements) {
+			result.add(element);
+
+		}
+		return result;
+	}
+
+	protected static Element prepateMucMessage(Room room, String nickname, String message) {
+		String occupantJid = room.getOccupantsJidByNickname(nickname);
+		Element msg = new Element("message", new String[] { "from", "to", "type" }, new String[] { room.getRoomId(), occupantJid,
+				"groupchat" });
+
+		msg.addChild(new Element("body", message));
+
+		return msg;
+	}
+
+	protected final MucConfig config;
 
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 
-	protected abstract List<Element> intProcess(final RoomContext roomContext, final Element element) throws MucInternalException;
+	protected final IMucRepository repository;
 
-	@Override
-	public final List<Element> process(final RoomContext roomContext, final Element element) {
-		try {
-			return intProcess(roomContext, element);
-		} catch (MucInternalException e) {
-			List<Element> result = new LinkedList<Element>();
-			Element answer = e.makeElement(true);
-			answer.setAttribute("from", roomContext.getId());
-			return result;
-		}
-
+	public AbstractModule(final MucConfig config, final IMucRepository mucRepository) {
+		this.config = config;
+		this.repository = mucRepository;
 	}
+
 }

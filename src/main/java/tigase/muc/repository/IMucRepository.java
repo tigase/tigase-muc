@@ -1,6 +1,6 @@
 /*
- * Tigase Jabber/XMPP Multi User Chatroom Component
- * Copyright (C) 2007 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
+ * Tigase Jabber/XMPP Multi-User Chat Component
+ * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,12 +19,31 @@
  * Last modified by $Author$
  * $Date$
  */
-package tigase.muc.modules;
+package tigase.muc.repository;
 
-import tigase.criteria.Criteria;
+import tigase.muc.Room;
+import tigase.muc.RoomConfig;
 
-public interface Module {
+/**
+ * @author bmalkow
+ * 
+ */
+public interface IMucRepository {
 
-	Criteria getModuleCriteria();
+	Room createNewRoom(String roomId, String senderJid) throws RepositoryException;
+
+	RoomConfig getDefaultRoomConfig() throws RepositoryException;
+
+	Room getRoom(String roomId) throws RepositoryException;
+
+	/**
+	 * @param jid
+	 * @return
+	 */
+	String getRoomName(String jid) throws RepositoryException;
+
+	String[] getRoomsIdList() throws RepositoryException;
+
+	void leaveRoom(Room room);
 
 }

@@ -1,6 +1,6 @@
 /*
- * Tigase Jabber/XMPP Multi User Chatroom Component
- * Copyright (C) 2007 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
+ * Tigase Jabber/XMPP Multi-User Chat Component
+ * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,52 +22,117 @@
 package tigase.muc;
 
 /**
- * A temporary position or privilege level within a room, distinct from a user's
- * long-lived affiliation with the room; the possible roles are "moderator",
- * "participant", and "visitor" (it is also possible to have no defined role). A
- * role lasts only for the duration of an occupant's visit to a room.
- * <p>
- * Created: 2007-01-26 16:29:36
- * </p>
- * 
  * @author bmalkow
- * @version $Rev$
+ * 
  */
 public enum Role {
-	/**
-	 * A room role that is usually associated with room admins but that may be
-	 * granted to non-admins; is allowed to kick users, grant and revoke voice,
-	 * etc.
-	 */
-	MODERATOR(3),
-	/**
-	 * Internal usage only.
-	 */
-	NONE(0),
-	/**
-	 * An occupant who does not have administrative privileges; in a moderated
-	 * room, a participant is further defined as having voice (in contrast to a
-	 * visitor).
-	 */
-	PARTICIPANT(2),
 
-	/**
-	 * In a moderated room, an occupant who does not have voice (in contrast to
-	 * a participant).
-	 */
-	VISITOR(1);
+	moderator(3, true, true, true, true, true, true, true, true, true, true, true, true, true), none(0, false, false, false, false,
+			false, false, false, false, false, false, false, false, false), participant(2, true, true, true, true, true, true,
+			true, true, true, false, false, false, false), visitor(1, true, true, true, true, true, true, true, true, false, false,
+			false, false, false);
 
-	private int weight;
+	private final boolean changeAvailabilityStatus;
 
-	private Role(int weight) {
+	private final boolean changeRoomNickname;
+
+	private final boolean grantVoice;
+
+	private final boolean inviteOtherUsers;
+
+	private final boolean kickParticipantsAndVisitors;
+
+	private final boolean modifySubject;
+
+	private final boolean presenceBroadcastedToRoom;
+
+	private final boolean presentInRoom;
+
+	private final boolean receiveMessages;
+
+	private final boolean receiveOccupantPresence;
+
+	private final boolean revokeVoice;
+
+	private final boolean sendMessagesToAll;
+
+	private final boolean sendPrivateMessages;
+
+	private final int weight;
+
+	private Role(int weight, boolean presentInRoom, boolean receiveMessages, boolean receiveOccupantPresence,
+			boolean presenceBroadcastedToRoom, boolean changeAvailabilityStatus, boolean changeRoomNickname,
+			boolean sendPrivateMessages, boolean inviteOtherUsers, boolean sendMessagesToAll, boolean modifySubject,
+			boolean kickParticipantsAndVisitors, boolean grantVoice, boolean revokeVoice) {
 		this.weight = weight;
+		this.presentInRoom = presentInRoom;
+		this.receiveMessages = receiveMessages;
+		this.receiveOccupantPresence = receiveOccupantPresence;
+		this.presenceBroadcastedToRoom = presenceBroadcastedToRoom;
+		this.changeAvailabilityStatus = changeAvailabilityStatus;
+		this.changeRoomNickname = changeRoomNickname;
+		this.sendPrivateMessages = sendPrivateMessages;
+		this.inviteOtherUsers = inviteOtherUsers;
+		this.sendMessagesToAll = sendMessagesToAll;
+		this.modifySubject = modifySubject;
+		this.kickParticipantsAndVisitors = kickParticipantsAndVisitors;
+		this.grantVoice = grantVoice;
+		this.revokeVoice = revokeVoice;
 	}
 
-	/**
-	 * @return Returns the weight.
-	 */
 	public int getWeight() {
 		return weight;
 	}
 
+	public boolean isChangeAvailabilityStatus() {
+		return changeAvailabilityStatus;
+	}
+
+	public boolean isChangeRoomNickname() {
+		return changeRoomNickname;
+	}
+
+	public boolean isGrantVoice() {
+		return grantVoice;
+	}
+
+	public boolean isInviteOtherUsers() {
+		return inviteOtherUsers;
+	}
+
+	public boolean isKickParticipantsAndVisitors() {
+		return kickParticipantsAndVisitors;
+	}
+
+	public boolean isModifySubject() {
+		return modifySubject;
+	}
+
+	public boolean isPresenceBroadcastedToRoom() {
+		return presenceBroadcastedToRoom;
+	}
+
+	public boolean isPresentInRoom() {
+		return presentInRoom;
+	}
+
+	public boolean isReceiveMessages() {
+		return receiveMessages;
+	}
+
+	public boolean isReceiveOccupantPresence() {
+		return receiveOccupantPresence;
+	}
+
+	public boolean isRevokeVoice() {
+		return revokeVoice;
+	}
+
+	public boolean isSendMessagesToAll() {
+		return sendMessagesToAll;
+	}
+
+	public boolean isSendPrivateMessages() {
+		return sendPrivateMessages;
+	}
 }

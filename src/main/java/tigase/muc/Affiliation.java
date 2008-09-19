@@ -1,6 +1,6 @@
 /*
- * Tigase Jabber/XMPP Multi User Chatroom Component
- * Copyright (C) 2007 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
+ * Tigase Jabber/XMPP Multi-User Chat Component
+ * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,57 +22,109 @@
 package tigase.muc;
 
 /**
- * A long-lived association or connection with a room; the possible affiliations
- * are "owner", "admin", "member", and "outcast" (naturally it is also possible
- * to have no affiliation); affiliation is distinct from role. An affiliation
- * lasts across a user's visits to a room.
- * <p>
- * Created: 2007-01-26 16:30:15
- * </p>
- * 
  * @author bmalkow
- * @version $Rev$
+ * 
  */
 public enum Affiliation {
-	/**
-	 * A user empowered by the room owner to perform administrative functions
-	 * such as banning users; however, is not allowed to change defining room
-	 * features.
-	 */
-	ADMIN(2),
-	/**
-	 * A user who is on the "whitelist" for a members-only room or who is
-	 * registered with an open room.
-	 */
-	MEMBER(1),
-	/**
-	 * Absence of role. Internal usage only.
-	 */
-	NONE(0),
-	/**
-	 * A user who has been banned from a room. An outcast has an affiliation of
-	 * "outcast".
-	 */
-	OUTCAST(-1),
-	/**
-	 * The Jabber user who created the room or a Jabber user who has been
-	 * designated by the room creator or owner as someone with owner privileges
-	 * (if allowed); is allowed to change defining room features as well as
-	 * perform all administrative functions.
-	 */
-	OWNER(3);
+	admin(30, true, true, true, true, true, true, true, false, false, false, false, true), member(20, true, true, true, true,
+			false, false, false, false, false, false, false, false), none(10, true, true, false, false, false, false, false, false,
+			false, false, false, false), outcast(0, false, false, false, false, false, false, false, false, false, false, false,
+			false), owner(40, true, true, true, true, true, true, true, true, true, true, true, true);
 
-	private int weight;
+	private final boolean banMembersAndUnaffiliatedUsers;
 
-	private Affiliation(int weight) {
+	private final boolean changeRoomDefinition;
+
+	private final boolean destroyRoom;
+
+	private final boolean editAdminList;
+
+	private final boolean editMemberList;
+
+	private final boolean editModeratorList;
+
+	private final boolean editOwnerList;
+
+	private final boolean enterMembersOnlyRoom;
+
+	private final boolean enterOpenRoom;
+
+	private final boolean registerWithOpenRoom;
+
+	private final boolean retrieveMemberList;
+
+	private final boolean viewOccupantsJid;
+
+	private final int weight;
+
+	private Affiliation(int weight, boolean enterOpenRoom, boolean registerWithOpenRoom, boolean retrieveMemberList,
+			boolean enterMembersOnlyRoom, boolean banMembersAndUnaffiliatedUsers, boolean editMemberList,
+			boolean editModeratorList, boolean editAdminList, boolean editOwnerList, boolean changeRoomDefinition,
+			boolean destroyRoom, boolean viewOccupantsJid) {
 		this.weight = weight;
+		this.enterOpenRoom = enterOpenRoom;
+		this.registerWithOpenRoom = registerWithOpenRoom;
+		this.retrieveMemberList = retrieveMemberList;
+		this.enterMembersOnlyRoom = enterMembersOnlyRoom;
+		this.banMembersAndUnaffiliatedUsers = banMembersAndUnaffiliatedUsers;
+		this.editMemberList = editMemberList;
+		this.editModeratorList = editModeratorList;
+		this.editAdminList = editAdminList;
+		this.editOwnerList = editOwnerList;
+		this.changeRoomDefinition = changeRoomDefinition;
+		this.destroyRoom = destroyRoom;
+		this.viewOccupantsJid = viewOccupantsJid;
 	}
 
-	/**
-	 * @return Returns the weight.
-	 */
 	public int getWeight() {
 		return weight;
 	}
 
+	public boolean isBanMembersAndUnaffiliatedUsers() {
+		return banMembersAndUnaffiliatedUsers;
+	}
+
+	public boolean isChangeRoomDefinition() {
+		return changeRoomDefinition;
+	}
+
+	public boolean isDestroyRoom() {
+		return destroyRoom;
+	}
+
+	public boolean isEditAdminList() {
+		return editAdminList;
+	}
+
+	public boolean isEditMemberList() {
+		return editMemberList;
+	}
+
+	public boolean isEditModeratorList() {
+		return editModeratorList;
+	}
+
+	public boolean isEditOwnerList() {
+		return editOwnerList;
+	}
+
+	public boolean isEnterMembersOnlyRoom() {
+		return enterMembersOnlyRoom;
+	}
+
+	public boolean isEnterOpenRoom() {
+		return enterOpenRoom;
+	}
+
+	public boolean isRegisterWithOpenRoom() {
+		return registerWithOpenRoom;
+	}
+
+	public boolean isRetrieveMemberList() {
+		return retrieveMemberList;
+	}
+
+	public boolean isViewOccupantsJid() {
+		return viewOccupantsJid;
+	}
 }
