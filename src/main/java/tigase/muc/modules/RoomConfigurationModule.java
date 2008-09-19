@@ -73,6 +73,10 @@ public class RoomConfigurationModule extends AbstractModule {
 	@Override
 	public List<Element> process(Element element) throws MUCException {
 		try {
+			if (getNicknameFromJid(element.getAttribute("to")) != null) {
+				throw new MUCException(Authorization.BAD_REQUEST);
+			}
+
 			final String type = element.getAttribute("type");
 			if ("set".equals(type)) {
 				return processSet(element);

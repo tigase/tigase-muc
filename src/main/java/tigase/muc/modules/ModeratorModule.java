@@ -198,6 +198,11 @@ public class ModeratorModule extends AbstractModule {
 	public List<Element> process(Element element) throws MUCException {
 		try {
 			final String type = element.getAttribute("type");
+
+			if (getNicknameFromJid(element.getAttribute("to")) != null) {
+				throw new MUCException(Authorization.BAD_REQUEST);
+			}
+			
 			if ("set".equals(type)) {
 				return processSet(element);
 			} else if ("get".equals(type)) {

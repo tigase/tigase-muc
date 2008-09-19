@@ -29,6 +29,7 @@ import tigase.criteria.ElementCriteria;
 import tigase.criteria.Or;
 import tigase.muc.Module;
 import tigase.muc.exceptions.MUCException;
+import tigase.util.JIDUtils;
 import tigase.xml.Element;
 
 /**
@@ -56,7 +57,8 @@ public class XmppPingModule implements Module {
 
 	@Override
 	public boolean isProcessedByModule(Element element) {
-		return false;
+		String jid = element.getAttribute("to");
+		return jid != null || JIDUtils.getNodeResource(jid) == null;
 	}
 
 	@Override
