@@ -21,7 +21,6 @@
  */
 package tigase.muc.modules;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import tigase.criteria.Criteria;
@@ -38,11 +37,11 @@ import tigase.xmpp.Authorization;
  * @author bmalkow
  * 
  */
-public class GroupchatMessageModule extends AbstractModule {
+public class PrivateMessageModule extends AbstractModule {
 
-	private static final Criteria CRIT = ElementCriteria.nameType("message", "groupchat");
+	private static final Criteria CRIT = ElementCriteria.nameType("message", "chat");
 
-	public GroupchatMessageModule(MucConfig config, IMucRepository mucRepository) {
+	public PrivateMessageModule(MucConfig config, IMucRepository mucRepository) {
 		super(config, mucRepository);
 	}
 
@@ -59,11 +58,11 @@ public class GroupchatMessageModule extends AbstractModule {
 	@Override
 	public List<Element> process(Element element) throws MUCException {
 		try {
-			final ArrayList<Element> result = new ArrayList<Element>();
 			final String senderJid = element.getAttribute("from");
 			final String roomId = getRoomId(element.getAttribute("to"));
+			final String recipientNickname = getNicknameFromJid(element.getAttribute("to"));
 
-			if (getNicknameFromJid(element.getAttribute("to")) != null) {
+			if (recipientNickname == null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
@@ -72,26 +71,23 @@ public class GroupchatMessageModule extends AbstractModule {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
 
-			Role role = room.getRoleByJid(senderJid);
-			if (!role.isSendMessagesToAll() || (room.getConfig().isRoomModerated() && role == Role.visitor)) {
-				throw new MUCException(Authorization.FORBIDDEN);
+			final Role senderRole = room.getRoleByJid(senderJid);
+			if (!senderRole.isSendPrivateMessages()) {
+				throw new MUCException(Authorization.NOT_ALLOWED);
 			}
 
-			Element body = element.getChild("body");
-			Element subject = element.getChild("subject");
-			final String nickName = room.getOccupantsNickname(senderJid);
-			final String senderRoomJid = roomId + "/" + nickName;
-
-			if (subject != null) {
-				if (!(room.getConfig().isChangeSubject() && role == Role.participant) && !role.isModifySubject())
-					throw new MUCException(Authorization.FORBIDDEN);
-				String msg = subject.getCData();
-				room.setNewSubject(msg, nickName);
+			final String recipientJid = room.getOccupantsJidByNickname(recipientNickname);
+			if (recipientJid == null) {
+				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
 			}
 
-			result.addAll(sendMessagesToAllOccupants(room, senderRoomJid, body, subject));
+			final String senderNickname = room.getOccupantsNickname(senderJid);
 
-			return result;
+			final Element message = element.clone();
+			message.setAttribute("from", roomId + "/" + senderNickname);
+			message.setAttribute("to", recipientJid);
+
+			return makeArray(message);
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (Exception e) {
@@ -100,22 +96,4 @@ public class GroupchatMessageModule extends AbstractModule {
 		}
 	}
 
-	public List<Element> sendMessagesToAllOccupants(final Room room, final String fromJid, final Element... content) {
-		final ArrayList<Element> result = new ArrayList<Element>();
-		for (String occupantsJid : room.getOccupantsJids()) {
-			Role role = room.getRoleByJid(occupantsJid);
-			if (!role.isReceiveMessages())
-				continue;
-			Element message = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat", fromJid,
-					occupantsJid });
-			if (content != null) {
-				for (Element sub : content) {
-					if (sub != null)
-						message.addChild(sub);
-				}
-			}
-			result.add(message);
-		}
-		return result;
-	}
 }

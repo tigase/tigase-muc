@@ -43,6 +43,7 @@ import tigase.muc.modules.DiscoItemsModule;
 import tigase.muc.modules.GroupchatMessageModule;
 import tigase.muc.modules.ModeratorModule;
 import tigase.muc.modules.PresenceModule;
+import tigase.muc.modules.PrivateMessageModule;
 import tigase.muc.modules.RoomConfigurationModule;
 import tigase.muc.modules.SoftwareVersionModule;
 import tigase.muc.modules.XmppPingModule;
@@ -166,6 +167,8 @@ public class MUCComponent extends AbstractMessageReceiver implements XMPPService
 	}
 
 	protected void init() {
+
+		registerModule(new PrivateMessageModule(this.config, this.mucRepository));
 
 		GroupchatMessageModule messageModule = registerModule(new GroupchatMessageModule(this.config, this.mucRepository));
 		PresenceModule enteringRoomModule = registerModule(new PresenceModule(this.config, this.mucRepository, messageModule));
