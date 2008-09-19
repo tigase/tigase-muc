@@ -53,7 +53,7 @@ public class SoftwareVersionModule implements Module {
 	@Override
 	public boolean isProcessedByModule(Element element) {
 		String jid = element.getAttribute("to");
-		return jid != null || JIDUtils.getNodeResource(jid) == null;
+		return jid != null && JIDUtils.getNodeResource(jid) == null;
 	}
 
 	@Override
