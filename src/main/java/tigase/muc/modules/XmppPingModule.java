@@ -55,6 +55,11 @@ public class XmppPingModule implements Module {
 	}
 
 	@Override
+	public boolean isProcessedByModule(Element element) {
+		return false;
+	}
+
+	@Override
 	public List<Element> process(Element iq) throws MUCException {
 		Element reposnse = new Element("iq", new String[] { "type", "from", "to", "id" }, new String[] { "result",
 				iq.getAttribute("to"), iq.getAttribute("from"), iq.getAttribute("id") });

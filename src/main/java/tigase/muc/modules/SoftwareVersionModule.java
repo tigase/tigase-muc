@@ -50,6 +50,11 @@ public class SoftwareVersionModule implements Module {
 	}
 
 	@Override
+	public boolean isProcessedByModule(Element element) {
+		return true;
+	}
+
+	@Override
 	public List<Element> process(Element iq) throws MUCException {
 		Element response = AbstractModule.createResultIQ(iq);
 

@@ -87,4 +87,9 @@ public abstract class AbstractModule implements Module {
 		this.repository = mucRepository;
 	}
 
+	@Override
+	public boolean isProcessedByModule(Element element) {
+		return true;
+	}
+
 }

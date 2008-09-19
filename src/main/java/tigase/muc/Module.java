@@ -33,5 +33,7 @@ public interface Module {
 
 	Criteria getModuleCriteria();
 
+	boolean isProcessedByModule(final Element element);
+
 	List<Element> process(final Element element) throws MUCException;
 }

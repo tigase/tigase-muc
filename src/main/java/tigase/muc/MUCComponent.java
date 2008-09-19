@@ -220,7 +220,7 @@ public class MUCComponent extends AbstractMessageReceiver implements XMPPService
 
 		for (Module module : this.modules) {
 			Criteria criteria = module.getModuleCriteria();
-			if (criteria != null && criteria.match(element)) {
+			if (criteria != null && criteria.match(element) && module.isProcessedByModule(element)) {
 				handled = true;
 				log.finest("Handled by module " + module.getClass());
 				List<Element> result = module.process(element);
