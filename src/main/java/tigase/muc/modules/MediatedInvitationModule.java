@@ -25,6 +25,7 @@ import java.util.List;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.muc.Affiliation;
 import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
@@ -76,6 +77,10 @@ public class MediatedInvitationModule extends AbstractModule {
 			if (!senderRole.isInviteOtherUsers()) {
 				throw new MUCException(Authorization.NOT_ALLOWED);
 			}
+			final Affiliation senderAffiliation = room.getAffiliation(senderJid);
+			if (room.getConfig().isRoomMembersOnly() && !senderAffiliation.isEditMemberList()) {
+				throw new MUCException(Authorization.FORBIDDEN);
+			}
 
 			final Element x = element.getChild("x");
 			final Element invite = x.getChild("invite");
@@ -87,13 +92,17 @@ public class MediatedInvitationModule extends AbstractModule {
 					new String[] { "http://jabber.org/protocol/muc#user" });
 			resultMessage.addChild(resultX);
 
+			if (room.getConfig().isRoomMembersOnly() && senderAffiliation.isEditMemberList()) {
+				room.addAffiliationByJid(recipient, Affiliation.member);
+			}
+
 			final Element resultInvite = new Element("invite", new String[] { "from" }, new String[] { senderJid });
 			resultX.addChild(resultInvite);
 
 			if (reason != null) {
 				resultInvite.addChild(reason.clone());
 			}
-			
+
 			return makeArray(resultMessage);
 		} catch (MUCException e1) {
 			throw e1;
