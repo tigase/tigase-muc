@@ -72,7 +72,6 @@ public class MediatedInvitationModule extends AbstractModule {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
 
-			// XXX TODO Check provileges in moderated room
 			final Role senderRole = room.getRoleByJid(senderJid);
 			if (!senderRole.isInviteOtherUsers()) {
 				throw new MUCException(Authorization.NOT_ALLOWED);
