@@ -34,6 +34,8 @@ public interface IMucRepository {
 
 	RoomConfig getDefaultRoomConfig() throws RepositoryException;
 
+	String[] getPublicVisibleRoomsIdList() throws RepositoryException;
+
 	Room getRoom(String roomId) throws RepositoryException;
 
 	/**
@@ -42,7 +44,11 @@ public interface IMucRepository {
 	 */
 	String getRoomName(String jid) throws RepositoryException;
 
-	String[] getRoomsIdList() throws RepositoryException;
+	/**
+	 * @param newRoomName
+	 * @return
+	 */
+	boolean isRoomIdExists(String newRoomName);
 
 	void leaveRoom(Room room);
 

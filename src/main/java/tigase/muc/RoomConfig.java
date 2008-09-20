@@ -75,14 +75,23 @@ public class RoomConfig {
 		void onConfigChanged(RoomConfig roomConfig, Set<String> modifiedVars);
 	}
 
-	private final static Set<String> CODE_104_ = new HashSet<String>() {
-		{
-			add("muc#roomconfig_enablelogging");
-			add("muc#roomconfig_anonymity");
-		}
-	};
+	public static final String MUC_ROOMCONFIG_ANONYMITY_KEY = "muc#roomconfig_anonymity";
 
-	public static final String MUC = "muc#";
+	public static final String MUC_ROOMCONFIG_CHANGESUBJECT_KEY = "muc#roomconfig_changesubject";
+
+	public static final String MUC_ROOMCONFIG_ENABLELOGGING_KEY = "muc#roomconfig_enablelogging";
+
+	public static final String MUC_ROOMCONFIG_MEMBERSONLY_KEY = "muc#roomconfig_membersonly";
+
+	public static final String MUC_ROOMCONFIG_MODERATEDROOM_KEY = "muc#roomconfig_moderatedroom";
+
+	public static final String MUC_ROOMCONFIG_PERSISTENTROOM_KEY = "muc#roomconfig_persistentroom";
+
+	public static final String MUC_ROOMCONFIG_PUBLICROOM_KEY = "muc#roomconfig_publicroom";
+
+	public static final String MUC_ROOMCONFIG_ROOMDESC_KEY = "muc#roomconfig_roomdesc";
+
+	public static final String MUC_ROOMCONFIG_ROOMNAME_KEY = "muc#roomconfig_roomname";
 
 	protected static String[] asStrinTable(Enum<?>[] values) {
 		String[] result = new String[values.length];
@@ -126,7 +135,7 @@ public class RoomConfig {
 
 		Set<String> vars = equals(oldConfig.form);
 		for (String var : vars) {
-			if ((MUC + "roomconfig_anonymity").equals(var)) {
+			if ((MUC_ROOMCONFIG_ANONYMITY_KEY).equals(var)) {
 				switch (getRoomAnonymity()) {
 				case nonanonymous:
 					result.add("172");
@@ -138,7 +147,7 @@ public class RoomConfig {
 					result.add("174");
 					break;
 				}
-			} else if ((MUC + "roomconfig_enablelogging").equals(var)) {
+			} else if ((MUC_ROOMCONFIG_ENABLELOGGING_KEY).equals(var)) {
 				result.add(isLoggingEnabled() ? "170" : "171");
 			} else {
 				result.add("104");
@@ -211,7 +220,7 @@ public class RoomConfig {
 
 	public Anonymity getRoomAnonymity() {
 		try {
-			String tmp = form.getAsString(MUC + "roomconfig_anonymity");
+			String tmp = form.getAsString(MUC_ROOMCONFIG_ANONYMITY_KEY);
 			return tmp == null ? Anonymity.semianonymous : Anonymity.valueOf(tmp);
 		} catch (Exception e) {
 			return Anonymity.semianonymous;
@@ -219,7 +228,7 @@ public class RoomConfig {
 	}
 
 	public String getRoomDesc() {
-		return form.getAsString(MUC + "roomconfig_roomdesc");
+		return form.getAsString(MUC_ROOMCONFIG_ROOMDESC_KEY);
 	}
 
 	public String getRoomId() {
@@ -227,41 +236,52 @@ public class RoomConfig {
 	}
 
 	public String getRoomName() {
-		return form.getAsString(MUC + "roomconfig_roomname");
+		return form.getAsString(MUC_ROOMCONFIG_ROOMNAME_KEY);
 	}
 
 	protected void init() {
-		form.addField(Field.fieldTextSingle(MUC + "roomconfig_roomname", "", "Natural-Language Room Name"));
-		form.addField(Field.fieldTextSingle(MUC + "roomconfig_roomdesc", "", "Short Description of Room"));
-		form.addField(Field.fieldBoolean(MUC + "roomconfig_persistentroom", Boolean.FALSE, "Make Room Persistent?"));
-		form.addField(Field.fieldBoolean(MUC + "roomconfig_moderatedroom", Boolean.FALSE, "Make Room Moderated?"));
-		form.addField(Field.fieldBoolean(MUC + "roomconfig_membersonly", Boolean.FALSE, "Make Room Members Only?"));
-		form.addField(Field.fieldListSingle(MUC + "roomconfig_anonymity", Anonymity.semianonymous.name(), "Room anonymity level:",
+		form.addField(Field.fieldTextSingle(MUC_ROOMCONFIG_ROOMNAME_KEY, "", "Natural-Language Room Name"));
+		form.addField(Field.fieldTextSingle(MUC_ROOMCONFIG_ROOMDESC_KEY, "", "Short Description of Room"));
+		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_PERSISTENTROOM_KEY, Boolean.FALSE, "Make Room Persistent?"));
+		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_PUBLICROOM_KEY, Boolean.TRUE, "Make Room Publicly Searchable?"));
+		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_MODERATEDROOM_KEY, Boolean.FALSE, "Make Room Moderated?"));
+		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_MEMBERSONLY_KEY, Boolean.FALSE, "Make Room Members Only?"));
+		form.addField(Field.fieldListSingle(MUC_ROOMCONFIG_ANONYMITY_KEY, Anonymity.semianonymous.name(), "Room anonymity level:",
 				new String[] { "Non-Anonymous Room", "Semi-Anonymous Room", "Fully-Anonymous Room" }, new String[] {
 						Anonymity.nonanonymous.name(), Anonymity.semianonymous.name(), Anonymity.fullanonymous.name() }));
-		form.addField(Field.fieldBoolean(MUC + "roomconfig_changesubject", Boolean.FALSE, "Allow Occupants to Change Subject?"));
+		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_CHANGESUBJECT_KEY, Boolean.FALSE, "Allow Occupants to Change Subject?"));
 
 	}
 
 	public Boolean isChangeSubject() {
-		return form.getAsBoolean(MUC + "roomconfig_changesubject");
+		return form.getAsBoolean(MUC_ROOMCONFIG_CHANGESUBJECT_KEY);
 	}
 
 	public boolean isLoggingEnabled() {
-		Boolean x = form.getAsBoolean(MUC + "roomconfig_enablelogging");
+		Boolean x = form.getAsBoolean(MUC_ROOMCONFIG_ENABLELOGGING_KEY);
 		return x == null ? false : x.booleanValue();
 	}
 
 	public Boolean isPersistentRoom() {
-		return form.getAsBoolean(MUC + "roomconfig_persistentroom");
+		return form.getAsBoolean(MUC_ROOMCONFIG_PERSISTENTROOM_KEY);
+	}
+
+	/**
+	 * Make Room Publicly Searchable
+	 * 
+	 * @return
+	 */
+	public boolean isRoomconfigPublicroom() {
+		Boolean b = form.getAsBoolean(MUC_ROOMCONFIG_PUBLICROOM_KEY);
+		return b == null ? true : b.booleanValue();
 	}
 
 	public Boolean isRoomMembersOnly() {
-		return form.getAsBoolean(MUC + "roomconfig_membersonly");
+		return form.getAsBoolean(MUC_ROOMCONFIG_MEMBERSONLY_KEY);
 	}
 
 	public Boolean isRoomModerated() {
-		return form.getAsBoolean(MUC + "roomconfig_moderatedroom");
+		return form.getAsBoolean(MUC_ROOMCONFIG_MODERATEDROOM_KEY);
 	}
 
 	public void read(final UserRepository repository, final MucConfig config, final String subnode) throws UserNotFoundException,

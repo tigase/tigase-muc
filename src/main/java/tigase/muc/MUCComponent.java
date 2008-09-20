@@ -48,6 +48,7 @@ import tigase.muc.modules.PresenceModule;
 import tigase.muc.modules.PrivateMessageModule;
 import tigase.muc.modules.RoomConfigurationModule;
 import tigase.muc.modules.SoftwareVersionModule;
+import tigase.muc.modules.UniqueRoomNameModule;
 import tigase.muc.modules.XmppPingModule;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.MucDAO;
@@ -173,7 +174,8 @@ public class MUCComponent extends AbstractMessageReceiver implements XMPPService
 		registerModule(new PrivateMessageModule(this.config, this.mucRepository));
 
 		GroupchatMessageModule messageModule = registerModule(new GroupchatMessageModule(this.config, this.mucRepository));
-		PresenceModule enteringRoomModule = registerModule(new PresenceModule(this.config, this.mucRepository, messageModule));
+
+		registerModule(new PresenceModule(this.config, this.mucRepository, messageModule));
 
 		registerModule(new RoomConfigurationModule(this.config, this.mucRepository, messageModule));
 		registerModule(new ModeratorModule(this.config, this.mucRepository));
@@ -185,6 +187,8 @@ public class MUCComponent extends AbstractMessageReceiver implements XMPPService
 		registerModule(new DiscoInfoModule(this.config, this.mucRepository, getFeaturesFromModule()));
 
 		registerModule(new MediatedInvitationModule(this.config, this.mucRepository));
+
+		registerModule(new UniqueRoomNameModule(this.config, this.mucRepository));
 
 		registerModule(new IqStanzaForwarderModule(this.config, this.mucRepository));
 	}

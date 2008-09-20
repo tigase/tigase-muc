@@ -136,7 +136,8 @@ public class MucDAO {
 	 */
 	public String getRoomName(String jid) throws RepositoryException {
 		try {
-			return repository.getData(mucConfig.getServiceName(), ROOMS_KEY + jid + "/config", "muc#roomconfig_roomname");
+			return repository.getData(mucConfig.getServiceName(), ROOMS_KEY + jid + "/config",
+					RoomConfig.MUC_ROOMCONFIG_ROOMNAME_KEY);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RepositoryException("Room name reading error", e);

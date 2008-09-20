@@ -21,6 +21,8 @@
  */
 package tigase.muc.modules;
 
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.List;
 
 import tigase.criteria.Criteria;
@@ -28,6 +30,7 @@ import tigase.criteria.ElementCriteria;
 import tigase.muc.MucConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
+import tigase.util.JIDUtils;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 
@@ -35,13 +38,31 @@ import tigase.xmpp.Authorization;
  * @author bmalkow
  * 
  */
-public class DiscoItemsModule extends AbstractModule {
+public class UniqueRoomNameModule extends AbstractModule {
+
+	private final static String CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
 	private static final Criteria CRIT = ElementCriteria.nameType("iq", "get").add(
-			ElementCriteria.name("query", "http://jabber.org/protocol/disco#items"));
+			ElementCriteria.name("unique", "http://jabber.org/protocol/muc#unique"));
 
-	public DiscoItemsModule(MucConfig config, IMucRepository mucRepository) {
+	private SecureRandom random;
+
+	public UniqueRoomNameModule(MucConfig config, IMucRepository mucRepository) {
 		super(config, mucRepository);
+		try {
+			this.random = SecureRandom.getInstance("SHA1PRNG");
+		} catch (NoSuchAlgorithmException e) {
+			this.random = new SecureRandom();
+		}
+	}
+
+	private String generateName(int len) {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < len; i++) {
+			int a = random.nextInt(CHARS.length());
+			sb.append(CHARS.charAt(a));
+		}
+		return sb.toString();
 	}
 
 	@Override
@@ -57,25 +78,23 @@ public class DiscoItemsModule extends AbstractModule {
 	@Override
 	public List<Element> process(Element element) throws MUCException {
 		try {
-			final String roomId = getRoomId(element.getAttribute("to"));
-
-			Element result = createResultIQ(element);
-
-			Element resultQuery = new Element("query", new String[] { "xmlns" },
-					new String[] { "http://jabber.org/protocol/disco#items" });
-			result.addChild(resultQuery);
-
-			if (roomId == null) {
-				String[] roomsId = repository.getPublicVisibleRoomsIdList();
-				for (final String jid : roomsId) {
-					final String name = repository.getRoomName(jid);
-					resultQuery.addChild(new Element("item", new String[] { "jid", "name" }, new String[] { jid,
-							name != null ? name : jid }));
-				}
-			} else {
-				throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED, "To be implemented!");
+			if (JIDUtils.getNodeResource(element.getAttribute("to")) != null
+					|| JIDUtils.getNodeNick(element.getAttribute("to")) != null) {
+				throw new MUCException(Authorization.BAD_REQUEST);
 			}
-			return makeArray(result);
+			final String host = JIDUtils.getNodeHost(element.getAttribute("to"));
+
+			String newRoomName;
+			do {
+				newRoomName = generateName(30);
+			} while (repository.isRoomIdExists(newRoomName + "@" + host));
+
+			Element iq = createResultIQ(element);
+			Element unique = new Element("unique", new String[] { "xmlns" },
+					new String[] { "http://jabber.org/protocol/muc#unique" });
+			iq.addChild(unique);
+			unique.setCData(newRoomName);
+			return makeArray(iq);
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (Exception e) {
@@ -83,5 +102,4 @@ public class DiscoItemsModule extends AbstractModule {
 			throw new RuntimeException(e);
 		}
 	}
-
 }

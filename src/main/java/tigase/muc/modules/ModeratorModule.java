@@ -202,7 +202,7 @@ public class ModeratorModule extends AbstractModule {
 			if (getNicknameFromJid(element.getAttribute("to")) != null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
-			
+
 			if ("set".equals(type)) {
 				return processSet(element);
 			} else if ("get".equals(type)) {

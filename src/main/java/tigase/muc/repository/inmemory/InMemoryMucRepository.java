@@ -21,10 +21,13 @@
  */
 package tigase.muc.repository.inmemory;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.Map.Entry;
 import java.util.logging.Logger;
 
 import tigase.muc.Affiliation;
@@ -44,7 +47,11 @@ import tigase.util.JIDUtils;
  */
 public class InMemoryMucRepository implements IMucRepository {
 
-	private final Set<String> allRooms = new HashSet<String>();
+	private class InternalRoom {
+		boolean listPublic = true;
+	}
+
+	private final Map<String, InternalRoom> allRooms = new HashMap<String, InternalRoom>();
 
 	private final MucConfig config;
 
@@ -65,7 +72,7 @@ public class InMemoryMucRepository implements IMucRepository {
 		this.config = mucConfig;
 
 		for (String jid : dao.getRoomsIdList()) {
-			this.allRooms.add(jid);
+			this.allRooms.put(jid, new InternalRoom());
 		}
 
 		this.roomListener = new Room.RoomListener() {
@@ -96,7 +103,14 @@ public class InMemoryMucRepository implements IMucRepository {
 			@Override
 			public void onConfigChanged(final RoomConfig roomConfig, final Set<String> modifiedVars) {
 				try {
-					if (modifiedVars.contains("muc#roomconfig_persistentroom")) {
+					if (modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY)) {
+						InternalRoom ir = allRooms.get(roomConfig.getRoomId());
+						if (ir != null) {
+							ir.listPublic = roomConfig.isRoomconfigPublicroom();
+						}
+					}
+
+					if (modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PERSISTENTROOM_KEY)) {
 						if (roomConfig.isPersistentRoom()) {
 							System.out.println("now is PERSISTENT");
 							final Room room = getRoom(roomConfig.getRoomId());
@@ -132,7 +146,7 @@ public class InMemoryMucRepository implements IMucRepository {
 		room.getConfig().addListener(roomConfigListener);
 		room.addListener(roomListener);
 		this.rooms.put(roomId, room);
-		this.allRooms.add(roomId);
+		this.allRooms.put(roomId, new InternalRoom());
 
 		return room;
 	}
@@ -140,6 +154,22 @@ public class InMemoryMucRepository implements IMucRepository {
 	@Override
 	public RoomConfig getDefaultRoomConfig() throws RepositoryException {
 		return defaultConfig;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see tigase.muc.repository.IMucRepository#getRoomsIdList()
+	 */
+	@Override
+	public String[] getPublicVisibleRoomsIdList() throws RepositoryException {
+		List<String> result = new ArrayList<String>();
+		for (Entry<String, InternalRoom> entry : this.allRooms.entrySet()) {
+			if (entry.getValue().listPublic) {
+				result.add(entry.getKey());
+			}
+		}
+		return result.toArray(new String[] {});
 	}
 
 	/*
@@ -174,11 +204,12 @@ public class InMemoryMucRepository implements IMucRepository {
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see tigase.muc.repository.IMucRepository#getRoomsIdList()
+	 * @see
+	 * tigase.muc.repository.IMucRepository#isRoomIdExists(java.lang.String)
 	 */
 	@Override
-	public String[] getRoomsIdList() throws RepositoryException {
-		return allRooms.toArray(new String[] {});
+	public boolean isRoomIdExists(String newRoomName) {
+		return this.allRooms.containsKey(newRoomName);
 	}
 
 	@Override
