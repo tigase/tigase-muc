@@ -26,9 +26,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import tigase.muc.RoomConfig.Anonymity;
 import tigase.muc.repository.RepositoryException;
 import tigase.util.JIDUtils;
 import tigase.xml.Element;
@@ -56,6 +58,8 @@ public class Room {
 	private final Date creationDate;
 
 	private final String creatorJid;
+
+	private History history = new History();
 
 	/**
 	 * <real JID, Presence>
@@ -127,6 +131,10 @@ public class Room {
 		this.roles.put(senderJid, role);
 	}
 
+	public void addToHistory(final String message, String senderJid, String senderNickname, Date time) {
+		history.add(message, senderJid, senderNickname, time);
+	}
+
 	/**
 	 * @param senderJid
 	 * @param nickName
@@ -184,6 +192,15 @@ public class Room {
 
 	public String getCreatorJid() {
 		return creatorJid;
+	}
+
+	public List<Element> getHistoryMessages(String recipientJid) {
+		Affiliation recipientAffiliation = getAffiliation(recipientJid);
+		boolean showJids = config.getRoomAnonymity() == Anonymity.nonanonymous
+				|| config.getRoomAnonymity() == Anonymity.semianonymous
+				&& (recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
+
+		return history.getMessages(recipientJid, config.getRoomId(), showJids);
 	}
 
 	public Element getLastPresenceCopyByJid(String jid) {

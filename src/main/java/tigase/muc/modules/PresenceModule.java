@@ -251,6 +251,9 @@ public class PresenceModule extends AbstractModule {
 				room.removeOccupantByJid(senderJid);
 			}
 
+			if (newOccupant) {
+				result.addAll(room.getHistoryMessages(senderJid));
+			}
 			if (newOccupant && room.getSubject() != null && room.getSubjectChangerNick() != null
 					&& room.getSubjectChangeDate() != null) {
 				Element message = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",

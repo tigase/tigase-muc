@@ -22,6 +22,7 @@
 package tigase.muc.modules;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import tigase.criteria.Criteria;
@@ -89,6 +90,7 @@ public class GroupchatMessageModule extends AbstractModule {
 				room.setNewSubject(msg, nickName);
 			}
 
+			room.addToHistory(body.getCData(), senderJid, nickName, new Date());
 			result.addAll(sendMessagesToAllOccupants(room, senderRoomJid, body, subject));
 
 			return result;
