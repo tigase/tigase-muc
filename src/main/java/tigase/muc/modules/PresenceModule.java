@@ -21,6 +21,7 @@
  */
 package tigase.muc.modules;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -44,6 +45,8 @@ import tigase.xmpp.Authorization;
 public class PresenceModule extends AbstractModule {
 
 	private static final Criteria CRIT = ElementCriteria.name("presence");
+
+	private final static SimpleDateFormat sdf = new SimpleDateFormat();
 
 	private static Role getDefaultRole(final RoomConfig config, final Affiliation affiliation) {
 		Role newRole;
@@ -250,6 +253,13 @@ public class PresenceModule extends AbstractModule {
 				Element message = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",
 						roomId + "/" + room.getSubjectChangerNick(), senderJid });
 				message.addChild(new Element("subject", room.getSubject()));
+
+				String stamp = sdf.format(room.getSubjectChangeDate());
+				Element delay = new Element("delay", new String[] { "xmlns", "stamp" }, new String[] { "urn:xmpp:delay", stamp });
+				delay.setAttribute("jid", roomId + "/" + room.getSubjectChangerNick());
+
+				message.addChild(delay);
+
 				result.add(message);
 			}
 

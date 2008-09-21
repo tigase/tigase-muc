@@ -166,6 +166,16 @@ public class MucDAO {
 		}
 	}
 
+	public Date getSubjectCreationDate(String roomId) throws RepositoryException {
+		try {
+			String tmp = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/subject", SUBJECT_DATE_KEY);
+			return new Date(Long.valueOf(tmp));
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new RepositoryException("Subject change date reading error", e);
+		}
+	}
+
 	public String getSubjectCreatorNickname(String roomId) throws RepositoryException {
 		try {
 			return repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/subject", SUBJECT_CREATOR_NICK_KEY);
@@ -189,8 +199,10 @@ public class MucDAO {
 
 				String subject = getSubject(roomId);
 				String subjectCreator = getSubjectCreatorNickname(roomId);
+				Date subjectChangeDate = getSubjectCreationDate(roomId);
 
 				room.setNewSubject(subject, subjectCreator);
+				room.setSubjectChangeDate(subjectChangeDate);
 
 				Map<String, Affiliation> affiliations = new HashMap<String, Affiliation>();
 
@@ -236,16 +248,17 @@ public class MucDAO {
 
 	/**
 	 * @param roomId
+	 * @param changeDate
 	 * @param msg
 	 * @throws RepositoryException
 	 */
-	public void setSubject(String roomId, String subject, String creatorNickname) throws RepositoryException {
+	public void setSubject(String roomId, String subject, String creatorNickname, Date changeDate) throws RepositoryException {
 		try {
 			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/subject", SUBJECT_CREATOR_NICK_KEY,
 					creatorNickname);
 			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/subject", SUBJECT_KEY, subject);
 			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/subject", SUBJECT_DATE_KEY,
-					String.valueOf((new Date()).getTime()));
+					String.valueOf(changeDate.getTime()));
 			// TODO Auto-generated method stub
 		} catch (Exception e) {
 			e.printStackTrace();

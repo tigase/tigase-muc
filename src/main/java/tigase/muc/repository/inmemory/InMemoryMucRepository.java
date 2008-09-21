@@ -78,10 +78,10 @@ public class InMemoryMucRepository implements IMucRepository {
 		this.roomListener = new Room.RoomListener() {
 
 			@Override
-			public void onChangeSubject(Room room, String nick, String newSubject) {
+			public void onChangeSubject(Room room, String nick, String newSubject, Date changeDate) {
 				try {
 					if (room.getConfig().isPersistentRoom())
-						dao.setSubject(room.getRoomId(), newSubject, nick);
+						dao.setSubject(room.getRoomId(), newSubject, nick, changeDate);
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}

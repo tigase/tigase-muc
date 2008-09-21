@@ -41,7 +41,7 @@ public class Room {
 
 	public static interface RoomListener {
 
-		void onChangeSubject(Room room, String nick, String newSubject);
+		void onChangeSubject(Room room, String nick, String newSubject, Date changeDate);
 
 		void onSetAffiliation(Room room, String jid, Affiliation newAffiliation);
 	}
@@ -82,6 +82,8 @@ public class Room {
 	private boolean roomLocked;
 
 	private String subject;
+
+	private Date subjectChangeDate;
 
 	private String subjectChangerNick;
 
@@ -143,9 +145,9 @@ public class Room {
 		}
 	}
 
-	private void fireOnSetSubject(String nick, String subject) {
+	private void fireOnSetSubject(String nick, String subject, Date changeDate) {
 		for (RoomListener listener : this.listeners) {
-			listener.onChangeSubject(this, nick, subject);
+			listener.onChangeSubject(this, nick, subject, changeDate);
 		}
 	}
 
@@ -264,6 +266,10 @@ public class Room {
 		return subject;
 	}
 
+	public Date getSubjectChangeDate() {
+		return subjectChangeDate;
+	}
+
 	/**
 	 * @return
 	 */
@@ -319,11 +325,16 @@ public class Room {
 	public void setNewSubject(String msg, String senderNickname) throws RepositoryException {
 		this.subjectChangerNick = senderNickname;
 		this.subject = msg;
-		fireOnSetSubject(senderNickname, msg);
+		this.subjectChangeDate = new Date();
+		fireOnSetSubject(senderNickname, msg, this.subjectChangeDate);
 	}
 
 	public void setRoomLocked(boolean roomLocked) {
 		this.roomLocked = roomLocked;
+	}
+
+	public void setSubjectChangeDate(Date subjectChangeDate) {
+		this.subjectChangeDate = subjectChangeDate;
 	}
 
 	/**
