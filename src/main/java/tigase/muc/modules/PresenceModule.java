@@ -24,6 +24,7 @@ package tigase.muc.modules;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.TimeZone;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
@@ -46,7 +47,7 @@ public class PresenceModule extends AbstractModule {
 
 	private static final Criteria CRIT = ElementCriteria.name("presence");
 
-	private final static SimpleDateFormat sdf = new SimpleDateFormat();
+	private final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
 	private static Role getDefaultRole(final RoomConfig config, final Affiliation affiliation) {
 		Role newRole;
@@ -81,6 +82,7 @@ public class PresenceModule extends AbstractModule {
 
 	public PresenceModule(MucConfig config, IMucRepository mucRepository, GroupchatMessageModule messageModule) {
 		super(config, mucRepository);
+		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
 		this.messageModule = messageModule;
 	}
 
@@ -249,7 +251,8 @@ public class PresenceModule extends AbstractModule {
 				room.removeOccupantByJid(senderJid);
 			}
 
-			if (newOccupant && room.getSubject() != null && room.getSubjectChangerNick() != null) {
+			if (newOccupant && room.getSubject() != null && room.getSubjectChangerNick() != null
+					&& room.getSubjectChangeDate() != null) {
 				Element message = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",
 						roomId + "/" + room.getSubjectChangerNick(), senderJid });
 				message.addChild(new Element("subject", room.getSubject()));

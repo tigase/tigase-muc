@@ -169,7 +169,7 @@ public class MucDAO {
 	public Date getSubjectCreationDate(String roomId) throws RepositoryException {
 		try {
 			String tmp = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/subject", SUBJECT_DATE_KEY);
-			return new Date(Long.valueOf(tmp));
+			return tmp == null ? null : new Date(Long.valueOf(tmp));
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RepositoryException("Subject change date reading error", e);
