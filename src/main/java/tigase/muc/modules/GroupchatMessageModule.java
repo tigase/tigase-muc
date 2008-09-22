@@ -30,6 +30,7 @@ import tigase.criteria.ElementCriteria;
 import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
+import tigase.muc.RoomChatLogger;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.xml.Element;
@@ -43,8 +44,11 @@ public class GroupchatMessageModule extends AbstractModule {
 
 	private static final Criteria CRIT = ElementCriteria.nameType("message", "groupchat");
 
+	private final RoomChatLogger chatLogger;
+
 	public GroupchatMessageModule(MucConfig config, IMucRepository mucRepository) {
 		super(config, mucRepository);
+		this.chatLogger = new RoomChatLogger(config);
 	}
 
 	@Override
@@ -90,8 +94,16 @@ public class GroupchatMessageModule extends AbstractModule {
 				room.setNewSubject(msg, nickName);
 			}
 
+			Date sendDate = new Date();
+
 			if (body != null)
-				room.addToHistory(body.getCData(), senderJid, nickName, new Date());
+				room.addToHistory(body.getCData(), senderJid, nickName, sendDate);
+			if (room.getConfig().isLoggingEnabled()) {
+				if (body != null) {
+					chatLogger.addMessage(room.getConfig().getLoggingFormat(), room.getRoomId(), sendDate, nickName,
+							body.getCData());
+				}
+			}
 			result.addAll(sendMessagesToAllOccupants(room, senderRoomJid, body, subject));
 
 			return result;

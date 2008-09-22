@@ -27,10 +27,20 @@ package tigase.muc;
  */
 public class MucConfig {
 
+	private String logDirectory;
+
 	private String serviceName;
+
+	public String getLogDirectory() {
+		return logDirectory;
+	}
 
 	public String getServiceName() {
 		return serviceName;
+	}
+
+	public void setLogDirectory(String logDirectory) {
+		this.logDirectory = logDirectory;
 	}
 
 	void setServiceName(String serviceName) {

@@ -67,6 +67,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 	public static final String ADMINS_KEY = "admins";
 
+	private static final String LOG_DIR_KEY = "room-log-directory";
+
 	protected static final String PUBSUB_REPO_CLASS_PROP_KEY = "pubsub-repo-class";
 
 	protected static final String PUBSUB_REPO_URL_PROP_KEY = "pubsub-repo-url";
@@ -136,6 +138,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 			admins = new String[] { "admin@" + getDefHostName() };
 		}
 		props.put(ADMINS_KEY, admins);
+
+		props.put(LOG_DIR_KEY, new String("./logs/"));
 
 		return props;
 	}
@@ -269,6 +273,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		serviceEntity.addFeatures("http://jabber.org/protocol/muc");
 
 		this.config.setServiceName("multi-user-chat");
+
+		this.config.setLogDirectory((String) props.get(LOG_DIR_KEY));
 
 		try {
 			String cls_name = (String) props.get(PUBSUB_REPO_CLASS_PROP_KEY);

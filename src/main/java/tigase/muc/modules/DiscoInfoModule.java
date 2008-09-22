@@ -26,7 +26,6 @@ import java.util.Set;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
-import tigase.form.Form;
 import tigase.muc.MucConfig;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;

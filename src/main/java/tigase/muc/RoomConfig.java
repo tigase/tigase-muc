@@ -65,6 +65,10 @@ public class RoomConfig {
 		semianonymous
 	}
 
+	public static enum LogFormat {
+		html, plain, xml
+	}
+
 	public static interface RoomConfigListener {
 
 		/**
@@ -74,6 +78,8 @@ public class RoomConfig {
 		 */
 		void onConfigChanged(RoomConfig roomConfig, Set<String> modifiedVars);
 	}
+
+	private static final String LOGGING_FORMAT_KEY = "logging_format";
 
 	public static final String MUC_ROOMCONFIG_ANONYMITY_KEY = "muc#roomconfig_anonymity";
 
@@ -230,6 +236,15 @@ public class RoomConfig {
 		return form;
 	}
 
+	public LogFormat getLoggingFormat() {
+		try {
+			String tmp = form.getAsString(LOGGING_FORMAT_KEY);
+			return tmp == null ? LogFormat.html : LogFormat.valueOf(tmp);
+		} catch (Exception e) {
+			return LogFormat.html;
+		}
+	}
+
 	public String getPassword() {
 		return asString(form.getAsString(MUC_ROOMCONFIG_ROOMSECRET_KEY), "");
 	}
@@ -269,6 +284,10 @@ public class RoomConfig {
 				new String[] { "Non-Anonymous Room", "Semi-Anonymous Room", "Fully-Anonymous Room" }, new String[] {
 						Anonymity.nonanonymous.name(), Anonymity.semianonymous.name(), Anonymity.fullanonymous.name() }));
 		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_CHANGESUBJECT_KEY, Boolean.FALSE, "Allow Occupants to Change Subject?"));
+
+		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_ENABLELOGGING_KEY, Boolean.FALSE, "Enable Public Logging?"));
+		form.addField(Field.fieldListSingle(LOGGING_FORMAT_KEY, LogFormat.html.name(), "Logging format:", new String[] { "HTML",
+				"Plain text" }, new String[] { LogFormat.html.name(), LogFormat.plain.name() }));
 
 	}
 
