@@ -21,12 +21,9 @@
  */
 package tigase.muc.modules;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.TimeZone;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
@@ -35,6 +32,7 @@ import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
+import tigase.muc.XMPPDateTimeFormatter;
 import tigase.muc.RoomConfig.Anonymity;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.modules.PresenceModule.DelayDeliveryThread.DelDeliverySend;
@@ -97,7 +95,7 @@ public class PresenceModule extends AbstractModule {
 
 	private static final Criteria CRIT = ElementCriteria.name("presence");
 
-	private final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+	private final static XMPPDateTimeFormatter sdf = new XMPPDateTimeFormatter();
 
 	private static Role getDefaultRole(final RoomConfig config, final Affiliation affiliation) {
 		Role newRole;
@@ -136,7 +134,6 @@ public class PresenceModule extends AbstractModule {
 			DelDeliverySend sender) {
 		super(config, mucRepository);
 		this.delayDeliveryThread = new DelayDeliveryThread(sender);
-		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
 		this.messageModule = messageModule;
 		this.delayDeliveryThread.start();
 	}
@@ -319,11 +316,8 @@ public class PresenceModule extends AbstractModule {
 				Element delay = new Element("delay", new String[] { "xmlns", "stamp" }, new String[] { "urn:xmpp:delay", stamp });
 				delay.setAttribute("jid", roomId + "/" + room.getSubjectChangerNick());
 
-				Calendar now = Calendar.getInstance();
-				now.setTimeZone(TimeZone.getTimeZone("GMT"));
-				now.setTime(room.getSubjectChangeDate());
 				Element x = new Element("x", new String[] { "xmlns", "stamp" }, new String[] { "jabber:x:delay",
-						String.format("%1$tY%1$tm%1$tdT%1$tH:%1$tM:%1$tS", now) });
+						sdf.formatOld(room.getSubjectChangeDate()) });
 
 				message.addChild(delay);
 				message.addChild(x);

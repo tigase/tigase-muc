@@ -21,13 +21,10 @@
  */
 package tigase.muc;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.TimeZone;
 
 import tigase.xml.Element;
 
@@ -44,7 +41,7 @@ public class History {
 		Date timestamp;
 	}
 
-	private final static SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+	private final XMPPDateTimeFormatter dateTimeFormatter = new XMPPDateTimeFormatter();
 
 	private int maxSize = 100;
 
@@ -54,7 +51,6 @@ public class History {
 	 * 
 	 */
 	public History() {
-		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
 	}
 
 	public void add(final String message, String senderJid, String senderNickname, Date time) {
@@ -83,15 +79,11 @@ public class History {
 			message.addChild(new Element("body", item.message));
 
 			String from = addRealJids ? item.senderJid : roomId + "/" + item.senderNickname;
-			String ts = sdf.format(item.timestamp);
 			Element delay = new Element("delay", new String[] { "xmlns", "from", "stamp" }, new String[] { "urn:xmpp:delay", from,
-					ts });
+					dateTimeFormatter.format(item.timestamp) });
 
-			Calendar now = Calendar.getInstance();
-			now.setTimeZone(TimeZone.getTimeZone("GMT"));
-			now.setTime(item.timestamp);
 			Element x = new Element("x", new String[] { "xmlns", "from", "stamp" }, new String[] { "jabber:x:delay", from,
-					String.format("%1$tY%1$tm%1$tdT%1$tH:%1$tM:%1$tS", now) });
+					dateTimeFormatter.formatOld(item.timestamp) });
 
 			message.addChild(delay);
 			message.addChild(x);
