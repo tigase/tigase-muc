@@ -90,7 +90,8 @@ public class GroupchatMessageModule extends AbstractModule {
 				room.setNewSubject(msg, nickName);
 			}
 
-			room.addToHistory(body.getCData(), senderJid, nickName, new Date());
+			if (body != null)
+				room.addToHistory(body.getCData(), senderJid, nickName, new Date());
 			result.addAll(sendMessagesToAllOccupants(room, senderRoomJid, body, subject));
 
 			return result;

@@ -23,6 +23,8 @@ package tigase.muc.modules;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.TimeZone;
 
@@ -35,7 +37,9 @@ import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.RoomConfig.Anonymity;
 import tigase.muc.exceptions.MUCException;
+import tigase.muc.modules.PresenceModule.DelayDeliveryThread.DelDeliverySend;
 import tigase.muc.repository.IMucRepository;
+import tigase.server.Packet;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 
@@ -44,6 +48,52 @@ import tigase.xmpp.Authorization;
  * 
  */
 public class PresenceModule extends AbstractModule {
+
+	public static class DelayDeliveryThread extends Thread {
+
+		public static interface DelDeliverySend {
+			void sendDelayedPacket(Packet packet);
+		}
+
+		private final LinkedList<Element[]> items = new LinkedList<Element[]>();
+
+		private final DelDeliverySend sender;
+
+		public DelayDeliveryThread(DelDeliverySend component) {
+			this.sender = component;
+		}
+
+		public void put(Element element) {
+			items.push(new Element[] { element });
+		}
+
+		/**
+		 * @param elements
+		 */
+		public void put(List<Element> elements) {
+			if (elements != null && elements.size() > 0)
+				items.push(elements.toArray(new Element[] {}));
+
+		}
+
+		@Override
+		public void run() {
+			try {
+				do {
+					sleep(553);
+					if (items.size() > 0) {
+						Element[] toSend = items.pop();
+						if (toSend != null)
+							for (Element element : toSend) {
+								sender.sendDelayedPacket(new Packet(element));
+							}
+					}
+				} while (true);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 
 	private static final Criteria CRIT = ElementCriteria.name("presence");
 
@@ -78,12 +128,17 @@ public class PresenceModule extends AbstractModule {
 		return newRole;
 	}
 
+	private final DelayDeliveryThread delayDeliveryThread;
+
 	private final GroupchatMessageModule messageModule;
 
-	public PresenceModule(MucConfig config, IMucRepository mucRepository, GroupchatMessageModule messageModule) {
+	public PresenceModule(MucConfig config, IMucRepository mucRepository, GroupchatMessageModule messageModule,
+			DelDeliverySend sender) {
 		super(config, mucRepository);
+		this.delayDeliveryThread = new DelayDeliveryThread(sender);
 		sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
 		this.messageModule = messageModule;
+		this.delayDeliveryThread.start();
 	}
 
 	@Override
@@ -252,7 +307,7 @@ public class PresenceModule extends AbstractModule {
 			}
 
 			if (newOccupant) {
-				result.addAll(room.getHistoryMessages(senderJid));
+				this.delayDeliveryThread.put(room.getHistoryMessages(senderJid));
 			}
 			if (newOccupant && room.getSubject() != null && room.getSubjectChangerNick() != null
 					&& room.getSubjectChangeDate() != null) {
@@ -264,9 +319,16 @@ public class PresenceModule extends AbstractModule {
 				Element delay = new Element("delay", new String[] { "xmlns", "stamp" }, new String[] { "urn:xmpp:delay", stamp });
 				delay.setAttribute("jid", roomId + "/" + room.getSubjectChangerNick());
 
-				message.addChild(delay);
+				Calendar now = Calendar.getInstance();
+				now.setTimeZone(TimeZone.getTimeZone("GMT"));
+				now.setTime(room.getSubjectChangeDate());
+				Element x = new Element("x", new String[] { "xmlns", "stamp" }, new String[] { "jabber:x:delay",
+						String.format("%1$tY%1$tm%1$tdT%1$tH:%1$tM:%1$tS", now) });
 
-				result.add(message);
+				message.addChild(delay);
+				message.addChild(x);
+
+				this.delayDeliveryThread.put(message);
 			}
 
 			if (room.isRoomLocked() && newOccupant) {
