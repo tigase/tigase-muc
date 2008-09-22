@@ -26,6 +26,7 @@ import java.util.Set;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.form.Form;
 import tigase.muc.MucConfig;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
@@ -121,6 +122,18 @@ public class DiscoInfoModule extends AbstractModule {
 					addFeature(resultQuery, "muc_persistent");
 				} else {
 					addFeature(resultQuery, "muc_temporary");
+				}
+
+				if (!room.getConfig().isRoomconfigPublicroom()) {
+					addFeature(resultQuery, "muc_hidden");
+				} else {
+					addFeature(resultQuery, "muc_public");
+				}
+
+				if (room.getConfig().isPasswordProtectedRoom()) {
+					addFeature(resultQuery, "muc_passwordprotected");
+				} else {
+					addFeature(resultQuery, "muc_unsecured");
 				}
 
 			}
