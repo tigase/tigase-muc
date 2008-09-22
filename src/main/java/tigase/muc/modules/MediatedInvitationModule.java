@@ -98,6 +98,10 @@ public class MediatedInvitationModule extends AbstractModule {
 			final Element resultInvite = new Element("invite", new String[] { "from" }, new String[] { senderJid });
 			resultX.addChild(resultInvite);
 
+			if (room.getConfig().isPasswordProtectedRoom()) {
+				resultX.addChild(new Element("password", room.getConfig().getPassword()));
+			}
+
 			if (reason != null) {
 				resultInvite.addChild(reason.clone());
 			}

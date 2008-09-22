@@ -210,6 +210,9 @@ public class PresenceModule extends AbstractModule {
 			boolean newRoomCreated = false;
 			boolean exitingRoom = presenceType != null && "unavailable".equals(presenceType);
 
+			final Element $x = element.getChild("x");
+			final Element password = $x == null ? null : $x.getChild("password");
+
 			if (nickName == null) {
 				throw new MUCException(Authorization.JID_MALFORMED);
 			}
@@ -221,6 +224,14 @@ public class PresenceModule extends AbstractModule {
 				room.addAffiliationByJid(senderJid, Affiliation.owner);
 				room.setRoomLocked(true);
 				newRoomCreated = true;
+			}
+
+			boolean newOccupant = !room.isOccupantExistsByJid(senderJid);
+			if (newOccupant && room.getConfig().isPasswordProtectedRoom()) {
+				String psw = password == null ? null : password.getCData();
+				if (psw == null || !psw.equals(room.getConfig().getPassword())) {
+					throw new MUCException(Authorization.NOT_AUTHORIZED);
+				}
 			}
 
 			if (!newRoomCreated && room.isRoomLocked() && !exitingRoom) {
@@ -241,7 +252,6 @@ public class PresenceModule extends AbstractModule {
 				throw new MUCException(Authorization.REGISTRATION_REQUIRED);
 			}
 
-			boolean newOccupant = !room.isOccupantExistsByJid(senderJid);
 			final boolean changeNickName = !newOccupant && !room.getOccupantsNickname(senderJid).equals(nickName);
 
 			if ((newOccupant || changeNickName) && room.isNickNameExists(nickName)) {

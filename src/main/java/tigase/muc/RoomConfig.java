@@ -85,6 +85,8 @@ public class RoomConfig {
 
 	public static final String MUC_ROOMCONFIG_MODERATEDROOM_KEY = "muc#roomconfig_moderatedroom";
 
+	public static final String MUC_ROOMCONFIG_PASSWORDPROTECTEDROOM_KEY = "muc#roomconfig_passwordprotectedroom";
+
 	public static final String MUC_ROOMCONFIG_PERSISTENTROOM_KEY = "muc#roomconfig_persistentroom";
 
 	public static final String MUC_ROOMCONFIG_PUBLICROOM_KEY = "muc#roomconfig_publicroom";
@@ -92,6 +94,8 @@ public class RoomConfig {
 	public static final String MUC_ROOMCONFIG_ROOMDESC_KEY = "muc#roomconfig_roomdesc";
 
 	public static final String MUC_ROOMCONFIG_ROOMNAME_KEY = "muc#roomconfig_roomname";
+
+	public static final String MUC_ROOMCONFIG_ROOMSECRET_KEY = "muc#roomconfig_roomsecret";
 
 	protected static String[] asStrinTable(Enum<?>[] values) {
 		String[] result = new String[values.length];
@@ -120,6 +124,14 @@ public class RoomConfig {
 
 	public void addListener(RoomConfigListener listener) {
 		this.listeners.add(listener);
+	}
+
+	private boolean asBoolean(Boolean value, boolean defaultValue) {
+		return value == null ? defaultValue : value.booleanValue();
+	}
+
+	private String asString(String value, String defaultValue) {
+		return value == null ? defaultValue : value;
 	}
 
 	@Override
@@ -218,6 +230,10 @@ public class RoomConfig {
 		return form;
 	}
 
+	public String getPassword() {
+		return asString(form.getAsString(MUC_ROOMCONFIG_ROOMSECRET_KEY), "");
+	}
+
 	public Anonymity getRoomAnonymity() {
 		try {
 			String tmp = form.getAsString(MUC_ROOMCONFIG_ANONYMITY_KEY);
@@ -246,6 +262,9 @@ public class RoomConfig {
 		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_PUBLICROOM_KEY, Boolean.TRUE, "Make Room Publicly Searchable?"));
 		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_MODERATEDROOM_KEY, Boolean.FALSE, "Make Room Moderated?"));
 		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_MEMBERSONLY_KEY, Boolean.FALSE, "Make Room Members Only?"));
+		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_PASSWORDPROTECTEDROOM_KEY, Boolean.FALSE, "Password Required to Enter?"));
+		form.addField(Field.fieldTextSingle(MUC_ROOMCONFIG_ROOMSECRET_KEY, "", "Password"));
+
 		form.addField(Field.fieldListSingle(MUC_ROOMCONFIG_ANONYMITY_KEY, Anonymity.semianonymous.name(), "Room anonymity level:",
 				new String[] { "Non-Anonymous Room", "Semi-Anonymous Room", "Fully-Anonymous Room" }, new String[] {
 						Anonymity.nonanonymous.name(), Anonymity.semianonymous.name(), Anonymity.fullanonymous.name() }));
@@ -253,17 +272,20 @@ public class RoomConfig {
 
 	}
 
-	public Boolean isChangeSubject() {
-		return form.getAsBoolean(MUC_ROOMCONFIG_CHANGESUBJECT_KEY);
+	public boolean isChangeSubject() {
+		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_CHANGESUBJECT_KEY), false);
 	}
 
 	public boolean isLoggingEnabled() {
-		Boolean x = form.getAsBoolean(MUC_ROOMCONFIG_ENABLELOGGING_KEY);
-		return x == null ? false : x.booleanValue();
+		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_ENABLELOGGING_KEY), false);
 	}
 
-	public Boolean isPersistentRoom() {
-		return form.getAsBoolean(MUC_ROOMCONFIG_PERSISTENTROOM_KEY);
+	public boolean isPasswordProtectedRoom() {
+		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_PASSWORDPROTECTEDROOM_KEY), false);
+	}
+
+	public boolean isPersistentRoom() {
+		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_PERSISTENTROOM_KEY), false);
 	}
 
 	/**
@@ -272,16 +294,15 @@ public class RoomConfig {
 	 * @return
 	 */
 	public boolean isRoomconfigPublicroom() {
-		Boolean b = form.getAsBoolean(MUC_ROOMCONFIG_PUBLICROOM_KEY);
-		return b == null ? true : b.booleanValue();
+		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_PUBLICROOM_KEY), true);
 	}
 
-	public Boolean isRoomMembersOnly() {
-		return form.getAsBoolean(MUC_ROOMCONFIG_MEMBERSONLY_KEY);
+	public boolean isRoomMembersOnly() {
+		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_MEMBERSONLY_KEY), false);
 	}
 
-	public Boolean isRoomModerated() {
-		return form.getAsBoolean(MUC_ROOMCONFIG_MODERATEDROOM_KEY);
+	public boolean isRoomModerated() {
+		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_MODERATEDROOM_KEY), false);
 	}
 
 	public void read(final UserRepository repository, final MucConfig config, final String subnode) throws UserNotFoundException,

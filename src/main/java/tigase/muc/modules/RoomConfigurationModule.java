@@ -129,12 +129,18 @@ public class RoomConfigurationModule extends AbstractModule {
 		final Element x = query.getChild("x", "jabber:x:data");
 		Form form = new Form(x);
 		if ("submit".equals(form.getType())) {
+			String ps = form.getAsString(RoomConfig.MUC_ROOMCONFIG_ROOMSECRET_KEY);
+			if (form.getAsBoolean(RoomConfig.MUC_ROOMCONFIG_PASSWORDPROTECTEDROOM_KEY) == Boolean.TRUE
+					&& (ps == null || ps.length() == 0)) {
+				throw new MUCException(Authorization.NOT_ACCEPTABLE, "Passwords cannot be empty");
+			}
+
+			final RoomConfig oldConfig = room.getConfig().clone();
 			if (room.isRoomLocked()) {
 				room.setRoomLocked(false);
 				log.fine("Room " + room.getRoomId() + " is now unlocked");
 				result.add(prepateMucMessage(room, room.getOccupantsNickname(senderJid), "Room is now unlocked"));
 			}
-			final RoomConfig oldConfig = room.getConfig().clone();
 			room.getConfig().copyFrom(form);
 			String[] compareResult = room.getConfig().compareTo(oldConfig);
 			if (compareResult != null) {
