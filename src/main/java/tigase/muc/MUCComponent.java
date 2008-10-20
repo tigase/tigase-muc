@@ -61,6 +61,7 @@ import tigase.util.DNSResolver;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.PacketErrorTypeException;
+import tigase.xmpp.StanzaType;
 
 @SuppressWarnings("deprecation")
 public class MUCComponent extends AbstractMessageReceiver implements DelDeliverySend, XMPPService, Configurable, DisableDisco {
@@ -84,6 +85,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	private final ArrayList<Module> modules = new ArrayList<Module>();
 
 	private IMucRepository mucRepository;
+
+	private IChatRoomLogger roomLogger;
 
 	private ServiceEntity serviceEntity;
 
@@ -178,9 +181,10 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 		registerModule(new PrivateMessageModule(this.config, this.mucRepository));
 
-		GroupchatMessageModule messageModule = registerModule(new GroupchatMessageModule(this.config, this.mucRepository));
+		GroupchatMessageModule messageModule = registerModule(new GroupchatMessageModule(this.config, this.mucRepository,
+				this.roomLogger));
 
-		registerModule(new PresenceModule(this.config, this.mucRepository, messageModule, this));
+		registerModule(new PresenceModule(this.config, this.mucRepository, this.roomLogger, this));
 
 		registerModule(new RoomConfigurationModule(this.config, this.mucRepository, messageModule));
 		registerModule(new ModeratorModule(this.config, this.mucRepository));
@@ -206,7 +210,12 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 			boolean handled = runModules(element);
 
 			if (!handled) {
-				addOutPacket(Authorization.FEATURE_NOT_IMPLEMENTED.getResponseMessage(packet, "Stanza is not processed", true));
+				final StanzaType type = packet.getType();
+				if (type != StanzaType.error) {
+					addOutPacket(Authorization.FEATURE_NOT_IMPLEMENTED.getResponseMessage(packet, "Stanza is not processed", true));
+				} else {
+					log.finer(packet.getElemName() + " stanza with type='error' ignored");
+				}
 			}
 		} catch (MUCException e) {
 			Element result = e.makeElement(packet.getElement(), true);
@@ -292,6 +301,9 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 			e.printStackTrace();
 			System.exit(1);
 		}
+
+		this.roomLogger = new RoomChatLogger(this.config);
+
 		init();
 		log.info("Tigase MUC Component ver. " + MucVersion.getVersion() + " started.");
 	}
