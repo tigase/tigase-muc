@@ -22,12 +22,14 @@
 package tigase.muc.modules;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.Affiliation;
+import tigase.muc.IChatRoomLogger;
 import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
@@ -62,7 +64,7 @@ public class PresenceModule extends AbstractModule {
 		}
 
 		public void put(Element element) {
-			items.push(new Element[] { element });
+			items.add(new Element[] { element });
 		}
 
 		/**
@@ -80,7 +82,7 @@ public class PresenceModule extends AbstractModule {
 				do {
 					sleep(553);
 					if (items.size() > 0) {
-						Element[] toSend = items.pop();
+						Element[] toSend = items.poll();
 						if (toSend != null)
 							for (Element element : toSend) {
 								sender.sendDelayedPacket(new Packet(element));
@@ -126,15 +128,14 @@ public class PresenceModule extends AbstractModule {
 		return newRole;
 	}
 
+	private final IChatRoomLogger chatRoomLogger;
+
 	private final DelayDeliveryThread delayDeliveryThread;
 
-	private final GroupchatMessageModule messageModule;
-
-	public PresenceModule(MucConfig config, IMucRepository mucRepository, GroupchatMessageModule messageModule,
-			DelDeliverySend sender) {
+	public PresenceModule(MucConfig config, IMucRepository mucRepository, IChatRoomLogger chatRoomLogger, DelDeliverySend sender) {
 		super(config, mucRepository);
+		this.chatRoomLogger = chatRoomLogger;
 		this.delayDeliveryThread = new DelayDeliveryThread(sender);
-		this.messageModule = messageModule;
 		this.delayDeliveryThread.start();
 	}
 
@@ -239,7 +240,7 @@ public class PresenceModule extends AbstractModule {
 			}
 
 			if (exitingRoom && !room.isOccupantExistsByJid(senderJid)) {
-				throw new MUCException(Authorization.NOT_ACCEPTABLE);
+				return null;
 			}
 			Anonymity anonymity = room.getConfig().getRoomAnonymity();
 
@@ -337,6 +338,12 @@ public class PresenceModule extends AbstractModule {
 
 			if (room.isRoomLocked() && newOccupant) {
 				result.add(prepateMucMessage(room, room.getOccupantsNickname(senderJid), "Room is locked. Please configure."));
+			}
+
+			if (room.getConfig().isLoggingEnabled() && newOccupant) {
+				this.chatRoomLogger.addJoin(room.getConfig().getLoggingFormat(), roomId, new Date(), nickName);
+			} else if (room.getConfig().isLoggingEnabled() && exitingRoom) {
+				this.chatRoomLogger.addLeave(room.getConfig().getLoggingFormat(), roomId, new Date(), nickName);
 			}
 
 			final int occupantsCount = room.getOccupantsCount();

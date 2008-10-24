@@ -45,7 +45,8 @@ public abstract class AbstractModule implements Module {
 
 	public static String getNicknameFromJid(String jid) {
 		if (jid != null) {
-			return JIDUtils.getNodeResource(jid);
+			int idx = jid.indexOf('/');
+			return idx == -1 ? null : jid.substring(idx + 1);
 		} else
 			return null;
 	}
