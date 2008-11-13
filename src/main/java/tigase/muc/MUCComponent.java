@@ -71,9 +71,9 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 	private static final String LOG_DIR_KEY = "room-log-directory";
 
-	protected static final String PUBSUB_REPO_CLASS_PROP_KEY = "pubsub-repo-class";
+	protected static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
 
-	protected static final String PUBSUB_REPO_URL_PROP_KEY = "pubsub-repo-url";
+	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
 
 	private MucConfig config = new MucConfig();
 
@@ -110,8 +110,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		props.put(HOSTNAMES_PROP_KEY, hostnames);
 
 		// By default use the same repository as all other components:
-		String repo_class = XML_REPO_CLASS_PROP_VAL;
-		String repo_uri = XML_REPO_URL_PROP_VAL;
+		String repo_class = DERBY_REPO_CLASS_PROP_VAL;
+		String repo_uri = DERBY_REPO_URL_PROP_VAL;
 		String conf_db = null;
 		if (params.get(GEN_USER_DB) != null) {
 			conf_db = (String) params.get(GEN_USER_DB);
@@ -132,8 +132,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 			repo_uri = (String) params.get(GEN_USER_DB_URI);
 		} // end of if (params.get(GEN_USER_DB_URI) != null)
 
-		props.put(PUBSUB_REPO_CLASS_PROP_KEY, repo_class);
-		props.put(PUBSUB_REPO_URL_PROP_KEY, repo_uri);
+		props.put(MUC_REPO_CLASS_PROP_KEY, repo_class);
+		props.put(MUC_REPO_URL_PROP_KEY, repo_uri);
 
 		String[] admins;
 		if (params.get(GEN_ADMINS) != null) {
@@ -218,7 +218,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 				addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet, e.getMessage(), true));
 			} catch (PacketErrorTypeException e1) {
 				e1.printStackTrace();
-				log.throwing("PubSub Service", "processPacket (sending internal-server-error)", e);
+				log.throwing("MUC Component", "processPacket (sending internal-server-error)", e);
 			}
 		}
 	}
@@ -275,10 +275,10 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		this.config.setLogDirectory((String) props.get(LOG_DIR_KEY));
 
 		try {
-			String cls_name = (String) props.get(PUBSUB_REPO_CLASS_PROP_KEY);
-			String res_uri = (String) props.get(PUBSUB_REPO_URL_PROP_KEY);
+			String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
+			String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
 
-			this.userRepository = RepositoryFactory.getUserRepository("pubsub", cls_name, res_uri, null);
+			this.userRepository = RepositoryFactory.getUserRepository(getName(), cls_name, res_uri, null);
 			userRepository.initRepository(res_uri, null);
 
 			dao = new MucDAO(this.config, this.userRepository);
