@@ -13,6 +13,8 @@ import tigase.xmpp.PacketErrorTypeException;
 
 public class RoomTest extends XMPPTestCase {
 
+	private JUnitXMLIO xmlio;
+
 	@Before
 	public void init() {
 		muc = new MUCComponent();
@@ -22,14 +24,7 @@ public class RoomTest extends XMPPTestCase {
 		props.put("pubsub-repo-url", "user-repository.xml");
 		props.put("max-queue-size", new Integer(1000));
 
-		muc.setProperties(props);
-	}
-
-	private MUCComponent muc;
-
-	@org.junit.Test
-	public void test_pings() {
-		JUnitXMLIO xmlio = new JUnitXMLIO() {
+		xmlio = new JUnitXMLIO() {
 
 			@Override
 			public void write(Element data) throws IOException {
@@ -46,6 +41,14 @@ public class RoomTest extends XMPPTestCase {
 
 			}
 		};
+
+		muc.setProperties(props);
+	}
+
+	private MUCComponent muc;
+
+	@org.junit.Test
+	public void test_pings() {
 		test("src/test/scripts/ping.cor", xmlio);
 	}
 
