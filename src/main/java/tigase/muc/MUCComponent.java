@@ -23,6 +23,7 @@ package tigase.muc;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -200,34 +201,24 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		registerModule(new UniqueRoomNameModule(this.config, this.mucRepository));
 
 		registerModule(new IqStanzaForwarderModule(this.config, this.mucRepository));
+		
 	}
 
 	@Override
 	public void processPacket(Packet packet) {
-		log.finest("Received by " + getComponentId() + ": " + packet.getElement().toString());
 		try {
-			final Element element = packet.getElement();
-			boolean handled = runModules(element);
-
-			if (!handled) {
-				final StanzaType type = packet.getType();
-				if (type != StanzaType.error) {
-					addOutPacket(Authorization.FEATURE_NOT_IMPLEMENTED.getResponseMessage(packet, "Stanza is not processed", true));
-				} else {
-					log.finer(packet.getElemName() + " stanza with type='error' ignored");
-				}
+			Collection<Element> result = process(packet.getElement());
+			for (Element element : result) {
+				addOutPacket(new Packet(element));
 			}
-		} catch (MUCException e) {
-			Element result = e.makeElement(packet.getElement(), true);
-			addOutPacket(new Packet(result));
 		} catch (Exception e) {
-			log.log(Level.SEVERE, "Unexpected exception: internal-server-error", e);
+			log.log(Level.WARNING, "Unexpected exception: internal-server-error", e);
 			e.printStackTrace();
 			try {
 				addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet, e.getMessage(), true));
 			} catch (PacketErrorTypeException e1) {
 				e1.printStackTrace();
-				log.throwing("MUC Component", "processPacket (sending internal-server-error)", e);
+				log.throwing("PubSub Service", "processPacket (sending internal-server-error)", e);
 			}
 		}
 	}
@@ -238,7 +229,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		return module;
 	}
 
-	protected boolean runModules(final Element element) throws MUCException {
+	protected boolean runModules(final Element element, Collection<Element> sendCollection) throws MUCException {
 		boolean handled = false;
 		log.finest("Processing packet: " + element.toString());
 
@@ -249,9 +240,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 				log.finest("Handled by module " + module.getClass());
 				List<Element> result = module.process(element);
 				if (result != null) {
-					for (Element e : result) {
-						addOutPacket(new Packet(e));
-					}
+					sendCollection.addAll(result);
 					return true;
 				}
 			}
@@ -308,4 +297,24 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		log.info("Tigase MUC Component ver. " + MucVersion.getVersion() + " started.");
 	}
 
+	public Collection<Element> process(final Element element) throws PacketErrorTypeException {
+		List<Element> result = new ArrayList<Element>();
+		try {
+			boolean handled = runModules(element, result);
+
+			if (!handled) {
+				final String t = element.getAttribute("type");
+				final StanzaType type = t == null ? null : StanzaType.valueof(t);
+				if (type != StanzaType.error) {
+					throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
+				} else {
+					log.finer(element.getName() + " stanza with type='error' ignored");
+				}
+			}
+		} catch (MUCException e) {
+			Element r = e.makeElement(element, true);
+			result.add(r);
+		}
+		return result;
+	}
 }
