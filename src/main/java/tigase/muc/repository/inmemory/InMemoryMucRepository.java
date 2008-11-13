@@ -71,8 +71,11 @@ public class InMemoryMucRepository implements IMucRepository {
 		this.dao = dao;
 		this.config = mucConfig;
 
-		for (String jid : dao.getRoomsIdList()) {
-			this.allRooms.put(jid, new InternalRoom());
+		String[] rooms = dao.getRoomsIdList();
+		if (rooms != null) {
+			for (String jid : rooms) {
+				this.allRooms.put(jid, new InternalRoom());
+			}
 		}
 
 		this.roomListener = new Room.RoomListener() {
