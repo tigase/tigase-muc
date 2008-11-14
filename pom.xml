@@ -80,7 +80,7 @@
         <dependency>
             <groupId>tigase</groupId>
             <artifactId>tigase-testsuite</artifactId>
-            <version>2.1.2-SNAPSHOT</version>
+            <version>2.1.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
