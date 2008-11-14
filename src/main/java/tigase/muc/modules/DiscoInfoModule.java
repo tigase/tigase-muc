@@ -76,9 +76,10 @@ public class DiscoInfoModule extends AbstractModule {
 				Element resultIdentity = new Element("identity", new String[] { "category", "name", "type" }, new String[] {
 						"conference", "Multi User Chat", "text" });
 				resultQuery.addChild(resultIdentity);
+				resultQuery.addChild(new Element("feature", new String[] { "var" }, new String[] { "http://jabber.org/protocol/muc" }));
 				if (this.features != null) {
 					for (String featur : this.features) {
-						result.addChild(new Element("feature", new String[] { "var" }, new String[] { featur }));
+						resultQuery.addChild(new Element("feature", new String[] { "var" }, new String[] { featur }));
 					}
 				}
 			} else {
