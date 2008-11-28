@@ -256,15 +256,15 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	public void setProperties(Map<String, Object> props) {
 		super.setProperties(props);
 
-		String[] hostnames = (String[]) props.get(HOSTNAMES_PROP_KEY);
-		if (hostnames == null || hostnames.length == 0) {
-			log.warning("Hostnames definition is empty, setting 'localhost'");
-			hostnames = new String[] { getName() + ".localhost" };
-		}
-		clearRoutings();
-		for (String host : hostnames) {
-			addRouting(host);
-		}
+//		String[] hostnames = (String[]) props.get(HOSTNAMES_PROP_KEY);
+//		if (hostnames == null || hostnames.length == 0) {
+//			log.warning("Hostnames definition is empty, setting 'localhost'");
+//			hostnames = new String[] { getName() + ".localhost" };
+//		}
+//		clearRoutings();
+//		for (String host : hostnames) {
+//			addRouting(host);
+//		}
 		serviceEntity = new ServiceEntity(getName(), null, "Publish-Subscribe");
 		serviceEntity.addIdentities(new ServiceIdentity("conference", "text", "Multi User Chat"));
 
