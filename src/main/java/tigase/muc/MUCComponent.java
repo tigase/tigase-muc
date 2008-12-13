@@ -265,7 +265,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 //		for (String host : hostnames) {
 //			addRouting(host);
 //		}
-		serviceEntity = new ServiceEntity(getName(), null, "Publish-Subscribe");
+		serviceEntity = new ServiceEntity(getName(), null, "Multi User Chat");
 		serviceEntity.addIdentities(new ServiceIdentity("conference", "text", "Multi User Chat"));
 
 		serviceEntity.addFeatures("http://jabber.org/protocol/muc");
