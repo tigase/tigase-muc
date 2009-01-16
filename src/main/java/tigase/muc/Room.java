@@ -196,8 +196,7 @@ public class Room {
 
 	public List<Element> getHistoryMessages(String recipientJid) {
 		Affiliation recipientAffiliation = getAffiliation(recipientJid);
-		boolean showJids = config.getRoomAnonymity() == Anonymity.nonanonymous
-				|| config.getRoomAnonymity() == Anonymity.semianonymous
+		boolean showJids = config.getRoomAnonymity() == Anonymity.nonanonymous || config.getRoomAnonymity() == Anonymity.semianonymous
 				&& (recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
 
 		return history.getMessages(recipientJid, config.getRoomId(), showJids);
@@ -360,7 +359,7 @@ public class Room {
 	 */
 	public void updatePresenceByJid(String jid, Element element) {
 		Element cp = element.clone();
-		Element toRemove = cp.getChild("x");
+		Element toRemove = cp.getChild("x", "http://jabber.org/protocol/muc");
 		if (toRemove != null)
 			cp.removeChild(toRemove);
 

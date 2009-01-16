@@ -81,14 +81,13 @@ public class MediatedInvitationModule extends AbstractModule {
 				throw new MUCException(Authorization.FORBIDDEN);
 			}
 
-			final Element x = element.getChild("x");
+			final Element x = element.getChild("x", "http://jabber.org/protocol/muc#user");
 			final Element invite = x.getChild("invite");
 			final Element reason = invite.getChild("reason");
 			final String recipient = invite.getAttribute("to");
 
 			final Element resultMessage = new Element("message", new String[] { "from", "to" }, new String[] { roomId, recipient });
-			final Element resultX = new Element("x", new String[] { "xmlns" },
-					new String[] { "http://jabber.org/protocol/muc#user" });
+			final Element resultX = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
 			resultMessage.addChild(resultX);
 
 			if (room.getConfig().isRoomMembersOnly() && senderAffiliation.isEditMemberList()) {

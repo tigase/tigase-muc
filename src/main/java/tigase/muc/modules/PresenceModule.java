@@ -209,7 +209,7 @@ public class PresenceModule extends AbstractModule {
 			boolean newRoomCreated = false;
 			boolean exitingRoom = presenceType != null && "unavailable".equals(presenceType);
 
-			final Element $x = element.getChild("x");
+			final Element $x = element.getChild("x", "http://jabber.org/protocol/muc");
 			final Element password = $x == null ? null : $x.getChild("password");
 
 			if (nickName == null) {
