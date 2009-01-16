@@ -127,31 +127,38 @@ public class RoomConfigurationModule extends AbstractModule {
 		List<Element> result = makeArray(createResultIQ(element));
 
 		final Element x = query.getChild("x", "jabber:x:data");
-		Form form = new Form(x);
-		if ("submit".equals(form.getType())) {
-			String ps = form.getAsString(RoomConfig.MUC_ROOMCONFIG_ROOMSECRET_KEY);
-			if (form.getAsBoolean(RoomConfig.MUC_ROOMCONFIG_PASSWORDPROTECTEDROOM_KEY) == Boolean.TRUE
-					&& (ps == null || ps.length() == 0)) {
-				throw new MUCException(Authorization.NOT_ACCEPTABLE, "Passwords cannot be empty");
-			}
-
-			final RoomConfig oldConfig = room.getConfig().clone();
-			if (room.isRoomLocked()) {
-				room.setRoomLocked(false);
-				log.fine("Room " + room.getRoomId() + " is now unlocked");
-				result.add(prepateMucMessage(room, room.getOccupantsNickname(senderJid), "Room is now unlocked"));
-			}
-			room.getConfig().copyFrom(form);
-			String[] compareResult = room.getConfig().compareTo(oldConfig);
-			if (compareResult != null) {
-				Element z = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
-				for (String code : compareResult) {
-					z.addChild(new Element("status", new String[] { "code" }, new String[] { code }));
+		final Element destroy = query.getChild("destroy");
+		if (destroy != null) {
+			// XXX TODO
+			throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
+		} else if (x != null) {
+			Form form = new Form(x);
+			if ("submit".equals(form.getType())) {
+				String ps = form.getAsString(RoomConfig.MUC_ROOMCONFIG_ROOMSECRET_KEY);
+				if (form.getAsBoolean(RoomConfig.MUC_ROOMCONFIG_PASSWORDPROTECTEDROOM_KEY) == Boolean.TRUE
+						&& (ps == null || ps.length() == 0)) {
+					throw new MUCException(Authorization.NOT_ACCEPTABLE, "Passwords cannot be empty");
 				}
-				result.addAll(this.messageModule.sendMessagesToAllOccupants(room, roomId, z));
-			}
-		}
 
+				final RoomConfig oldConfig = room.getConfig().clone();
+				if (room.isRoomLocked()) {
+					room.setRoomLocked(false);
+					log.fine("Room " + room.getRoomId() + " is now unlocked");
+					result.add(prepateMucMessage(room, room.getOccupantsNickname(senderJid), "Room is now unlocked"));
+				}
+				room.getConfig().copyFrom(form);
+				String[] compareResult = room.getConfig().compareTo(oldConfig);
+				if (compareResult != null) {
+					Element z = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
+					for (String code : compareResult) {
+						z.addChild(new Element("status", new String[] { "code" }, new String[] { code }));
+					}
+					result.addAll(this.messageModule.sendMessagesToAllOccupants(room, roomId, z));
+				}
+			}
+		} else {
+			throw new MUCException(Authorization.BAD_REQUEST);
+		}
 		return result;
 	}
 }
