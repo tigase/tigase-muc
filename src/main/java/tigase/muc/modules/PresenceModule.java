@@ -149,8 +149,8 @@ public class PresenceModule extends AbstractModule {
 		return CRIT;
 	}
 
-	private List<Element> preparePresenceToAllOccupants(Room room, String roomURL, String nickName, Affiliation affiliation, Role role,
-			String senderJid, boolean newRoomCreated, String newNickName) {
+	private List<Element> preparePresenceToAllOccupants(Room room, String roomURL, String nickName, Affiliation affiliation,
+			Role role, String senderJid, boolean newRoomCreated, String newNickName) {
 		List<Element> result = new ArrayList<Element>();
 		Anonymity anonymity = room.getConfig().getRoomAnonymity();
 		for (String occupantJid : room.getOccupantsJids()) {
@@ -168,7 +168,8 @@ public class PresenceModule extends AbstractModule {
 
 			Element x = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
 
-			Element item = new Element("item", new String[] { "affiliation", "role" }, new String[] { affiliation.name(), role.name() });
+			Element item = new Element("item", new String[] { "affiliation", "role" }, new String[] { affiliation.name(),
+					role.name() });
 
 			if (senderJid.equals(occupantJid)) {
 				x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
@@ -182,7 +183,8 @@ public class PresenceModule extends AbstractModule {
 			if (newRoomCreated) {
 				x.addChild(new Element("status", new String[] { "code" }, new String[] { "201" }));
 			}
-			if (anonymity == Anonymity.nonanonymous || (anonymity == Anonymity.semianonymous && occupantAffiliation.isViewOccupantsJid())) {
+			if (anonymity == Anonymity.nonanonymous
+					|| (anonymity == Anonymity.semianonymous && occupantAffiliation.isViewOccupantsJid())) {
 				item.setAttribute("jid", senderJid);
 			}
 			if (newNickName != null) {
@@ -273,10 +275,11 @@ public class PresenceModule extends AbstractModule {
 					presence.setAttribute("from", roomId + "/" + occupantNickname);
 					presence.setAttribute("to", senderJid);
 
-					Element x = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
+					Element x = new Element("x", new String[] { "xmlns" },
+							new String[] { "http://jabber.org/protocol/muc#user" });
 
-					Element item = new Element("item", new String[] { "affiliation", "role" }, new String[] { occupantAffiliation.name(),
-							occupantRole.name() });
+					Element item = new Element("item", new String[] { "affiliation", "role" }, new String[] {
+							occupantAffiliation.name(), occupantRole.name() });
 
 					if (anonymity == Anonymity.nonanonymous
 							|| (anonymity == Anonymity.semianonymous && (affiliation == Affiliation.admin || affiliation == Affiliation.owner))) {
@@ -290,8 +293,8 @@ public class PresenceModule extends AbstractModule {
 
 				final Role newRole = getDefaultRole(room.getConfig(), affiliation);
 
-				log.finest("Occupant '" + nickName + "' <" + senderJid + "> is entering room " + roomId + " as role=" + newRole.name()
-						+ ", affiliation=" + affiliation.name());
+				log.finest("Occupant '" + nickName + "' <" + senderJid + "> is entering room " + roomId + " as role="
+						+ newRole.name() + ", affiliation=" + affiliation.name());
 				room.addOccupantByJid(senderJid, nickName, newRole);
 			}
 
@@ -301,12 +304,14 @@ public class PresenceModule extends AbstractModule {
 			if (changeNickName) {
 				String nck = room.getOccupantsNickname(senderJid);
 				log.finest("Occupant '" + nck + "' <" + senderJid + "> is changing his nickname to '" + nickName + "'");
-				result.addAll(preparePresenceToAllOccupants(room, roomId, nck, affiliation, role, senderJid, newRoomCreated, nickName));
+				result.addAll(preparePresenceToAllOccupants(room, roomId, nck, affiliation, role, senderJid, newRoomCreated,
+						nickName));
 				room.changeNickName(senderJid, nickName);
 			}
 
 			// Service Sends New Occupant's Presence to All Occupants
-			result.addAll(preparePresenceToAllOccupants(room, roomId, nickName, affiliation, role, senderJid, newRoomCreated, null));
+			result.addAll(preparePresenceToAllOccupants(room, roomId, nickName, affiliation, role, senderJid, newRoomCreated,
+					null));
 
 			if (exitingRoom) {
 				log.finest("Occupant '" + nickName + "' <" + senderJid + "> is leaving room " + roomId);
@@ -316,13 +321,15 @@ public class PresenceModule extends AbstractModule {
 			if (newOccupant) {
 				this.delayDeliveryThread.put(room.getHistoryMessages(senderJid));
 			}
-			if (newOccupant && room.getSubject() != null && room.getSubjectChangerNick() != null && room.getSubjectChangeDate() != null) {
+			if (newOccupant && room.getSubject() != null && room.getSubjectChangerNick() != null
+					&& room.getSubjectChangeDate() != null) {
 				Element message = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",
 						roomId + "/" + room.getSubjectChangerNick(), senderJid });
 				message.addChild(new Element("subject", room.getSubject()));
 
 				String stamp = sdf.format(room.getSubjectChangeDate());
-				Element delay = new Element("delay", new String[] { "xmlns", "stamp" }, new String[] { "urn:xmpp:delay", stamp });
+				Element delay = new Element("delay", new String[] { "xmlns", "stamp" },
+						new String[] { "urn:xmpp:delay", stamp });
 				delay.setAttribute("jid", roomId + "/" + room.getSubjectChangerNick());
 
 				Element x = new Element("x", new String[] { "xmlns", "stamp" }, new String[] { "jabber:x:delay",

@@ -170,6 +170,31 @@ public class RoomChatLogger implements IChatRoomLogger {
 		addLine(pattern, logFormat, roomId, date, nickName, null);
 	}
 
+	private void addLine(String pattern, RoomConfig.LogFormat logFormat, String roomId, Date date, String nickName, String text) {
+
+		String d = sdf.format(date);
+		Object[] values = new String[] { d, nickName, text };
+		final String line = String.format(pattern, values);
+		String ext;
+
+		switch (logFormat) {
+		case html:
+			ext = ".html";
+			break;
+		case xml:
+			ext = ".xml";
+			break;
+		case plain:
+			ext = ".txt";
+			break;
+		default:
+			throw new RuntimeException("Unsupported log format: " + logFormat.name());
+		}
+
+		Item it = new Item(new File(config.getLogDirectory() + "/" + roomId + ext), line);
+		this.worker.items.add(it);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -221,31 +246,6 @@ public class RoomChatLogger implements IChatRoomLogger {
 			throw new RuntimeException("Unsupported log format: " + logFormat.name());
 		}
 		addLine(pattern, logFormat, roomId, date, nickName, subject);
-	}
-
-	private void addLine(String pattern, RoomConfig.LogFormat logFormat, String roomId, Date date, String nickName, String text) {
-
-		String d = sdf.format(date);
-		Object[] values = new String[] { d, nickName, text };
-		final String line = String.format(pattern, values);
-		String ext;
-
-		switch (logFormat) {
-		case html:
-			ext = ".html";
-			break;
-		case xml:
-			ext = ".xml";
-			break;
-		case plain:
-			ext = ".txt";
-			break;
-		default:
-			throw new RuntimeException("Unsupported log format: " + logFormat.name());
-		}
-
-		Item it = new Item(new File(config.getLogDirectory() + "/" + roomId + ext), line);
-		this.worker.items.add(it);
 	}
 
 }

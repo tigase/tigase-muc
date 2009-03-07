@@ -66,7 +66,9 @@ public class RoomConfig {
 	}
 
 	public static enum LogFormat {
-		html, plain, xml
+		html,
+		plain,
+		xml
 	}
 
 	public static interface RoomConfigListener {
@@ -280,14 +282,14 @@ public class RoomConfig {
 		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_PASSWORDPROTECTEDROOM_KEY, Boolean.FALSE, "Password Required to Enter?"));
 		form.addField(Field.fieldTextSingle(MUC_ROOMCONFIG_ROOMSECRET_KEY, "", "Password"));
 
-		form.addField(Field.fieldListSingle(MUC_ROOMCONFIG_ANONYMITY_KEY, Anonymity.semianonymous.name(), "Room anonymity level:",
-				new String[] { "Non-Anonymous Room", "Semi-Anonymous Room", "Fully-Anonymous Room" }, new String[] {
-						Anonymity.nonanonymous.name(), Anonymity.semianonymous.name(), Anonymity.fullanonymous.name() }));
+		form.addField(Field.fieldListSingle(MUC_ROOMCONFIG_ANONYMITY_KEY, Anonymity.semianonymous.name(),
+				"Room anonymity level:", new String[] { "Non-Anonymous Room", "Semi-Anonymous Room", "Fully-Anonymous Room" },
+				new String[] { Anonymity.nonanonymous.name(), Anonymity.semianonymous.name(), Anonymity.fullanonymous.name() }));
 		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_CHANGESUBJECT_KEY, Boolean.FALSE, "Allow Occupants to Change Subject?"));
 
 		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_ENABLELOGGING_KEY, Boolean.FALSE, "Enable Public Logging?"));
-		form.addField(Field.fieldListSingle(LOGGING_FORMAT_KEY, LogFormat.html.name(), "Logging format:", new String[] { "HTML",
-				"Plain text" }, new String[] { LogFormat.html.name(), LogFormat.plain.name() }));
+		form.addField(Field.fieldListSingle(LOGGING_FORMAT_KEY, LogFormat.html.name(), "Logging format:", new String[] {
+				"HTML", "Plain text" }, new String[] { LogFormat.html.name(), LogFormat.plain.name() }));
 
 	}
 
@@ -324,8 +326,8 @@ public class RoomConfig {
 		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_MODERATEDROOM_KEY), false);
 	}
 
-	public void read(final UserRepository repository, final MucConfig config, final String subnode) throws UserNotFoundException,
-			TigaseDBException {
+	public void read(final UserRepository repository, final MucConfig config, final String subnode)
+			throws UserNotFoundException, TigaseDBException {
 		String[] keys = repository.getKeys(config.getServiceName(), subnode);
 		if (keys != null)
 			for (String key : keys) {

@@ -26,10 +26,11 @@ package tigase.muc;
  * 
  */
 public enum Affiliation {
-	admin(30, true, true, true, true, true, true, true, false, false, false, false, true), member(20, true, true, true, true,
-			false, false, false, false, false, false, false, false), none(10, true, true, false, false, false, false, false, false,
-			false, false, false, false), outcast(0, false, false, false, false, false, false, false, false, false, false, false,
-			false), owner(40, true, true, true, true, true, true, true, true, true, true, true, true);
+	admin(30, true, true, true, true, true, true, true, false, false, false, false, true),
+	member(20, true, true, true, true, false, false, false, false, false, false, false, false),
+	none(10, true, true, false, false, false, false, false, false, false, false, false, false),
+	outcast(0, false, false, false, false, false, false, false, false, false, false, false, false),
+	owner(40, true, true, true, true, true, true, true, true, true, true, true, true);
 
 	private final boolean banMembersAndUnaffiliatedUsers;
 

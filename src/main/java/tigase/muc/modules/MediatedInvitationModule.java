@@ -86,8 +86,10 @@ public class MediatedInvitationModule extends AbstractModule {
 			final Element reason = invite.getChild("reason");
 			final String recipient = invite.getAttribute("to");
 
-			final Element resultMessage = new Element("message", new String[] { "from", "to" }, new String[] { roomId, recipient });
-			final Element resultX = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
+			final Element resultMessage = new Element("message", new String[] { "from", "to" }, new String[] { roomId,
+					recipient });
+			final Element resultX = new Element("x", new String[] { "xmlns" },
+					new String[] { "http://jabber.org/protocol/muc#user" });
 			resultMessage.addChild(resultX);
 
 			if (room.getConfig().isRoomMembersOnly() && senderAffiliation.isEditMemberList()) {

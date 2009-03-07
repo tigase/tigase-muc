@@ -149,7 +149,8 @@ public class RoomConfigurationModule extends AbstractModule {
 				room.getConfig().copyFrom(form);
 				String[] compareResult = room.getConfig().compareTo(oldConfig);
 				if (compareResult != null) {
-					Element z = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
+					Element z = new Element("x", new String[] { "xmlns" },
+							new String[] { "http://jabber.org/protocol/muc#user" });
 					for (String code : compareResult) {
 						z.addChild(new Element("status", new String[] { "code" }, new String[] { code }));
 					}

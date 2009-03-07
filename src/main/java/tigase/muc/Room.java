@@ -196,7 +196,8 @@ public class Room {
 
 	public List<Element> getHistoryMessages(String recipientJid) {
 		Affiliation recipientAffiliation = getAffiliation(recipientJid);
-		boolean showJids = config.getRoomAnonymity() == Anonymity.nonanonymous || config.getRoomAnonymity() == Anonymity.semianonymous
+		boolean showJids = config.getRoomAnonymity() == Anonymity.nonanonymous
+				|| config.getRoomAnonymity() == Anonymity.semianonymous
 				&& (recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
 
 		return history.getMessages(recipientJid, config.getRoomId(), showJids);

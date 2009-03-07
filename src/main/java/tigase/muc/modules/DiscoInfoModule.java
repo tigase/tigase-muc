@@ -26,6 +26,7 @@ import java.util.Set;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.muc.MUCComponent;
 import tigase.muc.MucConfig;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
@@ -46,11 +47,11 @@ public class DiscoInfoModule extends AbstractModule {
 		query.addChild(new Element("feature", new String[] { "var" }, new String[] { feature }));
 	}
 
-	private final Set<String> features;
+	private final MUCComponent muc;
 
-	public DiscoInfoModule(MucConfig config, IMucRepository mucRepository, Set<String> features) {
+	public DiscoInfoModule(MucConfig config, IMucRepository mucRepository, final MUCComponent component) {
 		super(config, mucRepository);
-		this.features = features;
+		this.muc = component;
 	}
 
 	@Override
@@ -76,9 +77,11 @@ public class DiscoInfoModule extends AbstractModule {
 				Element resultIdentity = new Element("identity", new String[] { "category", "name", "type" }, new String[] {
 						"conference", "Multi User Chat", "text" });
 				resultQuery.addChild(resultIdentity);
-				resultQuery.addChild(new Element("feature", new String[] { "var" }, new String[] { "http://jabber.org/protocol/muc" }));
-				if (this.features != null) {
-					for (String featur : this.features) {
+				resultQuery.addChild(new Element("feature", new String[] { "var" },
+						new String[] { "http://jabber.org/protocol/muc" }));
+				final Set<String> features = this.muc.getFeaturesFromModule();
+				if (features != null) {
+					for (String featur : features) {
 						resultQuery.addChild(new Element("feature", new String[] { "var" }, new String[] { featur }));
 					}
 				}

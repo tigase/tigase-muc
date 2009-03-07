@@ -69,8 +69,8 @@ public abstract class AbstractModule implements Module {
 
 	protected static Element prepateMucMessage(Room room, String nickname, String message) {
 		String occupantJid = room.getOccupantsJidByNickname(nickname);
-		Element msg = new Element("message", new String[] { "from", "to", "type" }, new String[] { room.getRoomId(), occupantJid,
-				"groupchat" });
+		Element msg = new Element("message", new String[] { "from", "to", "type" }, new String[] { room.getRoomId(),
+				occupantJid, "groupchat" });
 
 		msg.addChild(new Element("body", message));
 

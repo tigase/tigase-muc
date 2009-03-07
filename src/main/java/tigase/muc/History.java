@@ -79,8 +79,8 @@ public class History {
 			message.addChild(new Element("body", item.message));
 
 			String from = addRealJids ? item.senderJid : roomId + "/" + item.senderNickname;
-			Element delay = new Element("delay", new String[] { "xmlns", "from", "stamp" }, new String[] { "urn:xmpp:delay", from,
-					dateTimeFormatter.format(item.timestamp) });
+			Element delay = new Element("delay", new String[] { "xmlns", "from", "stamp" }, new String[] { "urn:xmpp:delay",
+					from, dateTimeFormatter.format(item.timestamp) });
 
 			Element x = new Element("x", new String[] { "xmlns", "from", "stamp" }, new String[] { "jabber:x:delay", from,
 					dateTimeFormatter.formatOld(item.timestamp) });

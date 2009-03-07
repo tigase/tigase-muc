@@ -116,7 +116,8 @@ public class ModeratorModule extends AbstractModule {
 
 			if (newAffiliation == Affiliation.outcast && !senderaAffiliation.isBanMembersAndUnaffiliatedUsers()) {
 				throw new MUCException(Authorization.NOT_ALLOWED, "You cannot ban");
-			} else if (newAffiliation == Affiliation.outcast && occupantAffiliation.getWeight() >= senderaAffiliation.getWeight()) {
+			} else if (newAffiliation == Affiliation.outcast
+					&& occupantAffiliation.getWeight() >= senderaAffiliation.getWeight()) {
 				throw new MUCException(Authorization.NOT_ALLOWED, "You ban occupant with higher affiliation");
 			}
 
@@ -252,8 +253,8 @@ public class ModeratorModule extends AbstractModule {
 					final String nickName = room.getOccupantsNicknameByBareJid(jid);
 					final String fullJid = room.getOccupantsJidByNickname(nickName);
 					final Role role = room.getRoleByJid(fullJid);
-					Element ir = new Element("item", new String[] { "affiliation", "jid" },
-							new String[] { affiliation.name(), jid });
+					Element ir = new Element("item", new String[] { "affiliation", "jid" }, new String[] { affiliation.name(),
+							jid });
 					if (nickName != null) {
 						ir.setAttribute("nick", nickName);
 						ir.setAttribute("role", role.name());
@@ -324,8 +325,8 @@ public class ModeratorModule extends AbstractModule {
 					if (newAffiliation == Affiliation.outcast) {
 						codes.add("301");
 						isUnavailable = true;
-						Element occupantKickPresence = makePresence(realJid, roomId, room, realJid, isUnavailable, newAffiliation,
-								newRole, occupantNick, reason, actor, codes.toArray(new String[] {}));
+						Element occupantKickPresence = makePresence(realJid, roomId, room, realJid, isUnavailable,
+								newAffiliation, newRole, occupantNick, reason, actor, codes.toArray(new String[] {}));
 						room.removeOccupantByJid(realJid);
 						result.add(occupantKickPresence);
 					}

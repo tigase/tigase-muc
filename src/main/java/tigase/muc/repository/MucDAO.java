@@ -70,7 +70,8 @@ public class MucDAO {
 		} catch (UserNotFoundException e) {
 			try {
 				this.repository.addUser(this.mucConfig.getServiceName());
-				this.repository.setData(this.mucConfig.getServiceName(), "last-start", String.valueOf(System.currentTimeMillis()));
+				this.repository.setData(this.mucConfig.getServiceName(), "last-start",
+						String.valueOf(System.currentTimeMillis()));
 			} catch (Exception e1) {
 				log.log(Level.SEVERE, "MUC repository initialization problem", e1);
 				throw new RepositoryException("Cannot initialize MUC repository", e);

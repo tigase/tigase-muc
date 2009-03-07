@@ -23,7 +23,9 @@ package tigase.muc.modules;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
@@ -44,6 +46,9 @@ public class GroupchatMessageModule extends AbstractModule {
 
 	private static final Criteria CRIT = ElementCriteria.nameType("message", "groupchat");
 
+	private static final Criteria CRIT_CHAT_STAT = ElementCriteria.xmlns("http://jabber.org/protocol/chatstates");
+
+	private final Set<Criteria> allowedElements = new HashSet<Criteria>();
 	private final IChatRoomLogger chatLogger;
 
 	public GroupchatMessageModule(MucConfig config, IMucRepository mucRepository, IChatRoomLogger chatRoomLogger) {
@@ -53,12 +58,20 @@ public class GroupchatMessageModule extends AbstractModule {
 
 	@Override
 	public String[] getFeatures() {
-		return null;
+		ArrayList<String> f = new ArrayList<String>();
+		if (isChatStateAllowed()) {
+			f.add("http://jabber.org/protocol/chatstates");
+		}
+		return f.toArray(new String[] {});
 	}
 
 	@Override
 	public Criteria getModuleCriteria() {
 		return CRIT;
+	}
+
+	public boolean isChatStateAllowed() {
+		return allowedElements.contains(CRIT_CHAT_STAT);
 	}
 
 	@Override
@@ -82,8 +95,27 @@ public class GroupchatMessageModule extends AbstractModule {
 				throw new MUCException(Authorization.FORBIDDEN);
 			}
 
-			Element body = element.getChild("body");
-			Element subject = element.getChild("subject");
+			Element body = null;
+			Element subject = null;
+			ArrayList<Element> content = new ArrayList<Element>();
+
+			for (Element c : element.getChildren()) {
+				if ("body".equals(c.getName())) {
+					body = c;
+					content.add(c);
+				} else if ("subject".equals(c.getName())) {
+					subject = c;
+					content.add(c);
+				} else {
+					for (Criteria crit : allowedElements) {
+						if (crit.match(c)) {
+							content.add(c);
+							break;
+						}
+					}
+				}
+			}
+
 			final String nickName = room.getOccupantsNickname(senderJid);
 			final String senderRoomJid = roomId + "/" + nickName;
 
@@ -108,7 +140,7 @@ public class GroupchatMessageModule extends AbstractModule {
 
 				}
 			}
-			result.addAll(sendMessagesToAllOccupants(room, senderRoomJid, body, subject));
+			result.addAll(sendMessagesToAllOccupants(room, senderRoomJid, content.toArray(new Element[] {})));
 
 			return result;
 		} catch (MUCException e1) {
@@ -125,8 +157,8 @@ public class GroupchatMessageModule extends AbstractModule {
 			Role role = room.getRoleByJid(occupantsJid);
 			if (!role.isReceiveMessages())
 				continue;
-			Element message = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat", fromJid,
-					occupantsJid });
+			Element message = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",
+					fromJid, occupantsJid });
 			if (content != null) {
 				for (Element sub : content) {
 					if (sub != null)
@@ -136,5 +168,16 @@ public class GroupchatMessageModule extends AbstractModule {
 			result.add(message);
 		}
 		return result;
+	}
+
+	public void setChatStateAllowed(Boolean allowed) {
+		System.out.println("xxx " + allowed);
+		if (allowed != null && allowed) {
+			log.config("Chat state allowed");
+			allowedElements.add(CRIT_CHAT_STAT);
+		} else {
+			log.config("Chat state disallowed");
+			allowedElements.remove(CRIT_CHAT_STAT);
+		}
 	}
 }

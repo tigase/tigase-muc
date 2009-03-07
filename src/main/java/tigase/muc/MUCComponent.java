@@ -83,6 +83,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 
+	private GroupchatMessageModule messageModule;
+
 	private final ArrayList<Module> modules = new ArrayList<Module>();
 
 	private IMucRepository mucRepository;
@@ -145,6 +147,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 		props.put(LOG_DIR_KEY, new String("./logs/"));
 
+		props.put("muc-allow-chat-states", Boolean.FALSE);
+
 		return props;
 	}
 
@@ -168,7 +172,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		}
 	}
 
-	private Set<String> getFeaturesFromModule() {
+	public Set<String> getFeaturesFromModule() {
 		HashSet<String> result = new HashSet<String>();
 		for (Module module : this.modules) {
 			if (module.getFeatures() != null) {
@@ -186,8 +190,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 		registerModule(new PrivateMessageModule(this.config, this.mucRepository));
 
-		GroupchatMessageModule messageModule = registerModule(new GroupchatMessageModule(this.config, this.mucRepository,
-				this.roomLogger));
+		messageModule = registerModule(new GroupchatMessageModule(this.config, this.mucRepository, this.roomLogger));
 
 		registerModule(new PresenceModule(this.config, this.mucRepository, this.roomLogger, this));
 
@@ -198,14 +201,35 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		registerModule(new XmppPingModule());
 
 		registerModule(new DiscoItemsModule(this.config, this.mucRepository));
-		registerModule(new DiscoInfoModule(this.config, this.mucRepository, getFeaturesFromModule()));
+		registerModule(new DiscoInfoModule(this.config, this.mucRepository, this));
 
 		registerModule(new MediatedInvitationModule(this.config, this.mucRepository));
 
 		registerModule(new UniqueRoomNameModule(this.config, this.mucRepository));
 
 		registerModule(new IqStanzaForwarderModule(this.config, this.mucRepository));
-		
+
+	}
+
+	public Collection<Element> process(final Element element) throws PacketErrorTypeException {
+		List<Element> result = new ArrayList<Element>();
+		try {
+			boolean handled = runModules(element, result);
+
+			if (!handled) {
+				final String t = element.getAttribute("type");
+				final StanzaType type = t == null ? null : StanzaType.valueof(t);
+				if (type != StanzaType.error) {
+					throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
+				} else {
+					log.finer(element.getName() + " stanza with type='error' ignored");
+				}
+			}
+		} catch (MUCException e) {
+			Element r = e.makeElement(element, true);
+			result.add(r);
+		}
+		return result;
 	}
 
 	@Override
@@ -260,15 +284,15 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	public void setProperties(Map<String, Object> props) {
 		super.setProperties(props);
 
-//		String[] hostnames = (String[]) props.get(HOSTNAMES_PROP_KEY);
-//		if (hostnames == null || hostnames.length == 0) {
-//			log.warning("Hostnames definition is empty, setting 'localhost'");
-//			hostnames = new String[] { getName() + ".localhost" };
-//		}
-//		clearRoutings();
-//		for (String host : hostnames) {
-//			addRouting(host);
-//		}
+		// String[] hostnames = (String[]) props.get(HOSTNAMES_PROP_KEY);
+		// if (hostnames == null || hostnames.length == 0) {
+		// log.warning("Hostnames definition is empty, setting 'localhost'");
+		// hostnames = new String[] { getName() + ".localhost" };
+		// }
+		// clearRoutings();
+		// for (String host : hostnames) {
+		// addRouting(host);
+		// }
 		serviceEntity = new ServiceEntity(getName(), null, "Multi User Chat");
 		serviceEntity.addIdentities(new ServiceIdentity("conference", "text", "Multi User Chat"));
 
@@ -278,47 +302,31 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 		this.config.setLogDirectory((String) props.get(LOG_DIR_KEY));
 
-		try {
-			String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
-			String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
+		if (userRepository == null) {
+			try {
+				String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
+				String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
 
-			this.userRepository = RepositoryFactory.getUserRepository(getName(), cls_name, res_uri, null);
-			userRepository.initRepository(res_uri, null);
+				this.userRepository = RepositoryFactory.getUserRepository(getName(), cls_name, res_uri, null);
+				userRepository.initRepository(res_uri, null);
 
-			dao = new MucDAO(this.config, this.userRepository);
+				dao = new MucDAO(this.config, this.userRepository);
 
-			mucRepository = new InMemoryMucRepository(this.config, dao);
+				mucRepository = new InMemoryMucRepository(this.config, dao);
 
-		} catch (Exception e) {
-			log.severe("Can't initialize MUC repository: " + e);
-			e.printStackTrace();
-			System.exit(1);
-		}
-
-		this.roomLogger = new RoomChatLogger(this.config);
-
-		init();
-		log.info("Tigase MUC Component ver. " + MucVersion.getVersion() + " started.");
-	}
-
-	public Collection<Element> process(final Element element) throws PacketErrorTypeException {
-		List<Element> result = new ArrayList<Element>();
-		try {
-			boolean handled = runModules(element, result);
-
-			if (!handled) {
-				final String t = element.getAttribute("type");
-				final StanzaType type = t == null ? null : StanzaType.valueof(t);
-				if (type != StanzaType.error) {
-					throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
-				} else {
-					log.finer(element.getName() + " stanza with type='error' ignored");
-				}
+			} catch (Exception e) {
+				log.severe("Can't initialize MUC repository: " + e);
+				e.printStackTrace();
+				System.exit(1);
 			}
-		} catch (MUCException e) {
-			Element r = e.makeElement(element, true);
-			result.add(r);
+
+			this.roomLogger = new RoomChatLogger(this.config);
+
+			init();
 		}
-		return result;
+
+		this.messageModule.setChatStateAllowed((Boolean) props.get("muc-allow-chat-states"));
+
+		log.info("Tigase MUC Component ver. " + MucVersion.getVersion() + " started.");
 	}
 }
