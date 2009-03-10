@@ -112,28 +112,10 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		props.put(HOSTNAMES_PROP_KEY, hostnames);
 
 		// By default use the same repository as all other components:
-		String repo_class = DERBY_REPO_CLASS_PROP_VAL;
-		String repo_uri = DERBY_REPO_URL_PROP_VAL;
-		String conf_db = null;
-		if (params.get(GEN_USER_DB) != null) {
-			conf_db = (String) params.get(GEN_USER_DB);
-		} // end of if (params.get(GEN_USER_DB) != null)
-
-		if (conf_db != null) {
-			if (conf_db.equals("mysql")) {
-				repo_class = MYSQL_REPO_CLASS_PROP_VAL;
-				repo_uri = MYSQL_REPO_URL_PROP_VAL;
-			}
-			if (conf_db.equals("pgsql")) {
-				repo_class = PGSQL_REPO_CLASS_PROP_VAL;
-				repo_uri = PGSQL_REPO_URL_PROP_VAL;
-			}
-		} // end of if (conf_db != null)
-
-		if (params.get(GEN_USER_DB_URI) != null) {
-			repo_uri = (String) params.get(GEN_USER_DB_URI);
-		} // end of if (params.get(GEN_USER_DB_URI) != null)
-
+		String repo_class = params.get(GEN_USER_DB) != null
+						? (String)params.get(GEN_USER_DB) : DERBY_REPO_CLASS_PROP_VAL;
+		String repo_uri = params.get(GEN_USER_DB_URI) != null
+						? (String)params.get(GEN_USER_DB_URI) : DERBY_REPO_URL_PROP_VAL;
 		props.put(MUC_REPO_CLASS_PROP_KEY, repo_class);
 		props.put(MUC_REPO_URL_PROP_KEY, repo_uri);
 
@@ -303,12 +285,23 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		this.config.setLogDirectory((String) props.get(LOG_DIR_KEY));
 
 		if (userRepository == null) {
+			userRepository =
+							(UserRepository) props.get(SHARED_USER_REPO_POOL_PROP_KEY);
+			if (userRepository == null) {
+				// Is there shared user repository instance? If so I want to use it:
+				userRepository = (UserRepository) props.get(SHARED_USER_REPO_PROP_KEY);
+			} else {
+				log.info("Using shared repository pool.");
+			}
 			try {
-				String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
-				String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
+				if (userRepository == null) {
+					String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
+					String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
 
-				this.userRepository = RepositoryFactory.getUserRepository(getName(), cls_name, res_uri, null);
-				userRepository.initRepository(res_uri, null);
+					this.userRepository = RepositoryFactory.getUserRepository(getName(),
+									cls_name, res_uri, null);
+					userRepository.initRepository(res_uri, null);
+				}
 
 				dao = new MucDAO(this.config, this.userRepository);
 
@@ -317,7 +310,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 			} catch (Exception e) {
 				log.severe("Can't initialize MUC repository: " + e);
 				e.printStackTrace();
-				System.exit(1);
+				//System.exit(1);
 			}
 
 			this.roomLogger = new RoomChatLogger(this.config);
