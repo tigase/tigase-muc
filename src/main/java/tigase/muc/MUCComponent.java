@@ -89,6 +89,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 	private IMucRepository mucRepository;
 
+	private PresenceModule presenceModule;
+
 	private IChatRoomLogger roomLogger;
 
 	private ServiceEntity serviceEntity;
@@ -112,10 +114,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		props.put(HOSTNAMES_PROP_KEY, hostnames);
 
 		// By default use the same repository as all other components:
-		String repo_class = params.get(GEN_USER_DB) != null
-						? (String)params.get(GEN_USER_DB) : DERBY_REPO_CLASS_PROP_VAL;
-		String repo_uri = params.get(GEN_USER_DB_URI) != null
-						? (String)params.get(GEN_USER_DB_URI) : DERBY_REPO_URL_PROP_VAL;
+		String repo_class = params.get(GEN_USER_DB) != null ? (String) params.get(GEN_USER_DB) : DERBY_REPO_CLASS_PROP_VAL;
+		String repo_uri = params.get(GEN_USER_DB_URI) != null ? (String) params.get(GEN_USER_DB_URI) : DERBY_REPO_URL_PROP_VAL;
 		props.put(MUC_REPO_CLASS_PROP_KEY, repo_class);
 		props.put(MUC_REPO_URL_PROP_KEY, repo_uri);
 
@@ -130,6 +130,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		props.put(LOG_DIR_KEY, new String("./logs/"));
 
 		props.put("muc-allow-chat-states", Boolean.FALSE);
+		props.put("muc-lock-new-room", Boolean.TRUE);
 
 		return props;
 	}
@@ -174,7 +175,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 		messageModule = registerModule(new GroupchatMessageModule(this.config, this.mucRepository, this.roomLogger));
 
-		registerModule(new PresenceModule(this.config, this.mucRepository, this.roomLogger, this));
+		presenceModule = registerModule(new PresenceModule(this.config, this.mucRepository, this.roomLogger, this));
 
 		registerModule(new RoomConfigurationModule(this.config, this.mucRepository, messageModule));
 		registerModule(new ModeratorModule(this.config, this.mucRepository));
@@ -285,10 +286,10 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		this.config.setLogDirectory((String) props.get(LOG_DIR_KEY));
 
 		if (userRepository == null) {
-			userRepository =
-							(UserRepository) props.get(SHARED_USER_REPO_POOL_PROP_KEY);
+			userRepository = (UserRepository) props.get(SHARED_USER_REPO_POOL_PROP_KEY);
 			if (userRepository == null) {
-				// Is there shared user repository instance? If so I want to use it:
+				// Is there shared user repository instance? If so I want to use
+				// it:
 				userRepository = (UserRepository) props.get(SHARED_USER_REPO_PROP_KEY);
 			} else {
 				log.info("Using shared repository pool.");
@@ -298,8 +299,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 					String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
 					String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
 
-					this.userRepository = RepositoryFactory.getUserRepository(getName(),
-									cls_name, res_uri, null);
+					this.userRepository = RepositoryFactory.getUserRepository(getName(), cls_name, res_uri, null);
 					userRepository.initRepository(res_uri, null);
 				}
 
@@ -310,7 +310,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 			} catch (Exception e) {
 				log.severe("Can't initialize MUC repository: " + e);
 				e.printStackTrace();
-				//System.exit(1);
+				// System.exit(1);
 			}
 
 			this.roomLogger = new RoomChatLogger(this.config);
@@ -319,6 +319,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		}
 
 		this.messageModule.setChatStateAllowed((Boolean) props.get("muc-allow-chat-states"));
+		this.presenceModule.setLockNewRoom((Boolean) props.get("muc-lock-new-room"));
 
 		log.info("Tigase MUC Component ver. " + MucVersion.getVersion() + " started.");
 	}

@@ -132,6 +132,8 @@ public class PresenceModule extends AbstractModule {
 
 	private final DelayDeliveryThread delayDeliveryThread;
 
+	private boolean lockNewRoom = true;
+
 	public PresenceModule(MucConfig config, IMucRepository mucRepository, IChatRoomLogger chatRoomLogger, DelDeliverySend sender) {
 		super(config, mucRepository);
 		this.chatRoomLogger = chatRoomLogger;
@@ -147,6 +149,10 @@ public class PresenceModule extends AbstractModule {
 	@Override
 	public Criteria getModuleCriteria() {
 		return CRIT;
+	}
+
+	public boolean isLockNewRoom() {
+		return lockNewRoom;
 	}
 
 	private List<Element> preparePresenceToAllOccupants(Room room, String roomURL, String nickName, Affiliation affiliation,
@@ -223,7 +229,7 @@ public class PresenceModule extends AbstractModule {
 				log.info("Creating new room '" + roomId + "' by user " + nickName + "' <" + senderJid + ">");
 				room = repository.createNewRoom(roomId, senderJid);
 				room.addAffiliationByJid(senderJid, Affiliation.owner);
-				room.setRoomLocked(true);
+				room.setRoomLocked(this.lockNewRoom);
 				newRoomCreated = true;
 			}
 
@@ -362,5 +368,9 @@ public class PresenceModule extends AbstractModule {
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
+	}
+
+	public void setLockNewRoom(boolean lockNewRoom) {
+		this.lockNewRoom = lockNewRoom;
 	}
 }
