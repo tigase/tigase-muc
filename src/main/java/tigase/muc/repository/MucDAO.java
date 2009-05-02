@@ -208,13 +208,14 @@ public class MucDAO {
 				Map<String, Affiliation> affiliations = new HashMap<String, Affiliation>();
 
 				String[] affJids = repository.getKeys(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/affiliations");
-				for (final String jid : affJids) {
-					String t = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/affiliations", jid);
+				if (affJids != null)
+					for (final String jid : affJids) {
+						String t = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/affiliations", jid);
 
-					Affiliation affiliation = Affiliation.valueOf(t);
-					affiliations.put(jid, affiliation);
+						Affiliation affiliation = Affiliation.valueOf(t);
+						affiliations.put(jid, affiliation);
 
-				}
+					}
 
 				room.setAffiliations(affiliations);
 

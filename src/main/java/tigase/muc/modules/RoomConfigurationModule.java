@@ -33,6 +33,7 @@ import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.RepositoryException;
+import tigase.util.JIDUtils;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 
@@ -146,7 +147,10 @@ public class RoomConfigurationModule extends AbstractModule {
 					log.fine("Room " + room.getRoomId() + " is now unlocked");
 					result.add(prepateMucMessage(room, room.getOccupantsNickname(senderJid), "Room is now unlocked"));
 				}
+
 				room.getConfig().copyFrom(form);
+				room.addAffiliationByJid(JIDUtils.getNodeID(senderJid), Affiliation.owner);
+
 				String[] compareResult = room.getConfig().compareTo(oldConfig);
 				if (compareResult != null) {
 					Element z = new Element("x", new String[] { "xmlns" },

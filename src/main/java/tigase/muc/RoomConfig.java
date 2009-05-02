@@ -218,10 +218,11 @@ public class RoomConfig {
 			Field of = this.form.get(field.getVar());
 			if (of == null) {
 				result.add(field.getVar());
+			} else {
+				boolean tmp = Arrays.equals(field.getValues(), of.getValues());
+				if (!tmp)
+					result.add(field.getVar());
 			}
-			boolean tmp = Arrays.equals(field.getValues(), of.getValues());
-			if (!tmp)
-				result.add(field.getVar());
 		}
 
 		return result;
