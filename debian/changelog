@@ -1,0 +1,6 @@
+tigase-muc (1.0.3-b176-xk1) hardy; urgency=low
+
+  * Updated to SVN revision 176
+  * Initial Release.
+
+ -- Tomasz Sterna <tomek@xiaoka.com>  Thu, 07 May 2009 13:36:59 +0000

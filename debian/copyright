@@ -1,0 +1,33 @@
+This package was debianized by Tomasz Sterna <tomek@xiaoka.com> on
+Thu, 07 May 2009 09:50:22 +0000.
+
+It was downloaded from https://svn.tigase.org/reps/tigase-muc/trunk
+
+Upstream Author: 
+
+    "Artur Hefczyc" <artur.hefczyc@tigase.org>
+
+Copyright: 
+
+    Copyright (C) 2001-2006 Tigase Developers Team. All rights Reserved.
+
+License:
+
+    This package is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; version 3
+ 
+    This package is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+ 
+    You should have received a copy of the GNU General Public License
+    along with this package; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+
+On Debian systems, the complete text of the GNU General
+Public License can be found in `/usr/share/common-licenses/GPL-3'.
+
+The Debian packaging is (C) 2009, Tomasz Sterna <tomek@xiaoka.com> and
+is licensed under the GPL, see above.
