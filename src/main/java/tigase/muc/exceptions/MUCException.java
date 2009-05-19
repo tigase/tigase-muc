@@ -21,6 +21,7 @@
  */
 package tigase.muc.exceptions;
 
+import tigase.util.JIDUtils;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 
@@ -75,10 +76,12 @@ public class MUCException extends Exception {
 
 	public Element makeElement(final Element item, final boolean insertOriginal) {
 		Element answer = insertOriginal ? item.clone() : new Element(item.getName());
-		answer.addAttribute("id", item.getAttribute("id"));
+		String id = item.getAttribute("id");
+		if (id != null)
+			answer.addAttribute("id", id);
 		answer.addAttribute("type", "error");
 		answer.addAttribute("to", item.getAttribute("from"));
-		answer.addAttribute("from", item.getAttribute("to"));
+		answer.addAttribute("from", JIDUtils.getNodeID(item.getAttribute("to")));
 
 		if (this.message != null) {
 			Element text = new Element("text", this.message, new String[] { "xmlns" },

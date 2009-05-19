@@ -323,4 +323,15 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 		log.info("Tigase MUC Component ver. " + MucVersion.getVersion() + " started.");
 	}
+
+	public void setMucRepository(IMucRepository mucRepository) {
+		this.mucRepository = mucRepository;
+	}
+
+	/**
+	 * @param config2
+	 */
+	public void setConfig(MucConfig config2) {
+		this.config = config2;
+	}
 }

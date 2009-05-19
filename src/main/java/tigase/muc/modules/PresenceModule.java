@@ -174,8 +174,8 @@ public class PresenceModule extends AbstractModule {
 
 			Element x = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
 
-			Element item = new Element("item", new String[] { "affiliation", "role" }, new String[] { affiliation.name(),
-					role.name() });
+			Element item = new Element("item", new String[] { "affiliation", "role", "nick" }, new String[] {
+					affiliation.name(), role.name(), nickName });
 
 			if (senderJid.equals(occupantJid)) {
 				x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
@@ -216,7 +216,6 @@ public class PresenceModule extends AbstractModule {
 
 			boolean newRoomCreated = false;
 			boolean exitingRoom = presenceType != null && "unavailable".equals(presenceType);
-
 			final Element $x = element.getChild("x", "http://jabber.org/protocol/muc");
 			final Element password = $x == null ? null : $x.getChild("password");
 
@@ -284,8 +283,8 @@ public class PresenceModule extends AbstractModule {
 					Element x = new Element("x", new String[] { "xmlns" },
 							new String[] { "http://jabber.org/protocol/muc#user" });
 
-					Element item = new Element("item", new String[] { "affiliation", "role" }, new String[] {
-							occupantAffiliation.name(), occupantRole.name() });
+					Element item = new Element("item", new String[] { "affiliation", "role", "nick" }, new String[] {
+							occupantAffiliation.name(), occupantRole.name(), occupantNickname });
 
 					if (anonymity == Anonymity.nonanonymous
 							|| (anonymity == Anonymity.semianonymous && (affiliation == Affiliation.admin || affiliation == Affiliation.owner))) {
@@ -351,9 +350,9 @@ public class PresenceModule extends AbstractModule {
 				result.add(prepateMucMessage(room, room.getOccupantsNickname(senderJid), "Room is locked. Please configure."));
 			}
 
-			if (room.getConfig().isLoggingEnabled() && newOccupant) {
+			if (this.chatRoomLogger != null && room.getConfig().isLoggingEnabled() && newOccupant) {
 				this.chatRoomLogger.addJoin(room.getConfig().getLoggingFormat(), roomId, new Date(), nickName);
-			} else if (room.getConfig().isLoggingEnabled() && exitingRoom) {
+			} else if (this.chatRoomLogger != null && room.getConfig().isLoggingEnabled() && exitingRoom) {
 				this.chatRoomLogger.addLeave(room.getConfig().getLoggingFormat(), roomId, new Date(), nickName);
 			}
 

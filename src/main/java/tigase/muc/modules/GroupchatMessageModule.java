@@ -131,10 +131,10 @@ public class GroupchatMessageModule extends AbstractModule {
 			if (body != null)
 				room.addToHistory(body.getCData(), senderJid, nickName, sendDate);
 			if (room.getConfig().isLoggingEnabled()) {
-				if (body != null) {
+				if (this.chatLogger != null && body != null) {
 					chatLogger.addMessage(room.getConfig().getLoggingFormat(), room.getRoomId(), sendDate, nickName,
 							body.getCData());
-				} else if (subject != null) {
+				} else if (this.chatLogger != null && subject != null) {
 					chatLogger.addSubject(room.getConfig().getLoggingFormat(), room.getRoomId(), sendDate, nickName,
 							subject.getCData());
 
