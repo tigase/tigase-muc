@@ -263,6 +263,17 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		addOutPacket(packet);
 	}
 
+	/**
+	 * @param config2
+	 */
+	public void setConfig(MucConfig config2) {
+		this.config = config2;
+	}
+
+	public void setMucRepository(IMucRepository mucRepository) {
+		this.mucRepository = mucRepository;
+	}
+
 	@Override
 	public void setProperties(Map<String, Object> props) {
 		super.setProperties(props);
@@ -322,16 +333,5 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		this.presenceModule.setLockNewRoom((Boolean) props.get("muc-lock-new-room"));
 
 		log.info("Tigase MUC Component ver. " + MucVersion.getVersion() + " started.");
-	}
-
-	public void setMucRepository(IMucRepository mucRepository) {
-		this.mucRepository = mucRepository;
-	}
-
-	/**
-	 * @param config2
-	 */
-	public void setConfig(MucConfig config2) {
-		this.config = config2;
 	}
 }

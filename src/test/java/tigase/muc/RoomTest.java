@@ -22,8 +22,6 @@
 package tigase.muc;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.junit.Before;
 
@@ -39,6 +37,8 @@ import tigase.xmpp.PacketErrorTypeException;
  */
 public class RoomTest extends XMPPTestCase {
 
+	private MUCComponent muc;
+
 	private JUnitXMLIO xmlio;
 
 	@Before
@@ -46,15 +46,6 @@ public class RoomTest extends XMPPTestCase {
 		muc = new MUCComponent();
 
 		xmlio = new JUnitXMLIO() {
-
-			@Override
-			public void write(Element data) throws IOException {
-				try {
-					send(muc.process(data));
-				} catch (PacketErrorTypeException e) {
-					throw new RuntimeException("", e);
-				}
-			}
 
 			@Override
 			public void close() {
@@ -66,6 +57,15 @@ public class RoomTest extends XMPPTestCase {
 			@Override
 			public void setIgnorePresence(boolean ignore) {
 				System.out.println("Set ignore presence");
+			}
+
+			@Override
+			public void write(Element data) throws IOException {
+				try {
+					send(muc.process(data));
+				} catch (PacketErrorTypeException e) {
+					throw new RuntimeException("", e);
+				}
 			}
 		};
 
@@ -84,8 +84,6 @@ public class RoomTest extends XMPPTestCase {
 		}
 
 	}
-
-	private MUCComponent muc;
 
 	@org.junit.Test
 	public void test_pings() {
