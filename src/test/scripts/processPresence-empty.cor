@@ -140,7 +140,9 @@ expect all: {
 send: {
 <presence
     from='hag66@shakespeare.lit/pda'
-    to='darkcave@macbeth.shakespeare.lit/oldhag'/>
+    to='darkcave@macbeth.shakespeare.lit/oldhag'>
+      <x xmlns='http://jabber.org/protocol/muc'/>
+</presence>
 }
 
 expect all: {
@@ -191,6 +193,67 @@ expect all: {
 </presence>
 }
 
+
+
+# ------------------------------------------ #
+# Changing nickname                          #
+# ------------------------------------------ #
+send: {
+<presence
+    from='hag66@shakespeare.lit/pda'
+    to='darkcave@macbeth.shakespeare.lit/ZERO'>
+      <x xmlns='http://jabber.org/protocol/muc'/>
+</presence>
+}
+
+expect all: {
+<presence
+    from='darkcave@macbeth.shakespeare.lit/oldhag'
+    to='crone1@shakespeare.lit/desktop'
+    type='unavailable'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='none'
+          jid='hag66@shakespeare.lit/pda'
+          nick='ZERO'
+          role='participant'/>
+    <status code='303'/>
+  </x>
+</presence>
+<presence
+    from='darkcave@macbeth.shakespeare.lit/oldhag'
+    to='hag66@shakespeare.lit/pda'
+    type='unavailable'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='none'
+          nick='ZERO'
+          role='participant'/>
+    <status code='303'/>
+    <status code='110'/>
+  </x>
+</presence>
+
+<presence
+    from='darkcave@macbeth.shakespeare.lit/ZERO'
+    to='crone1@shakespeare.lit/desktop'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='none'
+ 		  nick='ZERO'
+          jid='hag66@shakespeare.lit/pda'
+          role='participant'/>
+  </x>
+</presence>
+<presence
+    from='darkcave@macbeth.shakespeare.lit/ZERO'
+    to='hag66@shakespeare.lit/pda'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='none'
+ 		  nick='ZERO'
+          role='participant'/>
+    <status code='110'/>
+  </x>
+</presence>
+}
+
 # ------------------------------------------ #
 # Message                                    #
 # ------------------------------------------ #
@@ -206,13 +269,13 @@ send:{
 
 expect all: {
 <message
-    from='darkcave@macbeth.shakespeare.lit/oldhag'
+    from='darkcave@macbeth.shakespeare.lit/ZERO'
     to='crone1@shakespeare.lit/desktop'
     type='groupchat'>
   <body>Harpier cries: 'tis time, 'tis time.</body>
 </message>
 <message
-    from='darkcave@macbeth.shakespeare.lit/oldhag'
+    from='darkcave@macbeth.shakespeare.lit/ZERO'
     to='hag66@shakespeare.lit/pda'
     type='groupchat'>
   <body>Harpier cries: 'tis time, 'tis time.</body>
