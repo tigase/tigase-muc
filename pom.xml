@@ -3,7 +3,7 @@
     <groupId>tigase</groupId>
     <artifactId>tigase-muc</artifactId>
     <name>tigase-muc</name>
-    <version>1.0.3-SNAPSHOT</version>
+    <version>1.1.0-SNAPSHOT</version>
     <description>Multi User Chat component for Tigase</description>
     <url>http://www.tigase.org</url>
     <inceptionYear>2007</inceptionYear>
@@ -85,19 +85,19 @@
         <dependency>
             <groupId>tigase</groupId>
             <artifactId>tigase-server</artifactId>
-            <version>4.1.5</version>
+            <version>4.3.0-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>tigase</groupId>
             <artifactId>tigase-utils</artifactId>
-            <version>3.2.0</version>
+            <version>3.2.1-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
           <groupId>tigase</groupId>
           <artifactId>tigase-xmltools</artifactId>
-          <version>3.3.0</version>
+          <version>3.3.1-SNAPSHOT</version>
           <scope>compile</scope>
        </dependency>
     </dependencies>
