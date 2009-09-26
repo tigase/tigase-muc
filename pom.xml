@@ -88,19 +88,19 @@
         <dependency>
             <groupId>tigase</groupId>
             <artifactId>tigase-server</artifactId>
-            <version>4.3.0-SNAPSHOT</version>
+            <version>4.3.1-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>tigase</groupId>
             <artifactId>tigase-utils</artifactId>
-            <version>3.2.1-SNAPSHOT</version>
+            <version>3.3.2</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
           <groupId>tigase</groupId>
           <artifactId>tigase-xmltools</artifactId>
-          <version>3.3.1-SNAPSHOT</version>
+          <version>3.3.2</version>
           <scope>compile</scope>
        </dependency>
     </dependencies>
