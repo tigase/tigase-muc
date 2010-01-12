@@ -25,6 +25,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
@@ -40,6 +42,7 @@ import tigase.muc.exceptions.MUCException;
 import tigase.muc.modules.PresenceModule.DelayDeliveryThread.DelDeliverySend;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 
@@ -48,6 +51,8 @@ import tigase.xmpp.Authorization;
  * 
  */
 public class PresenceModule extends AbstractModule {
+
+	protected static final Logger log = Logger.getLogger(PresenceModule.class.getName());
 
 	public static class DelayDeliveryThread extends Thread {
 
@@ -71,8 +76,9 @@ public class PresenceModule extends AbstractModule {
 		 * @param elements
 		 */
 		public void put(List<Element> elements) {
-			if (elements != null && elements.size() > 0)
-				items.push(elements.toArray(new Element[] {}));
+			if (elements != null && elements.size() > 0) {
+				items.push(elements.toArray(new Element[]{}));
+			}
 
 		}
 
@@ -83,10 +89,16 @@ public class PresenceModule extends AbstractModule {
 					sleep(553);
 					if (items.size() > 0) {
 						Element[] toSend = items.poll();
-						if (toSend != null)
+						if (toSend != null) {
 							for (Element element : toSend) {
-								sender.sendDelayedPacket(new Packet(element));
+								try {
+									sender.sendDelayedPacket(Packet.packetInstance(element));
+								} catch (TigaseStringprepException ex) {
+									log.info("Packet addressing problem, stringprep failed: "
+											+ element);
+								}
 							}
+						}
 					}
 				} while (true);
 			} catch (InterruptedException e) {

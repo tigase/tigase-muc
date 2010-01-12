@@ -59,8 +59,10 @@ import tigase.server.AbstractMessageReceiver;
 import tigase.server.DisableDisco;
 import tigase.server.Packet;
 import tigase.util.DNSResolver;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.JID;
 import tigase.xmpp.PacketErrorTypeException;
 import tigase.xmpp.StanzaType;
 
@@ -141,12 +143,12 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	}
 
 	@Override
-	public Element getDiscoInfo(String node, String jid) {
+	public Element getDiscoInfo(String node, JID jid) {
 		return null;
 	}
 
 	@Override
-	public List<Element> getDiscoItems(String node, String jid) {
+	public List<Element> getDiscoItems(String node, JID jid) {
 		if (node == null) {
 			Element result = serviceEntity.getDiscoItem(null, getName() + "." + jid);
 			return Arrays.asList(result);
@@ -220,7 +222,12 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		try {
 			Collection<Element> result = process(packet.getElement());
 			for (Element element : result) {
-				addOutPacket(new Packet(element));
+				try {
+					addOutPacket(Packet.packetInstance(element));
+				} catch (TigaseStringprepException ex) {
+					log.info("Packet addressing problem, stringprep failed: "
+							+ element);
+				}
 			}
 		} catch (Exception e) {
 			log.log(Level.WARNING, "Unexpected exception: internal-server-error", e);
