@@ -19,7 +19,21 @@
  * Last modified by $Author$
  * $Date$
  */
+
 package tigase.muc.repository;
+
+//~--- non-JDK imports --------------------------------------------------------
+
+import tigase.db.TigaseDBException;
+import tigase.db.UserNotFoundException;
+import tigase.db.UserRepository;
+
+import tigase.muc.Affiliation;
+import tigase.muc.MucConfig;
+import tigase.muc.Room;
+import tigase.muc.RoomConfig;
+
+//~--- JDK imports ------------------------------------------------------------
 
 import java.util.Date;
 import java.util.HashMap;
@@ -27,79 +41,91 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import tigase.db.TigaseDBException;
-import tigase.db.UserNotFoundException;
-import tigase.db.UserRepository;
-import tigase.muc.Affiliation;
-import tigase.muc.MucConfig;
-import tigase.muc.Room;
-import tigase.muc.RoomConfig;
+//~--- classes ----------------------------------------------------------------
 
 /**
  * @author bmalkow
- * 
+ *
  */
 public class MucDAO {
-
 	private static final String CREATION_DATE_KEY = "creation-date";
-
 	private static final String CREATOR_JID_KEY = "creator";
-
 	private static final String LAST_ACCESS_DATE_KEY = "last-access-date";
-
 	private static final String ROOMS_KEY = "rooms/";
-
 	private static final String SUBJECT_CREATOR_NICK_KEY = "creator";
-
 	private static final String SUBJECT_DATE_KEY = "date";
-
 	private static final String SUBJECT_KEY = "subject";
 
+	//~--- fields ---------------------------------------------------------------
+
 	protected Logger log = Logger.getLogger(this.getClass().getName());
-
 	private final MucConfig mucConfig;
-
 	private final UserRepository repository;
 
-	public MucDAO(final MucConfig config, final UserRepository repository) throws RepositoryException {
+	//~--- constructors ---------------------------------------------------------
+
+	/**
+	 * Constructs ...
+	 *
+	 *
+	 * @param config
+	 * @param repository
+	 *
+	 * @throws RepositoryException
+	 */
+	public MucDAO(final MucConfig config, final UserRepository repository)
+			throws RepositoryException {
 		this.mucConfig = config;
 		this.repository = repository;
 
 		try {
-			this.repository.setData(this.mucConfig.getServiceName(), "last-start", String.valueOf(System.currentTimeMillis()));
+			this.repository.setData(this.mucConfig.getServiceBareJID(), "last-start",
+					String.valueOf(System.currentTimeMillis()));
 		} catch (UserNotFoundException e) {
 			try {
-				this.repository.addUser(this.mucConfig.getServiceName());
-				this.repository.setData(this.mucConfig.getServiceName(), "last-start",
+				this.repository.addUser(this.mucConfig.getServiceBareJID());
+				this.repository.setData(this.mucConfig.getServiceBareJID(), "last-start",
 						String.valueOf(System.currentTimeMillis()));
 			} catch (Exception e1) {
 				log.log(Level.SEVERE, "MUC repository initialization problem", e1);
+
 				throw new RepositoryException("Cannot initialize MUC repository", e);
 			}
 		} catch (TigaseDBException e) {
 			log.log(Level.SEVERE, "MUC repository initialization problem", e);
+
 			throw new RepositoryException("Cannot initialize MUC repository", e);
 		}
-
 	}
 
+	//~--- methods --------------------------------------------------------------
+
+	/**
+	 * Method description
+	 *
+	 *
+	 * @param room
+	 *
+	 * @throws RepositoryException
+	 */
 	public void createRoom(Room room) throws RepositoryException {
 		try {
-			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + room.getRoomId(), CREATION_DATE_KEY,
-					String.valueOf(room.getCreationDate().getTime()));
-			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + room.getRoomId(), CREATOR_JID_KEY, room.getCreatorJid());
-			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + room.getRoomId(), LAST_ACCESS_DATE_KEY,
-					String.valueOf((new Date()).getTime()));
-
+			repository.setData(mucConfig.getServiceBareJID(), ROOMS_KEY + room.getRoomId(),
+					CREATION_DATE_KEY, String.valueOf(room.getCreationDate().getTime()));
+			repository.setData(mucConfig.getServiceBareJID(), ROOMS_KEY + room.getRoomId(),
+					CREATOR_JID_KEY, room.getCreatorJid());
+			repository.setData(mucConfig.getServiceBareJID(), ROOMS_KEY + room.getRoomId(),
+					LAST_ACCESS_DATE_KEY, String.valueOf((new Date()).getTime()));
 			room.getConfig().write(repository, mucConfig, ROOMS_KEY + room.getRoomId() + "/config");
 
 			for (String affJid : room.getAffiliations()) {
 				final Affiliation a = room.getAffiliation(affJid);
+
 				setAffiliation(room.getRoomId(), affJid, a);
 			}
-
 		} catch (Exception e) {
 			e.printStackTrace();
+
 			throw new RepositoryException("Room creation error", e);
 		}
 	}
@@ -110,24 +136,41 @@ public class MucDAO {
 	 */
 	public void destroyRoom(String roomId) throws RepositoryException {
 		try {
-			repository.removeSubnode(mucConfig.getServiceName(), ROOMS_KEY + roomId);
+			repository.removeSubnode(mucConfig.getServiceBareJID(), ROOMS_KEY + roomId);
 		} catch (Exception e) {
 			e.printStackTrace();
+
 			throw new RepositoryException("Room destroing error", e);
 		}
 	}
 
+	//~--- get methods ----------------------------------------------------------
+
+	/**
+	 * Method description
+	 *
+	 *
+	 * @param roomId
+	 *
+	 * @return
+	 *
+	 * @throws RepositoryException
+	 */
 	public Date getCreationDate(String roomId) throws RepositoryException {
 		try {
-			String creationDate = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomId, CREATION_DATE_KEY);
-			if (creationDate == null)
+			String creationDate = repository.getData(mucConfig.getServiceBareJID(),
+				ROOMS_KEY + roomId, CREATION_DATE_KEY);
+
+			if (creationDate == null) {
 				return null;
+			}
+
 			Date r = new Date(Long.valueOf(creationDate));
+
 			return r;
 		} catch (Exception e) {
 			throw new RepositoryException("Creation Date reading error", e);
 		}
-
 	}
 
 	/**
@@ -137,10 +180,11 @@ public class MucDAO {
 	 */
 	public String getRoomName(String jid) throws RepositoryException {
 		try {
-			return repository.getData(mucConfig.getServiceName(), ROOMS_KEY + jid + "/config",
+			return repository.getData(mucConfig.getServiceBareJID(), ROOMS_KEY + jid + "/config",
 					RoomConfig.MUC_ROOMCONFIG_ROOMNAME_KEY);
 		} catch (Exception e) {
 			e.printStackTrace();
+
 			throw new RepositoryException("Room name reading error", e);
 		}
 	}
@@ -151,53 +195,105 @@ public class MucDAO {
 	 */
 	public String[] getRoomsIdList() throws RepositoryException {
 		try {
-			return repository.getSubnodes(mucConfig.getServiceName(), ROOMS_KEY);
+			return repository.getSubnodes(mucConfig.getServiceBareJID(), ROOMS_KEY);
 		} catch (Exception e) {
 			e.printStackTrace();
+
 			throw new RepositoryException("Room list reading error", e);
 		}
 	}
 
+	/**
+	 * Method description
+	 *
+	 *
+	 * @param roomId
+	 *
+	 * @return
+	 *
+	 * @throws RepositoryException
+	 */
 	public String getSubject(String roomId) throws RepositoryException {
 		try {
-			return repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/subject", SUBJECT_KEY);
+			return repository.getData(mucConfig.getServiceBareJID(),
+					ROOMS_KEY + roomId + "/subject", SUBJECT_KEY);
 		} catch (Exception e) {
 			e.printStackTrace();
+
 			throw new RepositoryException("Subject saving error", e);
 		}
 	}
 
+	/**
+	 * Method description
+	 *
+	 *
+	 * @param roomId
+	 *
+	 * @return
+	 *
+	 * @throws RepositoryException
+	 */
 	public Date getSubjectCreationDate(String roomId) throws RepositoryException {
 		try {
-			String tmp = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/subject", SUBJECT_DATE_KEY);
-			return tmp == null ? null : new Date(Long.valueOf(tmp));
+			String tmp = repository.getData(mucConfig.getServiceBareJID(),
+				ROOMS_KEY + roomId + "/subject", SUBJECT_DATE_KEY);
+
+			return (tmp == null) ? null : new Date(Long.valueOf(tmp));
 		} catch (Exception e) {
 			e.printStackTrace();
+
 			throw new RepositoryException("Subject change date reading error", e);
 		}
 	}
 
+	/**
+	 * Method description
+	 *
+	 *
+	 * @param roomId
+	 *
+	 * @return
+	 *
+	 * @throws RepositoryException
+	 */
 	public String getSubjectCreatorNickname(String roomId) throws RepositoryException {
 		try {
-			return repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/subject", SUBJECT_CREATOR_NICK_KEY);
+			return repository.getData(mucConfig.getServiceBareJID(),
+					ROOMS_KEY + roomId + "/subject", SUBJECT_CREATOR_NICK_KEY);
 		} catch (Exception e) {
 			e.printStackTrace();
+
 			throw new RepositoryException("Subject saving error", e);
 		}
 	}
 
+	//~--- methods --------------------------------------------------------------
+
+	/**
+	 * Method description
+	 *
+	 *
+	 * @param roomId
+	 *
+	 * @return
+	 *
+	 * @throws RepositoryException
+	 */
 	public Room readRoom(String roomId) throws RepositoryException {
 		try {
-			final String tmpDate = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomId, CREATION_DATE_KEY);
-			final String creatorJid = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomId, CREATOR_JID_KEY);
+			final String tmpDate = repository.getData(mucConfig.getServiceBareJID(),
+				ROOMS_KEY + roomId, CREATION_DATE_KEY);
+			final String creatorJid = repository.getData(mucConfig.getServiceBareJID(),
+				ROOMS_KEY + roomId, CREATOR_JID_KEY);
 
-			if (tmpDate != null && creatorJid != null) {
+			if ((tmpDate != null) && (creatorJid != null)) {
 				Date date = new Date(Long.valueOf(tmpDate));
 				RoomConfig rc = new RoomConfig(roomId);
+
 				rc.read(repository, mucConfig, ROOMS_KEY + roomId + "/config");
 
 				final Room room = new Room(rc, date, creatorJid);
-
 				String subject = getSubject(roomId);
 				String subjectCreator = getSubjectCreatorNickname(roomId);
 				Date subjectChangeDate = getSubjectCreationDate(roomId);
@@ -206,68 +302,84 @@ public class MucDAO {
 				room.setSubjectChangeDate(subjectChangeDate);
 
 				Map<String, Affiliation> affiliations = new HashMap<String, Affiliation>();
+				String[] affJids = repository.getKeys(mucConfig.getServiceBareJID(),
+					ROOMS_KEY + roomId + "/affiliations");
 
-				String[] affJids = repository.getKeys(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/affiliations");
-				if (affJids != null)
+				if (affJids != null) {
 					for (final String jid : affJids) {
-						String t = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/affiliations", jid);
-
+						String t = repository.getData(mucConfig.getServiceBareJID(),
+							ROOMS_KEY + roomId + "/affiliations", jid);
 						Affiliation affiliation = Affiliation.valueOf(t);
-						affiliations.put(jid, affiliation);
 
+						affiliations.put(jid, affiliation);
 					}
+				}
 
 				room.setAffiliations(affiliations);
 
 				return room;
 			}
+
 			return null;
 		} catch (Exception e) {
 			e.printStackTrace();
+
 			throw new RepositoryException("Room reading error", e);
 		}
 	}
+
+	//~--- set methods ----------------------------------------------------------
 
 	/**
 	 * @param roomId
 	 * @param affiliation
 	 * @param jid
-	 * @param affiliations
 	 * @throws RepositoryException
 	 */
-	public void setAffiliation(String roomId, String jid, Affiliation affiliation) throws RepositoryException {
+	public void setAffiliation(String roomId, String jid, Affiliation affiliation)
+			throws RepositoryException {
 		try {
 			if (affiliation == Affiliation.none) {
-				repository.removeData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/affiliations", jid);
+				repository.removeData(mucConfig.getServiceBareJID(),
+						ROOMS_KEY + roomId + "/affiliations", jid);
 			} else {
-				repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/affiliations", jid, affiliation.name());
+				repository.setData(mucConfig.getServiceBareJID(),
+						ROOMS_KEY + roomId + "/affiliations", jid, affiliation.name());
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+
 			throw new RepositoryException("Affiliation saving error", e);
 		}
 	}
 
 	/**
 	 * @param roomId
+	 * @param subject
+	 * @param creatorNickname
 	 * @param changeDate
-	 * @param msg
 	 * @throws RepositoryException
 	 */
-	public void setSubject(String roomId, String subject, String creatorNickname, Date changeDate) throws RepositoryException {
+	public void setSubject(String roomId, String subject, String creatorNickname,
+			Date changeDate)
+			throws RepositoryException {
 		try {
-			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/subject", SUBJECT_CREATOR_NICK_KEY,
-					creatorNickname);
-			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/subject", SUBJECT_KEY, subject);
-			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomId + "/subject", SUBJECT_DATE_KEY,
-					String.valueOf(changeDate.getTime()));
+			repository.setData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomId + "/subject",
+					SUBJECT_CREATOR_NICK_KEY, creatorNickname);
+			repository.setData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomId + "/subject",
+					SUBJECT_KEY, subject);
+			repository.setData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomId + "/subject",
+					SUBJECT_DATE_KEY, String.valueOf(changeDate.getTime()));
+
 			// TODO Auto-generated method stub
 		} catch (Exception e) {
 			e.printStackTrace();
+
 			throw new RepositoryException("Subject saving error", e);
 		}
-
 	}
+
+	//~--- methods --------------------------------------------------------------
 
 	/**
 	 * @param roomId
@@ -275,10 +387,11 @@ public class MucDAO {
 	 */
 	public void updateLastAccessDate(String roomId) throws RepositoryException {
 		try {
-			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomId, LAST_ACCESS_DATE_KEY,
-					String.valueOf((new Date()).getTime()));
+			repository.setData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomId,
+					LAST_ACCESS_DATE_KEY, String.valueOf((new Date()).getTime()));
 		} catch (Exception e) {
 			e.printStackTrace();
+
 			throw new RepositoryException("Last access date writing error", e);
 		}
 	}
@@ -292,8 +405,14 @@ public class MucDAO {
 			roomConfig.write(repository, mucConfig, ROOMS_KEY + roomConfig.getRoomId() + "/config");
 		} catch (Exception e) {
 			e.printStackTrace();
+
 			throw new RepositoryException("Room config writing error", e);
 		}
 	}
-
 }
+
+
+//~ Formatted in Sun Code Convention
+
+
+//~ Formatted by Jindent --- http://www.jindent.com
