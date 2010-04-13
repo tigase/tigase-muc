@@ -212,7 +212,6 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 			}
 		} catch (MUCException e) {
 			Element r = e.makeElement(element, true);
-			System.out.println(r.toStringSecure());
 			result.add(r);
 		}
 		return result;
@@ -223,7 +222,6 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		try {
 			Collection<Element> result = process(packet.getElement());
 			for (Element element : result) {
-				System.out.println(element.toStringSecure());
 				try {
 					addOutPacket(Packet.packetInstance(element));
 				} catch (TigaseStringprepException ex) {

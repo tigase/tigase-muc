@@ -86,7 +86,6 @@ public class MUCException extends Exception {
 			BareJID fromJID = BareJID.bareJIDInstance(item.getAttribute("to"));
 			answer.addAttribute("from", fromJID.toString());
 		} catch (TigaseStringprepException e) {
-			System.out.println("here");
 			answer.addAttribute("from", item.getAttribute("to"));
 		}
 
