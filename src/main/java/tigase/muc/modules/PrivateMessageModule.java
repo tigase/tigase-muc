@@ -1,5 +1,5 @@
 /*
- * Tigase Jabber/XMPP Multi-User Chat Component
+  * Tigase Jabber/XMPP Multi-User Chat Component
  * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -21,6 +21,8 @@
  */
 package tigase.muc.modules;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import tigase.criteria.Criteria;
@@ -30,8 +32,11 @@ import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -58,38 +63,46 @@ public class PrivateMessageModule extends AbstractModule {
 	@Override
 	public List<Element> process(Element element) throws MUCException {
 		try {
-			final String senderJid = element.getAttribute("from");
-			final String roomId = getRoomId(element.getAttribute("to"));
-			final String recipientNickname = getNicknameFromJid(element.getAttribute("to"));
+			final JID senderJID = JID.jidInstance(element.getAttribute("from"));
+			
+			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
+			final String recipientNickname = getNicknameFromJid(JID.jidInstance(element.getAttribute("to")));
 
 			if (recipientNickname == null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
-			final Room room = repository.getRoom(roomId);
+			final Room room = repository.getRoom(roomJID);
 			if (room == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
 
-			final Role senderRole = room.getRoleByJid(senderJid);
+			final Role senderRole = room.getRoleByJid(senderJID);
 			if (!senderRole.isSendPrivateMessages()) {
 				throw new MUCException(Authorization.NOT_ALLOWED);
 			}
 
-			final String recipientJid = room.getOccupantsJidByNickname(recipientNickname);
-			if (recipientJid == null) {
-				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
+			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);
+			
+			List<Element> result = new ArrayList<Element>();
+			for(JID recipientJid: recipientJids) {
+				if (recipientJid == null) {
+					throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
+				}
+
+				final String senderNickname = room.getOccupantsNickname(senderJID);
+
+				final Element message = element.clone();
+				message.setAttribute("from", JID.jidInstance(roomJID, senderNickname).toString());
+				message.setAttribute("to", recipientJid.toString());
+
+				result.addAll(makeArray(message));
 			}
-
-			final String senderNickname = room.getOccupantsNickname(senderJid);
-
-			final Element message = element.clone();
-			message.setAttribute("from", roomId + "/" + senderNickname);
-			message.setAttribute("to", recipientJid);
-
-			return makeArray(message);
+			return result;
 		} catch (MUCException e1) {
 			throw e1;
+		} catch (TigaseStringprepException e) {
+			throw new MUCException(Authorization.BAD_REQUEST);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);

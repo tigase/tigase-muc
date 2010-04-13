@@ -21,9 +21,10 @@
  */
 package tigase.muc.exceptions;
 
-import tigase.util.JIDUtils;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.BareJID;
 
 public class MUCException extends Exception {
 
@@ -77,11 +78,17 @@ public class MUCException extends Exception {
 	public Element makeElement(final Element item, final boolean insertOriginal) {
 		Element answer = insertOriginal ? item.clone() : new Element(item.getName());
 		String id = item.getAttribute("id");
-		if (id != null)
-			answer.addAttribute("id", id);
+		if (id != null) answer.addAttribute("id", id);
 		answer.addAttribute("type", "error");
-		answer.addAttribute("to", item.getAttribute("from"));
-		answer.addAttribute("from", JIDUtils.getNodeID(item.getAttribute("to")));
+		String to = item.getAttribute("from");
+		answer.addAttribute("to", to);
+		try {
+			BareJID fromJID = BareJID.bareJIDInstance(item.getAttribute("to"));
+			answer.addAttribute("from", fromJID.toString());
+		} catch (TigaseStringprepException e) {
+			System.out.println("here");
+			answer.addAttribute("from", item.getAttribute("to"));
+		}
 
 		if (this.message != null) {
 			Element text = new Element("text", this.message, new String[] { "xmlns" },

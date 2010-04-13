@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.LinkedList;
 
 import tigase.muc.RoomConfig.LogFormat;
+import tigase.xmpp.BareJID;
 
 /**
  * @author bmalkow
@@ -98,12 +99,6 @@ public class RoomChatLogger implements IChatRoomLogger {
 		a.add("2");
 		a.add("3");
 		a.add("4");
-
-		System.out.println(a.poll());
-		System.out.println(a.poll());
-		System.out.println(a.poll());
-		System.out.println(a.poll());
-		System.out.println(a.poll());
 	}
 
 	private final MucConfig config;
@@ -125,7 +120,7 @@ public class RoomChatLogger implements IChatRoomLogger {
 	 * java.lang.String, java.util.Date, java.lang.String)
 	 */
 	@Override
-	public void addJoin(LogFormat logFormat, String roomId, Date date, String nickName) {
+	public void addJoin(LogFormat logFormat, BareJID roomJID, Date date, String nickName) {
 
 		String pattern;
 		switch (logFormat) {
@@ -141,7 +136,7 @@ public class RoomChatLogger implements IChatRoomLogger {
 		default:
 			throw new RuntimeException("Unsupported log format: " + logFormat.name());
 		}
-		addLine(pattern, logFormat, roomId, date, nickName, null);
+		addLine(pattern, logFormat, roomJID, date, nickName, null);
 	}
 
 	/*
@@ -151,7 +146,7 @@ public class RoomChatLogger implements IChatRoomLogger {
 	 * java.lang.String, java.util.Date, java.lang.String)
 	 */
 	@Override
-	public void addLeave(LogFormat logFormat, String roomId, Date date, String nickName) {
+	public void addLeave(LogFormat logFormat, BareJID roomJID, Date date, String nickName) {
 
 		String pattern;
 		switch (logFormat) {
@@ -167,10 +162,10 @@ public class RoomChatLogger implements IChatRoomLogger {
 		default:
 			throw new RuntimeException("Unsupported log format: " + logFormat.name());
 		}
-		addLine(pattern, logFormat, roomId, date, nickName, null);
+		addLine(pattern, logFormat, roomJID, date, nickName, null);
 	}
 
-	private void addLine(String pattern, RoomConfig.LogFormat logFormat, String roomId, Date date, String nickName, String text) {
+	private void addLine(String pattern, RoomConfig.LogFormat logFormat, BareJID roomJID, Date date, String nickName, String text) {
 
 		String d = sdf.format(date);
 		Object[] values = new String[] { d, nickName, text };
@@ -191,7 +186,7 @@ public class RoomChatLogger implements IChatRoomLogger {
 			throw new RuntimeException("Unsupported log format: " + logFormat.name());
 		}
 
-		Item it = new Item(new File(config.getLogDirectory() + "/" + roomId + ext), line);
+		Item it = new Item(new File(config.getLogDirectory() + "/" + roomJID + ext), line);
 		this.worker.items.add(it);
 	}
 
@@ -202,7 +197,7 @@ public class RoomChatLogger implements IChatRoomLogger {
 	 * tigase.muc.IChatRoomLogger#addMessage(tigase.muc.RoomConfig.LogFormat,
 	 * java.lang.String, java.util.Date, java.lang.String, java.lang.String)
 	 */
-	public void addMessage(RoomConfig.LogFormat logFormat, String roomId, Date date, String nickName, String message) {
+	public void addMessage(RoomConfig.LogFormat logFormat, BareJID roomJID, Date date, String nickName, String message) {
 
 		String pattern;
 		switch (logFormat) {
@@ -218,7 +213,7 @@ public class RoomChatLogger implements IChatRoomLogger {
 		default:
 			throw new RuntimeException("Unsupported log format: " + logFormat.name());
 		}
-		addLine(pattern, logFormat, roomId, date, nickName, message);
+		addLine(pattern, logFormat, roomJID, date, nickName, message);
 	}
 
 	/*
@@ -229,7 +224,7 @@ public class RoomChatLogger implements IChatRoomLogger {
 	 * java.lang.String, java.util.Date, java.lang.String, java.lang.String)
 	 */
 	@Override
-	public void addSubject(LogFormat logFormat, String roomId, Date date, String nickName, String subject) {
+	public void addSubject(LogFormat logFormat, BareJID roomJID, Date date, String nickName, String subject) {
 
 		String pattern;
 		switch (logFormat) {
@@ -245,7 +240,7 @@ public class RoomChatLogger implements IChatRoomLogger {
 		default:
 			throw new RuntimeException("Unsupported log format: " + logFormat.name());
 		}
-		addLine(pattern, logFormat, roomId, date, nickName, subject);
+		addLine(pattern, logFormat, roomJID, date, nickName, subject);
 	}
 
 }

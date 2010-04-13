@@ -34,6 +34,7 @@ import tigase.muc.RoomConfig.RoomConfigListener;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.RepositoryException;
 import tigase.util.JIDUtils;
+import tigase.xmpp.BareJID;
 
 /**
  * @author bmalkow
@@ -98,16 +99,16 @@ public class MockMucRepository implements IMucRepository {
 	 * java.lang.String, java.lang.String)
 	 */
 	@Override
-	public Room createNewRoom(String roomId, String senderJid) throws RepositoryException {
-		log.fine("Creating new room '" + roomId + "'");
-		RoomConfig rc = new RoomConfig(roomId);
+	public Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException {
+		log.fine("Creating new room '" + roomJID + "'");
+		RoomConfig rc = new RoomConfig(roomJID);
 
 		rc.copyFrom(getDefaultRoomConfig(), false);
 
-		Room room = new Room(rc, new Date(), JIDUtils.getNodeID(senderJid));
+		Room room = new Room(rc, new Date(), senderJid);
 		room.getConfig().addListener(roomConfigListener);
-		this.rooms.put(roomId, room);
-		this.allRooms.put(roomId, new InternalRoom());
+		this.rooms.put(roomJID, room);
+		this.allRooms.put(roomJID, new InternalRoom());
 
 		return room;
 	}
@@ -139,8 +140,8 @@ public class MockMucRepository implements IMucRepository {
 	 * @see tigase.muc.repository.IMucRepository#getRoom()
 	 */
 	@Override
-	public Room getRoom(final String roomId) throws RepositoryException {
-		Room room = this.rooms.get(roomId);
+	public Room getRoom(final BareJID roomJID) throws RepositoryException {
+		Room room = this.rooms.get(roomJID);
 
 		return room;
 	}
@@ -168,11 +169,11 @@ public class MockMucRepository implements IMucRepository {
 
 	@Override
 	public void leaveRoom(Room room) {
-		final String roomId = room.getRoomId();
-		log.fine("Removing room '" + roomId + "' from memory");
-		this.rooms.remove(roomId);
+		final BareJID roomJID = room.getRoomJID();
+		log.fine("Removing room '" + roomJID + "' from memory");
+		this.rooms.remove(roomJID);
 		if (!room.getConfig().isPersistentRoom()) {
-			this.allRooms.remove(roomId);
+			this.allRooms.remove(roomJID);
 		}
 	}
 

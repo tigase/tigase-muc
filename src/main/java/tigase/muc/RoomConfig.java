@@ -33,6 +33,8 @@ import tigase.db.UserRepository;
 import tigase.form.Field;
 import tigase.form.Form;
 import tigase.form.Field.FieldType;
+import tigase.util.TigaseStringprepException;
+import tigase.xmpp.BareJID;
 
 /**
  * @author bmalkow
@@ -105,7 +107,7 @@ public class RoomConfig {
 
 	public static final String MUC_ROOMCONFIG_ROOMSECRET_KEY = "muc#roomconfig_roomsecret";
 
-	protected static String[] asStrinTable(Enum<?>[] values) {
+	protected static String[] asStringTable(Enum<?>[] values) {
 		String[] result = new String[values.length];
 		int i = 0;
 		for (Enum<?> v : values) {
@@ -120,13 +122,13 @@ public class RoomConfig {
 
 	private final ArrayList<RoomConfigListener> listeners = new ArrayList<RoomConfigListener>();
 
-	private final String roomId;
+	private final BareJID roomJID;
 
 	/**
-	 * @param roomId
+	 * @param roomJID
 	 */
-	public RoomConfig(String roomId) {
-		this.roomId = roomId;
+	public RoomConfig(BareJID roomJID) {
+		this.roomJID = roomJID;
 		init();
 	}
 
@@ -144,7 +146,7 @@ public class RoomConfig {
 
 	@Override
 	public RoomConfig clone() {
-		final RoomConfig rc = new RoomConfig(this.roomId);
+		final RoomConfig rc = new RoomConfig(getRoomJID());
 		rc.blacklist.addAll(this.blacklist);
 		rc.form.copyValuesFrom(form);
 		return rc;
@@ -265,8 +267,8 @@ public class RoomConfig {
 		return form.getAsString(MUC_ROOMCONFIG_ROOMDESC_KEY);
 	}
 
-	public String getRoomId() {
-		return roomId;
+	public BareJID getRoomJID() {
+		return roomJID;
 	}
 
 	public String getRoomName() {
