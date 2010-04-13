@@ -30,9 +30,9 @@ import tigase.criteria.ElementCriteria;
 import tigase.muc.MucConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
-import tigase.util.JIDUtils;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -78,11 +78,11 @@ public class UniqueRoomNameModule extends AbstractModule {
 	@Override
 	public List<Element> process(Element element) throws MUCException {
 		try {
-			if (JIDUtils.getNodeResource(element.getAttribute("to")) != null
-					|| JIDUtils.getNodeNick(element.getAttribute("to")) != null) {
+			JID jid = JID.jidInstance(element.getAttribute("to"));
+			if (jid.getResource() != null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
-			final String host = JIDUtils.getNodeHost(element.getAttribute("to"));
+			final String host = jid.getDomain();
 
 			String newRoomName;
 			do {

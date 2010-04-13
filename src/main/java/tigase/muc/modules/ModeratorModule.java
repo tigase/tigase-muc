@@ -98,7 +98,6 @@ public class ModeratorModule extends AbstractModule {
 		
 		for(JID occupantJid: occupantJids) {
 			final Affiliation occupantAffiliation = room.getAffiliation(occupantJid.getBareJID());
-			final Role occupantRole = room.getRoleByJid(occupantJid);
 
 			if (newRole != null && newAffiliation == null) {
 				if (newRole == Role.none && !senderRole.isKickParticipantsAndVisitors()) {
@@ -259,7 +258,6 @@ public class ModeratorModule extends AbstractModule {
 			
 			JID senderJID = JID.jidInstance(element.getAttribute("from"));
 			
-			final Role senderRole = room.getRoleByJid(senderJID);
 			final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID());
 
 			if (senderAffiliation != Affiliation.admin && senderAffiliation != Affiliation.owner) {

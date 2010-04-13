@@ -33,7 +33,6 @@ import tigase.db.UserRepository;
 import tigase.form.Field;
 import tigase.form.Form;
 import tigase.form.Field.FieldType;
-import tigase.util.TigaseStringprepException;
 import tigase.xmpp.BareJID;
 
 /**

@@ -28,8 +28,9 @@ import tigase.criteria.ElementCriteria;
 import tigase.muc.Module;
 import tigase.muc.MucVersion;
 import tigase.muc.exceptions.MUCException;
-import tigase.util.JIDUtils;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -52,8 +53,12 @@ public class SoftwareVersionModule implements Module {
 
 	@Override
 	public boolean isProcessedByModule(Element element) {
-		String jid = element.getAttribute("to");
-		return jid != null && JIDUtils.getNodeResource(jid) == null;
+		try {
+			JID jid = JID.jidInstance(element.getAttribute("to"));
+			return jid != null && jid.getResource() == null;
+		} catch (TigaseStringprepException e) {
+			return false;
+		}
 	}
 
 	@Override

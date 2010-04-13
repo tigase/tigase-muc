@@ -54,8 +54,6 @@ public class InMemoryMucRepository implements IMucRepository {
 
 	private final Map<BareJID, InternalRoom> allRooms = new HashMap<BareJID, InternalRoom>();
 
-	private final MucConfig config;
-
 	private final MucDAO dao;
 
 	private RoomConfig defaultConfig = new RoomConfig(null);
@@ -70,7 +68,6 @@ public class InMemoryMucRepository implements IMucRepository {
 
 	public InMemoryMucRepository(final MucConfig mucConfig, final MucDAO dao) throws RepositoryException {
 		this.dao = dao;
-		this.config = mucConfig;
 
 		ArrayList<BareJID> roomJids = dao.getRoomsJIDList();
 		if (roomJids != null) {

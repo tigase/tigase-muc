@@ -66,7 +66,6 @@ import tigase.xmpp.JID;
 import tigase.xmpp.PacketErrorTypeException;
 import tigase.xmpp.StanzaType;
 
-@SuppressWarnings("deprecation")
 public class MUCComponent extends AbstractMessageReceiver implements DelDeliverySend, XMPPService, Configurable, DisableDisco {
 
 	public static final String ADMINS_KEY = "admins";
