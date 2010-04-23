@@ -31,8 +31,10 @@ import tigase.muc.MucConfig;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.BareJID;
 
 /**
  * @author bmalkow
@@ -67,13 +69,14 @@ public class DiscoInfoModule extends AbstractModule {
 	@Override
 	public List<Element> process(Element element) throws MUCException {
 		try {
-			final String roomID = getRoomId(element.getAttribute("to"));
+			String toXML = element.getAttribute("to");
+			final BareJID roomJID = BareJID.bareJIDInstance(toXML);
 			Element result = createResultIQ(element);
 			Element resultQuery = new Element("query", new String[] { "xmlns" },
 					new String[] { "http://jabber.org/protocol/disco#info" });
 			result.addChild(resultQuery);
 
-			if (roomID == null) {
+			if (roomJID.getLocalpart() == null) {
 				Element resultIdentity = new Element("identity", new String[] { "category", "name", "type" }, new String[] {
 						"conference", "Multi User Chat", "text" });
 				resultQuery.addChild(resultIdentity);
@@ -86,7 +89,7 @@ public class DiscoInfoModule extends AbstractModule {
 					}
 				}
 			} else {
-				Room room = repository.getRoom(roomID);
+				Room room = repository.getRoom(roomJID);
 				if (room == null) {
 					throw new MUCException(Authorization.ITEM_NOT_FOUND);
 				}
@@ -143,6 +146,8 @@ public class DiscoInfoModule extends AbstractModule {
 			return makeArray(result);
 		} catch (MUCException e1) {
 			throw e1;
+		} catch (TigaseStringprepException e) {
+			throw new MUCException(Authorization.BAD_REQUEST);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);

@@ -33,9 +33,11 @@ import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.RepositoryException;
-import tigase.util.JIDUtils;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -74,7 +76,7 @@ public class RoomConfigurationModule extends AbstractModule {
 	@Override
 	public List<Element> process(Element element) throws MUCException {
 		try {
-			if (getNicknameFromJid(element.getAttribute("to")) != null) {
+			if (getNicknameFromJid(JID.jidInstance(element.getAttribute("to"))) != null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
@@ -95,75 +97,84 @@ public class RoomConfigurationModule extends AbstractModule {
 	}
 
 	private List<Element> processGet(final Element element) throws RepositoryException, MUCException {
-		final String roomId = getRoomId(element.getAttribute("to"));
-		final String senderJid = element.getAttribute("from");
+		try {
+			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
+			JID senderJID = JID.jidInstance(element.getAttribute("from"));
+			Room room = repository.getRoom(roomJID);
 
-		Room room = repository.getRoom(roomId);
+			if (room == null) {
+				return makeArray(makeConfigFormIq(element, repository.getDefaultRoomConfig()));
+			}
+			if (room.getAffiliation(senderJID.getBareJID()) != Affiliation.owner) {
+				throw new MUCException(Authorization.FORBIDDEN);
+			}
 
-		if (room == null) {
-			return makeArray(makeConfigFormIq(element, repository.getDefaultRoomConfig()));
+			final Element response = makeConfigFormIq(element, room.getConfig());
+			return makeArray(response);
+
+		} catch (TigaseStringprepException e) {
+			throw new MUCException(Authorization.BAD_REQUEST);
 		}
-		if (room.getAffiliation(senderJid) != Affiliation.owner) {
-			throw new MUCException(Authorization.FORBIDDEN);
-		}
-
-		final Element response = makeConfigFormIq(element, room.getConfig());
-		return makeArray(response);
 	}
 
 	private List<Element> processSet(final Element element) throws RepositoryException, MUCException {
-		final String roomId = getRoomId(element.getAttribute("to"));
-		final String senderJid = element.getAttribute("from");
-		final Element query = element.getChild("query", "http://jabber.org/protocol/muc#owner");
+		try {
+			final JID roomJID = JID.jidInstance(element.getAttribute("to"));
+			JID senderJID = JID.jidInstance(element.getAttribute("from"));
+			final Element query = element.getChild("query", "http://jabber.org/protocol/muc#owner");
 
-		Room room = repository.getRoom(roomId);
-		if (room == null) {
-			room = repository.createNewRoom(roomId, senderJid);
-		} else {
-			if (room.getAffiliation(senderJid) != Affiliation.owner) {
-				throw new MUCException(Authorization.FORBIDDEN);
+			Room room = repository.getRoom(roomJID.getBareJID());
+			if (room == null) {
+				room = repository.createNewRoom(roomJID.getBareJID(), senderJID);
+			} else {
+				if (room.getAffiliation(senderJID.getBareJID()) != Affiliation.owner) {
+					throw new MUCException(Authorization.FORBIDDEN);
+				}
 			}
-		}
 
-		List<Element> result = makeArray(createResultIQ(element));
+			List<Element> result = makeArray(createResultIQ(element));
 
-		final Element x = query.getChild("x", "jabber:x:data");
-		final Element destroy = query.getChild("destroy");
-		if (destroy != null) {
-			// XXX TODO
-			throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
-		} else if (x != null) {
-			Form form = new Form(x);
-			if ("submit".equals(form.getType())) {
-				String ps = form.getAsString(RoomConfig.MUC_ROOMCONFIG_ROOMSECRET_KEY);
-				if (form.getAsBoolean(RoomConfig.MUC_ROOMCONFIG_PASSWORDPROTECTEDROOM_KEY) == Boolean.TRUE
-						&& (ps == null || ps.length() == 0)) {
-					throw new MUCException(Authorization.NOT_ACCEPTABLE, "Passwords cannot be empty");
-				}
-
-				final RoomConfig oldConfig = room.getConfig().clone();
-				if (room.isRoomLocked()) {
-					room.setRoomLocked(false);
-					log.fine("Room " + room.getRoomId() + " is now unlocked");
-					result.add(prepateMucMessage(room, room.getOccupantsNickname(senderJid), "Room is now unlocked"));
-				}
-
-				room.getConfig().copyFrom(form);
-				room.addAffiliationByJid(JIDUtils.getNodeID(senderJid), Affiliation.owner);
-
-				String[] compareResult = room.getConfig().compareTo(oldConfig);
-				if (compareResult != null) {
-					Element z = new Element("x", new String[] { "xmlns" },
-							new String[] { "http://jabber.org/protocol/muc#user" });
-					for (String code : compareResult) {
-						z.addChild(new Element("status", new String[] { "code" }, new String[] { code }));
+			final Element x = query.getChild("x", "jabber:x:data");
+			final Element destroy = query.getChild("destroy");
+			if (destroy != null) {
+				// XXX TODO
+				throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
+			} else if (x != null) {
+				Form form = new Form(x);
+				if ("submit".equals(form.getType())) {
+					String ps = form.getAsString(RoomConfig.MUC_ROOMCONFIG_ROOMSECRET_KEY);
+					if (form.getAsBoolean(RoomConfig.MUC_ROOMCONFIG_PASSWORDPROTECTEDROOM_KEY) == Boolean.TRUE
+							&& (ps == null || ps.length() == 0)) {
+						throw new MUCException(Authorization.NOT_ACCEPTABLE, "Passwords cannot be empty");
 					}
-					result.addAll(this.messageModule.sendMessagesToAllOccupants(room, roomId, z));
+
+					final RoomConfig oldConfig = room.getConfig().clone();
+					if (room.isRoomLocked()) {
+						room.setRoomLocked(false);
+						log.fine("Room " + room.getRoomJID() + " is now unlocked");
+						result.addAll(prepareMucMessage(room, room.getOccupantsNickname(senderJID), "Room is now unlocked"));
+					}
+
+					room.getConfig().copyFrom(form);
+					room.addAffiliationByJid(senderJID.getBareJID(), Affiliation.owner);
+
+					String[] compareResult = room.getConfig().compareTo(oldConfig);
+					if (compareResult != null) {
+						Element z = new Element("x", new String[] { "xmlns" },
+								new String[] { "http://jabber.org/protocol/muc#user" });
+						for (String code : compareResult) {
+							z.addChild(new Element("status", new String[] { "code" }, new String[] { code }));
+						}
+						result.addAll(this.messageModule.sendMessagesToAllOccupants(room, roomJID, z));
+					}
 				}
+			} else {
+				throw new MUCException(Authorization.BAD_REQUEST);
 			}
-		} else {
+			return result;
+		} catch (TigaseStringprepException e) {
 			throw new MUCException(Authorization.BAD_REQUEST);
 		}
-		return result;
+		
 	}
 }

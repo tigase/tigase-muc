@@ -21,6 +21,8 @@
  */
 package tigase.muc.modules;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import tigase.criteria.Criteria;
@@ -30,8 +32,11 @@ import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -57,44 +62,55 @@ public class IqStanzaForwarderModule extends AbstractModule {
 
 	@Override
 	public boolean isProcessedByModule(Element element) {
-		return getNicknameFromJid(element.getAttribute("to")) != null;
+		try {
+			return getNicknameFromJid(JID.jidInstance(element.getAttribute("to"))) != null;
+		} catch (TigaseStringprepException e) {
+			return false;
+		}
 	}
 
 	@Override
 	public List<Element> process(Element element) throws MUCException {
 		try {
-			final String senderJid = element.getAttribute("from");
-			final String roomId = getRoomId(element.getAttribute("to"));
-			final String recipientNickname = getNicknameFromJid(element.getAttribute("to"));
+			final JID senderJID = JID.jidInstance(element.getAttribute("from"));
+			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
+			final String recipientNickname = getNicknameFromJid(JID.jidInstance(element.getAttribute("to")));
 
 			if (recipientNickname == null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
-			final Room room = repository.getRoom(roomId);
+			final Room room = repository.getRoom(roomJID);
 			if (room == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
 
-			final Role senderRole = room.getRoleByJid(senderJid);
+			final Role senderRole = room.getRoleByJid(senderJID);
 			if (!senderRole.isSendPrivateMessages()) {
 				throw new MUCException(Authorization.NOT_ALLOWED);
 			}
 
-			final String recipientJid = room.getOccupantsJidByNickname(recipientNickname);
-			if (recipientJid == null) {
+			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);
+			if (recipientJids == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
 			}
+			
+			List<Element> result = new ArrayList<Element>();
+			for(JID recipientJid: recipientJids) {
+				final String senderNickname = room.getOccupantsNickname(senderJID);
 
-			final String senderNickname = room.getOccupantsNickname(senderJid);
-
-			final Element iq = element.clone();
-			iq.setAttribute("from", roomId + "/" + senderNickname);
-			iq.setAttribute("to", recipientJid);
-
-			return makeArray(iq);
+				final Element iq = element.clone();
+				iq.setAttribute("from", roomJID.toString() + "/" + senderNickname);
+				iq.setAttribute("to", recipientJid.toString());
+				
+				result.addAll(makeArray(iq));
+				
+			}
+			return result;
 		} catch (MUCException e1) {
 			throw e1;
+		} catch (TigaseStringprepException e) {
+			throw new MUCException(Authorization.BAD_REQUEST);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);

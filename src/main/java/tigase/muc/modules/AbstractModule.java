@@ -22,6 +22,7 @@
 package tigase.muc.modules;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -29,8 +30,8 @@ import tigase.muc.Module;
 import tigase.muc.MucConfig;
 import tigase.muc.Room;
 import tigase.muc.repository.IMucRepository;
-import tigase.util.JIDUtils;
 import tigase.xml.Element;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -43,17 +44,9 @@ public abstract class AbstractModule implements Module {
 				iq.getAttribute("from"), iq.getAttribute("id") });
 	}
 
-	public static String getNicknameFromJid(String jid) {
+	public static String getNicknameFromJid(JID jid) {
 		if (jid != null) {
-			int idx = jid.indexOf('/');
-			return idx == -1 ? null : jid.substring(idx + 1);
-		} else
-			return null;
-	}
-
-	public static String getRoomId(String jid) {
-		if (jid != null) {
-			return JIDUtils.getNodeNick(jid) == null ? null : JIDUtils.getNodeID(jid);
+			return jid.getResource();
 		} else
 			return null;
 	}
@@ -67,14 +60,19 @@ public abstract class AbstractModule implements Module {
 		return result;
 	}
 
-	protected static Element prepateMucMessage(Room room, String nickname, String message) {
-		String occupantJid = room.getOccupantsJidByNickname(nickname);
-		Element msg = new Element("message", new String[] { "from", "to", "type" }, new String[] { room.getRoomId(),
-				occupantJid, "groupchat" });
+	protected static List<Element> prepareMucMessage(Room room, String nickname, String message) {
+		List<Element> msgs = new ArrayList<Element>();
+		for(JID occupantJid : room.getOccupantsJidsByNickname(nickname)) {
+			Element msg = new Element("message", 
+					new String[] { "from", "to", "type" }, 
+					new String[] { room.getRoomJID().toString(),
+					occupantJid.toString(), "groupchat" });
 
-		msg.addChild(new Element("body", message));
+			msg.addChild(new Element("body", message));
+			msgs.add(msg);
+		}
 
-		return msg;
+		return msgs;
 	}
 
 	protected final MucConfig config;

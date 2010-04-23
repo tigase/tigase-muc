@@ -35,8 +35,11 @@ import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -78,19 +81,19 @@ public class GroupchatMessageModule extends AbstractModule {
 	public List<Element> process(Element element) throws MUCException {
 		try {
 			final ArrayList<Element> result = new ArrayList<Element>();
-			final String senderJid = element.getAttribute("from");
-			final String roomId = getRoomId(element.getAttribute("to"));
+			final JID senderJID = JID.jidInstance(element.getAttribute("from"));
+			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
 
-			if (getNicknameFromJid(element.getAttribute("to")) != null) {
+			if (getNicknameFromJid(JID.jidInstance(element.getAttribute("to"))) != null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
-			final Room room = repository.getRoom(roomId);
+			final Room room = repository.getRoom(roomJID);
 			if (room == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
 
-			Role role = room.getRoleByJid(senderJid);
+			Role role = room.getRoleByJid(senderJID);
 			if (!role.isSendMessagesToAll() || (room.getConfig().isRoomModerated() && role == Role.visitor)) {
 				throw new MUCException(Authorization.FORBIDDEN);
 			}
@@ -116,8 +119,8 @@ public class GroupchatMessageModule extends AbstractModule {
 				}
 			}
 
-			final String nickName = room.getOccupantsNickname(senderJid);
-			final String senderRoomJid = roomId + "/" + nickName;
+			final String nickName = room.getOccupantsNickname(senderJID);
+			final JID senderRoomJID = JID.jidInstance(roomJID, nickName);
 
 			if (subject != null) {
 				if (!(room.getConfig().isChangeSubject() && role == Role.participant) && !role.isModifySubject())
@@ -129,36 +132,41 @@ public class GroupchatMessageModule extends AbstractModule {
 			Date sendDate = new Date();
 
 			if (body != null)
-				room.addToHistory(body.getCData(), senderJid, nickName, sendDate);
+				room.addToHistory(body.getCData(), senderJID, nickName, sendDate);
 			if (room.getConfig().isLoggingEnabled()) {
 				if (this.chatLogger != null && body != null) {
-					chatLogger.addMessage(room.getConfig().getLoggingFormat(), room.getRoomId(), sendDate, nickName,
+					chatLogger.addMessage(room.getConfig().getLoggingFormat(), room.getRoomJID(), sendDate, nickName,
 							body.getCData());
 				} else if (this.chatLogger != null && subject != null) {
-					chatLogger.addSubject(room.getConfig().getLoggingFormat(), room.getRoomId(), sendDate, nickName,
+					chatLogger.addSubject(room.getConfig().getLoggingFormat(), room.getRoomJID(), sendDate, nickName,
 							subject.getCData());
 
 				}
 			}
-			result.addAll(sendMessagesToAllOccupants(room, senderRoomJid, content.toArray(new Element[] {})));
+			result.addAll(sendMessagesToAllOccupants(room, senderRoomJID, content.toArray(new Element[] {})));
 
 			return result;
 		} catch (MUCException e1) {
 			throw e1;
+		} catch (TigaseStringprepException e) {
+			throw new MUCException(Authorization.BAD_REQUEST);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
 	}
 
-	public List<Element> sendMessagesToAllOccupants(final Room room, final String fromJid, final Element... content) {
+	public List<Element> sendMessagesToAllOccupants(final Room room, final JID fromJID, final Element... content) {
 		final ArrayList<Element> result = new ArrayList<Element>();
-		for (String occupantsJid : room.getOccupantsJids()) {
-			Role role = room.getRoleByJid(occupantsJid);
+		for (JID occupantsJID : room.getOccupantsJids()) {
+			Role role = room.getRoleByJid(occupantsJID);
 			if (!role.isReceiveMessages())
 				continue;
-			Element message = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",
-					fromJid, occupantsJid });
+			Element message = new Element("message", 
+			                  new String[] { "type", "from", "to" }, 
+			                  new String[] { "groupchat",
+			                  fromJID.toString(), 
+			                  occupantsJID.toString() });
 			if (content != null) {
 				for (Element sub : content) {
 					if (sub != null)
@@ -171,7 +179,6 @@ public class GroupchatMessageModule extends AbstractModule {
 	}
 
 	public void setChatStateAllowed(Boolean allowed) {
-		System.out.println("xxx " + allowed);
 		if (allowed != null && allowed) {
 			log.config("Chat state allowed");
 			allowedElements.add(CRIT_CHAT_STAT);

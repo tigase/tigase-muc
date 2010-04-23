@@ -27,6 +27,8 @@ import java.util.LinkedList;
 import java.util.List;
 
 import tigase.xml.Element;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -36,7 +38,7 @@ public class History {
 
 	private static class HItem {
 		String message;
-		String senderJid;
+		JID senderJid;
 		String senderNickname;
 		Date timestamp;
 	}
@@ -53,7 +55,7 @@ public class History {
 	public History() {
 	}
 
-	public void add(final String message, String senderJid, String senderNickname, Date time) {
+	public void add(final String message, JID senderJid, String senderNickname, Date time) {
 		if (this.stanzas.size() >= this.maxSize) {
 			this.stanzas.poll();
 		}
@@ -70,15 +72,15 @@ public class History {
 	/**
 	 * @param recipientJid
 	 */
-	public List<Element> getMessages(String recipientJid, String roomId, boolean addRealJids) {
+	public List<Element> getMessages(JID recipientJid, BareJID roomJID, boolean addRealJids) {
 		List<Element> m = new ArrayList<Element>();
 		for (HItem item : this.stanzas) {
 
 			Element message = new Element("message", new String[] { "from", "to", "type" }, new String[] {
-					roomId + "/" + item.senderNickname, recipientJid, "groupchat" });
+					roomJID + "/" + item.senderNickname, recipientJid.toString(), "groupchat" });
 			message.addChild(new Element("body", item.message));
 
-			String from = addRealJids ? item.senderJid : roomId + "/" + item.senderNickname;
+			String from = addRealJids ? item.senderJid.toString() : roomJID + "/" + item.senderNickname;
 			Element delay = new Element("delay", new String[] { "xmlns", "from", "stamp" }, new String[] { "urn:xmpp:delay",
 					from, dateTimeFormatter.format(item.timestamp) });
 

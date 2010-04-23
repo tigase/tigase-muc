@@ -150,7 +150,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	@Override
 	public List<Element> getDiscoItems(String node, JID jid) {
 		if (node == null) {
-			Element result = serviceEntity.getDiscoItem(null, getName() + "." + jid);
+			Element result = serviceEntity.getDiscoItem(null, getName() + "." + jid.toString());
 			return Arrays.asList(result);
 		} else {
 			return null;
@@ -294,6 +294,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		// for (String host : hostnames) {
 		// addRouting(host);
 		// }
+		
 		serviceEntity = new ServiceEntity(getName(), null, "Multi User Chat");
 		serviceEntity.addIdentities(new ServiceIdentity("conference", "text", "Multi User Chat"));
 

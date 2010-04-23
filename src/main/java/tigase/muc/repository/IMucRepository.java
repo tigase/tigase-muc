@@ -23,6 +23,8 @@ package tigase.muc.repository;
 
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -30,13 +32,13 @@ import tigase.muc.RoomConfig;
  */
 public interface IMucRepository {
 
-	Room createNewRoom(String roomId, String senderJid) throws RepositoryException;
+	Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException;
 
 	RoomConfig getDefaultRoomConfig() throws RepositoryException;
 
 	String[] getPublicVisibleRoomsIdList() throws RepositoryException;
 
-	Room getRoom(String roomId) throws RepositoryException;
+	Room getRoom(BareJID roomJID) throws RepositoryException;
 
 	/**
 	 * @param jid

@@ -23,17 +23,19 @@ package tigase.muc;
 
 import java.util.Date;
 
+import tigase.xmpp.BareJID;
+
 /**
  * @author bmalkow
  * 
  */
 public interface IChatRoomLogger {
 
-	void addJoin(RoomConfig.LogFormat logFormat, String roomId, Date date, String nickName);
+	void addJoin(RoomConfig.LogFormat logFormat, BareJID roomJID, Date date, String nickName);
 
-	void addLeave(RoomConfig.LogFormat logFormat, String roomId, Date date, String nickName);
+	void addLeave(RoomConfig.LogFormat logFormat, BareJID roomJID, Date date, String nickName);
 
-	void addMessage(RoomConfig.LogFormat logFormat, String roomId, Date date, String nickName, String message);
+	void addMessage(RoomConfig.LogFormat logFormat, BareJID roomJID, Date date, String nickName, String message);
 
-	void addSubject(RoomConfig.LogFormat logFormat, String roomId, Date date, String nickName, String subject);
+	void addSubject(RoomConfig.LogFormat logFormat, BareJID roomJID, Date date, String nickName, String subject);
 }

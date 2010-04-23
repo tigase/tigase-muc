@@ -28,8 +28,10 @@ import tigase.criteria.ElementCriteria;
 import tigase.muc.MucConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.BareJID;
 
 /**
  * @author bmalkow
@@ -57,7 +59,7 @@ public class DiscoItemsModule extends AbstractModule {
 	@Override
 	public List<Element> process(Element element) throws MUCException {
 		try {
-			final String roomId = getRoomId(element.getAttribute("to"));
+			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
 
 			Element result = createResultIQ(element);
 
@@ -65,7 +67,7 @@ public class DiscoItemsModule extends AbstractModule {
 					new String[] { "http://jabber.org/protocol/disco#items" });
 			result.addChild(resultQuery);
 
-			if (roomId == null) {
+			if (roomJID.getLocalpart() == null) {
 				String[] roomsId = repository.getPublicVisibleRoomsIdList();
 				for (final String jid : roomsId) {
 					final String name = repository.getRoomName(jid);
@@ -78,6 +80,8 @@ public class DiscoItemsModule extends AbstractModule {
 			return makeArray(result);
 		} catch (MUCException e1) {
 			throw e1;
+		} catch (TigaseStringprepException e) {
+			throw new MUCException(Authorization.BAD_REQUEST);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);

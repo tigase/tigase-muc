@@ -33,6 +33,8 @@ import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -60,23 +62,23 @@ public class MediatedInvitationModule extends AbstractModule {
 	@Override
 	public List<Element> process(Element element) throws MUCException {
 		try {
-			final String senderJid = element.getAttribute("from");
-			final String roomId = getRoomId(element.getAttribute("to"));
+			final JID senderJID = JID.jidInstance(element.getAttribute("from"));
+			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
 
-			if (getNicknameFromJid(element.getAttribute("to")) != null) {
+			if (getNicknameFromJid(JID.jidInstance(element.getAttribute("to"))) != null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
-			final Room room = repository.getRoom(roomId);
+			final Room room = repository.getRoom(roomJID);
 			if (room == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
 
-			final Role senderRole = room.getRoleByJid(senderJid);
+			final Role senderRole = room.getRoleByJid(senderJID);
 			if (!senderRole.isInviteOtherUsers()) {
 				throw new MUCException(Authorization.NOT_ALLOWED);
 			}
-			final Affiliation senderAffiliation = room.getAffiliation(senderJid);
+			final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID());
 			if (room.getConfig().isRoomMembersOnly() && !senderAffiliation.isEditMemberList()) {
 				throw new MUCException(Authorization.FORBIDDEN);
 			}
@@ -86,17 +88,17 @@ public class MediatedInvitationModule extends AbstractModule {
 			final Element reason = invite.getChild("reason");
 			final String recipient = invite.getAttribute("to");
 
-			final Element resultMessage = new Element("message", new String[] { "from", "to" }, new String[] { roomId,
+			final Element resultMessage = new Element("message", new String[] { "from", "to" }, new String[] { roomJID.toString(),
 					recipient });
 			final Element resultX = new Element("x", new String[] { "xmlns" },
 					new String[] { "http://jabber.org/protocol/muc#user" });
 			resultMessage.addChild(resultX);
 
 			if (room.getConfig().isRoomMembersOnly() && senderAffiliation.isEditMemberList()) {
-				room.addAffiliationByJid(recipient, Affiliation.member);
+				room.addAffiliationByJid(JID.jidInstance(recipient).getBareJID(), Affiliation.member);
 			}
 
-			final Element resultInvite = new Element("invite", new String[] { "from" }, new String[] { senderJid });
+			final Element resultInvite = new Element("invite", new String[] { "from" }, new String[] { senderJID.toString() });
 			resultX.addChild(resultInvite);
 
 			if (room.getConfig().isPasswordProtectedRoom()) {

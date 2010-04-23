@@ -39,7 +39,8 @@ import tigase.muc.RoomConfig.RoomConfigListener;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.MucDAO;
 import tigase.muc.repository.RepositoryException;
-import tigase.util.JIDUtils;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -51,7 +52,7 @@ public class InMemoryMucRepository implements IMucRepository {
 		boolean listPublic = true;
 	}
 
-	private final Map<String, InternalRoom> allRooms = new HashMap<String, InternalRoom>();
+	private final Map<BareJID, InternalRoom> allRooms = new HashMap<BareJID, InternalRoom>();
 
 	private final MucConfig config;
 
@@ -65,15 +66,15 @@ public class InMemoryMucRepository implements IMucRepository {
 
 	private final RoomListener roomListener;
 
-	private final HashMap<String, Room> rooms = new HashMap<String, Room>();
+	private final HashMap<BareJID, Room> rooms = new HashMap<BareJID, Room>();
 
 	public InMemoryMucRepository(final MucConfig mucConfig, final MucDAO dao) throws RepositoryException {
 		this.dao = dao;
 		this.config = mucConfig;
 
-		String[] rooms = dao.getRoomsIdList();
-		if (rooms != null) {
-			for (String jid : rooms) {
+		ArrayList<BareJID> roomJids = dao.getRoomsJIDList();
+		if (roomJids != null) {
+			for (BareJID jid : roomJids) {
 				this.allRooms.put(jid, new InternalRoom());
 			}
 		}
@@ -84,17 +85,17 @@ public class InMemoryMucRepository implements IMucRepository {
 			public void onChangeSubject(Room room, String nick, String newSubject, Date changeDate) {
 				try {
 					if (room.getConfig().isPersistentRoom())
-						dao.setSubject(room.getRoomId(), newSubject, nick, changeDate);
+						dao.setSubject(room.getRoomJID(), newSubject, nick, changeDate);
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}
 			}
 
 			@Override
-			public void onSetAffiliation(Room room, String jid, Affiliation newAffiliation) {
+			public void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation) {
 				try {
 					if (room.getConfig().isPersistentRoom())
-						dao.setAffiliation(room.getRoomId(), jid, newAffiliation);
+						dao.setAffiliation(room.getRoomJID(), jid, newAffiliation);
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}
@@ -107,7 +108,7 @@ public class InMemoryMucRepository implements IMucRepository {
 			public void onConfigChanged(final RoomConfig roomConfig, final Set<String> modifiedVars) {
 				try {
 					if (modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY)) {
-						InternalRoom ir = allRooms.get(roomConfig.getRoomId());
+						InternalRoom ir = allRooms.get(roomConfig.getRoomJID());
 						if (ir != null) {
 							ir.listPublic = roomConfig.isRoomconfigPublicroom();
 						}
@@ -115,12 +116,10 @@ public class InMemoryMucRepository implements IMucRepository {
 
 					if (modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PERSISTENTROOM_KEY)) {
 						if (roomConfig.isPersistentRoom()) {
-							System.out.println("now is PERSISTENT");
-							final Room room = getRoom(roomConfig.getRoomId());
+							final Room room = getRoom(roomConfig.getRoomJID());
 							dao.createRoom(room);
 						} else {
-							System.out.println("now is NOT! PERSISTENT");
-							dao.destroyRoom(roomConfig.getRoomId());
+							dao.destroyRoom(roomConfig.getRoomJID());
 						}
 					} else if (roomConfig.isPersistentRoom()) {
 						dao.updateRoomConfig(roomConfig);
@@ -139,17 +138,17 @@ public class InMemoryMucRepository implements IMucRepository {
 	 * java.lang.String, java.lang.String)
 	 */
 	@Override
-	public Room createNewRoom(String roomId, String senderJid) throws RepositoryException {
-		log.fine("Creating new room '" + roomId + "'");
-		RoomConfig rc = new RoomConfig(roomId);
+	public Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException {
+		log.fine("Creating new room '" + roomJID + "'");
+		RoomConfig rc = new RoomConfig(roomJID);
 
 		rc.copyFrom(getDefaultRoomConfig(), false);
 
-		Room room = new Room(rc, new Date(), JIDUtils.getNodeID(senderJid));
+		Room room = new Room(rc, new Date(), senderJid.getBareJID());
 		room.getConfig().addListener(roomConfigListener);
 		room.addListener(roomListener);
-		this.rooms.put(roomId, room);
-		this.allRooms.put(roomId, new InternalRoom());
+		this.rooms.put(roomJID, room);
+		this.allRooms.put(roomJID, new InternalRoom());
 
 		return room;
 	}
@@ -167,9 +166,9 @@ public class InMemoryMucRepository implements IMucRepository {
 	@Override
 	public String[] getPublicVisibleRoomsIdList() throws RepositoryException {
 		List<String> result = new ArrayList<String>();
-		for (Entry<String, InternalRoom> entry : this.allRooms.entrySet()) {
+		for (Entry<BareJID, InternalRoom> entry : this.allRooms.entrySet()) {
 			if (entry.getValue().listPublic) {
-				result.add(entry.getKey());
+				result.add(entry.getKey().toString());
 			}
 		}
 		return result.toArray(new String[] {});
@@ -181,14 +180,14 @@ public class InMemoryMucRepository implements IMucRepository {
 	 * @see tigase.muc.repository.IMucRepository#getRoom()
 	 */
 	@Override
-	public Room getRoom(final String roomId) throws RepositoryException {
-		Room room = this.rooms.get(roomId);
+	public Room getRoom(final BareJID roomJID) throws RepositoryException {
+		Room room = this.rooms.get(roomJID);
 		if (room == null) {
-			room = dao.readRoom(roomId);
+			room = dao.readRoom(roomJID);
 			if (room != null) {
 				room.getConfig().addListener(roomConfigListener);
 				room.addListener(roomListener);
-				this.rooms.put(roomId, room);
+				this.rooms.put(roomJID, room);
 			}
 		}
 		return room;
@@ -217,12 +216,11 @@ public class InMemoryMucRepository implements IMucRepository {
 
 	@Override
 	public void leaveRoom(Room room) {
-		final String roomId = room.getRoomId();
-		log.fine("Removing room '" + roomId + "' from memory");
-		this.rooms.remove(roomId);
+		final BareJID roomJID = room.getRoomJID();
+		log.fine("Removing room '" + roomJID + "' from memory");
+		this.rooms.remove(roomJID);
 		if (!room.getConfig().isPersistentRoom()) {
-			this.allRooms.remove(roomId);
+			this.allRooms.remove(roomJID);
 		}
 	}
-
 }

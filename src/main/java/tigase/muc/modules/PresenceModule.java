@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.criteria.Criteria;
@@ -45,6 +44,8 @@ import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -167,52 +168,69 @@ public class PresenceModule extends AbstractModule {
 		return lockNewRoom;
 	}
 
-	private List<Element> preparePresenceToAllOccupants(Room room, String roomURL, String nickName, Affiliation affiliation,
-			Role role, String senderJid, boolean newRoomCreated, String newNickName) {
+	private List<Element> preparePresenceToAllOccupants(Room room,
+			BareJID roomJID, String nickName, Affiliation affiliation,
+			Role role, JID senderJID, boolean newRoomCreated, String newNickName) {
 		List<Element> result = new ArrayList<Element>();
 		Anonymity anonymity = room.getConfig().getRoomAnonymity();
-		for (String occupantJid : room.getOccupantsJids()) {
-			final Affiliation occupantAffiliation = room.getAffiliation(occupantJid);
+
+		for (JID occupantJid : room.getOccupantsJids()) {
+			final Affiliation occupantAffiliation = room.getAffiliation(occupantJid.getBareJID());
 
 			Element presence;
 			if (newNickName != null) {
 				presence = new Element("presence");
 				presence.setAttribute("type", "unavailable");
+			}else if(room.getOccupantsNicknameByBareJid(senderJID.getBareJID()) == null) {
+				presence = new Element("presence");
+				presence.setAttribute("type", "unavailable");
 			} else {
-				presence = room.getLastPresenceCopyByJid(senderJid);
+				presence = room.getLastPresenceCopyByJid(senderJID);
 			}
-			presence.setAttribute("from", roomURL + "/" + nickName);
-			presence.setAttribute("to", occupantJid);
+			try {
+				presence.setAttribute("from", JID.jidInstance(roomJID, nickName).toString());
+			} catch (TigaseStringprepException e) {
+				presence.setAttribute("from", roomJID + "/" + nickName);	
+			}
+			presence.setAttribute("to", occupantJid.toString());
+			Element x = new Element("x", new String[] { "xmlns" },
+					new String[] { "http://jabber.org/protocol/muc#user" });
 
-			Element x = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
+			Element item = new Element("item", new String[] { "affiliation",
+					"role", "nick" }, new String[] { affiliation.name(),
+					role.name(), nickName });
 
-			Element item = new Element("item", new String[] { "affiliation", "role", "nick" }, new String[] {
-					affiliation.name(), role.name(), nickName });
-
-			if (senderJid.equals(occupantJid)) {
-				x.addChild(new Element("status", new String[] { "code" }, new String[] { "110" }));
+			if (senderJID.equals(occupantJid)) {
+				x.addChild(new Element("status", new String[] { "code" },
+						new String[] { "110" }));
 				if (anonymity == Anonymity.nonanonymous) {
-					x.addChild(new Element("status", new String[] { "code" }, new String[] { "100" }));
+					x.addChild(new Element("status", new String[] { "code" },
+							new String[] { "100" }));
 				}
 				if (room.getConfig().isLoggingEnabled()) {
-					x.addChild(new Element("status", new String[] { "code" }, new String[] { "170" }));
+					x.addChild(new Element("status", new String[] { "code" },
+							new String[] { "170" }));
 				}
 			}
 			if (newRoomCreated) {
-				x.addChild(new Element("status", new String[] { "code" }, new String[] { "201" }));
+				x.addChild(new Element("status", new String[] { "code" },
+						new String[] { "201" }));
 			}
 			if (anonymity == Anonymity.nonanonymous
-					|| (anonymity == Anonymity.semianonymous && occupantAffiliation.isViewOccupantsJid())) {
-				item.setAttribute("jid", senderJid);
+					|| (anonymity == Anonymity.semianonymous && occupantAffiliation
+							.isViewOccupantsJid())) {
+				item.setAttribute("jid", senderJID.toString());
 			}
 			if (newNickName != null) {
-				x.addChild(new Element("status", new String[] { "code" }, new String[] { "303" }));
+				x.addChild(new Element("status", new String[] { "code" },
+						new String[] { "303" }));
 				item.setAttribute("nick", newNickName);
 			}
 
 			x.addChild(item);
 			presence.addChild(x);
 			result.add(presence);
+
 		}
 		return result;
 	}
@@ -221,9 +239,9 @@ public class PresenceModule extends AbstractModule {
 	public List<Element> process(Element element) throws MUCException {
 		try {
 			ArrayList<Element> result = new ArrayList<Element>();
-			final String senderJid = element.getAttribute("from");
-			final String roomId = getRoomId(element.getAttribute("to"));
-			final String nickName = getNicknameFromJid(element.getAttribute("to"));
+			final JID senderJID = JID.jidInstance(element.getAttribute("from"));
+			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
+			final String nickName = getNicknameFromJid(JID.jidInstance(element.getAttribute("to")));
 			final String presenceType = element.getAttribute("type");
 
 			boolean newRoomCreated = false;
@@ -235,16 +253,16 @@ public class PresenceModule extends AbstractModule {
 				throw new MUCException(Authorization.JID_MALFORMED);
 			}
 
-			Room room = repository.getRoom(roomId);
+			Room room = repository.getRoom(roomJID);
 			if (room == null) {
-				log.info("Creating new room '" + roomId + "' by user " + nickName + "' <" + senderJid + ">");
-				room = repository.createNewRoom(roomId, senderJid);
-				room.addAffiliationByJid(senderJid, Affiliation.owner);
+				log.info("Creating new room '" + roomJID + "' by user " + nickName + "' <" + senderJID.toString() + ">");
+				room = repository.createNewRoom(roomJID, senderJID);
+				room.addAffiliationByJid(senderJID.getBareJID(), Affiliation.owner);
 				room.setRoomLocked(this.lockNewRoom);
 				newRoomCreated = true;
 			}
 
-			boolean newOccupant = !room.isOccupantExistsByJid(senderJid);
+			boolean newOccupant = !room.isOccupantExistsByJid(senderJID);
 			if (newOccupant && room.getConfig().isPasswordProtectedRoom()) {
 				final String psw = password == null ? null : password.getCData();
 				final String roomPassword = room.getConfig().getPassword();
@@ -258,23 +276,23 @@ public class PresenceModule extends AbstractModule {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Room is locked");
 			}
 
-			if (exitingRoom && !room.isOccupantExistsByJid(senderJid)) {
+			if (exitingRoom && !room.isOccupantExistsByJid(senderJID)) {
 				return null;
 			}
 			Anonymity anonymity = room.getConfig().getRoomAnonymity();
 
-			final Affiliation affiliation = room.getAffiliation(senderJid);
+			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
 			if (!affiliation.isEnterOpenRoom()) {
-				log.info("User " + nickName + "' <" + senderJid + "> is on rooms '" + roomId + "' blacklist");
+				log.info("User " + nickName + "' <" + senderJID.toString() + "> is on rooms '" + roomJID + "' blacklist");
 				throw new MUCException(Authorization.FORBIDDEN);
 			} else if (room.getConfig().isRoomMembersOnly() && !affiliation.isEnterMembersOnlyRoom()) {
-				log.info("User " + nickName + "' <" + senderJid + "> is NOT on rooms '" + roomId + "' member list.");
+				log.info("User " + nickName + "' <" + senderJID.toString() + "> is NOT on rooms '" + roomJID + "' member list.");
 				throw new MUCException(Authorization.REGISTRATION_REQUIRED);
 			}
 
-			final boolean changeNickName = !newOccupant && !room.getOccupantsNickname(senderJid).equals(nickName);
+			final boolean changeNickName = !newOccupant && !room.getOccupantsNickname(senderJID).equals(nickName);
 
-			if ((newOccupant || changeNickName) && room.isNickNameExists(nickName)) {
+			if ((newOccupant || changeNickName) && room.isNickNameExistsForDifferentJid(nickName, senderJID.getBareJID())) {
 				throw new MUCException(Authorization.CONFLICT);
 			}
 
@@ -282,15 +300,15 @@ public class PresenceModule extends AbstractModule {
 
 				// Service Sends Presence from Existing Occupants to New
 				// Occupant
-				for (String occupantJid : room.getOccupantsJids()) {
+				for (JID occupantJid : room.getOccupantsJids()) {
 					final String occupantNickname = room.getOccupantsNickname(occupantJid);
 
-					final Affiliation occupantAffiliation = room.getAffiliation(occupantJid);
+					final Affiliation occupantAffiliation = room.getAffiliation(occupantJid.getBareJID());
 					final Role occupantRole = room.getRoleByJid(occupantJid);
 
 					Element presence = room.getLastPresenceCopyByJid(occupantJid);
-					presence.setAttribute("from", roomId + "/" + occupantNickname);
-					presence.setAttribute("to", senderJid);
+					presence.setAttribute("from", roomJID + "/" + occupantNickname);
+					presence.setAttribute("to", senderJID.toString());
 
 					Element x = new Element("x", new String[] { "xmlns" },
 							new String[] { "http://jabber.org/protocol/muc#user" });
@@ -300,7 +318,7 @@ public class PresenceModule extends AbstractModule {
 
 					if (anonymity == Anonymity.nonanonymous
 							|| (anonymity == Anonymity.semianonymous && (affiliation == Affiliation.admin || affiliation == Affiliation.owner))) {
-						item.setAttribute("jid", occupantJid);
+						item.setAttribute("jid", occupantJid.toString());
 					}
 
 					x.addChild(item);
@@ -310,44 +328,47 @@ public class PresenceModule extends AbstractModule {
 
 				final Role newRole = getDefaultRole(room.getConfig(), affiliation);
 
-				log.finest("Occupant '" + nickName + "' <" + senderJid + "> is entering room " + roomId + " as role="
+				log.finest("Occupant '" + nickName + "' <" + senderJID.toString() + "> is entering room " + roomJID + " as role="
 						+ newRole.name() + ", affiliation=" + affiliation.name());
-				room.addOccupantByJid(senderJid, nickName, newRole);
+				room.addOccupantByJid(JID.jidInstance(senderJID.toString()), nickName, newRole);
 			}
 
-			room.updatePresenceByJid(senderJid, element);
-			final Role role = exitingRoom ? Role.none : room.getRoleByJid(senderJid);
+			room.updatePresenceByJid(senderJID, element);
+			final Role role = exitingRoom ? Role.none : room.getRoleByJid(senderJID);
 
 			if (changeNickName) {
-				String nck = room.getOccupantsNickname(senderJid);
-				log.finest("Occupant '" + nck + "' <" + senderJid + "> is changing his nickname to '" + nickName + "'");
-				result.addAll(preparePresenceToAllOccupants(room, roomId, nck, affiliation, role, senderJid, newRoomCreated,
+				String nck = room.getOccupantsNickname(senderJID);
+				log.finest("Occupant '" + nck + "' <" + senderJID.toString() + "> is changing his nickname to '" + nickName + "'");
+				result.addAll(preparePresenceToAllOccupants(room, roomJID, nck, affiliation, role, senderJID, newRoomCreated,
 						nickName));
-				room.changeNickName(senderJid, nickName);
+				room.changeNickName(senderJID, nickName);
 			}
 
-			// Service Sends New Occupant's Presence to All Occupants
-			result.addAll(preparePresenceToAllOccupants(room, roomId, nickName, affiliation, role, senderJid, newRoomCreated,
-					null));
-
 			if (exitingRoom) {
-				log.finest("Occupant '" + nickName + "' <" + senderJid + "> is leaving room " + roomId);
-				room.removeOccupantByJid(senderJid);
+				log.finest("Occupant '" + nickName + "' <" + senderJID.toString() + "> is leaving room " + roomJID);
+				room.removeOccupantByJid(senderJID);
+				if(room.getOccupantsNicknameByBareJid(senderJID.getBareJID()) == null) {
+					// Service Sends New Occupant's Presence to All Occupants
+					result.addAll(preparePresenceToAllOccupants(room, roomJID, nickName, affiliation, role, senderJID, newRoomCreated, null));
+				}
+			}else{
+				// Service Sends New Occupant's Presence to All Occupants
+				result.addAll(preparePresenceToAllOccupants(room, roomJID, nickName, affiliation, role, senderJID, newRoomCreated, null));
 			}
 
 			if (newOccupant) {
-				this.delayDeliveryThread.put(room.getHistoryMessages(senderJid));
+				this.delayDeliveryThread.put(room.getHistoryMessages(senderJID));
 			}
 			if (newOccupant && room.getSubject() != null && room.getSubjectChangerNick() != null
 					&& room.getSubjectChangeDate() != null) {
 				Element message = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",
-						roomId + "/" + room.getSubjectChangerNick(), senderJid });
+						roomJID + "/" + room.getSubjectChangerNick(), senderJID.toString() });
 				message.addChild(new Element("subject", room.getSubject()));
 
 				String stamp = sdf.format(room.getSubjectChangeDate());
 				Element delay = new Element("delay", new String[] { "xmlns", "stamp" },
 						new String[] { "urn:xmpp:delay", stamp });
-				delay.setAttribute("jid", roomId + "/" + room.getSubjectChangerNick());
+				delay.setAttribute("jid", roomJID + "/" + room.getSubjectChangerNick());
 
 				Element x = new Element("x", new String[] { "xmlns", "stamp" }, new String[] { "jabber:x:delay",
 						sdf.formatOld(room.getSubjectChangeDate()) });
@@ -359,13 +380,13 @@ public class PresenceModule extends AbstractModule {
 			}
 
 			if (room.isRoomLocked() && newOccupant) {
-				result.add(prepateMucMessage(room, room.getOccupantsNickname(senderJid), "Room is locked. Please configure."));
+				result.addAll(prepareMucMessage(room, room.getOccupantsNickname(senderJID), "Room is locked. Please configure."));
 			}
 
 			if (this.chatRoomLogger != null && room.getConfig().isLoggingEnabled() && newOccupant) {
-				this.chatRoomLogger.addJoin(room.getConfig().getLoggingFormat(), roomId, new Date(), nickName);
+				this.chatRoomLogger.addJoin(room.getConfig().getLoggingFormat(), roomJID, new Date(), nickName);
 			} else if (this.chatRoomLogger != null && room.getConfig().isLoggingEnabled() && exitingRoom) {
-				this.chatRoomLogger.addLeave(room.getConfig().getLoggingFormat(), roomId, new Date(), nickName);
+				this.chatRoomLogger.addLeave(room.getConfig().getLoggingFormat(), roomJID, new Date(), nickName);
 			}
 
 			final int occupantsCount = room.getOccupantsCount();
