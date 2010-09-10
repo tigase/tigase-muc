@@ -28,7 +28,9 @@ import org.junit.Before;
 import tigase.muc.repository.RepositoryException;
 import tigase.test.junit.JUnitXMLIO;
 import tigase.test.junit.XMPPTestCase;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
+import tigase.xmpp.BareJID;
 import tigase.xmpp.PacketErrorTypeException;
 
 /**
@@ -42,7 +44,7 @@ public class RoomTest extends XMPPTestCase {
 	private JUnitXMLIO xmlio;
 
 	@Before
-	public void init() {
+	public void init() throws TigaseStringprepException {
 		muc = new MUCComponent();
 
 		xmlio = new JUnitXMLIO() {
@@ -71,7 +73,7 @@ public class RoomTest extends XMPPTestCase {
 
 		MucConfig config = new MucConfig();
 		muc.setConfig(config);
-		config.setServiceName("multi-user-chat");
+		config.setServiceName(BareJID.bareJIDInstance("multi-user-chat"));
 		config.setLogDirectory("./");
 		MockMucRepository mockRepo;
 		try {

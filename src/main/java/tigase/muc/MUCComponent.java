@@ -62,6 +62,7 @@ import tigase.util.DNSResolver;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.PacketErrorTypeException;
 import tigase.xmpp.StanzaType;
@@ -224,8 +225,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 				try {
 					addOutPacket(Packet.packetInstance(element));
 				} catch (TigaseStringprepException ex) {
-					log.info("Packet addressing problem, stringprep failed: "
-							+ element);
+					log.info("Packet addressing problem, stringprep failed: " + element);
 				}
 			}
 		} catch (Exception e) {
@@ -298,7 +298,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 		serviceEntity.addFeatures("http://jabber.org/protocol/muc");
 
-		this.config.setServiceName("multi-user-chat");
+		this.config.setServiceName(BareJID.bareJIDInstanceNS("multi-user-chat"));
 
 		this.config.setLogDirectory((String) props.get(LOG_DIR_KEY));
 
@@ -316,7 +316,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 					String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
 					String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
 
-					this.userRepository = RepositoryFactory.getUserRepository(getName(), cls_name, res_uri, null);
+					this.userRepository = RepositoryFactory.getUserRepository(cls_name, res_uri, null);
 					userRepository.initRepository(res_uri, null);
 				}
 

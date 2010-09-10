@@ -1,5 +1,5 @@
 /*
-  * Tigase Jabber/XMPP Multi-User Chat Component
+ * Tigase Jabber/XMPP Multi-User Chat Component
  * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
@@ -64,7 +64,7 @@ public class PrivateMessageModule extends AbstractModule {
 	public List<Element> process(Element element) throws MUCException {
 		try {
 			final JID senderJID = JID.jidInstance(element.getAttribute("from"));
-			
+
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
 			final String recipientNickname = getNicknameFromJid(JID.jidInstance(element.getAttribute("to")));
 
@@ -83,9 +83,9 @@ public class PrivateMessageModule extends AbstractModule {
 			}
 
 			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);
-			
+
 			List<Element> result = new ArrayList<Element>();
-			for(JID recipientJid: recipientJids) {
+			for (JID recipientJid : recipientJids) {
 				if (recipientJid == null) {
 					throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
 				}

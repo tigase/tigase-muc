@@ -162,11 +162,8 @@ public class GroupchatMessageModule extends AbstractModule {
 			Role role = room.getRoleByJid(occupantsJID);
 			if (!role.isReceiveMessages())
 				continue;
-			Element message = new Element("message", 
-			                  new String[] { "type", "from", "to" }, 
-			                  new String[] { "groupchat",
-			                  fromJID.toString(), 
-			                  occupantsJID.toString() });
+			Element message = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",
+					fromJID.toString(), occupantsJID.toString() });
 			if (content != null) {
 				for (Element sub : content) {
 					if (sub != null)

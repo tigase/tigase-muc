@@ -94,17 +94,17 @@ public class IqStanzaForwarderModule extends AbstractModule {
 			if (recipientJids == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
 			}
-			
+
 			List<Element> result = new ArrayList<Element>();
-			for(JID recipientJid: recipientJids) {
+			for (JID recipientJid : recipientJids) {
 				final String senderNickname = room.getOccupantsNickname(senderJID);
 
 				final Element iq = element.clone();
 				iq.setAttribute("from", roomJID.toString() + "/" + senderNickname);
 				iq.setAttribute("to", recipientJid.toString());
-				
+
 				result.addAll(makeArray(iq));
-				
+
 			}
 			return result;
 		} catch (MUCException e1) {

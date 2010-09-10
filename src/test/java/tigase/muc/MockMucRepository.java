@@ -33,8 +33,8 @@ import java.util.logging.Logger;
 import tigase.muc.RoomConfig.RoomConfigListener;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.RepositoryException;
-import tigase.util.JIDUtils;
 import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -46,7 +46,7 @@ public class MockMucRepository implements IMucRepository {
 		boolean listPublic = true;
 	}
 
-	private final Map<String, InternalRoom> allRooms = new HashMap<String, InternalRoom>();
+	private final Map<BareJID, InternalRoom> allRooms = new HashMap<BareJID, InternalRoom>();
 
 	private final MucConfig config;
 
@@ -56,7 +56,7 @@ public class MockMucRepository implements IMucRepository {
 
 	private final RoomConfigListener roomConfigListener;
 
-	private final HashMap<String, Room> rooms = new HashMap<String, Room>();
+	private final HashMap<BareJID, Room> rooms = new HashMap<BareJID, Room>();
 
 	public MockMucRepository(final MucConfig mucConfig) throws RepositoryException {
 		this.config = mucConfig;
@@ -67,7 +67,7 @@ public class MockMucRepository implements IMucRepository {
 			public void onConfigChanged(final RoomConfig roomConfig, final Set<String> modifiedVars) {
 				try {
 					if (modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY)) {
-						InternalRoom ir = allRooms.get(roomConfig.getRoomId());
+						InternalRoom ir = allRooms.get(roomConfig.getRoomJID());
 						if (ir != null) {
 							ir.listPublic = roomConfig.isRoomconfigPublicroom();
 						}
@@ -76,7 +76,7 @@ public class MockMucRepository implements IMucRepository {
 					if (modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PERSISTENTROOM_KEY)) {
 						if (roomConfig.isPersistentRoom()) {
 							System.out.println("now is PERSISTENT");
-							final Room room = getRoom(roomConfig.getRoomId());
+							final Room room = getRoom(roomConfig.getRoomJID());
 							// dao.createRoom(room);
 						} else {
 							System.out.println("now is NOT! PERSISTENT");
@@ -105,7 +105,7 @@ public class MockMucRepository implements IMucRepository {
 
 		rc.copyFrom(getDefaultRoomConfig(), false);
 
-		Room room = new Room(rc, new Date(), senderJid);
+		Room room = new Room(rc, new Date(), senderJid.getBareJID());
 		room.getConfig().addListener(roomConfigListener);
 		this.rooms.put(roomJID, room);
 		this.allRooms.put(roomJID, new InternalRoom());
@@ -126,9 +126,9 @@ public class MockMucRepository implements IMucRepository {
 	@Override
 	public String[] getPublicVisibleRoomsIdList() throws RepositoryException {
 		List<String> result = new ArrayList<String>();
-		for (Entry<String, InternalRoom> entry : this.allRooms.entrySet()) {
+		for (Entry<BareJID, InternalRoom> entry : this.allRooms.entrySet()) {
 			if (entry.getValue().listPublic) {
-				result.add(entry.getKey());
+				result.add(entry.getKey().toString());
 			}
 		}
 		return result.toArray(new String[] {});

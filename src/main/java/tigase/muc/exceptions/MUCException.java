@@ -78,7 +78,8 @@ public class MUCException extends Exception {
 	public Element makeElement(final Element item, final boolean insertOriginal) {
 		Element answer = insertOriginal ? item.clone() : new Element(item.getName());
 		String id = item.getAttribute("id");
-		if (id != null) answer.addAttribute("id", id);
+		if (id != null)
+			answer.addAttribute("id", id);
 		answer.addAttribute("type", "error");
 		String to = item.getAttribute("from");
 		answer.addAttribute("to", to);

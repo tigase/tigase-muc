@@ -21,6 +21,8 @@
  */
 package tigase.muc;
 
+import tigase.xmpp.BareJID;
+
 /**
  * @author bmalkow
  * 
@@ -29,13 +31,13 @@ public class MucConfig {
 
 	private String logDirectory;
 
-	private String serviceName;
+	private BareJID serviceName;
 
 	public String getLogDirectory() {
 		return logDirectory;
 	}
 
-	public String getServiceName() {
+	public BareJID getServiceName() {
 		return serviceName;
 	}
 
@@ -43,7 +45,7 @@ public class MucConfig {
 		this.logDirectory = logDirectory;
 	}
 
-	void setServiceName(String serviceName) {
+	void setServiceName(BareJID serviceName) {
 		this.serviceName = serviceName;
 	}
 

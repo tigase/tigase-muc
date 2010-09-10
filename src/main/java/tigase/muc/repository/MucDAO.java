@@ -90,7 +90,8 @@ public class MucDAO {
 		try {
 			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + room.getRoomJID(), CREATION_DATE_KEY,
 					String.valueOf(room.getCreationDate().getTime()));
-			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + room.getRoomJID(), CREATOR_JID_KEY, room.getCreatorJid().toString());
+			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + room.getRoomJID(), CREATOR_JID_KEY,
+					room.getCreatorJid().toString());
 			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + room.getRoomJID(), LAST_ACCESS_DATE_KEY,
 					String.valueOf((new Date()).getTime()));
 
@@ -154,11 +155,11 @@ public class MucDAO {
 	 */
 	public ArrayList<BareJID> getRoomsJIDList() throws RepositoryException {
 		ArrayList<BareJID> jids = new ArrayList<BareJID>();
-		String serviceName = mucConfig.getServiceName();
+		BareJID serviceName = mucConfig.getServiceName();
 		try {
 			String[] ids = repository.getSubnodes(serviceName, ROOMS_KEY);
-			if(ids != null) {
-				for(String id: ids) {
+			if (ids != null) {
+				for (String id : ids) {
 					jids.add(BareJID.bareJIDInstance(id));
 				}
 			}
@@ -200,13 +201,13 @@ public class MucDAO {
 	public Room readRoom(BareJID roomJID) throws RepositoryException {
 		try {
 			final String tmpDate = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomJID, CREATION_DATE_KEY);
-			
+
 			final String creatorJid = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomJID, CREATOR_JID_KEY);
 
 			if (tmpDate != null && creatorJid != null) {
-				
+
 				JID creatorJID = JID.jidInstance(creatorJid);
-				
+
 				Date date = new Date(Long.valueOf(tmpDate));
 				RoomConfig rc = new RoomConfig(roomJID);
 				rc.read(repository, mucConfig, ROOMS_KEY + roomJID + "/config");
@@ -255,7 +256,8 @@ public class MucDAO {
 			if (affiliation == Affiliation.none) {
 				repository.removeData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/affiliations", jid.toString());
 			} else {
-				repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/affiliations", jid.toString(), affiliation.name());
+				repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/affiliations", jid.toString(),
+						affiliation.name());
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

@@ -61,11 +61,9 @@ public abstract class AbstractModule implements Module {
 
 	protected static List<Element> prepareMucMessage(Room room, String nickname, String message) {
 		List<Element> msgs = new ArrayList<Element>();
-		for(JID occupantJid : room.getOccupantsJidsByNickname(nickname)) {
-			Element msg = new Element("message", 
-					new String[] { "from", "to", "type" }, 
-					new String[] { room.getRoomJID().toString(),
-					occupantJid.toString(), "groupchat" });
+		for (JID occupantJid : room.getOccupantsJidsByNickname(nickname)) {
+			Element msg = new Element("message", new String[] { "from", "to", "type" }, new String[] {
+					room.getRoomJID().toString(), occupantJid.toString(), "groupchat" });
 
 			msg.addChild(new Element("body", message));
 			msgs.add(msg);

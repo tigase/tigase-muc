@@ -165,7 +165,8 @@ public class RoomChatLogger implements IChatRoomLogger {
 		addLine(pattern, logFormat, roomJID, date, nickName, null);
 	}
 
-	private void addLine(String pattern, RoomConfig.LogFormat logFormat, BareJID roomJID, Date date, String nickName, String text) {
+	private void addLine(String pattern, RoomConfig.LogFormat logFormat, BareJID roomJID, Date date, String nickName,
+			String text) {
 
 		String d = sdf.format(date);
 		Object[] values = new String[] { d, nickName, text };

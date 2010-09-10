@@ -175,6 +175,6 @@ public class RoomConfigurationModule extends AbstractModule {
 		} catch (TigaseStringprepException e) {
 			throw new MUCException(Authorization.BAD_REQUEST);
 		}
-		
+
 	}
 }
