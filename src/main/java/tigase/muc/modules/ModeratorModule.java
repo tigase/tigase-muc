@@ -102,7 +102,7 @@ public class ModeratorModule extends AbstractModule {
 			if (newRole != null && newAffiliation == null) {
 				if (newRole == Role.none && !senderRole.isKickParticipantsAndVisitors()) {
 					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot kick");
-				} else if (newRole == Role.none && occupantAffiliation.getWeight() >= senderaAffiliation.getWeight()) {
+				} else if (newRole == Role.none && occupantAffiliation.getWeight() > senderaAffiliation.getWeight()) {
 					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot kick occupant with higher affiliation");
 				}
 
