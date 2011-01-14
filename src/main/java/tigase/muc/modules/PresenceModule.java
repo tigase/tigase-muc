@@ -262,7 +262,11 @@ public class PresenceModule extends AbstractModule {
 				}
 			}
 
-			if (!newRoomCreated && room.isRoomLocked() && !exitingRoom) {
+			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
+
+			// TODO
+			// przepuszczac wlasciciela konta!!!
+			if (!newRoomCreated && room.isRoomLocked() && !exitingRoom && affiliation != Affiliation.owner) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Room is locked");
 			}
 
@@ -271,7 +275,6 @@ public class PresenceModule extends AbstractModule {
 			}
 			Anonymity anonymity = room.getConfig().getRoomAnonymity();
 
-			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
 			if (!affiliation.isEnterOpenRoom()) {
 				log.info("User " + nickName + "' <" + senderJID.toString() + "> is on rooms '" + roomJID + "' blacklist");
 				throw new MUCException(Authorization.FORBIDDEN);
