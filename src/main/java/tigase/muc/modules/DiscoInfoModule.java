@@ -94,8 +94,9 @@ public class DiscoInfoModule extends AbstractModule {
 					throw new MUCException(Authorization.ITEM_NOT_FOUND);
 				}
 
+				String roomName = room.getConfig().getRoomName();
 				Element resultIdentity = new Element("identity", new String[] { "category", "name", "type" }, new String[] {
-						"conference", room.getConfig().getRoomName(), "text" });
+						"conference", roomName == null ? "" : roomName, "text" });
 				resultQuery.addChild(resultIdentity);
 
 				addFeature(resultQuery, "http://jabber.org/protocol/muc");
