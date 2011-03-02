@@ -58,7 +58,8 @@ public class ModeratorModule extends AbstractModule {
 	private static Collection<JID> getOccupantJidsFromItem(Room room, Element item) {
 		final String nick = item.getAttribute("nick");
 		try {
-			JID jid = JID.jidInstance(item.getAttribute("jid"));
+			String $jidTmp = item.getAttribute("jid");
+			final JID jid = $jidTmp == null ? null : JID.jidInstance($jidTmp);
 
 			Collection<JID> resultJids = new ArrayList<JID>();
 			if (nick != null) {
