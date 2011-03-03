@@ -169,22 +169,31 @@ public class PresenceModule extends AbstractModule {
 
 	private List<Element> preparePresenceToAllOccupants(Room room, BareJID roomJID, String nickName, Affiliation affiliation,
 			Role role, JID senderJID, boolean newRoomCreated, String newNickName) {
+
+		Element presence;
+		if (newNickName != null) {
+			presence = new Element("presence");
+			presence.setAttribute("type", "unavailable");
+		} else if (room.getOccupantsNicknameByBareJid(senderJID.getBareJID()) == null) {
+			presence = new Element("presence");
+			presence.setAttribute("type", "unavailable");
+		} else {
+			presence = room.getLastPresenceCopyByJid(senderJID);
+		}
+
+		return preparePresenceToAllOccupants(presence, room, roomJID, nickName, affiliation, role, senderJID, newRoomCreated,
+				newNickName);
+	}
+
+	private List<Element> preparePresenceToAllOccupants(final Element $presence, Room room, BareJID roomJID, String nickName,
+			Affiliation affiliation, Role role, JID senderJID, boolean newRoomCreated, String newNickName) {
 		List<Element> result = new ArrayList<Element>();
 		Anonymity anonymity = room.getConfig().getRoomAnonymity();
 
 		for (JID occupantJid : room.getOccupantsJids()) {
 			final Affiliation occupantAffiliation = room.getAffiliation(occupantJid.getBareJID());
+			final Element presence = $presence.clone();
 
-			Element presence;
-			if (newNickName != null) {
-				presence = new Element("presence");
-				presence.setAttribute("type", "unavailable");
-			} else if (room.getOccupantsNicknameByBareJid(senderJID.getBareJID()) == null) {
-				presence = new Element("presence");
-				presence.setAttribute("type", "unavailable");
-			} else {
-				presence = room.getLastPresenceCopyByJid(senderJID);
-			}
 			try {
 				presence.setAttribute("from", JID.jidInstance(roomJID, nickName).toString());
 			} catch (TigaseStringprepException e) {
@@ -340,12 +349,10 @@ public class PresenceModule extends AbstractModule {
 
 			if (exitingRoom) {
 				log.finest("Occupant '" + nickName + "' <" + senderJID.toString() + "> is leaving room " + roomJID);
+				// Service Sends New Occupant's Presence to All Occupants
+				result.addAll(preparePresenceToAllOccupants(element, room, roomJID, nickName, affiliation, role, senderJID,
+						newRoomCreated, null));
 				room.removeOccupantByJid(senderJID);
-				if (room.getOccupantsNicknameByBareJid(senderJID.getBareJID()) == null) {
-					// Service Sends New Occupant's Presence to All Occupants
-					result.addAll(preparePresenceToAllOccupants(room, roomJID, nickName, affiliation, role, senderJID,
-							newRoomCreated, null));
-				}
 			} else {
 				// Service Sends New Occupant's Presence to All Occupants
 				result.addAll(preparePresenceToAllOccupants(room, roomJID, nickName, affiliation, role, senderJID,
