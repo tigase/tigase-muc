@@ -220,6 +220,21 @@ public class Room {
 	}
 
 	/**
+	 * @param jid
+	 * @return
+	 */
+	public Collection<JID> getOccupantsJids(BareJID jid) {
+		ArrayList<JID> result = new ArrayList<JID>();
+		for (Entry<JID, String> entry : this.occupantsJidNickname.entrySet()) {
+			if (jid.equals(entry.getKey().getBareJID())) {
+				result.add(entry.getKey());
+			}
+		}
+
+		return result;
+	}
+
+	/**
 	 * @param itemNick
 	 */
 	public Collection<JID> getOccupantsJidsByNickname(String nickname) {
@@ -232,15 +247,6 @@ public class Room {
 	 */
 	public String getOccupantsNickname(JID jid) {
 		return this.occupantsJidNickname.get(jid);
-	}
-
-	public String getOccupantsNicknameByBareJid(BareJID jid) {
-		for (Entry<JID, String> entry : this.occupantsJidNickname.entrySet()) {
-			if (jid.equals(entry.getKey().getBareJID())) {
-				return entry.getValue();
-			}
-		}
-		return null;
 	}
 
 	/**
@@ -397,4 +403,5 @@ public class Room {
 
 		this.lastPresences.put(jid, cp);
 	}
+
 }

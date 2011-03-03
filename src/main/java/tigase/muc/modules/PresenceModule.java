@@ -35,8 +35,8 @@ import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
-import tigase.muc.XMPPDateTimeFormatter;
 import tigase.muc.RoomConfig.Anonymity;
+import tigase.muc.XMPPDateTimeFormatter;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.modules.PresenceModule.DelayDeliveryThread.DelDeliverySend;
 import tigase.muc.repository.IMucRepository;
@@ -167,24 +167,6 @@ public class PresenceModule extends AbstractModule {
 		return lockNewRoom;
 	}
 
-	private List<Element> preparePresenceToAllOccupants(Room room, BareJID roomJID, String nickName, Affiliation affiliation,
-			Role role, JID senderJID, boolean newRoomCreated, String newNickName) {
-
-		Element presence;
-		if (newNickName != null) {
-			presence = new Element("presence");
-			presence.setAttribute("type", "unavailable");
-		} else if (room.getOccupantsNicknameByBareJid(senderJID.getBareJID()) == null) {
-			presence = new Element("presence");
-			presence.setAttribute("type", "unavailable");
-		} else {
-			presence = room.getLastPresenceCopyByJid(senderJID);
-		}
-
-		return preparePresenceToAllOccupants(presence, room, roomJID, nickName, affiliation, role, senderJID, newRoomCreated,
-				newNickName);
-	}
-
 	private List<Element> preparePresenceToAllOccupants(final Element $presence, Room room, BareJID roomJID, String nickName,
 			Affiliation affiliation, Role role, JID senderJID, boolean newRoomCreated, String newNickName) {
 		List<Element> result = new ArrayList<Element>();
@@ -232,6 +214,24 @@ public class PresenceModule extends AbstractModule {
 
 		}
 		return result;
+	}
+
+	private List<Element> preparePresenceToAllOccupants(Room room, BareJID roomJID, String nickName, Affiliation affiliation,
+			Role role, JID senderJID, boolean newRoomCreated, String newNickName) {
+
+		Element presence;
+		if (newNickName != null) {
+			presence = new Element("presence");
+			presence.setAttribute("type", "unavailable");
+		} else if (room.getOccupantsNickname(senderJID) == null) {
+			presence = new Element("presence");
+			presence.setAttribute("type", "unavailable");
+		} else {
+			presence = room.getLastPresenceCopyByJid(senderJID);
+		}
+
+		return preparePresenceToAllOccupants(presence, room, roomJID, nickName, affiliation, role, senderJID, newRoomCreated,
+				newNickName);
 	}
 
 	@Override
