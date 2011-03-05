@@ -31,8 +31,8 @@ import tigase.db.TigaseDBException;
 import tigase.db.UserNotFoundException;
 import tigase.db.UserRepository;
 import tigase.form.Field;
-import tigase.form.Form;
 import tigase.form.Field.FieldType;
+import tigase.form.Form;
 import tigase.xmpp.BareJID;
 
 /**

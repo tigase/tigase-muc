@@ -21,28 +21,27 @@
  */
 package tigase.muc.exceptions;
 
-import tigase.util.TigaseStringprepException;
-import tigase.xml.Element;
+import tigase.server.Packet;
 import tigase.xmpp.Authorization;
-import tigase.xmpp.BareJID;
+import tigase.xmpp.PacketErrorTypeException;
 
 public class MUCException extends Exception {
 
 	private static final long serialVersionUID = 1L;
 
-	private final Authorization errorCondition;
+	private static final String xmlns = "urn:ietf:params:xml:ns:xmpp-stanzas";
 
-	private final String message;
+	private Authorization errorCondition;
 
-	private String xmlns = "urn:ietf:params:xml:ns:xmpp-stanzas";
+	private String text;
 
 	public MUCException(final Authorization errorCondition) {
 		this(errorCondition, (String) null);
 	}
 
-	public MUCException(final Authorization errorCondition, final String message) {
+	public MUCException(Authorization errorCondition, String message) {
 		this.errorCondition = errorCondition;
-		this.message = message;
+		this.text = message;
 	}
 
 	/**
@@ -58,7 +57,15 @@ public class MUCException extends Exception {
 
 	@Override
 	public String getMessage() {
-		return message;
+		final StringBuilder sb = new StringBuilder();
+		sb.append("[");
+		sb.append(errorCondition.name()).append(" ");
+		if (text != null) {
+			sb.append("\"").append(text).append("\" ");
+		}
+
+		sb.append("]");
+		return sb.toString();
 	}
 
 	/**
@@ -68,6 +75,10 @@ public class MUCException extends Exception {
 		return errorCondition.getCondition();
 	}
 
+	public String getText() {
+		return text;
+	}
+
 	/**
 	 * @return Returns the type.
 	 */
@@ -75,40 +86,9 @@ public class MUCException extends Exception {
 		return errorCondition.getErrorType();
 	}
 
-	public Element makeElement(final Element item, final boolean insertOriginal) {
-		Element answer = insertOriginal ? item.clone() : new Element(item.getName());
-		String id = item.getAttribute("id");
-		if (id != null)
-			answer.addAttribute("id", id);
-		answer.addAttribute("type", "error");
-		String to = item.getAttribute("from");
-		answer.addAttribute("to", to);
-		try {
-			BareJID fromJID = BareJID.bareJIDInstance(item.getAttribute("to"));
-			answer.addAttribute("from", fromJID.toString());
-		} catch (TigaseStringprepException e) {
-			answer.addAttribute("from", item.getAttribute("to"));
-		}
-
-		if (this.message != null) {
-			Element text = new Element("text", this.message, new String[] { "xmlns" },
-					new String[] { "urn:ietf:params:xml:ns:xmpp-stanzas" });
-			answer.addChild(text);
-		}
-
-		answer.addChild(makeErrorElement());
-		return answer;
-	}
-
-	/**
-	 * @return
-	 */
-	private Element makeErrorElement() {
-		Element error = new Element("error");
-		error.setAttribute("code", String.valueOf(this.errorCondition.getErrorCode()));
-		error.setAttribute("type", this.errorCondition.getErrorType());
-		error.addChild(new Element(this.errorCondition.getCondition(), new String[] { "xmlns" }, new String[] { xmlns }));
-		return error;
+	public Packet makeElement(Packet packet, boolean insertOriginal) throws PacketErrorTypeException {
+		Packet result = errorCondition.getResponseMessage(packet, text, insertOriginal);
+		return result;
 	}
 
 }

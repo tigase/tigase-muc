@@ -24,17 +24,18 @@ package tigase.muc.modules;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.muc.ElementWriter;
 import tigase.muc.IChatRoomLogger;
 import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
+import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
@@ -54,8 +55,9 @@ public class GroupchatMessageModule extends AbstractModule {
 	private final Set<Criteria> allowedElements = new HashSet<Criteria>();
 	private final IChatRoomLogger chatLogger;
 
-	public GroupchatMessageModule(MucConfig config, IMucRepository mucRepository, IChatRoomLogger chatRoomLogger) {
-		super(config, mucRepository);
+	public GroupchatMessageModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository,
+			IChatRoomLogger chatRoomLogger) {
+		super(config, writer, mucRepository);
 		this.chatLogger = chatRoomLogger;
 	}
 
@@ -78,9 +80,8 @@ public class GroupchatMessageModule extends AbstractModule {
 	}
 
 	@Override
-	public List<Element> process(Element element) throws MUCException {
+	public void process(Packet element) throws MUCException {
 		try {
-			final ArrayList<Element> result = new ArrayList<Element>();
 			final JID senderJID = JID.jidInstance(element.getAttribute("from"));
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
 
@@ -102,7 +103,7 @@ public class GroupchatMessageModule extends AbstractModule {
 			Element subject = null;
 			ArrayList<Element> content = new ArrayList<Element>();
 
-			for (Element c : element.getChildren()) {
+			for (Element c : element.getElement().getChildren()) {
 				if ("body".equals(c.getName())) {
 					body = c;
 					content.add(c);
@@ -143,9 +144,7 @@ public class GroupchatMessageModule extends AbstractModule {
 
 				}
 			}
-			result.addAll(sendMessagesToAllOccupants(room, senderRoomJID, content.toArray(new Element[] {})));
-
-			return result;
+			sendMessagesToAllOccupants(room, senderRoomJID, content.toArray(new Element[] {}));
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (TigaseStringprepException e) {
@@ -156,8 +155,8 @@ public class GroupchatMessageModule extends AbstractModule {
 		}
 	}
 
-	public List<Element> sendMessagesToAllOccupants(final Room room, final JID fromJID, final Element... content) {
-		final ArrayList<Element> result = new ArrayList<Element>();
+	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, final Element... content)
+			throws TigaseStringprepException {
 		for (JID occupantsJID : room.getOccupantsJids()) {
 			Role role = room.getRoleByJid(occupantsJID);
 			if (!role.isReceiveMessages())
@@ -170,9 +169,8 @@ public class GroupchatMessageModule extends AbstractModule {
 						message.addChild(sub);
 				}
 			}
-			result.add(message);
+			writer.write(Packet.packetInstance(message));
 		}
-		return result;
 	}
 
 	public void setChatStateAllowed(Boolean allowed) {

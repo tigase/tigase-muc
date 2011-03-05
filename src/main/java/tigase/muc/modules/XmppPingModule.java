@@ -21,14 +21,13 @@
  */
 package tigase.muc.modules;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.criteria.Or;
+import tigase.muc.ElementWriter;
 import tigase.muc.Module;
 import tigase.muc.exceptions.MUCException;
+import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
@@ -43,7 +42,10 @@ public class XmppPingModule implements Module {
 			new Or(ElementCriteria.name("query", "jabber:iq:ping"), ElementCriteria.name("ping",
 					"http://www.xmpp.org/extensions/xep-0199.html#ns"), ElementCriteria.name("ping", "urn:xmpp:ping")));
 
-	public XmppPingModule() {
+	protected final ElementWriter writer;
+
+	public XmppPingModule(final ElementWriter writer) {
+		this.writer = writer;
 	}
 
 	@Override
@@ -67,12 +69,10 @@ public class XmppPingModule implements Module {
 	}
 
 	@Override
-	public List<Element> process(Element iq) throws MUCException {
-		Element reposnse = new Element("iq", new String[] { "type", "from", "to", "id" }, new String[] { "result",
-				iq.getAttribute("to"), iq.getAttribute("from"), iq.getAttribute("id") });
-		List<Element> x = new ArrayList<Element>();
-		x.add(reposnse);
-		return x;
+	public void process(Packet iq) throws MUCException {
+		Packet response = iq.okResult((Element) null, 0);
+
+		writer.write(response);
 	}
 
 }

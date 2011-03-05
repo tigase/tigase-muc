@@ -21,16 +21,17 @@
  */
 package tigase.muc.modules;
 
-import java.util.List;
 import java.util.Set;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.muc.ElementWriter;
 import tigase.muc.MUCComponent;
 import tigase.muc.MucConfig;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
+import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
@@ -51,8 +52,8 @@ public class DiscoInfoModule extends AbstractModule {
 
 	private final MUCComponent muc;
 
-	public DiscoInfoModule(MucConfig config, IMucRepository mucRepository, final MUCComponent component) {
-		super(config, mucRepository);
+	public DiscoInfoModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository, final MUCComponent component) {
+		super(config, writer, mucRepository);
 		this.muc = component;
 	}
 
@@ -67,14 +68,14 @@ public class DiscoInfoModule extends AbstractModule {
 	}
 
 	@Override
-	public List<Element> process(Element element) throws MUCException {
+	public void process(Packet element) throws MUCException {
 		try {
 			String toXML = element.getAttribute("to");
 			final BareJID roomJID = BareJID.bareJIDInstance(toXML);
-			Element result = createResultIQ(element);
 			Element resultQuery = new Element("query", new String[] { "xmlns" },
 					new String[] { "http://jabber.org/protocol/disco#info" });
-			result.addChild(resultQuery);
+
+			Packet result = element.okResult(resultQuery, 0);
 
 			if (roomJID.getLocalpart() == null) {
 				Element resultIdentity = new Element("identity", new String[] { "category", "name", "type" }, new String[] {
@@ -144,7 +145,8 @@ public class DiscoInfoModule extends AbstractModule {
 				}
 
 			}
-			return makeArray(result);
+
+			writer.write(result);
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (TigaseStringprepException e) {

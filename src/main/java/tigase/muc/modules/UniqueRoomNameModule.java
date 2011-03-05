@@ -23,13 +23,14 @@ package tigase.muc.modules;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.List;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.muc.ElementWriter;
 import tigase.muc.MucConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
+import tigase.server.Packet;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.JID;
@@ -47,8 +48,8 @@ public class UniqueRoomNameModule extends AbstractModule {
 
 	private SecureRandom random;
 
-	public UniqueRoomNameModule(MucConfig config, IMucRepository mucRepository) {
-		super(config, mucRepository);
+	public UniqueRoomNameModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository) {
+		super(config, writer, mucRepository);
 		try {
 			this.random = SecureRandom.getInstance("SHA1PRNG");
 		} catch (NoSuchAlgorithmException e) {
@@ -76,7 +77,7 @@ public class UniqueRoomNameModule extends AbstractModule {
 	}
 
 	@Override
-	public List<Element> process(Element element) throws MUCException {
+	public void process(Packet element) throws MUCException {
 		try {
 			JID jid = JID.jidInstance(element.getAttribute("to"));
 			if (jid.getResource() != null) {
@@ -89,12 +90,10 @@ public class UniqueRoomNameModule extends AbstractModule {
 				newRoomName = generateName(30);
 			} while (repository.isRoomIdExists(newRoomName + "@" + host));
 
-			Element iq = createResultIQ(element);
 			Element unique = new Element("unique", new String[] { "xmlns" },
 					new String[] { "http://jabber.org/protocol/muc#unique" });
-			iq.addChild(unique);
 			unique.setCData(newRoomName);
-			return makeArray(iq);
+			writer.write(element.okResult(unique, 0));
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (Exception e) {

@@ -21,7 +21,6 @@
  */
 package tigase.muc.modules;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -30,6 +29,7 @@ import java.util.logging.Logger;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.Affiliation;
+import tigase.muc.ElementWriter;
 import tigase.muc.IChatRoomLogger;
 import tigase.muc.MucConfig;
 import tigase.muc.Role;
@@ -146,8 +146,9 @@ public class PresenceModule extends AbstractModule {
 
 	private boolean lockNewRoom = true;
 
-	public PresenceModule(MucConfig config, IMucRepository mucRepository, IChatRoomLogger chatRoomLogger, DelDeliverySend sender) {
-		super(config, mucRepository);
+	public PresenceModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository, IChatRoomLogger chatRoomLogger,
+			DelDeliverySend sender) {
+		super(config, writer, mucRepository);
 		this.chatRoomLogger = chatRoomLogger;
 		this.delayDeliveryThread = new DelayDeliveryThread(sender);
 		this.delayDeliveryThread.start();
@@ -167,9 +168,9 @@ public class PresenceModule extends AbstractModule {
 		return lockNewRoom;
 	}
 
-	private List<Element> preparePresenceToAllOccupants(final Element $presence, Room room, BareJID roomJID, String nickName,
-			Affiliation affiliation, Role role, JID senderJID, boolean newRoomCreated, String newNickName) {
-		List<Element> result = new ArrayList<Element>();
+	private void preparePresenceToAllOccupants(final Element $presence, Room room, BareJID roomJID, String nickName,
+			Affiliation affiliation, Role role, JID senderJID, boolean newRoomCreated, String newNickName)
+			throws TigaseStringprepException {
 		Anonymity anonymity = room.getConfig().getRoomAnonymity();
 
 		for (JID occupantJid : room.getOccupantsJids()) {
@@ -210,14 +211,12 @@ public class PresenceModule extends AbstractModule {
 
 			x.addChild(item);
 			presence.addChild(x);
-			result.add(presence);
-
+			writer.write(Packet.packetInstance(presence));
 		}
-		return result;
 	}
 
-	private List<Element> preparePresenceToAllOccupants(Room room, BareJID roomJID, String nickName, Affiliation affiliation,
-			Role role, JID senderJID, boolean newRoomCreated, String newNickName) {
+	private void preparePresenceToAllOccupants(Room room, BareJID roomJID, String nickName, Affiliation affiliation, Role role,
+			JID senderJID, boolean newRoomCreated, String newNickName) throws TigaseStringprepException {
 
 		Element presence;
 		if (newNickName != null) {
@@ -230,14 +229,13 @@ public class PresenceModule extends AbstractModule {
 			presence = room.getLastPresenceCopyByJid(senderJID);
 		}
 
-		return preparePresenceToAllOccupants(presence, room, roomJID, nickName, affiliation, role, senderJID, newRoomCreated,
+		preparePresenceToAllOccupants(presence, room, roomJID, nickName, affiliation, role, senderJID, newRoomCreated,
 				newNickName);
 	}
 
 	@Override
-	public List<Element> process(Element element) throws MUCException {
+	public void process(Packet element) throws MUCException {
 		try {
-			ArrayList<Element> result = new ArrayList<Element>();
 			final JID senderJID = JID.jidInstance(element.getAttribute("from"));
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
 			final String nickName = getNicknameFromJid(JID.jidInstance(element.getAttribute("to")));
@@ -245,7 +243,7 @@ public class PresenceModule extends AbstractModule {
 
 			boolean newRoomCreated = false;
 			boolean exitingRoom = presenceType != null && "unavailable".equals(presenceType);
-			final Element $x = element.getChild("x", "http://jabber.org/protocol/muc");
+			final Element $x = element.getElement().getChild("x", "http://jabber.org/protocol/muc");
 			final Element password = $x == null ? null : $x.getChild("password");
 
 			if (nickName == null) {
@@ -280,7 +278,7 @@ public class PresenceModule extends AbstractModule {
 			}
 
 			if (exitingRoom && !room.isOccupantExistsByJid(senderJID)) {
-				return null;
+				return;
 			}
 			Anonymity anonymity = room.getConfig().getRoomAnonymity();
 
@@ -325,7 +323,8 @@ public class PresenceModule extends AbstractModule {
 
 					x.addChild(item);
 					presence.addChild(x);
-					result.add(presence);
+
+					writer.write(Packet.packetInstance(presence));
 				}
 
 				final Role newRole = getDefaultRole(room.getConfig(), affiliation);
@@ -335,28 +334,26 @@ public class PresenceModule extends AbstractModule {
 				room.addOccupantByJid(JID.jidInstance(senderJID.toString()), nickName, newRole);
 			}
 
-			room.updatePresenceByJid(senderJID, element);
+			room.updatePresenceByJid(senderJID, element.getElement());
 			final Role role = exitingRoom ? Role.none : room.getRoleByJid(senderJID);
 
 			if (changeNickName) {
 				String nck = room.getOccupantsNickname(senderJID);
 				log.finest("Occupant '" + nck + "' <" + senderJID.toString() + "> is changing his nickname to '" + nickName
 						+ "'");
-				result.addAll(preparePresenceToAllOccupants(room, roomJID, nck, affiliation, role, senderJID, newRoomCreated,
-						nickName));
+				preparePresenceToAllOccupants(room, roomJID, nck, affiliation, role, senderJID, newRoomCreated, nickName);
 				room.changeNickName(senderJID, nickName);
 			}
 
 			if (exitingRoom) {
 				log.finest("Occupant '" + nickName + "' <" + senderJID.toString() + "> is leaving room " + roomJID);
 				// Service Sends New Occupant's Presence to All Occupants
-				result.addAll(preparePresenceToAllOccupants(element, room, roomJID, nickName, affiliation, role, senderJID,
-						newRoomCreated, null));
+				preparePresenceToAllOccupants(element.getElement(), room, roomJID, nickName, affiliation, role, senderJID,
+						newRoomCreated, null);
 				room.removeOccupantByJid(senderJID);
 			} else {
 				// Service Sends New Occupant's Presence to All Occupants
-				result.addAll(preparePresenceToAllOccupants(room, roomJID, nickName, affiliation, role, senderJID,
-						newRoomCreated, null));
+				preparePresenceToAllOccupants(room, roomJID, nickName, affiliation, role, senderJID, newRoomCreated, null);
 			}
 
 			if (newOccupant) {
@@ -383,7 +380,7 @@ public class PresenceModule extends AbstractModule {
 			}
 
 			if (room.isRoomLocked() && newOccupant) {
-				result.addAll(prepareMucMessage(room, room.getOccupantsNickname(senderJID), "Room is locked. Please configure."));
+				sendMucMessage(room, room.getOccupantsNickname(senderJID), "Room is locked. Please configure.");
 			}
 
 			if (this.chatRoomLogger != null && room.getConfig().isLoggingEnabled() && newOccupant) {
@@ -396,7 +393,6 @@ public class PresenceModule extends AbstractModule {
 			if (occupantsCount == 0) {
 				this.repository.leaveRoom(room);
 			}
-			return result;
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (Exception e) {

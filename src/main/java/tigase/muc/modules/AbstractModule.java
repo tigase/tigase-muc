@@ -21,14 +21,15 @@
  */
 package tigase.muc.modules;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
+import tigase.muc.ElementWriter;
 import tigase.muc.Module;
 import tigase.muc.MucConfig;
 import tigase.muc.Room;
 import tigase.muc.repository.IMucRepository;
+import tigase.server.Packet;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
 
@@ -50,42 +51,34 @@ public abstract class AbstractModule implements Module {
 			return null;
 	}
 
-	public static List<Element> makeArray(Element... elements) {
-		ArrayList<Element> result = new ArrayList<Element>();
-		for (Element element : elements) {
-			result.add(element);
-
-		}
-		return result;
-	}
-
-	protected static List<Element> prepareMucMessage(Room room, String nickname, String message) {
-		List<Element> msgs = new ArrayList<Element>();
-		for (JID occupantJid : room.getOccupantsJidsByNickname(nickname)) {
-			Element msg = new Element("message", new String[] { "from", "to", "type" }, new String[] {
-					room.getRoomJID().toString(), occupantJid.toString(), "groupchat" });
-
-			msg.addChild(new Element("body", message));
-			msgs.add(msg);
-		}
-
-		return msgs;
-	}
-
 	protected final MucConfig config;
 
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 
 	protected final IMucRepository repository;
 
-	public AbstractModule(final MucConfig config, final IMucRepository mucRepository) {
+	protected final ElementWriter writer;
+
+	public AbstractModule(final MucConfig config, ElementWriter writer, final IMucRepository mucRepository) {
 		this.config = config;
 		this.repository = mucRepository;
+		this.writer = writer;
 	}
 
 	@Override
 	public boolean isProcessedByModule(Element element) {
 		return true;
+	}
+
+	protected void sendMucMessage(Room room, String nickname, String message) throws TigaseStringprepException {
+		for (JID occupantJid : room.getOccupantsJidsByNickname(nickname)) {
+			Element msg = new Element("message", new String[] { "from", "to", "type" }, new String[] {
+					room.getRoomJID().toString(), occupantJid.toString(), "groupchat" });
+
+			msg.addChild(new Element("body", message));
+			writer.write(Packet.packetInstance(msg));
+		}
+
 	}
 
 }

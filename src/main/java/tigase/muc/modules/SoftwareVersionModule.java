@@ -21,13 +21,13 @@
  */
 package tigase.muc.modules;
 
-import java.util.List;
-
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.muc.ElementWriter;
 import tigase.muc.Module;
 import tigase.muc.MucVersion;
 import tigase.muc.exceptions.MUCException;
+import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
@@ -40,6 +40,13 @@ public class SoftwareVersionModule implements Module {
 
 	private static final Criteria CRIT = ElementCriteria.nameType("iq", "get").add(
 			ElementCriteria.name("query", "jabber:iq:version"));
+
+	protected final ElementWriter writer;
+
+	public SoftwareVersionModule(ElementWriter writer) {
+		super();
+		this.writer = writer;
+	}
 
 	@Override
 	public String[] getFeatures() {
@@ -62,9 +69,7 @@ public class SoftwareVersionModule implements Module {
 	}
 
 	@Override
-	public List<Element> process(Element iq) throws MUCException {
-		Element response = AbstractModule.createResultIQ(iq);
-
+	public void process(Packet iq) throws MUCException {
 		Element query = new Element("query", new String[] { "xmlns" }, new String[] { "jabber:iq:version" });
 		query.addChild(new Element("name", "Tigase Multi-User Chat Component"));
 		query.addChild(new Element("version", MucVersion.getVersion()));
@@ -72,8 +77,7 @@ public class SoftwareVersionModule implements Module {
 				+ System.getProperty("os.version") + ", " + System.getProperty("java.vm.name") + "-"
 				+ System.getProperty("java.version") + " " + System.getProperty("java.vm.vendor")));
 
-		response.addChild(query);
-		return AbstractModule.makeArray(response);
+		writer.write(iq.okResult(query, 0));
 	}
 
 }

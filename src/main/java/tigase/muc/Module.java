@@ -21,10 +21,9 @@
  */
 package tigase.muc;
 
-import java.util.List;
-
 import tigase.criteria.Criteria;
 import tigase.muc.exceptions.MUCException;
+import tigase.server.Packet;
 import tigase.xml.Element;
 
 public interface Module {
@@ -33,7 +32,8 @@ public interface Module {
 
 	Criteria getModuleCriteria();
 
+	@Deprecated
 	boolean isProcessedByModule(final Element element);
 
-	List<Element> process(final Element element) throws MUCException;
+	void process(final Packet packet) throws MUCException;
 }

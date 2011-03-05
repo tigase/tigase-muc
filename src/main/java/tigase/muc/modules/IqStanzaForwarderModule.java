@@ -21,17 +21,17 @@
  */
 package tigase.muc.modules;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.muc.ElementWriter;
 import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
+import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
@@ -46,8 +46,8 @@ public class IqStanzaForwarderModule extends AbstractModule {
 
 	private static final Criteria CRIT = ElementCriteria.name("iq");
 
-	public IqStanzaForwarderModule(MucConfig config, IMucRepository mucRepository) {
-		super(config, mucRepository);
+	public IqStanzaForwarderModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository) {
+		super(config, writer, mucRepository);
 	}
 
 	@Override
@@ -70,7 +70,7 @@ public class IqStanzaForwarderModule extends AbstractModule {
 	}
 
 	@Override
-	public List<Element> process(Element element) throws MUCException {
+	public void process(Packet element) throws MUCException {
 		try {
 			final JID senderJID = JID.jidInstance(element.getAttribute("from"));
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
@@ -95,18 +95,15 @@ public class IqStanzaForwarderModule extends AbstractModule {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
 			}
 
-			List<Element> result = new ArrayList<Element>();
 			for (JID recipientJid : recipientJids) {
 				final String senderNickname = room.getOccupantsNickname(senderJID);
 
-				final Element iq = element.clone();
+				final Element iq = element.getElement().clone();
 				iq.setAttribute("from", roomJID.toString() + "/" + senderNickname);
 				iq.setAttribute("to", recipientJid.toString());
 
-				result.addAll(makeArray(iq));
-
+				writer.write(Packet.packetInstance(iq));
 			}
-			return result;
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (TigaseStringprepException e) {

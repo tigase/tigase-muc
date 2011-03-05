@@ -21,23 +21,24 @@
  */
 package tigase.muc.modules;
 
-import java.util.List;
-
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.form.Form;
 import tigase.muc.Affiliation;
+import tigase.muc.ElementWriter;
 import tigase.muc.MucConfig;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.RepositoryException;
+import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+import tigase.xmpp.StanzaType;
 
 /**
  * @author bmalkow
@@ -50,8 +51,9 @@ public class RoomConfigurationModule extends AbstractModule {
 
 	private final GroupchatMessageModule messageModule;
 
-	public RoomConfigurationModule(MucConfig config, IMucRepository mucRepository, GroupchatMessageModule messageModule) {
-		super(config, mucRepository);
+	public RoomConfigurationModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository,
+			GroupchatMessageModule messageModule) {
+		super(config, writer, mucRepository);
 		this.messageModule = messageModule;
 	}
 
@@ -74,17 +76,18 @@ public class RoomConfigurationModule extends AbstractModule {
 	}
 
 	@Override
-	public List<Element> process(Element element) throws MUCException {
+	public void process(Packet element) throws MUCException {
 		try {
-			if (getNicknameFromJid(JID.jidInstance(element.getAttribute("to"))) != null) {
+			final StanzaType type = element.getType();
+
+			if (getNicknameFromJid(element.getTo()) != null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
-			final String type = element.getAttribute("type");
-			if ("set".equals(type)) {
-				return processSet(element);
-			} else if ("get".equals(type)) {
-				return processGet(element);
+			if (type == StanzaType.set) {
+				processSet(element);
+			} else if (type == StanzaType.get) {
+				processGet(element);
 			} else {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
@@ -96,32 +99,32 @@ public class RoomConfigurationModule extends AbstractModule {
 		}
 	}
 
-	private List<Element> processGet(final Element element) throws RepositoryException, MUCException {
+	private void processGet(final Packet element) throws RepositoryException, MUCException {
 		try {
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
 			JID senderJID = JID.jidInstance(element.getAttribute("from"));
 			Room room = repository.getRoom(roomJID);
 
 			if (room == null) {
-				return makeArray(makeConfigFormIq(element, repository.getDefaultRoomConfig()));
+				writer.write(Packet.packetInstance(makeConfigFormIq(element.getElement(), repository.getDefaultRoomConfig())));
 			}
 			if (room.getAffiliation(senderJID.getBareJID()) != Affiliation.owner) {
 				throw new MUCException(Authorization.FORBIDDEN);
 			}
 
-			final Element response = makeConfigFormIq(element, room.getConfig());
-			return makeArray(response);
+			final Element response = makeConfigFormIq(element.getElement(), room.getConfig());
+			writer.write(Packet.packetInstance(response));
 
 		} catch (TigaseStringprepException e) {
 			throw new MUCException(Authorization.BAD_REQUEST);
 		}
 	}
 
-	private List<Element> processSet(final Element element) throws RepositoryException, MUCException {
+	private void processSet(final Packet element) throws RepositoryException, MUCException {
 		try {
 			final JID roomJID = JID.jidInstance(element.getAttribute("to"));
 			JID senderJID = JID.jidInstance(element.getAttribute("from"));
-			final Element query = element.getChild("query", "http://jabber.org/protocol/muc#owner");
+			final Element query = element.getElement().getChild("query", "http://jabber.org/protocol/muc#owner");
 
 			Room room = repository.getRoom(roomJID.getBareJID());
 			if (room == null) {
@@ -131,8 +134,6 @@ public class RoomConfigurationModule extends AbstractModule {
 					throw new MUCException(Authorization.FORBIDDEN);
 				}
 			}
-
-			List<Element> result = makeArray(createResultIQ(element));
 
 			final Element x = query.getChild("x", "jabber:x:data");
 			final Element destroy = query.getChild("destroy");
@@ -148,11 +149,13 @@ public class RoomConfigurationModule extends AbstractModule {
 						throw new MUCException(Authorization.NOT_ACCEPTABLE, "Passwords cannot be empty");
 					}
 
+					writer.write(element.okResult((Element) null, 0));
+
 					final RoomConfig oldConfig = room.getConfig().clone();
 					if (room.isRoomLocked()) {
 						room.setRoomLocked(false);
 						log.fine("Room " + room.getRoomJID() + " is now unlocked");
-						result.addAll(prepareMucMessage(room, room.getOccupantsNickname(senderJID), "Room is now unlocked"));
+						sendMucMessage(room, room.getOccupantsNickname(senderJID), "Room is now unlocked");
 					}
 
 					room.getConfig().copyFrom(form);
@@ -165,13 +168,12 @@ public class RoomConfigurationModule extends AbstractModule {
 						for (String code : compareResult) {
 							z.addChild(new Element("status", new String[] { "code" }, new String[] { code }));
 						}
-						result.addAll(this.messageModule.sendMessagesToAllOccupants(room, roomJID, z));
+						this.messageModule.sendMessagesToAllOccupants(room, roomJID, z);
 					}
 				}
 			} else {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
-			return result;
 		} catch (TigaseStringprepException e) {
 			throw new MUCException(Authorization.BAD_REQUEST);
 		}

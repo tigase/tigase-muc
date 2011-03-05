@@ -24,17 +24,21 @@ package tigase.muc;
 
 //~--- non-JDK imports --------------------------------------------------------
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import tigase.conf.Configurable;
-
-import tigase.criteria.Criteria;
-
 import tigase.db.RepositoryFactory;
 import tigase.db.UserRepository;
-
 import tigase.disco.ServiceEntity;
 import tigase.disco.ServiceIdentity;
 import tigase.disco.XMPPService;
-
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.modules.DiscoInfoModule;
 import tigase.muc.modules.DiscoItemsModule;
@@ -52,45 +56,27 @@ import tigase.muc.modules.XmppPingModule;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.MucDAO;
 import tigase.muc.repository.inmemory.InMemoryMucRepository;
-
 import tigase.server.AbstractMessageReceiver;
 import tigase.server.DisableDisco;
 import tigase.server.Packet;
-
 import tigase.util.DNSResolver;
 import tigase.util.TigaseStringprepException;
-
 import tigase.xml.Element;
-
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
-import tigase.xmpp.PacketErrorTypeException;
 import tigase.xmpp.StanzaType;
-
-//~--- JDK imports ------------------------------------------------------------
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 //~--- classes ----------------------------------------------------------------
 
 /**
  * Class description
- *
- *
- * @version        5.1.0, 2010.11.02 at 01:01:31 MDT
- * @author         Artur Hefczyc <artur.hefczyc@tigase.org>
+ * 
+ * 
+ * @version 5.1.0, 2010.11.02 at 01:01:31 MDT
+ * @author Artur Hefczyc <artur.hefczyc@tigase.org>
  */
-public class MUCComponent extends AbstractMessageReceiver
-		implements DelDeliverySend, XMPPService, Configurable, DisableDisco {
+public class MUCComponent extends AbstractMessageReceiver implements DelDeliverySend, XMPPService, Configurable, DisableDisco {
 
 	/** Field description */
 	public static final String ADMINS_KEY = "admins";
@@ -98,29 +84,86 @@ public class MUCComponent extends AbstractMessageReceiver
 	protected static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
 	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
 
-	//~--- fields ---------------------------------------------------------------
+	// ~--- fields
+	// ---------------------------------------------------------------
 
+	private MucConfig config = new MucConfig();
+	private MucDAO dao;
 	/** Field description */
 	public String[] HOSTNAMES_PROP_VAL = { "localhost", "hostname" };
-	private MucConfig config = new MucConfig();
 	protected Logger log = Logger.getLogger(this.getClass().getName());
-	private final ArrayList<Module> modules = new ArrayList<Module>();
-	private MucDAO dao;
 	private GroupchatMessageModule messageModule;
+	private final ModulesManager modulesManager = new ModulesManager();
 	private IMucRepository mucRepository;
 	private PresenceModule presenceModule;
 	private IChatRoomLogger roomLogger;
 	private ServiceEntity serviceEntity;
 	private UserRepository userRepository;
 
-	//~--- get methods ----------------------------------------------------------
+	private final tigase.muc.ElementWriter writer;
+
+	// ~--- get methods
+	// ----------------------------------------------------------
+
+	/**
+	 * 
+	 */
+	public MUCComponent() {
+		this.writer = new ElementWriter() {
+
+			@Override
+			public void write(Collection<Packet> elements) {
+				if (elements != null) {
+					for (Packet element : elements) {
+						if (element != null) {
+							write(element);
+						}
+					}
+				}
+			}
+
+			@Override
+			public void write(Packet packet) {
+				if (log.isLoggable(Level.FINER))
+					log.finer("Sent: " + packet.getElement());
+				addOutPacket(packet);
+			}
+
+			@Override
+			public void writeElement(Collection<Element> elements) {
+				if (elements != null) {
+					for (Element element : elements) {
+						if (element != null) {
+							writeElement(element);
+						}
+					}
+				}
+			}
+
+			@Override
+			public void writeElement(final Element element) {
+				if (element != null) {
+					try {
+						if (log.isLoggable(Level.FINER))
+							log.finer("Sent: " + element);
+						addOutPacket(Packet.packetInstance(element));
+					} catch (TigaseStringprepException e) {
+					}
+				}
+			}
+		};
+	}
+
+	public MUCComponent(ElementWriter writer) {
+		this.writer = writer;
+	}
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param params
-	 *
+	 * 
 	 * @return
 	 */
 	@Override
@@ -143,10 +186,9 @@ public class MUCComponent extends AbstractMessageReceiver
 		props.put(HOSTNAMES_PROP_KEY, hostnames);
 
 		// By default use the same repository as all other components:
-		String repo_class = (params.get(GEN_USER_DB) != null)
-			? (String) params.get(GEN_USER_DB) : DERBY_REPO_CLASS_PROP_VAL;
-		String repo_uri = (params.get(GEN_USER_DB_URI) != null)
-			? (String) params.get(GEN_USER_DB_URI) : DERBY_REPO_URL_PROP_VAL;
+		String repo_class = (params.get(GEN_USER_DB) != null) ? (String) params.get(GEN_USER_DB) : DERBY_REPO_CLASS_PROP_VAL;
+		String repo_uri = (params.get(GEN_USER_DB_URI) != null) ? (String) params.get(GEN_USER_DB_URI)
+				: DERBY_REPO_URL_PROP_VAL;
 
 		props.put(MUC_REPO_CLASS_PROP_KEY, repo_class);
 		props.put(MUC_REPO_URL_PROP_KEY, repo_uri);
@@ -169,8 +211,8 @@ public class MUCComponent extends AbstractMessageReceiver
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @return
 	 */
 	@Override
@@ -180,11 +222,11 @@ public class MUCComponent extends AbstractMessageReceiver
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param node
 	 * @param jid
-	 *
+	 * 
 	 * @return
 	 */
 	@Override
@@ -192,13 +234,16 @@ public class MUCComponent extends AbstractMessageReceiver
 		return null;
 	}
 
+	// ~--- methods
+	// --------------------------------------------------------------
+
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param node
 	 * @param jid
-	 *
+	 * 
 	 * @return
 	 */
 	@Override
@@ -214,122 +259,91 @@ public class MUCComponent extends AbstractMessageReceiver
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @return
 	 */
 	public Set<String> getFeaturesFromModule() {
 		HashSet<String> result = new HashSet<String>();
-
-		for (Module module : this.modules) {
-			if (module.getFeatures() != null) {
-				for (String feature : module.getFeatures()) {
-					if (feature != null) {
-						result.add(feature);
-					}
-				}
-			}
-		}
-
+		result.addAll(this.modulesManager.getFeatures());
 		return result;
 	}
 
-	//~--- methods --------------------------------------------------------------
+	protected void init() {
 
-	/**
-	 * Method description
-	 *
-	 *
-	 * @param element
-	 *
-	 * @return
-	 *
-	 * @throws PacketErrorTypeException
-	 */
-	public Collection<Element> process(final Element element) throws PacketErrorTypeException {
-		List<Element> result = new ArrayList<Element>();
-
-		try {
-			boolean handled = runModules(element, result);
-
-			if ( !handled) {
-				final String t = element.getAttribute("type");
-				final StanzaType type = (t == null) ? null : StanzaType.valueof(t);
-
-				if (type != StanzaType.error) {
-					throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
-				} else {
-					log.finer(element.getName() + " stanza with type='error' ignored");
-				}
-			}
-		} catch (MUCException e) {
-			Element r = e.makeElement(element, true);
-
-			result.add(r);
-		}
-
-		return result;
+		this.modulesManager.register(new PrivateMessageModule(this.config, writer, this.mucRepository));
+		messageModule = this.modulesManager.register(new GroupchatMessageModule(this.config, writer, this.mucRepository,
+				this.roomLogger));
+		presenceModule = this.modulesManager.register(new PresenceModule(this.config, writer, this.mucRepository,
+				this.roomLogger, this));
+		this.modulesManager.register(new RoomConfigurationModule(this.config, writer, this.mucRepository, messageModule));
+		this.modulesManager.register(new ModeratorModule(this.config, writer, this.mucRepository));
+		this.modulesManager.register(new SoftwareVersionModule(writer));
+		this.modulesManager.register(new XmppPingModule(writer));
+		this.modulesManager.register(new DiscoItemsModule(this.config, writer, this.mucRepository));
+		this.modulesManager.register(new DiscoInfoModule(this.config, writer, this.mucRepository, this));
+		this.modulesManager.register(new MediatedInvitationModule(this.config, writer, this.mucRepository));
+		this.modulesManager.register(new UniqueRoomNameModule(this.config, writer, this.mucRepository));
+		this.modulesManager.register(new IqStanzaForwarderModule(this.config, writer, this.mucRepository));
 	}
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param packet
 	 */
 	@Override
 	public void processPacket(Packet packet) {
-		try {
-			Collection<Element> result = process(packet.getElement());
+		processStanzaPacket(packet);
+	}
 
-			for (Element element : result) {
-				try {
-					addOutPacket(Packet.packetInstance(element));
-				} catch (TigaseStringprepException ex) {
-					log.info("Packet addressing problem, stringprep failed: " + element);
+	protected void processStanzaPacket(final Packet packet) {
+		try {
+			boolean handled = this.modulesManager.process(packet, writer);
+
+			if (!handled) {
+				final String t = packet.getAttribute("type");
+				final StanzaType type = t == null ? null : StanzaType.valueof(t);
+				if (type != StanzaType.error) {
+					throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
+				} else {
+					if (log.isLoggable(Level.FINER)) {
+						log.finer(packet.getElemName() + " stanza with type='error' ignored");
+					}
 				}
 			}
-		} catch (Exception e) {
-			log.log(Level.WARNING, "Unexpected exception: internal-server-error", e);
-			e.printStackTrace();
-
+		} catch (MUCException e) {
 			try {
-				addOutPacket(Authorization.INTERNAL_SERVER_ERROR.getResponseMessage(packet, e.getMessage(),
-						true));
-			} catch (PacketErrorTypeException e1) {
-				e1.printStackTrace();
-				log.throwing("MUC Component", "processPacket (sending internal-server-error)", e);
+				if (log.isLoggable(Level.FINER)) {
+					log.log(Level.FINER, "Exception thrown for " + packet.toString(), e);
+				} else if (log.isLoggable(Level.FINE)) {
+					log.log(Level.FINE, "PubSubException on stanza id=" + packet.getAttribute("id") + " " + e.getMessage());
+				}
+				Packet result = e.makeElement(packet, true);
+				if (log.isLoggable(Level.FINEST)) {
+					log.log(Level.FINEST, "Sending back: " + result.toString());
+				}
+				writer.write(result);
+			} catch (Exception e1) {
+				log.log(Level.WARNING, "Problem during generate error response", e1);
 			}
 		}
 	}
 
-	/**
-	 * Method description
-	 *
-	 *
-	 * @param module
-	 * @param <T>
-	 *
-	 * @return
-	 */
-	public <T extends Module> T registerModule(final T module) {
-		log.config("Register MUC plugin: " + module.getClass().getCanonicalName());
-		this.modules.add(module);
-
-		return module;
-	}
+	// ~--- set methods
+	// ----------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param packet
 	 */
+	@Override
 	public void sendDelayedPacket(Packet packet) {
 		addOutPacket(packet);
 	}
-
-	//~--- set methods ----------------------------------------------------------
 
 	/**
 	 * @param config2
@@ -340,18 +354,21 @@ public class MUCComponent extends AbstractMessageReceiver
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param mucRepository
 	 */
 	public void setMucRepository(IMucRepository mucRepository) {
 		this.mucRepository = mucRepository;
 	}
 
+	// ~--- methods
+	// --------------------------------------------------------------
+
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param props
 	 */
 	@Override
@@ -403,54 +420,8 @@ public class MUCComponent extends AbstractMessageReceiver
 		log.info("Tigase MUC Component ver. " + MucVersion.getVersion() + " started.");
 	}
 
-	//~--- methods --------------------------------------------------------------
-
-	protected void init() {
-		registerModule(new PrivateMessageModule(this.config, this.mucRepository));
-		messageModule = registerModule(new GroupchatMessageModule(this.config, this.mucRepository,
-				this.roomLogger));
-		presenceModule = registerModule(new PresenceModule(this.config, this.mucRepository,
-				this.roomLogger, this));
-		registerModule(new RoomConfigurationModule(this.config, this.mucRepository, messageModule));
-		registerModule(new ModeratorModule(this.config, this.mucRepository));
-		registerModule(new SoftwareVersionModule());
-		registerModule(new XmppPingModule());
-		registerModule(new DiscoItemsModule(this.config, this.mucRepository));
-		registerModule(new DiscoInfoModule(this.config, this.mucRepository, this));
-		registerModule(new MediatedInvitationModule(this.config, this.mucRepository));
-		registerModule(new UniqueRoomNameModule(this.config, this.mucRepository));
-		registerModule(new IqStanzaForwarderModule(this.config, this.mucRepository));
-	}
-
-	protected boolean runModules(final Element element, Collection<Element> sendCollection)
-			throws MUCException {
-		boolean handled = false;
-
-		log.finest("Processing packet: " + element.toString());
-
-		for (Module module : this.modules) {
-			Criteria criteria = module.getModuleCriteria();
-
-			if ((criteria != null) && criteria.match(element) && module.isProcessedByModule(element)) {
-				handled = true;
-				log.finest("Handled by module " + module.getClass());
-
-				List<Element> result = module.process(element);
-
-				if (result != null) {
-					sendCollection.addAll(result);
-
-					return true;
-				}
-			}
-		}
-
-		return handled;
-	}
 }
 
+// ~ Formatted in Sun Code Convention
 
-//~ Formatted in Sun Code Convention
-
-
-//~ Formatted by Jindent --- http://www.jindent.com
+// ~ Formatted by Jindent --- http://www.jindent.com

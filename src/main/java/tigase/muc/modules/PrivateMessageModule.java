@@ -21,17 +21,17 @@
  */
 package tigase.muc.modules;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.muc.ElementWriter;
 import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
+import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
@@ -46,8 +46,8 @@ public class PrivateMessageModule extends AbstractModule {
 
 	private static final Criteria CRIT = ElementCriteria.nameType("message", "chat");
 
-	public PrivateMessageModule(MucConfig config, IMucRepository mucRepository) {
-		super(config, mucRepository);
+	public PrivateMessageModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository) {
+		super(config, writer, mucRepository);
 	}
 
 	@Override
@@ -61,7 +61,7 @@ public class PrivateMessageModule extends AbstractModule {
 	}
 
 	@Override
-	public List<Element> process(Element element) throws MUCException {
+	public void process(Packet element) throws MUCException {
 		try {
 			final JID senderJID = JID.jidInstance(element.getAttribute("from"));
 
@@ -84,7 +84,6 @@ public class PrivateMessageModule extends AbstractModule {
 
 			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);
 
-			List<Element> result = new ArrayList<Element>();
 			for (JID recipientJid : recipientJids) {
 				if (recipientJid == null) {
 					throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
@@ -92,13 +91,12 @@ public class PrivateMessageModule extends AbstractModule {
 
 				final String senderNickname = room.getOccupantsNickname(senderJID);
 
-				final Element message = element.clone();
+				final Element message = element.getElement().clone();
 				message.setAttribute("from", JID.jidInstance(roomJID, senderNickname).toString());
 				message.setAttribute("to", recipientJid.toString());
 
-				result.addAll(makeArray(message));
+				writer.write(Packet.packetInstance(message));
 			}
-			return result;
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (TigaseStringprepException e) {

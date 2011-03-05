@@ -198,6 +198,7 @@ public class RoomChatLogger implements IChatRoomLogger {
 	 * tigase.muc.IChatRoomLogger#addMessage(tigase.muc.RoomConfig.LogFormat,
 	 * java.lang.String, java.util.Date, java.lang.String, java.lang.String)
 	 */
+	@Override
 	public void addMessage(RoomConfig.LogFormat logFormat, BareJID roomJID, Date date, String nickName, String message) {
 
 		String pattern;

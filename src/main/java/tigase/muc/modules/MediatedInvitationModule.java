@@ -21,16 +21,16 @@
  */
 package tigase.muc.modules;
 
-import java.util.List;
-
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.Affiliation;
+import tigase.muc.ElementWriter;
 import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
+import tigase.server.Packet;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
@@ -45,8 +45,8 @@ public class MediatedInvitationModule extends AbstractModule {
 	private static final Criteria CRIT = ElementCriteria.name("message").add(
 			ElementCriteria.name("x", "http://jabber.org/protocol/muc#user").add(ElementCriteria.name("invite")));
 
-	public MediatedInvitationModule(MucConfig config, IMucRepository mucRepository) {
-		super(config, mucRepository);
+	public MediatedInvitationModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository) {
+		super(config, writer, mucRepository);
 	}
 
 	@Override
@@ -60,7 +60,7 @@ public class MediatedInvitationModule extends AbstractModule {
 	}
 
 	@Override
-	public List<Element> process(Element element) throws MUCException {
+	public void process(Packet element) throws MUCException {
 		try {
 			final JID senderJID = JID.jidInstance(element.getAttribute("from"));
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
@@ -83,7 +83,7 @@ public class MediatedInvitationModule extends AbstractModule {
 				throw new MUCException(Authorization.FORBIDDEN);
 			}
 
-			final Element x = element.getChild("x", "http://jabber.org/protocol/muc#user");
+			final Element x = element.getElement().getChild("x", "http://jabber.org/protocol/muc#user");
 			final Element invite = x.getChild("invite");
 			final Element reason = invite.getChild("reason");
 			final String recipient = invite.getAttribute("to");
@@ -109,7 +109,7 @@ public class MediatedInvitationModule extends AbstractModule {
 				resultInvite.addChild(reason.clone());
 			}
 
-			return makeArray(resultMessage);
+			writer.write(Packet.packetInstance(resultMessage));
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (Exception e) {

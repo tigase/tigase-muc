@@ -22,16 +22,17 @@
 package tigase.muc;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.junit.Before;
 
-import tigase.muc.repository.RepositoryException;
+import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
 import tigase.test.junit.XMPPTestCase;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.PacketErrorTypeException;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -39,52 +40,85 @@ import tigase.xmpp.PacketErrorTypeException;
  */
 public class RoomTest extends XMPPTestCase {
 
-	private MUCComponent muc;
+	private final class ArrayWriter implements ElementWriter {
+
+		private final ArrayList<Element> elements = new ArrayList<Element>();
+
+		public void clear() {
+			elements.clear();
+		}
+
+		@Override
+		public void write(Collection<Packet> elements) {
+			for (Packet packet : elements) {
+				this.elements.add(packet.getElement());
+			}
+		}
+
+		@Override
+		public void write(Packet element) {
+			this.elements.add(element.getElement());
+		}
+
+		@Override
+		public void writeElement(Collection<Element> elements) {
+			this.elements.addAll(elements);
+		}
+
+		@Override
+		public void writeElement(Element element) {
+			this.elements.add(element);
+		}
+	}
+
+	private MUCComponent pubsub;
 
 	private JUnitXMLIO xmlio;
 
 	@Before
-	public void init() throws TigaseStringprepException {
-		muc = new MUCComponent();
+	public void init() {
+		final ArrayWriter writer = new ArrayWriter();
+		this.pubsub = new MUCComponent(writer) {
+			@Override
+			public JID getComponentId() {
+				try {
+					return JID.jidInstance("test.com");
+				} catch (TigaseStringprepException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		};
+		this.pubsub.setName("xxx");
+		// this.pubsub.getComponentConfig().setPubSubDao(PubSubDAOFactory.DAO_MEMORY);
 
 		xmlio = new JUnitXMLIO() {
 
 			@Override
 			public void close() {
-				System.out.println("Closed");
 				// TODO Auto-generated method stub
 
 			}
 
 			@Override
-			public void setIgnorePresence(boolean ignore) {
-				System.out.println("Set ignore presence");
+			public void setIgnorePresence(boolean arg0) {
+				// TODO Auto-generated method stub
+
 			}
 
 			@Override
 			public void write(Element data) throws IOException {
 				try {
-					send(muc.process(data));
-				} catch (PacketErrorTypeException e) {
-					throw new RuntimeException("", e);
+					writer.clear();
+					Packet p = Packet.packetInstance(data);
+					pubsub.processPacket(p);
+					send(writer.elements);
+				} catch (TigaseStringprepException e) {
+					e.printStackTrace();
 				}
 			}
 		};
 
-		MucConfig config = new MucConfig();
-		muc.setConfig(config);
-		config.setServiceName(BareJID.bareJIDInstance("multi-user-chat"));
-		config.setLogDirectory("./");
-		MockMucRepository mockRepo;
-		try {
-			mockRepo = new MockMucRepository(config);
-			muc.setMucRepository(mockRepo);
-			muc.init();
-
-		} catch (RepositoryException e) {
-			e.printStackTrace();
-		}
-
+		pubsub.init();
 	}
 
 	@org.junit.Test
