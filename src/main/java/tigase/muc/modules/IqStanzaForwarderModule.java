@@ -21,8 +21,6 @@
  */
 package tigase.muc.modules;
 
-import java.util.Collection;
-
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.ElementWriter;
@@ -44,10 +42,36 @@ import tigase.xmpp.JID;
  */
 public class IqStanzaForwarderModule extends AbstractModule {
 
-	private static final Criteria CRIT = ElementCriteria.name("iq");
+	private Criteria crit;
 
 	public IqStanzaForwarderModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository) {
 		super(config, writer, mucRepository);
+		this.crit = new Criteria() {
+
+			@Override
+			public boolean match(Element element) {
+				return checkIfProcessed(element);
+			}
+
+			@Override
+			public Criteria add(Criteria criteria) {
+				return null;
+			}
+		};
+	}
+
+	/**
+	 * @param element
+	 * @return
+	 */
+	protected boolean checkIfProcessed(Element element) {
+		if (element.getName() != "iq")
+			return false;
+		try {
+			return getNicknameFromJid(JID.jidInstance(element.getAttribute("to"))) != null;
+		} catch (TigaseStringprepException e) {
+			return false;
+		}
 	}
 
 	@Override
@@ -57,7 +81,7 @@ public class IqStanzaForwarderModule extends AbstractModule {
 
 	@Override
 	public Criteria getModuleCriteria() {
-		return CRIT;
+		return crit;
 	}
 
 	@Override
@@ -90,20 +114,17 @@ public class IqStanzaForwarderModule extends AbstractModule {
 				throw new MUCException(Authorization.NOT_ALLOWED);
 			}
 
-			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);
-			if (recipientJids == null) {
+			final JID recipientJid = room.getOccupantsJidsByNickname(recipientNickname);
+			if (recipientJid == null)
 				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
-			}
 
-			for (JID recipientJid : recipientJids) {
-				final String senderNickname = room.getOccupantsNickname(senderJID);
+			final String senderNickname = room.getOccupantsNickname(senderJID);
 
-				final Element iq = element.getElement().clone();
-				iq.setAttribute("from", roomJID.toString() + "/" + senderNickname);
-				iq.setAttribute("to", recipientJid.toString());
+			final Element iq = element.getElement().clone();
+			iq.setAttribute("from", roomJID.toString() + "/" + senderNickname);
+			iq.setAttribute("to", recipientJid.toString());
 
-				writer.write(Packet.packetInstance(iq));
-			}
+			writer.write(Packet.packetInstance(iq));
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (TigaseStringprepException e) {

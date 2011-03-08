@@ -292,7 +292,7 @@ public class PresenceModule extends AbstractModule {
 
 			final boolean changeNickName = !newOccupant && !room.getOccupantsNickname(senderJID).equals(nickName);
 
-			if ((newOccupant || changeNickName) && room.isNickNameExistsForDifferentJid(nickName, senderJID.getBareJID())) {
+			if ((newOccupant || changeNickName) && room.isNickNameExistsForDifferentJid(nickName, senderJID)) {
 				throw new MUCException(Authorization.CONFLICT);
 			}
 

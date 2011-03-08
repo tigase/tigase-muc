@@ -40,9 +40,9 @@ expect: {
     from='darkcave@macbeth.shakespeare.lit'
     to='hag66@shakespeare.lit/pda'
     type='error'>
-  <text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas">Room is locked</text>
   <error code='404' type='cancel'>
     <item-not-found xmlns='urn:ietf:params:xml:ns:xmpp-stanzas'/>
+    <text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="en">Room is locked</text>
   </error>
 </presence>
 }

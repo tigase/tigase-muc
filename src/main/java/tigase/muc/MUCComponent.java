@@ -321,6 +321,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 					log.log(Level.FINE, "PubSubException on stanza id=" + packet.getAttribute("id") + " " + e.getMessage());
 				}
 				Packet result = e.makeElement(packet, true);
+				Element el = result.getElement();
+				el.setAttribute("from", BareJID.bareJIDInstance(el.getAttribute("from")).toString());
 				if (log.isLoggable(Level.FINEST)) {
 					log.log(Level.FINEST, "Sending back: " + result.toString());
 				}

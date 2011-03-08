@@ -93,13 +93,6 @@ public class RoomChatLogger implements IChatRoomLogger {
 
 	private final static String SUBJECT_PLAIN_FORMAT = "[%1$s] %2$s has set the subject to: %3$s\n";
 
-	public static void main(String[] args) throws IOException {
-		LinkedList<String> a = new LinkedList<String>();
-		a.add("1");
-		a.add("2");
-		a.add("3");
-		a.add("4");
-	}
 
 	private final MucConfig config;
 

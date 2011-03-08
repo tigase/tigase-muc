@@ -27,11 +27,13 @@ import java.util.Collection;
 
 import org.junit.Before;
 
+import tigase.muc.repository.RepositoryException;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
 import tigase.test.junit.XMPPTestCase;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
+import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
 /**
@@ -76,7 +78,7 @@ public class RoomTest extends XMPPTestCase {
 	private JUnitXMLIO xmlio;
 
 	@Before
-	public void init() {
+	public void init() throws RepositoryException, TigaseStringprepException {
 		final ArrayWriter writer = new ArrayWriter();
 		this.pubsub = new MUCComponent(writer) {
 			@Override
@@ -89,7 +91,11 @@ public class RoomTest extends XMPPTestCase {
 			}
 		};
 		this.pubsub.setName("xxx");
-		// this.pubsub.getComponentConfig().setPubSubDao(PubSubDAOFactory.DAO_MEMORY);
+		MucConfig config = new MucConfig();
+		pubsub.setConfig(config);
+		config.setServiceName(BareJID.bareJIDInstance("multi-user-chat"));
+		config.setLogDirectory("./");
+		this.pubsub.setMucRepository(new MockMucRepository(config));
 
 		xmlio = new JUnitXMLIO() {
 

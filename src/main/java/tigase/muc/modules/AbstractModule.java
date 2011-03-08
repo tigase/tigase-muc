@@ -71,14 +71,11 @@ public abstract class AbstractModule implements Module {
 	}
 
 	protected void sendMucMessage(Room room, String nickname, String message) throws TigaseStringprepException {
-		for (JID occupantJid : room.getOccupantsJidsByNickname(nickname)) {
-			Element msg = new Element("message", new String[] { "from", "to", "type" }, new String[] {
-					room.getRoomJID().toString(), occupantJid.toString(), "groupchat" });
+		JID occupantJid = room.getOccupantsJidsByNickname(nickname);
+		Element msg = new Element("message", new String[] { "from", "to", "type" }, new String[] {
+				room.getRoomJID().toString(), occupantJid.toString(), "groupchat" });
 
-			msg.addChild(new Element("body", message));
-			writer.write(Packet.packetInstance(msg));
-		}
-
+		msg.addChild(new Element("body", message));
+		writer.write(Packet.packetInstance(msg));
 	}
-
 }

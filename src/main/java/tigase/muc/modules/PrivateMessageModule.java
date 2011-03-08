@@ -21,8 +21,6 @@
  */
 package tigase.muc.modules;
 
-import java.util.Collection;
-
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.ElementWriter;
@@ -82,21 +80,18 @@ public class PrivateMessageModule extends AbstractModule {
 				throw new MUCException(Authorization.NOT_ALLOWED);
 			}
 
-			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);
+			final JID recipientJid = room.getOccupantsJidsByNickname(recipientNickname);
+			if (recipientJid == null)
+				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
 
-			for (JID recipientJid : recipientJids) {
-				if (recipientJid == null) {
-					throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
-				}
+			final String senderNickname = room.getOccupantsNickname(senderJID);
 
-				final String senderNickname = room.getOccupantsNickname(senderJID);
+			final Element message = element.getElement().clone();
+			message.setAttribute("from", JID.jidInstance(roomJID, senderNickname).toString());
+			message.setAttribute("to", recipientJid.toString());
 
-				final Element message = element.getElement().clone();
-				message.setAttribute("from", JID.jidInstance(roomJID, senderNickname).toString());
-				message.setAttribute("to", recipientJid.toString());
+			writer.write(Packet.packetInstance(message));
 
-				writer.write(Packet.packetInstance(message));
-			}
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (TigaseStringprepException e) {
