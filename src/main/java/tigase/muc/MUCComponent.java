@@ -81,12 +81,14 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	/** Field description */
 	public static final String ADMINS_KEY = "admins";
 	private static final String LOG_DIR_KEY = "room-log-directory";
-	protected static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
-	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
+	public static final String MUC_ALLOW_CHAT_STATES_KEY = "muc-allow-chat-states";
+	public static final String MUC_LOCK_NEW_ROOM_KEY = "muc-lock-new-room";
 
 	// ~--- fields
 	// ---------------------------------------------------------------
 
+	protected static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
+	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
 	private MucConfig config = new MucConfig();
 	private MucDAO dao;
 	/** Field description */
@@ -97,13 +99,15 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	private IMucRepository mucRepository;
 	private PresenceModule presenceModule;
 	private IChatRoomLogger roomLogger;
-	private ServiceEntity serviceEntity;
-	private UserRepository userRepository;
 
-	private final tigase.muc.ElementWriter writer;
+	private ServiceEntity serviceEntity;
 
 	// ~--- get methods
 	// ----------------------------------------------------------
+
+	private UserRepository userRepository;
+
+	private final tigase.muc.ElementWriter writer;
 
 	/**
 	 * 
@@ -203,8 +207,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 		props.put(ADMINS_KEY, admins);
 		props.put(LOG_DIR_KEY, new String("./logs/"));
-		props.put("muc-allow-chat-states", Boolean.FALSE);
-		props.put("muc-lock-new-room", Boolean.TRUE);
+		props.put(MUC_ALLOW_CHAT_STATES_KEY, Boolean.FALSE);
+		props.put(MUC_LOCK_NEW_ROOM_KEY, Boolean.TRUE);
 
 		return props;
 	}
@@ -417,8 +421,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 			init();
 		}
 
-		this.messageModule.setChatStateAllowed((Boolean) props.get("muc-allow-chat-states"));
-		this.presenceModule.setLockNewRoom((Boolean) props.get("muc-lock-new-room"));
+		this.messageModule.setChatStateAllowed((Boolean) props.get(MUC_ALLOW_CHAT_STATES_KEY));
+		this.presenceModule.setLockNewRoom((Boolean) props.get(MUC_LOCK_NEW_ROOM_KEY));
 		log.info("Tigase MUC Component ver. " + MucVersion.getVersion() + " started.");
 	}
 

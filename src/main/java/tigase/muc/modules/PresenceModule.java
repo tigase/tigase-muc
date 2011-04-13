@@ -383,6 +383,17 @@ public class PresenceModule extends AbstractModule {
 				sendMucMessage(room, room.getOccupantsNickname(senderJID), "Room is locked. Please configure.");
 			}
 
+			if (newRoomCreated) {
+				StringBuilder sb = new StringBuilder();
+				sb.append("Welcome! You created new Multi User Chat Room.");
+				if (room.isRoomLocked())
+					sb.append(" Room is locked now. Configure it please!");
+				else
+					sb.append(" Room is unlocked and ready for occupants!");
+
+				sendMucMessage(room, room.getOccupantsNickname(senderJID), sb.toString());
+			}
+
 			if (this.chatRoomLogger != null && room.getConfig().isLoggingEnabled() && newOccupant) {
 				this.chatRoomLogger.addJoin(room.getConfig().getLoggingFormat(), roomJID, new Date(), nickName);
 			} else if (this.chatRoomLogger != null && room.getConfig().isLoggingEnabled() && exitingRoom) {
