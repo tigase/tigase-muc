@@ -47,6 +47,25 @@
 	<build>
 		<plugins>
 			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>buildnumber-maven-plugin</artifactId>
+				<version>1.0</version>
+				<configuration>
+					<format>{0,date} {0,time}</format>
+					<items>
+						<item>timestamp</item>
+					</items>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>create</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
 					<source>1.6</source>
@@ -62,13 +81,13 @@
 					<archive>
 						<manifest>
 							<packageName>tigase.muc</packageName>
-							<addDefaultImplementationEntries>
-								true
-                            </addDefaultImplementationEntries>
+							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
 						</manifest>
-						<manifestFile>
-							src/main/resources/META-INF/MANIFEST.MF
-                        </manifestFile>
+						<manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
+						<manifestEntries>
+							<Implementation-Version>${pom.version} (${buildNumber})</Implementation-Version>
+							<Implementation-Build>${buildNumber}</Implementation-Build>
+						</manifestEntries>
 					</archive>
 				</configuration>
 			</plugin>
