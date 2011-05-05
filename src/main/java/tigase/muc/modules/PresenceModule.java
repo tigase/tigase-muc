@@ -243,8 +243,8 @@ public class PresenceModule extends AbstractModule {
 
 			boolean newRoomCreated = false;
 			boolean exitingRoom = presenceType != null && "unavailable".equals(presenceType);
-			final Element $x = element.getElement().getChild("x", "http://jabber.org/protocol/muc");
-			final Element password = $x == null ? null : $x.getChild("password");
+			final Element xElement = element.getElement().getChild("x", "http://jabber.org/protocol/muc");
+			final Element password = xElement == null ? null : xElement.getChild("password");
 
 			if (nickName == null) {
 				throw new MUCException(Authorization.JID_MALFORMED);
@@ -259,20 +259,22 @@ public class PresenceModule extends AbstractModule {
 				newRoomCreated = true;
 			}
 
+			// 'x' element is used only when occupant joins to room. But not
+			// allways: old clients may not use it. Thats why 'newOccupant'
+			// variable is still used
+			boolean enteringToRoom = xElement != null;
 			boolean newOccupant = !room.isOccupantExistsByJid(senderJID);
 			if (newOccupant && room.getConfig().isPasswordProtectedRoom()) {
 				final String psw = password == null ? null : password.getCData();
 				final String roomPassword = room.getConfig().getPassword();
 				if (psw == null || !psw.equals(roomPassword)) {
-					log.finest("Password '" + psw + "' is not match to room passsword '" + roomPassword + "' ");
+					log.finest("Password '" + psw + "' is not match to room password '" + roomPassword + "' ");
 					throw new MUCException(Authorization.NOT_AUTHORIZED);
 				}
 			}
 
 			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
 
-			// TODO
-			// przepuszczac wlasciciela konta!!!
 			if (!newRoomCreated && room.isRoomLocked() && !exitingRoom && affiliation != Affiliation.owner) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Room is locked");
 			}
@@ -296,7 +298,7 @@ public class PresenceModule extends AbstractModule {
 				throw new MUCException(Authorization.CONFLICT);
 			}
 
-			if (newOccupant) {
+			if (newOccupant || enteringToRoom) {
 
 				// Service Sends Presence from Existing Occupants to New
 				// Occupant
@@ -327,11 +329,13 @@ public class PresenceModule extends AbstractModule {
 					writer.write(Packet.packetInstance(presence));
 				}
 
-				final Role newRole = getDefaultRole(room.getConfig(), affiliation);
+				if (newOccupant) {
+					final Role newRole = getDefaultRole(room.getConfig(), affiliation);
 
-				log.finest("Occupant '" + nickName + "' <" + senderJID.toString() + "> is entering room " + roomJID
-						+ " as role=" + newRole.name() + ", affiliation=" + affiliation.name());
-				room.addOccupantByJid(JID.jidInstance(senderJID.toString()), nickName, newRole);
+					log.finest("Occupant '" + nickName + "' <" + senderJID.toString() + "> is entering room " + roomJID
+							+ " as role=" + newRole.name() + ", affiliation=" + affiliation.name());
+					room.addOccupantByJid(JID.jidInstance(senderJID.toString()), nickName, newRole);
+				}
 			}
 
 			room.updatePresenceByJid(senderJID, element.getElement());
@@ -356,10 +360,10 @@ public class PresenceModule extends AbstractModule {
 				preparePresenceToAllOccupants(room, roomJID, nickName, affiliation, role, senderJID, newRoomCreated, null);
 			}
 
-			if (newOccupant) {
+			if (newOccupant || enteringToRoom) {
 				this.delayDeliveryThread.put(room.getHistoryMessages(senderJID));
 			}
-			if (newOccupant && room.getSubject() != null && room.getSubjectChangerNick() != null
+			if ((enteringToRoom || newOccupant) && room.getSubject() != null && room.getSubjectChangerNick() != null
 					&& room.getSubjectChangeDate() != null) {
 				Element message = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",
 						roomJID + "/" + room.getSubjectChangerNick(), senderJID.toString() });
