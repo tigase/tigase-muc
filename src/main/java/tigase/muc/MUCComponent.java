@@ -381,6 +381,13 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	public void setProperties(Map<String, Object> props) {
 		super.setProperties(props);
 
+		if (props.size() == 1) {
+			// If props.size() == 1, it means this is a single property update 
+			// and this component does not support single property change for the rest
+			// of it's settings
+			return;
+		}
+
 		// String[] hostnames = (String[]) props.get(HOSTNAMES_PROP_KEY);
 		// if (hostnames == null || hostnames.length == 0) {
 		// log.warning("Hostnames definition is empty, setting 'localhost'");
