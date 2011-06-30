@@ -66,6 +66,8 @@ public class DiscoItemsModule extends AbstractModule {
 			Packet result = element.okResult(resultQuery, 0);
 
 			if (roomJID.getLocalpart() == null) {
+				// discovering rooms
+				// (http://xmpp.org/extensions/xep-0045.html#disco-rooms)
 				String[] roomsId = repository.getPublicVisibleRoomsIdList();
 				for (final String jid : roomsId) {
 					final String name = repository.getRoomName(jid);
@@ -73,6 +75,7 @@ public class DiscoItemsModule extends AbstractModule {
 							name != null ? name : jid }));
 				}
 			} else {
+				// querying for Room Items (http://xmpp.org/extensions/xep-0045.html#disco-roomitems)
 				throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED, "To be implemented!");
 			}
 			writer.write(result);
