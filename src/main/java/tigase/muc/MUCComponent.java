@@ -269,6 +269,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	 */
 	public Set<String> getFeaturesFromModule() {
 		HashSet<String> result = new HashSet<String>();
+		result.add("http://jabber.org/protocol/muc");
 		result.addAll(this.modulesManager.getFeatures());
 		return result;
 	}
