@@ -308,7 +308,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 			boolean handled = this.modulesManager.process(packet, writer);
 
 			if (!handled) {
-				final String t = packet.getAttribute("type");
+				final String t = packet.getElement().getAttribute("type");
 				final StanzaType type = t == null ? null : StanzaType.valueof(t);
 				if (type != StanzaType.error) {
 					throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
@@ -333,7 +333,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 				}
 				writer.write(result);
 			} catch (Exception e1) {
-				log.log(Level.WARNING, "Problem during generate error response", e1);
+				if (log.isLoggable(Level.FINEST))
+					log.log(Level.FINEST, "Problem during generate error response", e1);
 			}
 		}
 	}
@@ -383,8 +384,9 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		super.setProperties(props);
 
 		if (props.size() == 1) {
-			// If props.size() == 1, it means this is a single property update 
-			// and this component does not support single property change for the rest
+			// If props.size() == 1, it means this is a single property update
+			// and this component does not support single property change for
+			// the rest
 			// of it's settings
 			return;
 		}
