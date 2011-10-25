@@ -24,6 +24,7 @@ package tigase.muc.modules;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.criteria.Criteria;
@@ -240,6 +241,12 @@ public class PresenceModule extends AbstractModule {
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
 			final String nickName = getNicknameFromJid(JID.jidInstance(element.getAttribute("to")));
 			final String presenceType = element.getAttribute("type");
+
+			if (presenceType != null && "error".equals(presenceType)) {
+				if (log.isLoggable(Level.FINER))
+					log.finer("Ignoring presence with type='" + presenceType + "' from " + senderJID);
+				return;
+			}
 
 			boolean newRoomCreated = false;
 			boolean exitingRoom = presenceType != null && "unavailable".equals(presenceType);

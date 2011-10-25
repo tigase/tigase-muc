@@ -313,9 +313,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 				if (type != StanzaType.error) {
 					throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
 				} else {
-					if (log.isLoggable(Level.FINER)) {
+					if (log.isLoggable(Level.FINER))
 						log.finer(packet.getElemName() + " stanza with type='error' ignored");
-					}
 				}
 			}
 		} catch (MUCException e) {
@@ -325,6 +324,14 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 				} else if (log.isLoggable(Level.FINE)) {
 					log.log(Level.FINE, "PubSubException on stanza id=" + packet.getAttribute("id") + " " + e.getMessage());
 				}
+
+				final String t = packet.getElement().getAttribute("type");
+				if (t != null && t == "error") {
+					if (log.isLoggable(Level.FINER))
+						log.finer(packet.getElemName() + " stanza already with type='error' ignored");
+					return;
+				}
+
 				Packet result = e.makeElement(packet, true);
 				Element el = result.getElement();
 				el.setAttribute("from", BareJID.bareJIDInstance(el.getAttribute("from")).toString());
@@ -333,8 +340,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 				}
 				writer.write(result);
 			} catch (Exception e1) {
-				if (log.isLoggable(Level.FINEST))
-					log.log(Level.FINEST, "Problem during generate error response", e1);
+				if (log.isLoggable(Level.WARNING))
+					log.log(Level.WARNING, "Problem during generate error response", e1);
 			}
 		}
 	}
