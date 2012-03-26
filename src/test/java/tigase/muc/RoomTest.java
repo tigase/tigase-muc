@@ -24,6 +24,8 @@ package tigase.muc;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.junit.Before;
 
@@ -91,10 +93,14 @@ public class RoomTest extends XMPPTestCase {
 			}
 		};
 		this.pubsub.setName("xxx");
+
 		MucConfig config = new MucConfig();
+		Map<String, Object> props = new HashMap<String, Object>();
+		props.put("multi-user-chat", BareJID.bareJIDInstance("multi-user-chat"));
+		props.put(MUCComponent.LOG_DIR_KEY, "./");
+
+		config.init(props);
 		pubsub.setConfig(config);
-		config.setServiceName(BareJID.bareJIDInstance("multi-user-chat"));
-		config.setLogDirectory("./");
 		this.pubsub.setMucRepository(new MockMucRepository(config));
 
 		xmlio = new JUnitXMLIO() {

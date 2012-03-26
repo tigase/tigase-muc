@@ -50,7 +50,7 @@ public class MockMucRepository implements IMucRepository {
 
 	private final MucConfig config;
 
-	private RoomConfig defaultConfig = new RoomConfig(null);
+	private RoomConfig defaultConfig = new RoomConfig(null, true);
 
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -101,7 +101,7 @@ public class MockMucRepository implements IMucRepository {
 	@Override
 	public Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException {
 		log.fine("Creating new room '" + roomJID + "'");
-		RoomConfig rc = new RoomConfig(roomJID);
+		RoomConfig rc = new RoomConfig(roomJID, true);
 
 		rc.copyFrom(getDefaultRoomConfig(), false);
 
