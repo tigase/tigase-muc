@@ -36,9 +36,11 @@ import tigase.muc.Room;
 import tigase.muc.Room.RoomListener;
 import tigase.muc.RoomConfig;
 import tigase.muc.RoomConfig.RoomConfigListener;
+import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.MucDAO;
 import tigase.muc.repository.RepositoryException;
+import tigase.util.TigaseStringprepException;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
@@ -184,7 +186,7 @@ public class InMemoryMucRepository implements IMucRepository {
 	 * @see tigase.muc.repository.IMucRepository#getRoom()
 	 */
 	@Override
-	public Room getRoom(final BareJID roomJID) throws RepositoryException {
+	public Room getRoom(final BareJID roomJID) throws RepositoryException, MUCException, TigaseStringprepException {
 		Room room = this.rooms.get(roomJID);
 		if (room == null) {
 			room = dao.readRoom(roomJID);

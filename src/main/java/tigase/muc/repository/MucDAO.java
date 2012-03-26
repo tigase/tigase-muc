@@ -35,6 +35,8 @@ import tigase.muc.Affiliation;
 import tigase.muc.MucConfig;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
+import tigase.muc.exceptions.MUCException;
+import tigase.util.TigaseStringprepException;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
@@ -198,7 +200,8 @@ public class MucDAO {
 		}
 	}
 
-	public Room readRoom(BareJID roomJID) throws RepositoryException {
+	public Room readRoom(BareJID roomJID) throws RepositoryException, MUCException, TigaseStringprepException {
+
 		try {
 			final String tmpDate = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomJID, CREATION_DATE_KEY);
 
@@ -238,8 +241,10 @@ public class MucDAO {
 				return room;
 			}
 			return null;
+		} catch (tigase.util.TigaseStringprepException e) {
+			throw e;
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.log(Level.WARNING, "Room reading error", e);
 			throw new RepositoryException("Room reading error", e);
 		}
 	}
