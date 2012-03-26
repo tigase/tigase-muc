@@ -75,7 +75,8 @@ public class DiscoItemsModule extends AbstractModule {
 							name != null ? name : jid }));
 				}
 			} else {
-				// querying for Room Items (http://xmpp.org/extensions/xep-0045.html#disco-roomitems)
+				// querying for Room Items
+				// (http://xmpp.org/extensions/xep-0045.html#disco-roomitems)
 				throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED, "To be implemented!");
 			}
 			writer.write(result);

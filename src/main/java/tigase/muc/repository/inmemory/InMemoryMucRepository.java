@@ -56,9 +56,11 @@ public class InMemoryMucRepository implements IMucRepository {
 
 	private final MucDAO dao;
 
-	private RoomConfig defaultConfig = new RoomConfig(null);
+	private RoomConfig defaultConfig;
 
 	protected Logger log = Logger.getLogger(this.getClass().getName());
+
+	private MucConfig mucConfig;
 
 	private final RoomConfigListener roomConfigListener;
 
@@ -68,6 +70,7 @@ public class InMemoryMucRepository implements IMucRepository {
 
 	public InMemoryMucRepository(final MucConfig mucConfig, final MucDAO dao) throws RepositoryException {
 		this.dao = dao;
+		this.mucConfig = mucConfig;
 
 		ArrayList<BareJID> roomJids = dao.getRoomsJIDList();
 		if (roomJids != null) {
@@ -137,7 +140,8 @@ public class InMemoryMucRepository implements IMucRepository {
 	@Override
 	public Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException {
 		log.fine("Creating new room '" + roomJID + "'");
-		RoomConfig rc = new RoomConfig(roomJID);
+
+		RoomConfig rc = new RoomConfig(roomJID, this.mucConfig.isPublicLoggingEnabled());
 
 		rc.copyFrom(getDefaultRoomConfig(), false);
 
@@ -152,6 +156,9 @@ public class InMemoryMucRepository implements IMucRepository {
 
 	@Override
 	public RoomConfig getDefaultRoomConfig() throws RepositoryException {
+		if (defaultConfig == null) {
+			defaultConfig = new RoomConfig(null, this.mucConfig.isPublicLoggingEnabled());
+		}
 		return defaultConfig;
 	}
 

@@ -209,7 +209,7 @@ public class MucDAO {
 				JID creatorJID = JID.jidInstance(creatorJid);
 
 				Date date = new Date(Long.valueOf(tmpDate));
-				RoomConfig rc = new RoomConfig(roomJID);
+				RoomConfig rc = new RoomConfig(roomJID, mucConfig.isPublicLoggingEnabled());
 				rc.read(repository, mucConfig, ROOMS_KEY + roomJID + "/config");
 
 				final Room room = new Room(rc, date, creatorJID.getBareJID());

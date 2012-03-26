@@ -21,24 +21,25 @@
  */
 package tigase.muc.modules;
 
+import java.util.Collection;
 import java.util.Date;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.Affiliation;
+import tigase.muc.DateUtil;
 import tigase.muc.ElementWriter;
-import tigase.muc.IChatRoomLogger;
 import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.RoomConfig.Anonymity;
-import tigase.muc.XMPPDateTimeFormatter;
 import tigase.muc.exceptions.MUCException;
+import tigase.muc.history.HistoryProvider;
+import tigase.muc.logger.MucLogger;
 import tigase.muc.modules.PresenceModule.DelayDeliveryThread.DelDeliverySend;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
@@ -68,18 +69,18 @@ public class PresenceModule extends AbstractModule {
 			this.sender = component;
 		}
 
-		public void put(Element element) {
-			items.add(new Element[] { element });
-		}
-
 		/**
 		 * @param elements
 		 */
-		public void put(List<Element> elements) {
+		public void put(Collection<Element> elements) {
 			if (elements != null && elements.size() > 0) {
 				items.push(elements.toArray(new Element[] {}));
 			}
 
+		}
+
+		public void put(Element element) {
+			items.add(new Element[] { element });
 		}
 
 		@Override
@@ -110,8 +111,6 @@ public class PresenceModule extends AbstractModule {
 
 	protected static final Logger log = Logger.getLogger(PresenceModule.class.getName());
 
-	private final static XMPPDateTimeFormatter sdf = new XMPPDateTimeFormatter();
-
 	private static Role getDefaultRole(final RoomConfig config, final Affiliation affiliation) {
 		Role newRole;
 		if (config.isRoomModerated() && affiliation == Affiliation.none) {
@@ -141,18 +140,53 @@ public class PresenceModule extends AbstractModule {
 		return newRole;
 	}
 
-	private final IChatRoomLogger chatRoomLogger;
+	private static Integer toInteger(String v, Integer defaultValue) {
+		if (v == null)
+			return defaultValue;
+		try {
+			return Integer.parseInt(v);
+		} catch (Exception e) {
+			return defaultValue;
+		}
+	}
 
-	private final DelayDeliveryThread delayDeliveryThread;
+	private final HistoryProvider historyProvider;
 
 	private boolean lockNewRoom = true;
 
-	public PresenceModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository, IChatRoomLogger chatRoomLogger,
-			DelDeliverySend sender) {
+	private final MucLogger mucLogger;
+
+	public PresenceModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository,
+			HistoryProvider historyProvider, DelDeliverySend sender, MucLogger mucLogger) {
 		super(config, writer, mucRepository);
-		this.chatRoomLogger = chatRoomLogger;
-		this.delayDeliveryThread = new DelayDeliveryThread(sender);
-		this.delayDeliveryThread.start();
+		this.historyProvider = historyProvider;
+		this.mucLogger = mucLogger;
+	}
+
+	/**
+	 * @param room
+	 * @param date
+	 * @param senderJID
+	 * @param nickName
+	 */
+	private void addJoinToHistory(Room room, Date date, JID senderJID, String nickName) {
+		historyProvider.addJoinEvent(room, date, senderJID, nickName);
+		if (mucLogger != null && room.getConfig().isLoggingEnabled()) {
+			mucLogger.addJoinEvent(room, date, senderJID, nickName);
+		}
+	}
+
+	/**
+	 * @param room
+	 * @param date
+	 * @param senderJID
+	 * @param nickName
+	 */
+	private void addLeaveToHistory(Room room, Date date, JID senderJID, String nickName) {
+		historyProvider.addLeaveEvent(room, date, senderJID, nickName);
+		if (mucLogger != null && room.getConfig().isLoggingEnabled()) {
+			mucLogger.addLeaveEvent(room, date, senderJID, nickName);
+		}
 	}
 
 	@Override
@@ -368,7 +402,19 @@ public class PresenceModule extends AbstractModule {
 			}
 
 			if (newOccupant || enteringToRoom) {
-				this.delayDeliveryThread.put(room.getHistoryMessages(senderJID));
+				Integer maxchars = null;
+				Integer maxstanzas = null;
+				Integer seconds = null;
+				Date since = null;
+				Element hist = xElement.getChild("history");
+				if (hist != null) {
+					maxchars = toInteger(hist.getAttribute("maxchars"), null);
+					maxstanzas = toInteger(hist.getAttribute("maxstanzas"), null);
+					seconds = toInteger(hist.getAttribute("seconds"), null);
+					since = DateUtil.parse(hist.getAttribute("since"));
+				}
+
+				sendHistoryToUser(room, senderJID, maxchars, maxstanzas, seconds, since, writer);
 			}
 			if ((enteringToRoom || newOccupant) && room.getSubject() != null && room.getSubjectChangerNick() != null
 					&& room.getSubjectChangeDate() != null) {
@@ -376,18 +422,18 @@ public class PresenceModule extends AbstractModule {
 						roomJID + "/" + room.getSubjectChangerNick(), senderJID.toString() });
 				message.addChild(new Element("subject", room.getSubject()));
 
-				String stamp = sdf.format(room.getSubjectChangeDate());
+				String stamp = DateUtil.formatDatetime(room.getSubjectChangeDate());
 				Element delay = new Element("delay", new String[] { "xmlns", "stamp" },
 						new String[] { "urn:xmpp:delay", stamp });
 				delay.setAttribute("jid", roomJID + "/" + room.getSubjectChangerNick());
 
 				Element x = new Element("x", new String[] { "xmlns", "stamp" }, new String[] { "jabber:x:delay",
-						sdf.formatOld(room.getSubjectChangeDate()) });
+						DateUtil.formatOld(room.getSubjectChangeDate()) });
 
 				message.addChild(delay);
 				message.addChild(x);
 
-				this.delayDeliveryThread.put(message);
+				writer.writeElement(message);
 			}
 
 			if (room.isRoomLocked() && newOccupant) {
@@ -405,14 +451,18 @@ public class PresenceModule extends AbstractModule {
 				sendMucMessage(room, room.getOccupantsNickname(senderJID), sb.toString());
 			}
 
-			if (this.chatRoomLogger != null && room.getConfig().isLoggingEnabled() && newOccupant) {
-				this.chatRoomLogger.addJoin(room.getConfig().getLoggingFormat(), roomJID, new Date(), nickName);
-			} else if (this.chatRoomLogger != null && room.getConfig().isLoggingEnabled() && exitingRoom) {
-				this.chatRoomLogger.addLeave(room.getConfig().getLoggingFormat(), roomJID, new Date(), nickName);
+			if (room.getConfig().isLoggingEnabled()) {
+				if (newOccupant)
+					addJoinToHistory(room, new Date(), senderJID, nickName);
+				else if (exitingRoom)
+					addLeaveToHistory(room, new Date(), senderJID, nickName);
 			}
 
 			final int occupantsCount = room.getOccupantsCount();
 			if (occupantsCount == 0) {
+				if (!room.getConfig().isPersistentRoom()) {
+					this.historyProvider.removeHistory(room);
+				}
 				this.repository.leaveRoom(room);
 			}
 		} catch (MUCException e1) {
@@ -421,6 +471,21 @@ public class PresenceModule extends AbstractModule {
 			e.printStackTrace();
 			throw new RuntimeException(e);
 		}
+	}
+
+	/**
+	 * @param room
+	 * @param senderJID
+	 * @param maxchars
+	 * @param maxstanzas
+	 * @param seconds
+	 * @param since
+	 */
+	private void sendHistoryToUser(final Room room, final JID senderJID, final Integer maxchars, final Integer maxstanzas,
+			final Integer seconds, final Date since, final ElementWriter writer) {
+
+		historyProvider.getHistoryMessages(room, senderJID, maxchars, maxstanzas, seconds, since, writer);
+
 	}
 
 	public void setLockNewRoom(boolean lockNewRoom) {

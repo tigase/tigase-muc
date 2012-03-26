@@ -40,6 +40,10 @@ import tigase.disco.ServiceEntity;
 import tigase.disco.ServiceIdentity;
 import tigase.disco.XMPPService;
 import tigase.muc.exceptions.MUCException;
+import tigase.muc.history.HistoryManagerFactory;
+import tigase.muc.history.HistoryProvider;
+import tigase.muc.history.MemoryHistoryProvider;
+import tigase.muc.logger.MucLogger;
 import tigase.muc.modules.DiscoInfoModule;
 import tigase.muc.modules.DiscoItemsModule;
 import tigase.muc.modules.GroupchatMessageModule;
@@ -80,7 +84,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 	/** Field description */
 	public static final String ADMINS_KEY = "admins";
-	private static final String LOG_DIR_KEY = "room-log-directory";
+	public static final String LOG_DIR_KEY = "room-log-directory";
 	public static final String MUC_ALLOW_CHAT_STATES_KEY = "muc-allow-chat-states";
 	public static final String MUC_LOCK_NEW_ROOM_KEY = "muc-lock-new-room";
 
@@ -91,6 +95,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
 	private MucConfig config = new MucConfig();
 	private MucDAO dao;
+	private HistoryProvider historyProvider;
 	/** Field description */
 	public String[] HOSTNAMES_PROP_VAL = { "localhost", "hostname" };
 	protected Logger log = Logger.getLogger(this.getClass().getName());
@@ -98,12 +103,13 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	private final ModulesManager modulesManager = new ModulesManager();
 	private IMucRepository mucRepository;
 	private PresenceModule presenceModule;
-	private IChatRoomLogger roomLogger;
 
-	private ServiceEntity serviceEntity;
+	private MucLogger roomLogger;
 
 	// ~--- get methods
 	// ----------------------------------------------------------
+
+	private ServiceEntity serviceEntity;
 
 	private UserRepository userRepository;
 
@@ -197,6 +203,9 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		props.put(MUC_REPO_CLASS_PROP_KEY, repo_class);
 		props.put(MUC_REPO_URL_PROP_KEY, repo_uri);
 
+		props.put(HistoryManagerFactory.DB_CLASS_KEY, repo_class);
+		props.put(HistoryManagerFactory.DB_CLASS_KEY, repo_uri);
+
 		String[] admins;
 
 		if (params.get(GEN_ADMINS) != null) {
@@ -275,12 +284,12 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	}
 
 	protected void init() {
-
+		System.out.println("INIT MUC");
 		this.modulesManager.register(new PrivateMessageModule(this.config, writer, this.mucRepository));
 		messageModule = this.modulesManager.register(new GroupchatMessageModule(this.config, writer, this.mucRepository,
-				this.roomLogger));
+				historyProvider, roomLogger));
 		presenceModule = this.modulesManager.register(new PresenceModule(this.config, writer, this.mucRepository,
-				this.roomLogger, this));
+				this.historyProvider, this, roomLogger));
 		this.modulesManager.register(new RoomConfigurationModule(this.config, writer, this.mucRepository, messageModule));
 		this.modulesManager.register(new ModeratorModule(this.config, writer, this.mucRepository));
 		this.modulesManager.register(new SoftwareVersionModule(writer));
@@ -410,8 +419,35 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		serviceEntity = new ServiceEntity(getName(), null, "Multi User Chat");
 		serviceEntity.addIdentities(new ServiceIdentity("conference", "text", "Multi User Chat"));
 		serviceEntity.addFeatures("http://jabber.org/protocol/muc");
-		this.config.setServiceName(BareJID.bareJIDInstanceNS("multi-user-chat"));
-		this.config.setLogDirectory((String) props.get(LOG_DIR_KEY));
+		this.config.init(props);
+
+		try {
+			this.historyProvider = HistoryManagerFactory.getHistoryManager(props);
+			this.historyProvider.init(props);
+		} catch (Exception e) {
+			this.historyProvider = new MemoryHistoryProvider();
+			throw new RuntimeException(e);
+		}
+
+		if (props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY)) {
+			String loggerClassName = (String) props.get(MucLogger.MUC_LOGGER_CLASS_KEY);
+			try {
+				log.config("Using Room Logger: " + loggerClassName);
+				this.roomLogger = (MucLogger) Class.forName(loggerClassName).newInstance();
+				this.roomLogger.init(props);
+			} catch (Exception e) {
+				System.err.println("");
+				System.err.println("  --------------------------------------");
+				System.err.println("  ERROR! Terminating the server process.");
+				System.err.println("  Problem initializing the MUC Component: " + e);
+				System.err.println("  Please fix the problem and start the server again.");
+				e.printStackTrace();
+				System.exit(1);
+			}
+		}
+
+		this.config.setPublicLoggingEnabled(this.roomLogger != null || this.historyProvider.isPersistent());
+		log.config("Public Logging Allowed: " + this.config.isPublicLoggingEnabled());
 
 		if (userRepository == null) {
 			userRepository = (UserRepository) props.get(SHARED_USER_REPO_PROP_KEY);
@@ -434,7 +470,6 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 				// System.exit(1);
 			}
 
-			this.roomLogger = new RoomChatLogger(this.config);
 			init();
 		}
 

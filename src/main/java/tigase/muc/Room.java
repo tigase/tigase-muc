@@ -26,13 +26,11 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import tigase.collections.BidiMap;
 import tigase.collections.TwoHashBidiMap;
-import tigase.muc.RoomConfig.Anonymity;
 import tigase.muc.repository.RepositoryException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
@@ -60,8 +58,6 @@ public class Room {
 	private final Date creationDate;
 
 	private final BareJID creatorJid;
-
-	private History history = new History();
 
 	/**
 	 * <real JID, Presence>
@@ -126,10 +122,6 @@ public class Room {
 		this.roles.put(senderJid, role);
 	}
 
-	public void addToHistory(final String message, JID senderJid, String senderNickname, Date time) {
-		history.add(message, senderJid, senderNickname, time);
-	}
-
 	/**
 	 * @param senderJid
 	 * @param nickName
@@ -183,15 +175,6 @@ public class Room {
 
 	public BareJID getCreatorJid() {
 		return creatorJid;
-	}
-
-	public List<Element> getHistoryMessages(JID recipientJid) {
-		Affiliation recipientAffiliation = getAffiliation(recipientJid.getBareJID());
-		boolean showJids = config.getRoomAnonymity() == Anonymity.nonanonymous
-				|| config.getRoomAnonymity() == Anonymity.semianonymous
-				&& (recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
-
-		return history.getMessages(recipientJid, config.getRoomJID(), showJids);
 	}
 
 	public Element getLastPresenceCopyByJid(JID jid) {

@@ -90,6 +90,8 @@ public class RoomConfig {
 
 	public static final String MUC_ROOMCONFIG_ENABLELOGGING_KEY = "muc#roomconfig_enablelogging";
 
+	public static final String MUC_ROOMCONFIG_MAXHISTORY_KEY = "muc#maxhistoryfetch";
+
 	public static final String MUC_ROOMCONFIG_MEMBERSONLY_KEY = "muc#roomconfig_membersonly";
 
 	public static final String MUC_ROOMCONFIG_MODERATEDROOM_KEY = "muc#roomconfig_moderatedroom";
@@ -121,14 +123,18 @@ public class RoomConfig {
 
 	private final ArrayList<RoomConfigListener> listeners = new ArrayList<RoomConfigListener>();
 
+	private final boolean publicLoggingAvailable;
+
 	private final BareJID roomJID;
 
 	/**
 	 * @param roomJID
 	 */
-	public RoomConfig(BareJID roomJID) {
+	public RoomConfig(BareJID roomJID, boolean publicLoggingAvailable) {
 		this.roomJID = roomJID;
+		this.publicLoggingAvailable = publicLoggingAvailable;
 		init();
+
 	}
 
 	public void addListener(RoomConfigListener listener) {
@@ -145,7 +151,7 @@ public class RoomConfig {
 
 	@Override
 	public RoomConfig clone() {
-		final RoomConfig rc = new RoomConfig(getRoomJID());
+		final RoomConfig rc = new RoomConfig(getRoomJID(), this.publicLoggingAvailable);
 		rc.blacklist.addAll(this.blacklist);
 		rc.form.copyValuesFrom(form);
 		return rc;
@@ -249,6 +255,14 @@ public class RoomConfig {
 		}
 	}
 
+	public Integer getMaxHistory() {
+		try {
+			return form.getAsInteger(MUC_ROOMCONFIG_MAXHISTORY_KEY);
+		} catch (Exception e) {
+			return 50;
+		}
+	}
+
 	public String getPassword() {
 		return asString(form.getAsString(MUC_ROOMCONFIG_ROOMSECRET_KEY), "");
 	}
@@ -289,9 +303,14 @@ public class RoomConfig {
 				new String[] { Anonymity.nonanonymous.name(), Anonymity.semianonymous.name(), Anonymity.fullanonymous.name() }));
 		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_CHANGESUBJECT_KEY, Boolean.FALSE, "Allow Occupants to Change Subject?"));
 
-		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_ENABLELOGGING_KEY, Boolean.FALSE, "Enable Public Logging?"));
-		form.addField(Field.fieldListSingle(LOGGING_FORMAT_KEY, LogFormat.html.name(), "Logging format:", new String[] {
-				"HTML", "Plain text" }, new String[] { LogFormat.html.name(), LogFormat.plain.name() }));
+		if (publicLoggingAvailable) {
+			form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_ENABLELOGGING_KEY, Boolean.FALSE, "Enable Public Logging?"));
+			form.addField(Field.fieldListSingle(LOGGING_FORMAT_KEY, LogFormat.html.name(), "Logging format:", new String[] {
+					"HTML", "Plain text" }, new String[] { LogFormat.html.name(), LogFormat.plain.name() }));
+		}
+
+		form.addField(Field.fieldTextSingle(MUC_ROOMCONFIG_MAXHISTORY_KEY, "50",
+				"Maximum Number of History Messages Returned by Room"));
 
 	}
 

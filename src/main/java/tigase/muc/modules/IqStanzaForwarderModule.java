@@ -22,7 +22,6 @@
 package tigase.muc.modules;
 
 import tigase.criteria.Criteria;
-import tigase.criteria.ElementCriteria;
 import tigase.muc.ElementWriter;
 import tigase.muc.MucConfig;
 import tigase.muc.Role;
@@ -49,13 +48,13 @@ public class IqStanzaForwarderModule extends AbstractModule {
 		this.crit = new Criteria() {
 
 			@Override
-			public boolean match(Element element) {
-				return checkIfProcessed(element);
+			public Criteria add(Criteria criteria) {
+				return null;
 			}
 
 			@Override
-			public Criteria add(Criteria criteria) {
-				return null;
+			public boolean match(Element element) {
+				return checkIfProcessed(element);
 			}
 		};
 	}

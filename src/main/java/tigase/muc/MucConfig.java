@@ -21,6 +21,8 @@
  */
 package tigase.muc;
 
+import java.util.Map;
+
 import tigase.xmpp.BareJID;
 
 /**
@@ -29,24 +31,34 @@ import tigase.xmpp.BareJID;
  */
 public class MucConfig {
 
-	private String logDirectory;
+	private Map<String, Object> props;
+
+	private boolean publicLoggingEnabled;
 
 	private BareJID serviceName;
-
-	public String getLogDirectory() {
-		return logDirectory;
-	}
 
 	public BareJID getServiceName() {
 		return serviceName;
 	}
 
-	public void setLogDirectory(String logDirectory) {
-		this.logDirectory = logDirectory;
+	public void init(Map<String, Object> props) {
+		this.props = props;
+		this.serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
+
 	}
 
-	void setServiceName(BareJID serviceName) {
-		this.serviceName = serviceName;
+	/**
+	 * @return
+	 */
+	public boolean isPublicLoggingEnabled() {
+		return publicLoggingEnabled;
+	}
+
+	/**
+	 * @param b
+	 */
+	void setPublicLoggingEnabled(boolean b) {
+		this.publicLoggingEnabled = b;
 	}
 
 }

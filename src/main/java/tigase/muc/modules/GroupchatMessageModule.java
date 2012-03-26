@@ -29,11 +29,12 @@ import java.util.Set;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.ElementWriter;
-import tigase.muc.IChatRoomLogger;
 import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
+import tigase.muc.history.HistoryProvider;
+import tigase.muc.logger.MucLogger;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
@@ -53,12 +54,46 @@ public class GroupchatMessageModule extends AbstractModule {
 	private static final Criteria CRIT_CHAT_STAT = ElementCriteria.xmlns("http://jabber.org/protocol/chatstates");
 
 	private final Set<Criteria> allowedElements = new HashSet<Criteria>();
-	private final IChatRoomLogger chatLogger;
+
+	private final HistoryProvider historyProvider;
+
+	private final MucLogger mucLogger;
 
 	public GroupchatMessageModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository,
-			IChatRoomLogger chatRoomLogger) {
+			HistoryProvider historyProvider, MucLogger mucLogger) {
 		super(config, writer, mucRepository);
-		this.chatLogger = chatRoomLogger;
+		this.historyProvider = historyProvider;
+		this.mucLogger = mucLogger;
+	}
+
+	/**
+	 * @param room
+	 * @param cData
+	 * @param senderJID
+	 * @param nickName
+	 * @param sendDate
+	 */
+	private void addMessageToHistory(Room room, final String message, JID senderJid, String senderNickname, Date time) {
+		historyProvider.addMessage(room, message, senderJid, senderNickname, time);
+
+		if (mucLogger != null && room.getConfig().isLoggingEnabled()) {
+			mucLogger.addMessage(room, message, senderJid, senderNickname, time);
+		}
+	}
+
+	/**
+	 * @param room
+	 * @param cData
+	 * @param senderJID
+	 * @param nickName
+	 * @param sendDate
+	 */
+	private void addSubjectChangeToHistory(Room room, final String subject, JID senderJid, String senderNickname, Date time) {
+		historyProvider.addSubjectChange(room, subject, senderJid, senderNickname, time);
+
+		if (mucLogger != null && room.getConfig().isLoggingEnabled()) {
+			mucLogger.addSubjectChange(room, subject, senderJid, senderNickname, time);
+		}
 	}
 
 	@Override
@@ -133,17 +168,11 @@ public class GroupchatMessageModule extends AbstractModule {
 			Date sendDate = new Date();
 
 			if (body != null)
-				room.addToHistory(body.getCData(), senderJID, nickName, sendDate);
-			if (room.getConfig().isLoggingEnabled()) {
-				if (this.chatLogger != null && body != null) {
-					chatLogger.addMessage(room.getConfig().getLoggingFormat(), room.getRoomJID(), sendDate, nickName,
-							body.getCData());
-				} else if (this.chatLogger != null && subject != null) {
-					chatLogger.addSubject(room.getConfig().getLoggingFormat(), room.getRoomJID(), sendDate, nickName,
-							subject.getCData());
-
-				}
+				addMessageToHistory(room, body.getCData(), senderJID, nickName, sendDate);
+			if (subject != null) {
+				addSubjectChangeToHistory(room, subject.getCData(), senderJID, nickName, sendDate);
 			}
+
 			sendMessagesToAllOccupants(room, senderRoomJID, content.toArray(new Element[] {}));
 		} catch (MUCException e1) {
 			throw e1;
