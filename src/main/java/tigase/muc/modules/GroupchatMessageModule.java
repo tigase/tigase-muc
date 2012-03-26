@@ -24,6 +24,7 @@ package tigase.muc.modules;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import tigase.criteria.Criteria;
@@ -115,12 +116,12 @@ public class GroupchatMessageModule extends AbstractModule {
 	}
 
 	@Override
-	public void process(Packet element) throws MUCException {
+	public void process(Packet packet) throws MUCException {
 		try {
-			final JID senderJID = JID.jidInstance(element.getAttribute("from"));
-			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
+			final JID senderJID = JID.jidInstance(packet.getAttribute("from"));
+			final BareJID roomJID = BareJID.bareJIDInstance(packet.getAttribute("to"));
 
-			if (getNicknameFromJid(JID.jidInstance(element.getAttribute("to"))) != null) {
+			if (getNicknameFromJid(JID.jidInstance(packet.getAttribute("to"))) != null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
@@ -138,22 +139,24 @@ public class GroupchatMessageModule extends AbstractModule {
 			Element subject = null;
 			ArrayList<Element> content = new ArrayList<Element>();
 
-			for (Element c : element.getElement().getChildren()) {
-				if ("body".equals(c.getName())) {
-					body = c;
-					content.add(c);
-				} else if ("subject".equals(c.getName())) {
-					subject = c;
-					content.add(c);
-				} else {
-					for (Criteria crit : allowedElements) {
-						if (crit.match(c)) {
-							content.add(c);
-							break;
+			List<Element> ccs = packet.getElement().getChildren();
+			if (ccs != null)
+				for (Element c : ccs) {
+					if ("body".equals(c.getName())) {
+						body = c;
+						content.add(c);
+					} else if ("subject".equals(c.getName())) {
+						subject = c;
+						content.add(c);
+					} else {
+						for (Criteria crit : allowedElements) {
+							if (crit.match(c)) {
+								content.add(c);
+								break;
+							}
 						}
 					}
 				}
-			}
 
 			final String nickName = room.getOccupantsNickname(senderJID);
 			final JID senderRoomJID = JID.jidInstance(roomJID, nickName);
