@@ -170,7 +170,8 @@ public class PresenceModule extends AbstractModule {
 	 * @param nickName
 	 */
 	private void addJoinToHistory(Room room, Date date, JID senderJID, String nickName) {
-		historyProvider.addJoinEvent(room, date, senderJID, nickName);
+		if (historyProvider != null)
+			historyProvider.addJoinEvent(room, date, senderJID, nickName);
 		if (mucLogger != null && room.getConfig().isLoggingEnabled()) {
 			mucLogger.addJoinEvent(room, date, senderJID, nickName);
 		}
@@ -183,7 +184,8 @@ public class PresenceModule extends AbstractModule {
 	 * @param nickName
 	 */
 	private void addLeaveToHistory(Room room, Date date, JID senderJID, String nickName) {
-		historyProvider.addLeaveEvent(room, date, senderJID, nickName);
+		if (historyProvider != null)
+			historyProvider.addLeaveEvent(room, date, senderJID, nickName);
 		if (mucLogger != null && room.getConfig().isLoggingEnabled()) {
 			mucLogger.addLeaveEvent(room, date, senderJID, nickName);
 		}
@@ -460,7 +462,7 @@ public class PresenceModule extends AbstractModule {
 
 			final int occupantsCount = room.getOccupantsCount();
 			if (occupantsCount == 0) {
-				if (!room.getConfig().isPersistentRoom()) {
+				if (historyProvider != null && !room.getConfig().isPersistentRoom()) {
 					this.historyProvider.removeHistory(room);
 				}
 				this.repository.leaveRoom(room);
@@ -483,9 +485,8 @@ public class PresenceModule extends AbstractModule {
 	 */
 	private void sendHistoryToUser(final Room room, final JID senderJID, final Integer maxchars, final Integer maxstanzas,
 			final Integer seconds, final Date since, final ElementWriter writer) {
-
-		historyProvider.getHistoryMessages(room, senderJID, maxchars, maxstanzas, seconds, since, writer);
-
+		if (historyProvider != null)
+			historyProvider.getHistoryMessages(room, senderJID, maxchars, maxstanzas, seconds, since, writer);
 	}
 
 	public void setLockNewRoom(boolean lockNewRoom) {
