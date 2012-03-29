@@ -204,7 +204,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		props.put(MUC_REPO_URL_PROP_KEY, repo_uri);
 
 		props.put(HistoryManagerFactory.DB_CLASS_KEY, repo_class);
-		props.put(HistoryManagerFactory.DB_CLASS_KEY, repo_uri);
+		props.put(HistoryManagerFactory.DB_URI_KEY, repo_uri);
 
 		String[] admins;
 
