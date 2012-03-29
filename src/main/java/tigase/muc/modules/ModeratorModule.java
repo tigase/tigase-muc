@@ -53,9 +53,13 @@ public class ModeratorModule extends AbstractModule {
 	private static final Criteria CRIT = ElementCriteria.name("iq").add(
 			ElementCriteria.name("query", "http://jabber.org/protocol/muc#admin"));
 
-	private static Affiliation getAffiliation(Element item) {
+	private static Affiliation getAffiliation(Element item) throws MUCException {
 		String tmp = item.getAttribute("affiliation");
-		return tmp == null ? null : Affiliation.valueOf(tmp);
+		try {
+			return tmp == null ? null : Affiliation.valueOf(tmp);
+		} catch (IllegalArgumentException e) {
+			throw new MUCException(Authorization.BAD_REQUEST, "Unknown affiliation value: " + tmp);
+		}
 	}
 
 	private static Collection<JID> getOccupantJidsFromItem(Room room, Element item) {
