@@ -1,6 +1,6 @@
 /*
  * Tigase Jabber/XMPP Multi-User Chat Component
- * Copyright (C) 2008 "Bartosz M. Ma∏kowski" <bartosz.malkowski@tigase.org>
+ * Copyright (C) 2008 "Bartosz M. Ma≈Çkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
