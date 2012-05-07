@@ -36,12 +36,15 @@ public class DateUtil {
 
 	public static Date parse(String s) {
 		Date result = null;
+		if (s == null)
+			return null;
 		try {
 			result = FORMAT.parse(s);
+			return result;
 		} catch (ParseException e) {
-			e.printStackTrace();
+			return null;
 		}
-		return result;
+
 	}
 
 	private DateUtil() {
