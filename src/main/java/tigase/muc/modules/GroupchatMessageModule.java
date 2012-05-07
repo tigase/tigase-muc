@@ -56,6 +56,8 @@ public class GroupchatMessageModule extends AbstractModule {
 
 	private final Set<Criteria> allowedElements = new HashSet<Criteria>();
 
+	private boolean filterEnabled = true;
+
 	private final HistoryProvider historyProvider;
 
 	private final MucLogger mucLogger;
@@ -65,6 +67,8 @@ public class GroupchatMessageModule extends AbstractModule {
 		super(config, writer, mucRepository);
 		this.historyProvider = historyProvider;
 		this.mucLogger = mucLogger;
+		this.filterEnabled = config.isMessageFilterEnabled();
+		log.config("Filtering message children is " + (filterEnabled ? "enabled" : "disabled"));
 	}
 
 	/**
@@ -149,6 +153,8 @@ public class GroupchatMessageModule extends AbstractModule {
 						content.add(c);
 					} else if ("subject".equals(c.getName())) {
 						subject = c;
+						content.add(c);
+					} else if (!filterEnabled) {
 						content.add(c);
 					} else {
 						for (Criteria crit : allowedElements) {

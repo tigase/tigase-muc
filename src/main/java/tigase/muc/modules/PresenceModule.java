@@ -21,9 +21,13 @@
  */
 package tigase.muc.modules;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -45,6 +49,7 @@ import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
+import tigase.xml.XMLNodeIfc;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
@@ -150,6 +155,12 @@ public class PresenceModule extends AbstractModule {
 		}
 	}
 
+	private final Set<Criteria> allowedElements = new HashSet<Criteria>();
+
+	private final Set<Criteria> disallowedElements = new HashSet<Criteria>();
+
+	private boolean filterEnabled = true;
+
 	private final HistoryProvider historyProvider;
 
 	private boolean lockNewRoom = true;
@@ -161,6 +172,13 @@ public class PresenceModule extends AbstractModule {
 		super(config, writer, mucRepository);
 		this.historyProvider = historyProvider;
 		this.mucLogger = mucLogger;
+		this.filterEnabled = config.isPresenceFilterEnabled();
+
+		allowedElements.add(ElementCriteria.name("show"));
+		allowedElements.add(ElementCriteria.name("status"));
+		allowedElements.add(ElementCriteria.name("priority"));
+		allowedElements.add(ElementCriteria.xmlns("http://jabber.org/protocol/caps"));
+		log.config("Filtering presence children is " + (filterEnabled ? "enabled" : "disabled"));
 	}
 
 	/**
@@ -381,7 +399,8 @@ public class PresenceModule extends AbstractModule {
 				}
 			}
 
-			room.updatePresenceByJid(senderJID, element.getElement());
+			updatePresence(room, senderJID, element.getElement());
+
 			final Role role = exitingRoom ? Role.none : room.getRoleByJid(senderJID);
 
 			if (changeNickName) {
@@ -491,5 +510,33 @@ public class PresenceModule extends AbstractModule {
 
 	public void setLockNewRoom(boolean lockNewRoom) {
 		this.lockNewRoom = lockNewRoom;
+	}
+
+	/**
+	 * @param room
+	 * @param senderJID
+	 * @param element
+	 */
+	private void updatePresence(final Room room, final JID senderJID, final Element element) {
+		Element presence = new Element(element);
+
+		if (filterEnabled) {
+			List<Element> cc = element.getChildren();
+			if (cc != null) {
+				List<XMLNodeIfc> children = new ArrayList<XMLNodeIfc>();
+				for (Element c : cc) {
+					for (Criteria crit : allowedElements) {
+						if (crit.match(c)) {
+							children.add(c);
+							break;
+						}
+					}
+				}
+
+				presence.setChildren(children);
+			}
+		}
+
+		room.updatePresenceByJid(senderJID, presence);
 	}
 }

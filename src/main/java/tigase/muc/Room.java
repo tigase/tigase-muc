@@ -357,8 +357,7 @@ public class Room {
 	 * @param nickName
 	 * @param element
 	 */
-	public void updatePresenceByJid(JID jid, Element element) {
-		Element cp = element.clone();
+	public void updatePresenceByJid(JID jid, Element cp) {
 		Element toRemove = cp.getChild("x", "http://jabber.org/protocol/muc");
 		if (toRemove != null)
 			cp.removeChild(toRemove);

@@ -85,14 +85,16 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	/** Field description */
 	public static final String ADMINS_KEY = "admins";
 	public static final String LOG_DIR_KEY = "room-log-directory";
+	public static final String MESSAGE_FILTER_ENABLED_KEY = "message-filter-enabled";
 	public static final String MUC_ALLOW_CHAT_STATES_KEY = "muc-allow-chat-states";
-	public static final String MUC_LOCK_NEW_ROOM_KEY = "muc-lock-new-room";
 
 	// ~--- fields
 	// ---------------------------------------------------------------
 
+	public static final String MUC_LOCK_NEW_ROOM_KEY = "muc-lock-new-room";
 	protected static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
 	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
+	public static final String PRESENCE_FILTER_ENABLED_KEY = "presence-filter-enabled";
 	private MucConfig config = new MucConfig();
 	private MucDAO dao;
 	private HistoryProvider historyProvider;
@@ -101,13 +103,15 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 	private GroupchatMessageModule messageModule;
 	private final ModulesManager modulesManager = new ModulesManager();
-	private IMucRepository mucRepository;
-	private PresenceModule presenceModule;
 
-	private MucLogger roomLogger;
+	private IMucRepository mucRepository;
 
 	// ~--- get methods
 	// ----------------------------------------------------------
+
+	private PresenceModule presenceModule;
+
+	private MucLogger roomLogger;
 
 	private ServiceEntity serviceEntity;
 
@@ -185,6 +189,9 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		} else {
 			HOSTNAMES_PROP_VAL = DNSResolver.getDefHostNames();
 		}
+
+		props.put(MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
+		props.put(PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
 
 		String[] hostnames = new String[HOSTNAMES_PROP_VAL.length];
 		int i = 0;

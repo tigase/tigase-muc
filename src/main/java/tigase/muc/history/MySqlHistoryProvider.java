@@ -53,7 +53,7 @@ public class MySqlHistoryProvider extends AbstractHistoryProvider {
 
 	private final String createMucHistoryTable = "create table muc_history (" + "room_name char(128) NOT NULL,\n"
 			+ "event_type int, \n" + "timestamp bigint,\n" + "sender_jid varchar(2049),\n" + "sender_nickname char(128),\n"
-			+ "body varchar(4096),\n" + "public_event boolean " + ")";
+			+ "body text,\n" + "public_event boolean " + ")";
 
 	private final DataRepository dataRepository;
 

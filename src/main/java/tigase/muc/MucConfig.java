@@ -31,11 +31,19 @@ import tigase.xmpp.BareJID;
  */
 public class MucConfig {
 
+	private boolean messageFilterEnabled;
+
+	private boolean presenceFilterEnabled;
+
 	private Map<String, Object> props;
 
 	private boolean publicLoggingEnabled;
 
 	private BareJID serviceName;
+
+	public Map<String, Object> getProps() {
+		return props;
+	}
 
 	public BareJID getServiceName() {
 		return serviceName;
@@ -44,7 +52,16 @@ public class MucConfig {
 	public void init(Map<String, Object> props) {
 		this.props = props;
 		this.serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
+		this.messageFilterEnabled = (Boolean) props.get(MUCComponent.MESSAGE_FILTER_ENABLED_KEY);
+		this.presenceFilterEnabled = (Boolean) props.get(MUCComponent.PRESENCE_FILTER_ENABLED_KEY);
+	}
 
+	public boolean isMessageFilterEnabled() {
+		return messageFilterEnabled;
+	}
+
+	public boolean isPresenceFilterEnabled() {
+		return presenceFilterEnabled;
 	}
 
 	/**
