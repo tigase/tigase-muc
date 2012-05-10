@@ -68,11 +68,14 @@ public class DiscoItemsModule extends AbstractModule {
 			if (roomJID.getLocalpart() == null) {
 				// discovering rooms
 				// (http://xmpp.org/extensions/xep-0045.html#disco-rooms)
-				String[] roomsId = repository.getPublicVisibleRoomsIdList();
-				for (final String jid : roomsId) {
-					final String name = repository.getRoomName(jid);
-					resultQuery.addChild(new Element("item", new String[] { "jid", "name" }, new String[] { jid,
-							name != null ? name : jid }));
+
+				BareJID[] roomsId = repository.getPublicVisibleRoomsIdList();
+				for (final BareJID jid : roomsId) {
+					if (jid.getDomain().equals(roomJID.getDomain())) {
+						final String name = repository.getRoomName(jid.toString());
+						resultQuery.addChild(new Element("item", new String[] { "jid", "name" }, new String[] { jid.toString(),
+								name != null ? name : jid.getLocalpart() }));
+					}
 				}
 			} else {
 				// querying for Room Items

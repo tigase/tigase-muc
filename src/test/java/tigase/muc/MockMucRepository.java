@@ -124,14 +124,14 @@ public class MockMucRepository implements IMucRepository {
 	 * @see tigase.muc.repository.IMucRepository#getRoomsIdList()
 	 */
 	@Override
-	public String[] getPublicVisibleRoomsIdList() throws RepositoryException {
-		List<String> result = new ArrayList<String>();
+	public BareJID[] getPublicVisibleRoomsIdList() throws RepositoryException {
+		List<BareJID> result = new ArrayList<BareJID>();
 		for (Entry<BareJID, InternalRoom> entry : this.allRooms.entrySet()) {
 			if (entry.getValue().listPublic) {
-				result.add(entry.getKey().toString());
+				result.add(entry.getKey());
 			}
 		}
-		return result.toArray(new String[] {});
+		return result.toArray(new BareJID[] {});
 	}
 
 	/*

@@ -38,7 +38,7 @@ public interface IMucRepository {
 
 	RoomConfig getDefaultRoomConfig() throws RepositoryException;
 
-	String[] getPublicVisibleRoomsIdList() throws RepositoryException;
+	BareJID[] getPublicVisibleRoomsIdList() throws RepositoryException;
 
 	Room getRoom(BareJID roomJID) throws RepositoryException, MUCException, TigaseStringprepException;
 
