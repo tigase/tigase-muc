@@ -28,6 +28,7 @@ import java.sql.Statement;
 import java.util.Date;
 import java.util.Map;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import tigase.db.DataRepository;
 import tigase.muc.Affiliation;
@@ -107,6 +108,8 @@ public class MySqlHistoryProvider extends AbstractHistoryProvider {
 
 	}
 
+	private Logger log = Logger.getLogger(this.getClass().getName());
+
 	/** {@inheritDoc} */
 	@Override
 	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
@@ -118,23 +121,39 @@ public class MySqlHistoryProvider extends AbstractHistoryProvider {
 		int maxMessages = room.getConfig().getMaxHistory();
 		try {
 			if (since != null) {
+				if (log.isLoggable(Level.FINEST)) {
+					log.finest("Using SINCE selector: roomJID=" + roomJID + ", since=" + since.getTime() + " (" + since + ")");
+				}
 				st = dataRepository.getPreparedStatement(null, GET_MESSAGES_SINCE_QUERY);
 				st.setString(1, roomJID);
 				st.setLong(2, since.getTime());
 				st.setInt(3, maxMessages);
 			} else if (maxstanzas != null) {
+				if (log.isLoggable(Level.FINEST)) {
+					log.finest("Using MAXSTANZAS selector: roomJID=" + roomJID + ", maxstanzas=" + maxstanzas);
+				}
 				st = dataRepository.getPreparedStatement(null, GET_MESSAGES_MAXSTANZAS_QUERY);
 				st.setString(1, roomJID);
 				st.setInt(2, Math.min(maxstanzas, maxMessages));
 			} else if (seconds != null) {
+				if (log.isLoggable(Level.FINEST)) {
+					log.finest("Using SECONDS selector: roomJID=" + roomJID + ", seconds=" + seconds);
+				}
 				st = dataRepository.getPreparedStatement(null, GET_MESSAGES_SINCE_QUERY);
 				st.setString(1, roomJID);
 				st.setLong(2, new Date().getTime() - seconds * 1000);
 				st.setInt(3, maxMessages);
 			} else {
+				if (log.isLoggable(Level.FINEST)) {
+					log.finest("Using DEFAULT selector: roomJID=" + roomJID);
+				}
 				st = dataRepository.getPreparedStatement(null, GET_MESSAGES_MAXSTANZAS_QUERY);
 				st.setString(1, roomJID);
 				st.setInt(2, maxMessages);
+			}
+
+			if (log.isLoggable(Level.FINEST)) {
+				log.finest("Select messages for " + senderJID + " from room " + roomJID + ": " + st);
 			}
 
 			rs = st.executeQuery();
