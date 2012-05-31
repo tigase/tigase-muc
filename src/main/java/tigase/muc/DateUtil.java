@@ -1,23 +1,15 @@
 package tigase.muc;
 
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 
 public class DateUtil {
 
-	private final static SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-
-	static {
-		FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
-	}
+	private final static DateTimeFormatter formatter = new DateTimeFormatter();
 
 	public static String formatDatetime(Date date) {
-		Calendar now = Calendar.getInstance();
-		now.setTimeZone(TimeZone.getTimeZone("GMT"));
-		now.setTime(date);
-		return String.format("%1$tY-%1$tm-%1$tdT%1$tH:%1$tM:%1$tSZ", now);
+		return formatter.formatDateTime(date);
 	}
 
 	/**
@@ -35,7 +27,7 @@ public class DateUtil {
 
 	public static Date parse(String s) {
 		try {
-			return FORMAT.parse(s);
+			return formatter.parseDateTime(s).getTime();
 		} catch (Exception e) {
 			return null;
 		}
