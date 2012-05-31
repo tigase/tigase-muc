@@ -1,6 +1,5 @@
 package tigase.muc;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -11,14 +10,8 @@ public class DateUtil {
 	private final static SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
 	public static String formatDatetime(Date date) {
-		Calendar c = Calendar.getInstance();
-		c.setTime(date);
-		c.add(Calendar.MILLISECOND, -c.getTimeZone().getRawOffset());
-		if (c.getTimeZone().inDaylightTime(date)) {
-			c.add(Calendar.MILLISECOND, -c.getTimeZone().getDSTSavings());
-		}
-
-		return FORMAT.format(c.getTime());
+		Date d = new Date(date.getTime());
+		return FORMAT.format(d);
 	}
 
 	/**
@@ -35,16 +28,15 @@ public class DateUtil {
 	}
 
 	public static Date parse(String s) {
-		Date result = null;
-		if (s == null)
-			return null;
 		try {
-			result = FORMAT.parse(s);
-			return result;
-		} catch (ParseException e) {
+			return FORMAT.parse(s);
+		} catch (Exception e) {
 			return null;
 		}
+	}
 
+	{
+		FORMAT.setTimeZone(TimeZone.getTimeZone("GMT"));
 	}
 
 	private DateUtil() {

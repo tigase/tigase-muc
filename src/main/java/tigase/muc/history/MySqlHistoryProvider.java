@@ -58,6 +58,8 @@ public class MySqlHistoryProvider extends AbstractHistoryProvider {
 
 	private final DataRepository dataRepository;
 
+	private Logger log = Logger.getLogger(this.getClass().getName());
+
 	/**
 	 * @param dataRepository
 	 */
@@ -107,8 +109,6 @@ public class MySqlHistoryProvider extends AbstractHistoryProvider {
 		// TODO Auto-generated method stub
 
 	}
-
-	private Logger log = Logger.getLogger(this.getClass().getName());
 
 	/** {@inheritDoc} */
 	@Override
