@@ -10,8 +10,10 @@ public class DateUtil {
 	private final static SimpleDateFormat FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 
 	public static String formatDatetime(Date date) {
-		Date d = new Date(date.getTime());
-		return FORMAT.format(d);
+		Calendar now = Calendar.getInstance();
+		now.setTimeZone(TimeZone.getTimeZone("GMT"));
+		now.setTime(date);
+		return String.format("%1$tY-%1$tm-%1$tdT%1$tH:%1$tM:%1$tSZ", now);
 	}
 
 	/**
