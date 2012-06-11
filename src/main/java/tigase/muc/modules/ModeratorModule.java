@@ -375,6 +375,11 @@ public class ModeratorModule extends AbstractModule {
 		final BareJID occupantBareJid = JID.jidInstance(item.getAttribute("jid")).getBareJID();
 		final Affiliation previousAffiliation = room.getAffiliation(occupantBareJid);
 
+		if (room.getConfig().isRoomMembersOnly() && previousAffiliation.getWeight() <= Affiliation.none.getWeight()
+				&& newAffiliation.getWeight() >= Affiliation.member.getWeight()) {
+			sendInvitation(room, occupantBareJid, actor);
+		}
+
 		room.addAffiliationByJid(occupantBareJid, newAffiliation);
 		JID[] realOccupantJids = room.getRealJidsByBareJid(occupantBareJid);
 
@@ -438,6 +443,26 @@ public class ModeratorModule extends AbstractModule {
 				writer.write(Packet.packetInstance(occupantPresence));
 			}
 		}
+	}
+
+	/**
+	 * @param room
+	 * @param occupantBareJid
+	 */
+	private void sendInvitation(Room room, BareJID occupantBareJid, String actor) {
+		final Element message = new Element("message", new String[] { "from", "to" }, new String[] {
+				room.getRoomJID().toString(), occupantBareJid.toString() });
+		final Element x = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
+		message.addChild(x);
+
+		final Element invite = new Element("invite", new String[] { "from" }, new String[] { actor });
+		x.addChild(invite);
+
+		if (room.getConfig().isPasswordProtectedRoom()) {
+			x.addChild(new Element("password", room.getConfig().getPassword()));
+		}
+
+		writer.writeElement(message);
 	}
 
 }
