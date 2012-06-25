@@ -477,7 +477,8 @@ public class PresenceModule extends AbstractModule {
 		if (currentOccupantJid == null) {
 			// Service Sends New Occupant's Presence to All Occupants
 			// Service Sends New Occupant's Presence to New Occupant
-			preparePresenceToAllOccupants(pe, room, room.getRoomJID(), nickname, affiliation, newRole, senderJID, false, null);
+			preparePresenceToAllOccupants(pe, room, room.getRoomJID(), nickname, affiliation, newRole, senderJID, roomCreated,
+					null);
 		} else {
 			// Service Sends New Occupant's Presence to New Occupant
 			Element p = preparePresence(senderJID, pe, room, room.getRoomJID(), nickname, affiliation, newRole, senderJID,
