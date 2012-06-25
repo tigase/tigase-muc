@@ -140,8 +140,8 @@ public class RoomTest extends XMPPTestCase {
 		test("src/test/scripts/ping.cor", xmlio);
 	}
 
-	@org.junit.Test
-	public void test_presences() {
-		test("src/test/scripts/processPresence-empty.cor", xmlio);
-	}
+//	@org.junit.Test
+//	public void test_presences() {
+//		test("src/test/scripts/processPresence-empty.cor", xmlio);
+//	}
 }
