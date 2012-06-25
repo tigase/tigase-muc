@@ -297,8 +297,8 @@ public class PresenceModule extends AbstractModule {
 			throws TigaseStringprepException {
 		for (String occupantNickname : room.getOccupantsNicknames()) {
 			for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
-				Element presence = preparePresence(occupantJid, $presence.clone(), room, roomJID, occupantNickname,
-						affiliation, role, senderJID, newRoomCreated, newNickName);
+				Element presence = preparePresence(occupantJid, $presence.clone(), room, roomJID, nickName, affiliation, role,
+						senderJID, newRoomCreated, newNickName);
 				writer.write(Packet.packetInstance(presence));
 			}
 		}
@@ -477,8 +477,7 @@ public class PresenceModule extends AbstractModule {
 		if (currentOccupantJid == null) {
 			// Service Sends New Occupant's Presence to All Occupants
 			// Service Sends New Occupant's Presence to New Occupant
-			preparePresenceToAllOccupants(pe, room, room.getRoomJID(), nickname, affiliation, newRole, senderJID, roomCreated,
-					null);
+			preparePresenceToAllOccupants(room, room.getRoomJID(), nickname, affiliation, newRole, senderJID, roomCreated, null);
 		} else {
 			// Service Sends New Occupant's Presence to New Occupant
 			Element p = preparePresence(senderJID, pe, room, room.getRoomJID(), nickname, affiliation, newRole, senderJID,
