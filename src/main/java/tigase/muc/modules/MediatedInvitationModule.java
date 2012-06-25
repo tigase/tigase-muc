@@ -74,7 +74,8 @@ public class MediatedInvitationModule extends AbstractModule {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
 
-			final Role senderRole = room.getRoleByJid(senderJID);
+			final String nickName = room.getOccupantsNickname(senderJID);
+			final Role senderRole = room.getRole(nickName);
 			if (!senderRole.isInviteOtherUsers()) {
 				throw new MUCException(Authorization.NOT_ALLOWED);
 			}

@@ -47,7 +47,6 @@ import tigase.muc.logger.MucLogger;
 import tigase.muc.modules.DiscoInfoModule;
 import tigase.muc.modules.DiscoItemsModule;
 import tigase.muc.modules.GroupchatMessageModule;
-import tigase.muc.modules.IqStanzaForwarderModule;
 import tigase.muc.modules.MediatedInvitationModule;
 import tigase.muc.modules.ModeratorModule;
 import tigase.muc.modules.PresenceModule;
@@ -305,7 +304,6 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		this.modulesManager.register(new DiscoInfoModule(this.config, writer, this.mucRepository, this));
 		this.modulesManager.register(new MediatedInvitationModule(this.config, writer, this.mucRepository));
 		this.modulesManager.register(new UniqueRoomNameModule(this.config, writer, this.mucRepository));
-		this.modulesManager.register(new IqStanzaForwarderModule(this.config, writer, this.mucRepository));
 	}
 
 	/**
@@ -333,37 +331,22 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 						log.finer(packet.getElemName() + " stanza with type='error' ignored");
 				}
 			}
-		} catch (MUCException e) {
-			try {
-				if (log.isLoggable(Level.FINER)) {
-					log.log(Level.FINER, "Exception thrown for " + packet.toString(), e);
-				} else if (log.isLoggable(Level.FINE)) {
-					log.log(Level.FINE, "PubSubException on stanza id=" + packet.getAttribute("id") + " " + e.getMessage());
-				}
-
-				final String t = packet.getElement().getAttribute("type");
-				if (t != null && t == "error") {
-					if (log.isLoggable(Level.FINER))
-						log.finer(packet.getElemName() + " stanza already with type='error' ignored");
-					return;
-				}
-
-				Packet result = e.makeElement(packet, true);
-				Element el = result.getElement();
-				el.setAttribute("from", BareJID.bareJIDInstance(el.getAttribute("from")).toString());
-				if (log.isLoggable(Level.FINEST)) {
-					log.log(Level.FINEST, "Sending back: " + result.toString());
-				}
-				writer.write(result);
-			} catch (Exception e1) {
-				if (log.isLoggable(Level.WARNING))
-					log.log(Level.WARNING, "Problem during generate error response", e1);
+		} catch (TigaseStringprepException e) {
+			if (log.isLoggable(Level.FINER)) {
+				log.log(Level.FINER, "Exception thrown for " + packet.toString(), e);
+			} else if (log.isLoggable(Level.FINE)) {
+				log.log(Level.FINE, "PubSubException on stanza id=" + packet.getAttribute("id") + " " + e.getMessage());
 			}
+			sendException(packet, new MUCException(Authorization.JID_MALFORMED));
+		} catch (MUCException e) {
+			if (log.isLoggable(Level.FINER)) {
+				log.log(Level.FINER, "Exception thrown for " + packet.toString(), e);
+			} else if (log.isLoggable(Level.FINE)) {
+				log.log(Level.FINE, "PubSubException on stanza id=" + packet.getAttribute("id") + " " + e.getMessage());
+			}
+			sendException(packet, e);
 		}
 	}
-
-	// ~--- set methods
-	// ----------------------------------------------------------
 
 	/**
 	 * Method description
@@ -374,6 +357,32 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	@Override
 	public void sendDelayedPacket(Packet packet) {
 		addOutPacket(packet);
+	}
+
+	// ~--- set methods
+	// ----------------------------------------------------------
+
+	private void sendException(final Packet packet, final MUCException e) {
+		try {
+
+			final String t = packet.getElement().getAttribute("type");
+			if (t != null && t == "error") {
+				if (log.isLoggable(Level.FINER))
+					log.finer(packet.getElemName() + " stanza already with type='error' ignored");
+				return;
+			}
+
+			Packet result = e.makeElement(packet, true);
+			Element el = result.getElement();
+			el.setAttribute("from", BareJID.bareJIDInstance(el.getAttribute("from")).toString());
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "Sending back: " + result.toString());
+			}
+			writer.write(result);
+		} catch (Exception e1) {
+			if (log.isLoggable(Level.WARNING))
+				log.log(Level.WARNING, "Problem during generate error response", e1);
+		}
 	}
 
 	/**

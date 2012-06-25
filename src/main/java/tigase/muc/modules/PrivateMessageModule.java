@@ -21,6 +21,8 @@
  */
 package tigase.muc.modules;
 
+import java.util.Collection;
+
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.ElementWriter;
@@ -75,22 +77,23 @@ public class PrivateMessageModule extends AbstractModule {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
 
-			final Role senderRole = room.getRoleByJid(senderJID);
+			final String senderNickname = room.getOccupantsNickname(senderJID);
+
+			final Role senderRole = room.getRole(senderNickname);
 			if (!senderRole.isSendPrivateMessages()) {
 				throw new MUCException(Authorization.NOT_ALLOWED);
 			}
 
-			final JID recipientJid = room.getOccupantsJidsByNickname(recipientNickname);
-			if (recipientJid == null)
+			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);
+			if (recipientJids.isEmpty())
 				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
 
-			final String senderNickname = room.getOccupantsNickname(senderJID);
-
-			final Element message = element.getElement().clone();
-			message.setAttribute("from", JID.jidInstance(roomJID, senderNickname).toString());
-			message.setAttribute("to", recipientJid.toString());
-
-			writer.write(Packet.packetInstance(message));
+			for (JID jid : recipientJids) {
+				final Element message = element.getElement().clone();
+				message.setAttribute("from", JID.jidInstance(roomJID, senderNickname).toString());
+				message.setAttribute("to", jid.toString());
+				writer.write(Packet.packetInstance(message));
+			}
 
 		} catch (MUCException e1) {
 			throw e1;

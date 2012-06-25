@@ -8,6 +8,7 @@ import java.util.logging.Logger;
 import tigase.criteria.Criteria;
 import tigase.muc.exceptions.MUCException;
 import tigase.server.Packet;
+import tigase.util.TigaseStringprepException;
 
 public class ModulesManager {
 
@@ -38,11 +39,11 @@ public class ModulesManager {
 		return features;
 	}
 
-	public boolean process(final Packet packet) throws MUCException {
+	public boolean process(final Packet packet) throws MUCException, TigaseStringprepException {
 		return process(packet, this.writer);
 	}
 
-	public boolean process(final Packet packet, final ElementWriter writer) throws MUCException {
+	public boolean process(final Packet packet, final ElementWriter writer) throws MUCException, TigaseStringprepException {
 		if (writer == null)
 			throw new Error("ElementWriter is null");
 		boolean handled = false;

@@ -25,13 +25,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import tigase.collections.BidiMap;
 import tigase.collections.TwoHashBidiMap;
 import tigase.muc.repository.RepositoryException;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
@@ -42,6 +46,16 @@ import tigase.xmpp.JID;
  */
 public class Room {
 
+	private static class OccupantEntry {
+
+		public BareJID jid;
+
+		private final Set<JID> jids = new HashSet<JID>();
+
+		private Role role = Role.none;
+
+	}
+
 	public static interface RoomListener {
 		void onChangeSubject(Room room, String nick, String newSubject, Date changeDate);
 
@@ -51,7 +65,7 @@ public class Room {
 	/**
 	 * <bareJID, Affiliation>
 	 */
-	private final HashMap<BareJID, Affiliation> affiliations = new HashMap<BareJID, Affiliation>();
+	private final Map<BareJID, Affiliation> affiliations = new ConcurrentHashMap<BareJID, Affiliation>();
 
 	private final RoomConfig config;
 
@@ -59,22 +73,14 @@ public class Room {
 
 	private final BareJID creatorJid;
 
-	/**
-	 * <real JID, Presence>
-	 */
-	private final HashMap<JID, Element> lastPresences = new HashMap<JID, Element>();
-
-	private final ArrayList<RoomListener> listeners = new ArrayList<RoomListener>();
+	private final List<RoomListener> listeners = new CopyOnWriteArrayList<RoomListener>();
 
 	/**
-	 * < real JID,nickname>
+	 * < nickname,real JID>
 	 */
-	private final BidiMap<JID, String> occupantsJidNickname = new TwoHashBidiMap<JID, String>();
+	private final TwoHashBidiMap<String, OccupantEntry> occupants = new TwoHashBidiMap<String, OccupantEntry>();
 
-	/**
-	 * <real JID, Role>
-	 */
-	private final HashMap<JID, Role> roles = new HashMap<JID, Role>();
+	private final PresenceStore presences = new PresenceStore();
 
 	private boolean roomLocked;
 
@@ -118,8 +124,15 @@ public class Room {
 	 * @param nickName
 	 */
 	public void addOccupantByJid(JID senderJid, String nickName, Role role) {
-		this.occupantsJidNickname.put(senderJid, nickName);
-		this.roles.put(senderJid, role);
+		OccupantEntry entry = this.occupants.get(nickName);
+		if (entry == null) {
+			entry = new OccupantEntry();
+			entry.jid = senderJid.getBareJID();
+			this.occupants.put(nickName, entry);
+		}
+
+		entry.role = role;
+		entry.jids.add(senderJid);
 	}
 
 	/**
@@ -127,7 +140,11 @@ public class Room {
 	 * @param nickName
 	 */
 	public void changeNickName(JID senderJid, String nickName) {
-		this.occupantsJidNickname.put(senderJid, nickName);
+		OccupantEntry occ = getBySenderJid(senderJid);
+		String oldNickname = this.occupants.getKey(occ);
+
+		this.occupants.remove(oldNickname);
+		this.occupants.put(nickName, occ);
 	}
 
 	private void fireOnSetAffiliation(BareJID jid, Affiliation affiliation) {
@@ -156,10 +173,28 @@ public class Room {
 	}
 
 	/**
+	 * @param occupantNickname
+	 * @return
+	 */
+	public Affiliation getAffiliation(String nickname) {
+		OccupantEntry entry = this.occupants.get(nickname);
+		return getAffiliation(entry == null ? null : entry.jid);
+	}
+
+	/**
 	 * @return
 	 */
 	public Collection<BareJID> getAffiliations() {
 		return this.affiliations.keySet();
+	}
+
+	private OccupantEntry getBySenderJid(JID sender) {
+		for (Entry<String, OccupantEntry> e : occupants.entrySet()) {
+			if (e.getValue().jids.contains(sender)) {
+				return e.getValue();
+			}
+		}
+		return null;
 	}
 
 	public RoomConfig getConfig() {
@@ -177,78 +212,96 @@ public class Room {
 		return creatorJid;
 	}
 
-	public Element getLastPresenceCopyByJid(JID jid) {
-		Element x = this.lastPresences.get(jid);
-		return x == null ? null : x.clone();
+	public Element getLastPresenceCopyByJid(BareJID occupantJid) {
+		Element e = this.presences.getBestPresence(occupantJid);
+		if (e != null) {
+			return e.clone();
+		} else {
+			return null;
+		}
 	}
 
 	/**
 	 * @return
 	 */
 	public int getOccupantsCount() {
-		return this.occupantsJidNickname.size();
-	}
-
-	public Collection<JID> getOccupantsJids() {
-		return Collections.unmodifiableSet(this.occupantsJidNickname.keySet());
-	}
-
-	/**
-	 * @param jid
-	 * @return
-	 */
-	public Collection<JID> getOccupantsJids(BareJID jid) {
-		ArrayList<JID> result = new ArrayList<JID>();
-		for (Entry<JID, String> entry : this.occupantsJidNickname.entrySet()) {
-			if (jid.equals(entry.getKey().getBareJID())) {
-				result.add(entry.getKey());
-			}
-		}
-
-		return result;
-	}
-
-	/**
-	 * @param itemNick
-	 */
-	public JID getOccupantsJidsByNickname(String nickname) {
-		return this.occupantsJidNickname.getKey(nickname);
-	}
-
-	/**
-	 * @param nickName
-	 * @return
-	 */
-	public String getOccupantsNickname(JID jid) {
-		return this.occupantsJidNickname.get(jid);
-	}
-
-	/**
-	 * @param occupantBareJid
-	 * @return
-	 */
-	public JID[] getRealJidsByBareJid(final BareJID occupantBareJid) {
-		ArrayList<JID> result = new ArrayList<JID>();
-
-		for (Entry<JID, String> entry : this.occupantsJidNickname.entrySet()) {
-			if (occupantBareJid.equals(entry.getKey())) {
-				result.add(entry.getKey());
-			}
-		}
-
-		return result.toArray(new JID[] {});
+		return this.occupants.size();
 	}
 
 	/**
 	 * @param occupantNickname
 	 * @return
 	 */
-	public Role getRoleByJid(JID jid) {
-		Role result = null;
-		if (jid != null) {
-			result = this.roles.get(jid);
+	public BareJID getOccupantsJidByNickname(String nickname) {
+		OccupantEntry entry = this.occupants.get(nickname);
+		if (entry == null)
+			return null;
+
+		if (!entry.jids.isEmpty()) {
+			return entry.jids.iterator().next().getBareJID();
 		}
-		return result == null ? Role.none : result;
+
+		return null;
+	}
+
+	/**
+	 * @param recipientNickame
+	 * @return
+	 */
+	public Collection<JID> getOccupantsJidsByNickname(final String nickname) {
+		OccupantEntry entry = this.occupants.get(nickname);
+		if (entry == null)
+			return new ArrayList<JID>();
+
+		return Collections.unmodifiableCollection(entry.jids);
+	}
+
+	/**
+	 * @param jid
+	 * @return
+	 */
+	public String getOccupantsNickname(JID jid) {
+		OccupantEntry e = getBySenderJid(jid);
+		if (e == null)
+			return null;
+
+		String nickname = occupants.getKey(e);
+
+		return nickname;
+	}
+
+	/**
+	 * @return
+	 */
+	public Collection<String> getOccupantsNicknames() {
+		return Collections.unmodifiableCollection(this.occupants.keySet());
+	}
+
+	/**
+	 * @param occupantBareJid
+	 * @return
+	 */
+	public Collection<String> getOccupantsNicknames(BareJID bareJid) {
+		Set<String> result = new HashSet<String>();
+
+		for (Entry<String, OccupantEntry> e : this.occupants.entrySet()) {
+			if (e.getValue().jid.equals(bareJid)) {
+				result.add(e.getKey());
+			}
+		}
+
+		return Collections.unmodifiableCollection(result);
+	}
+
+	/**
+	 * @param nickName
+	 * @return
+	 */
+	public Role getRole(String nickname) {
+		OccupantEntry entry = this.occupants.get(nickname);
+		if (entry == null)
+			return Role.none;
+		return entry.role == null ? Role.none : entry.role;
 	}
 
 	public BareJID getRoomJID() {
@@ -273,52 +326,45 @@ public class Room {
 		return subjectChangerNick;
 	}
 
-	public boolean isNickNameExistsForDifferentJid(String nickname, JID jid) {
-		JID j = this.occupantsJidNickname.getKey(nickname);
-		return j != null && !j.equals(jid);
-	}
-
 	/**
-	 * @param senderJid
+	 * @param senderJID
 	 * @return
 	 */
-	public boolean isOccupantExistsByJid(JID senderJid) {
-		return this.occupantsJidNickname.containsKey(senderJid);
+	public boolean isOccupantInRoom(final JID jid) {
+		return getBySenderJid(jid) != null;
 	}
 
 	public boolean isRoomLocked() {
 		return roomLocked;
 	}
 
-	public void removeAllOccupantsByBareJid(BareJID jid) {
-		for (JID full_jid : this.occupantsJidNickname.keySet()) {
-			BareJID bare_jid = full_jid.getBareJID();
-			if (bare_jid.equals(jid)) {
-				this.occupantsJidNickname.remove(jid);
-			}
-		}
-		for (JID full_jid : this.roles.keySet()) {
-			BareJID bare_jid = full_jid.getBareJID();
-			if (bare_jid.equals(jid)) {
-				this.roles.remove(jid);
-			}
-		}
-		for (JID full_jid : this.lastPresences.keySet()) {
-			BareJID bare_jid = full_jid.getBareJID();
-			if (bare_jid.equals(jid)) {
-				this.lastPresences.remove(jid);
-			}
-		}
-	}
-
 	public void removeListener(RoomListener listener) {
 		this.listeners.remove(listener);
 	}
 
-	public void removeOccupantByJid(JID jid) {
-		this.occupantsJidNickname.remove(jid);
-		this.roles.remove(jid);
-		this.lastPresences.remove(jid);
+	/**
+	 * 
+	 * @param jid
+	 * @return <code>true</code> if no more JIDs assigned to nickname. In other
+	 *         words: nickname is removed
+	 */
+	public boolean removeOccupant(JID jid) {
+		OccupantEntry e = getBySenderJid(jid);
+		if (e != null) {
+			e.jids.remove(jid);
+			if (e.jids.isEmpty()) {
+				this.occupants.removeValue(e);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * @param occupantNick
+	 */
+	public void removeOccupant(String occupantNick) {
+		this.occupants.remove(occupantNick);
 	}
 
 	/**
@@ -329,8 +375,15 @@ public class Room {
 		this.affiliations.putAll(affiliations);
 	}
 
-	public void setNewRole(JID occupantJid, Role occupantNewRole) {
-		this.roles.put(occupantJid, occupantNewRole);
+	/**
+	 * @param occupantNick
+	 * @param newRole
+	 */
+	public void setNewRole(String nickname, Role newRole) {
+		OccupantEntry entry = this.occupants.get(nickname);
+		if (entry != null)
+			entry.role = newRole;
+
 	}
 
 	/**
@@ -356,13 +409,14 @@ public class Room {
 	/**
 	 * @param nickName
 	 * @param element
+	 * @throws TigaseStringprepException
 	 */
-	public void updatePresenceByJid(JID jid, Element cp) {
+	public void updatePresenceByJid(JID jid, Element cp) throws TigaseStringprepException {
 		Element toRemove = cp.getChild("x", "http://jabber.org/protocol/muc");
 		if (toRemove != null)
 			cp.removeChild(toRemove);
 
-		this.lastPresences.put(jid, cp);
+		this.presences.update(cp);
 	}
 
 }

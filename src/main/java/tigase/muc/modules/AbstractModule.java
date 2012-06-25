@@ -21,6 +21,7 @@
  */
 package tigase.muc.modules;
 
+import java.util.Collection;
 import java.util.logging.Logger;
 
 import tigase.muc.ElementWriter;
@@ -70,12 +71,16 @@ public abstract class AbstractModule implements Module {
 		return true;
 	}
 
-	protected void sendMucMessage(Room room, String nickname, String message) throws TigaseStringprepException {
-		JID occupantJid = room.getOccupantsJidsByNickname(nickname);
-		Element msg = new Element("message", new String[] { "from", "to", "type" }, new String[] {
-				room.getRoomJID().toString(), occupantJid.toString(), "groupchat" });
+	protected void sendMucMessage(Room room, String recipientNickame, String message) throws TigaseStringprepException {
+		Collection<JID> occupantJids = room.getOccupantsJidsByNickname(recipientNickame);
 
-		msg.addChild(new Element("body", message));
-		writer.write(Packet.packetInstance(msg));
+		for (JID jid : occupantJids) {
+			Element msg = new Element("message", new String[] { "from", "to", "type" }, new String[] {
+					room.getRoomJID().toString(), jid.toString(), "groupchat" });
+
+			msg.addChild(new Element("body", message));
+			writer.write(Packet.packetInstance(msg));
+		}
+
 	}
 }

@@ -24,6 +24,7 @@ package tigase.muc;
 import tigase.criteria.Criteria;
 import tigase.muc.exceptions.MUCException;
 import tigase.server.Packet;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 
 public interface Module {
@@ -35,5 +36,5 @@ public interface Module {
 	@Deprecated
 	boolean isProcessedByModule(final Element element);
 
-	void process(final Packet packet) throws MUCException;
+	void process(final Packet packet) throws MUCException, TigaseStringprepException;
 }

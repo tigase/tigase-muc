@@ -22,6 +22,7 @@
 package tigase.muc.modules;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -136,7 +137,8 @@ public class GroupchatMessageModule extends AbstractModule {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
 
-			Role role = room.getRoleByJid(senderJID);
+			final String nickName = room.getOccupantsNickname(senderJID);
+			final Role role = room.getRole(nickName);
 			if (!role.isSendMessagesToAll() || (room.getConfig().isRoomModerated() && role == Role.visitor)) {
 				throw new MUCException(Authorization.FORBIDDEN);
 			}
@@ -166,7 +168,6 @@ public class GroupchatMessageModule extends AbstractModule {
 					}
 				}
 
-			final String nickName = room.getOccupantsNickname(senderJID);
 			final JID senderRoomJID = JID.jidInstance(roomJID, nickName);
 
 			if (subject != null) {
@@ -197,19 +198,25 @@ public class GroupchatMessageModule extends AbstractModule {
 
 	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, final Element... content)
 			throws TigaseStringprepException {
-		for (JID occupantsJID : room.getOccupantsJids()) {
-			Role role = room.getRoleByJid(occupantsJID);
+
+		for (String nickname : room.getOccupantsNicknames()) {
+			final Role role = room.getRole(nickname);
 			if (!role.isReceiveMessages())
 				continue;
-			Element message = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",
-					fromJID.toString(), occupantsJID.toString() });
-			if (content != null) {
-				for (Element sub : content) {
-					if (sub != null)
-						message.addChild(sub);
+
+			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
+			for (JID jid : occupantJids) {
+				Element message = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",
+						fromJID.toString(), jid.toString() });
+				if (content != null) {
+					for (Element sub : content) {
+						if (sub != null)
+							message.addChild(sub);
+					}
 				}
+				writer.write(Packet.packetInstance(message));
 			}
-			writer.write(Packet.packetInstance(message));
+
 		}
 	}
 
