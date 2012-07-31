@@ -366,14 +366,15 @@ public class PresenceModule extends AbstractModule {
 				knownNickname = room.getOccupantsNickname(senderJID);
 			}
 
-			if (knownNickname != null && knownNickname.equals(nickName)) {
-				processChangeAvailabilityStatus(room, element.getElement(), senderJID, knownNickname);
-			} else if (knownNickname != null && !knownNickname.equals(nickName)) {
-				processChangeNickname(room, element.getElement(), senderJID, knownNickname, nickName);
-			} else if (knownNickname == null) {
-				processEntering(room, roomCreated, element.getElement(), senderJID, nickName);
-			}
+			final boolean probablyReEnter = element.getElement().getChild("x", "http://jabber.org/protocol/muc") != null;
 
+			if (probablyReEnter || knownNickname == null) {
+				processEntering(room, roomCreated, element.getElement(), senderJID, nickName);
+			} else if (knownNickname.equals(nickName)) {
+				processChangeAvailabilityStatus(room, element.getElement(), senderJID, knownNickname);
+			} else if (!knownNickname.equals(nickName)) {
+				processChangeNickname(room, element.getElement(), senderJID, knownNickname, nickName);
+			}
 		} catch (MUCException e) {
 			throw e;
 		} catch (TigaseStringprepException e) {
