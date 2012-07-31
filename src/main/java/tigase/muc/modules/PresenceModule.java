@@ -414,7 +414,7 @@ public class PresenceModule extends AbstractModule {
 	protected void processEntering(final Room room, final boolean roomCreated, final Element element, final JID senderJID,
 			final String nickname) throws MUCException, TigaseStringprepException {
 		if (log.isLoggable(Level.FINEST))
-			log.finest("Processing stanza " + presenceElement.toString());
+			log.finest("Processing stanza " + element.toString());
 
 		final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
 		final Anonymity anonymity = room.getConfig().getRoomAnonymity();
