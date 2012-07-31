@@ -412,10 +412,6 @@ public class Room {
 	 * @throws TigaseStringprepException
 	 */
 	public void updatePresenceByJid(JID jid, Element cp) throws TigaseStringprepException {
-		Element toRemove = cp.getChild("x", "http://jabber.org/protocol/muc");
-		if (toRemove != null)
-			cp.removeChild(toRemove);
-
 		this.presences.update(cp);
 	}
 

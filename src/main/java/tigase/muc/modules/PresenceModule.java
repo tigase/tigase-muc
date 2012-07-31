@@ -230,6 +230,10 @@ public class PresenceModule extends AbstractModule {
 			}
 		}
 
+		Element toRemove = presence.getChild("x", "http://jabber.org/protocol/muc");
+		if (toRemove != null)
+			presence.removeChild(toRemove);
+
 		return presence;
 	}
 
@@ -382,6 +386,10 @@ public class PresenceModule extends AbstractModule {
 
 	protected void processChangeAvailabilityStatus(final Room room, final Element presenceElement, final JID senderJID,
 			final String nickname) throws TigaseStringprepException {
+
+		if (log.isLoggable(Level.FINEST))
+			log.finest("Processing stanza " + presenceElement.toString());
+
 		room.updatePresenceByJid(null, clonePresence(presenceElement));
 
 		final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
@@ -394,6 +402,9 @@ public class PresenceModule extends AbstractModule {
 
 	protected void processChangeNickname(final Room room, final Element element, final JID senderJID,
 			final String senderNickname, final String newNickName) throws TigaseStringprepException, MUCException {
+		if (log.isLoggable(Level.FINEST))
+			log.finest("Processing stanza " + element.toString());
+
 		throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED, "Will me done soon");
 		// TODO Example 23. Service Denies Room Join Because Roomnicks Are
 		// Locked Down (???)
@@ -402,6 +413,9 @@ public class PresenceModule extends AbstractModule {
 
 	protected void processEntering(final Room room, final boolean roomCreated, final Element element, final JID senderJID,
 			final String nickname) throws MUCException, TigaseStringprepException {
+		if (log.isLoggable(Level.FINEST))
+			log.finest("Processing stanza " + presenceElement.toString());
+
 		final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
 		final Anonymity anonymity = room.getConfig().getRoomAnonymity();
 		final Element xElement = element.getChild("x", "http://jabber.org/protocol/muc");
@@ -539,6 +553,9 @@ public class PresenceModule extends AbstractModule {
 
 	protected void processExit(final Room room, final Element presenceElement, final JID senderJID) throws MUCException,
 			TigaseStringprepException {
+		if (log.isLoggable(Level.FINEST))
+			log.finest("Processing stanza " + presenceElement.toString());
+
 		if (room == null)
 			throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unkown room");
 
@@ -555,16 +572,18 @@ public class PresenceModule extends AbstractModule {
 				senderJID, false, null);
 
 		boolean nicknameGone = room.removeOccupant(senderJID);
-		room.updatePresenceByJid(senderJID, presenceElement);
+		room.updatePresenceByJid(senderJID, pe);
 
 		writer.writeElement(selfPresence);
 
+		// TODO if highest priority is gone, then send current highest priority
+		// to occupants
+
 		if (nicknameGone) {
 			preparePresenceToAllOccupants(pe, room, room.getRoomJID(), nickname, affiliation, role, senderJID, false, null);
-		}
-
-		if (room.getConfig().isLoggingEnabled()) {
-			addLeaveToHistory(room, new Date(), senderJID, nickname);
+			if (room.getConfig().isLoggingEnabled()) {
+				addLeaveToHistory(room, new Date(), senderJID, nickname);
+			}
 		}
 	}
 
@@ -586,32 +605,4 @@ public class PresenceModule extends AbstractModule {
 		this.lockNewRoom = lockNewRoom;
 	}
 
-	/**
-	 * @param room
-	 * @param senderJID
-	 * @param element
-	 * @throws TigaseStringprepException
-	 */
-	private void updatePresence(final Room room, final JID senderJID, final Element element) throws TigaseStringprepException {
-		Element presence = new Element(element);
-
-		if (filterEnabled) {
-			List<Element> cc = element.getChildren();
-			if (cc != null) {
-				List<XMLNodeIfc> children = new ArrayList<XMLNodeIfc>();
-				for (Element c : cc) {
-					for (Criteria crit : allowedElements) {
-						if (crit.match(c)) {
-							children.add(c);
-							break;
-						}
-					}
-				}
-
-				presence.setChildren(children);
-			}
-		}
-
-		room.updatePresenceByJid(senderJID, presence);
-	}
 }
