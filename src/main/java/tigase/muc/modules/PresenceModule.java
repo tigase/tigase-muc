@@ -332,6 +332,7 @@ public class PresenceModule extends AbstractModule {
 		final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
 		final String nickName = getNicknameFromJid(JID.jidInstance(element.getAttribute("to")));
 		final String presenceType = element.getAttribute("type");
+		// final String id = element.getAttribute("id");
 
 		if (presenceType != null && "error".equals(presenceType)) {
 			if (log.isLoggable(Level.FINER))
@@ -368,12 +369,12 @@ public class PresenceModule extends AbstractModule {
 
 			final boolean probablyReEnter = element.getElement().getChild("x", "http://jabber.org/protocol/muc") != null;
 
-			if (probablyReEnter || knownNickname == null) {
+			if (knownNickname != null && !knownNickname.equals(nickName)) {
+				processChangeNickname(room, element.getElement(), senderJID, knownNickname, nickName);
+			} else if (probablyReEnter || knownNickname == null) {
 				processEntering(room, roomCreated, element.getElement(), senderJID, nickName);
 			} else if (knownNickname.equals(nickName)) {
 				processChangeAvailabilityStatus(room, element.getElement(), senderJID, knownNickname);
-			} else if (!knownNickname.equals(nickName)) {
-				processChangeNickname(room, element.getElement(), senderJID, knownNickname, nickName);
 			}
 		} catch (MUCException e) {
 			throw e;
