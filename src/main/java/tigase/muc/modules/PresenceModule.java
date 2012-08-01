@@ -504,7 +504,7 @@ public class PresenceModule extends AbstractModule {
 		Integer maxstanzas = null;
 		Integer seconds = null;
 		Date since = null;
-		Element hist = xElement.getChild("history");
+		Element hist = xElement == null ? null : xElement.getChild("history");
 		if (hist != null) {
 			maxchars = toInteger(hist.getAttribute("maxchars"), null);
 			maxstanzas = toInteger(hist.getAttribute("maxstanzas"), null);
