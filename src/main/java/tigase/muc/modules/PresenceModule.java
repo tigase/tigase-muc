@@ -296,11 +296,17 @@ public class PresenceModule extends AbstractModule {
 
 	private PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, JID occupantJID)
 			throws TigaseStringprepException {
+		final String occupantNickname = room.getOccupantsNickname(occupantJID);
+		return preparePresenceW(room, destinationJID, presence, occupantNickname);
+	}
+
+	private PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, String occupantNickname)
+			throws TigaseStringprepException {
 
 		Anonymity anonymity = room.getConfig().getRoomAnonymity();
 
-		final String occupantNickname = room.getOccupantsNickname(occupantJID);
-		final Affiliation occupantAffiliation = room.getAffiliation(occupantJID.getBareJID());
+		final BareJID occupantJID = room.getOccupantsJidByNickname(occupantNickname);
+		final Affiliation occupantAffiliation = room.getAffiliation(occupantJID);
 		final Role occupantRole = room.getRole(occupantNickname);
 		final Affiliation destinationAffiliation = room.getAffiliation(destinationJID.getBareJID());
 
@@ -318,7 +324,7 @@ public class PresenceModule extends AbstractModule {
 		Packet packet = Packet.packetInstance(presence);
 		PresenceWrapper wrapper = new PresenceWrapper(packet, x, item);
 
-		if (occupantJID.equals(destinationJID)) {
+		if (occupantJID.equals(destinationJID.getBareJID())) {
 			wrapper.packet.setPriority(Priority.HIGH);
 			wrapper.addStatusCode(110);
 			if (anonymity == Anonymity.nonanonymous) {
@@ -330,7 +336,7 @@ public class PresenceModule extends AbstractModule {
 		}
 		if (anonymity == Anonymity.nonanonymous
 				|| (anonymity == Anonymity.semianonymous && destinationAffiliation.isViewOccupantsJid())) {
-			item.setAttribute("jid", occupantJID.getBareJID().toString());
+			item.setAttribute("jid", occupantJID.toString());
 		}
 
 		return wrapper;
@@ -471,24 +477,14 @@ public class PresenceModule extends AbstractModule {
 			final Role occupantRole = room.getRole(occupantNickname);
 			final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNickname);
 
-			Element presence = room.getLastPresenceCopyByJid(occupantJid);
-			presence.setAttribute("from", room.getRoomJID() + "/" + occupantNickname);
-			presence.setAttribute("to", senderJID.toString());
+			Element op = room.getLastPresenceCopyByJid(occupantJid);
+			PresenceWrapper l = preparePresenceW(room, senderJID, op, occupantNickname);
 
-			Element x = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
+			// presence.setAttribute("from", room.getRoomJID() + "/" +
+			// occupantNickname);
+			// presence.setAttribute("to", senderJID.toString());
 
-			Element item = new Element("item", new String[] { "affiliation", "role", "nick" }, new String[] {
-					occupantAffiliation.name(), occupantRole.name(), occupantNickname });
-
-			if (anonymity == Anonymity.nonanonymous
-					|| (anonymity == Anonymity.semianonymous && (affiliation == Affiliation.admin || affiliation == Affiliation.owner))) {
-				item.setAttribute("jid", occupantJid.toString());
-			}
-
-			x.addChild(item);
-			presence.addChild(x);
-
-			writer.write(Packet.packetInstance(presence));
+			writer.write(l.packet);
 		}
 
 		final Role newRole = getDefaultRole(room.getConfig(), affiliation);
@@ -502,10 +498,6 @@ public class PresenceModule extends AbstractModule {
 			// Service Sends New Occupant's Presence to All Occupants
 			// Service Sends New Occupant's Presence to New Occupant
 			sendPresenceToAllOccupants(room, senderJID, roomCreated, null);
-		} else {
-			// Service Sends New Occupant's Presence to New Occupant
-			PresenceWrapper p = preparePresence(senderJID, pe, room, senderJID, roomCreated, null);
-			writer.write(p.packet);
 		}
 
 		Integer maxchars = null;
