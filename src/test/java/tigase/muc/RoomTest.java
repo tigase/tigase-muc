@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.Assert;
 import org.junit.Before;
 
 import tigase.muc.repository.RepositoryException;
@@ -133,6 +134,18 @@ public class RoomTest extends XMPPTestCase {
 		};
 
 		pubsub.init();
+	}
+
+	@org.junit.Test
+	public void test_nonpersistentRoomProblem() {
+		test("src/test/scripts/nonpersistent-room-problem.cor", xmlio);
+		try {
+			Room room = pubsub.getMucRepository().getRoom(BareJID.bareJIDInstance("darkcave@macbeth.shakespeare.lit"));
+			Assert.assertNull("Room should be destroyed", room);
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		}
 	}
 
 	@org.junit.Test

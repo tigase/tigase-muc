@@ -253,9 +253,6 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		return null;
 	}
 
-	// ~--- methods
-	// --------------------------------------------------------------
-
 	/**
 	 * Method description
 	 * 
@@ -276,6 +273,9 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		}
 	}
 
+	// ~--- methods
+	// --------------------------------------------------------------
+
 	/**
 	 * Method description
 	 * 
@@ -287,6 +287,10 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		result.add("http://jabber.org/protocol/muc");
 		result.addAll(this.modulesManager.getFeatures());
 		return result;
+	}
+
+	public IMucRepository getMucRepository() {
+		return mucRepository;
 	}
 
 	protected void init() {

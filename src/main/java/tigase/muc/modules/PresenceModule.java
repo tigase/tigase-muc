@@ -294,20 +294,11 @@ public class PresenceModule extends AbstractModule {
 
 	}
 
-	private PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, JID occupantJID)
-			throws TigaseStringprepException {
-		final String occupantNickname = room.getOccupantsNickname(occupantJID);
-		return preparePresenceW(room, destinationJID, presence, occupantNickname);
-	}
-
-	private PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, String occupantNickname)
-			throws TigaseStringprepException {
+	private PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, BareJID occupantJID,
+			String occupantNickname, Affiliation occupantAffiliation, Role occupantRole) throws TigaseStringprepException {
 
 		Anonymity anonymity = room.getConfig().getRoomAnonymity();
 
-		final BareJID occupantJID = room.getOccupantsJidByNickname(occupantNickname);
-		final Affiliation occupantAffiliation = room.getAffiliation(occupantJID);
-		final Role occupantRole = room.getRole(occupantNickname);
 		final Affiliation destinationAffiliation = room.getAffiliation(destinationJID.getBareJID());
 
 		try {
@@ -341,6 +332,22 @@ public class PresenceModule extends AbstractModule {
 
 		return wrapper;
 
+	}
+
+	private PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, JID occupantJID)
+			throws TigaseStringprepException {
+		final String occupantNickname = room.getOccupantsNickname(occupantJID);
+		return preparePresenceW(room, destinationJID, presence, occupantNickname);
+	}
+
+	private PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, String occupantNickname)
+			throws TigaseStringprepException {
+		final BareJID occupantJID = room.getOccupantsJidByNickname(occupantNickname);
+		final Affiliation occupantAffiliation = room.getAffiliation(occupantJID);
+		final Role occupantRole = room.getRole(occupantNickname);
+
+		return preparePresenceW(room, destinationJID, presence, occupantJID, occupantNickname, occupantAffiliation,
+				occupantRole);
 	}
 
 	@Override
@@ -560,17 +567,18 @@ public class PresenceModule extends AbstractModule {
 		if (room == null)
 			throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unkown room");
 
-		final String nickname = room.getOccupantsNickname(senderJID);
+		final String leavingNickname = room.getOccupantsNickname(senderJID);
+		final Affiliation leavingAffiliation = room.getAffiliation(leavingNickname);
+		final Role leavingRole = room.getRole(leavingNickname);
 
-		if (nickname == null)
+		if (leavingNickname == null)
 			throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unkown occupant");
 
-		final Element pe = clonePresence(presenceElement);
-
-		final PresenceWrapper selfPresence = preparePresence(senderJID, pe, room, senderJID, false, null);
+		final PresenceWrapper selfPresence = preparePresence(senderJID, clonePresence(presenceElement), room, senderJID, false,
+				null);
 
 		boolean nicknameGone = room.removeOccupant(senderJID);
-		room.updatePresenceByJid(senderJID, pe);
+		room.updatePresenceByJid(senderJID, presenceElement);
 
 		writer.write(selfPresence.packet);
 
@@ -578,11 +586,26 @@ public class PresenceModule extends AbstractModule {
 		// to occupants
 
 		if (nicknameGone) {
-			sendPresenceToAllOccupants(pe, room, senderJID, false, null);
+			for (String occupantNickname : room.getOccupantsNicknames()) {
+				for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
+					PresenceWrapper presence = preparePresenceW(room, occupantJid, clonePresence(presenceElement),
+							senderJID.getBareJID(), leavingNickname, leavingAffiliation, leavingRole);
+					writer.write(presence.packet);
+				}
+			}
+
 			if (room.getConfig().isLoggingEnabled()) {
-				addLeaveToHistory(room, new Date(), senderJID, nickname);
+				addLeaveToHistory(room, new Date(), senderJID, leavingNickname);
 			}
 		}
+
+		if (room.getOccupantsCount() == 0) {
+			if (historyProvider != null && !room.getConfig().isPersistentRoom()) {
+				this.historyProvider.removeHistory(room);
+			}
+			this.repository.leaveRoom(room);
+		}
+
 	}
 
 	/**
