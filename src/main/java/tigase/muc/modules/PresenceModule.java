@@ -114,13 +114,13 @@ public class PresenceModule extends AbstractModule {
 		}
 	}
 
-	private class PresenceWrapper {
+	public static class PresenceWrapper {
 		final Element item;
 
 		final Packet packet;
 		final Element x;
 
-		public PresenceWrapper(Packet packet, Element x, Element item) {
+		PresenceWrapper(Packet packet, Element x, Element item) {
 			this.packet = packet;
 			this.x = x;
 			this.item = item;
@@ -164,6 +164,64 @@ public class PresenceModule extends AbstractModule {
 		return newRole;
 	}
 
+	static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, BareJID occupantJID,
+			String occupantNickname, Affiliation occupantAffiliation, Role occupantRole) throws TigaseStringprepException {
+
+		Anonymity anonymity = room.getConfig().getRoomAnonymity();
+
+		final Affiliation destinationAffiliation = room.getAffiliation(destinationJID.getBareJID());
+
+		try {
+			presence.setAttribute("from", JID.jidInstance(room.getRoomJID(), occupantNickname).toString());
+		} catch (TigaseStringprepException e) {
+			presence.setAttribute("from", room.getRoomJID() + "/" + occupantNickname);
+		}
+		presence.setAttribute("to", destinationJID.toString());
+		Element x = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
+		Element item = new Element("item", new String[] { "affiliation", "role", "nick" }, new String[] {
+				occupantAffiliation.name(), occupantRole.name(), occupantNickname });
+		x.addChild(item);
+		presence.addChild(x);
+		Packet packet = Packet.packetInstance(presence);
+		PresenceWrapper wrapper = new PresenceWrapper(packet, x, item);
+
+		if (occupantJID.equals(destinationJID.getBareJID())) {
+			wrapper.packet.setPriority(Priority.HIGH);
+			wrapper.addStatusCode(110);
+			if (anonymity == Anonymity.nonanonymous) {
+				wrapper.addStatusCode(100);
+			}
+			if (room.getConfig().isLoggingEnabled()) {
+				wrapper.addStatusCode(170);
+			}
+		}
+		if (anonymity == Anonymity.nonanonymous
+				|| (anonymity == Anonymity.semianonymous && destinationAffiliation.isViewOccupantsJid())) {
+			item.setAttribute("jid", occupantJID.toString());
+		}
+
+		return wrapper;
+
+	}
+
+	static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, JID occupantJID)
+			throws TigaseStringprepException {
+		final String occupantNickname = room.getOccupantsNickname(occupantJID);
+		return preparePresenceW(room, destinationJID, presence, occupantNickname);
+	}
+
+	// private final Set<Criteria> disallowedElements = new HashSet<Criteria>();
+
+	static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, String occupantNickname)
+			throws TigaseStringprepException {
+		final BareJID occupantJID = room.getOccupantsJidByNickname(occupantNickname);
+		final Affiliation occupantAffiliation = room.getAffiliation(occupantJID);
+		final Role occupantRole = room.getRole(occupantNickname);
+
+		return preparePresenceW(room, destinationJID, presence, occupantJID, occupantNickname, occupantAffiliation,
+				occupantRole);
+	}
+
 	private static Integer toInteger(String v, Integer defaultValue) {
 		if (v == null)
 			return defaultValue;
@@ -175,8 +233,6 @@ public class PresenceModule extends AbstractModule {
 	}
 
 	private final Set<Criteria> allowedElements = new HashSet<Criteria>();
-
-	// private final Set<Criteria> disallowedElements = new HashSet<Criteria>();
 
 	private boolean filterEnabled = true;
 
@@ -228,6 +284,13 @@ public class PresenceModule extends AbstractModule {
 		}
 	}
 
+	// private Element preparePresence(JID destinationJID, final Element
+	// presence, Room room, BareJID roomJID,
+	// String occupantNickname, Affiliation affiliation, Role role, JID
+	// senderJID, boolean newRoomCreated,
+	// String newNickName) {
+	// }
+
 	protected Element clonePresence(Element element) {
 		Element presence = new Element(element);
 
@@ -266,13 +329,6 @@ public class PresenceModule extends AbstractModule {
 		return CRIT;
 	}
 
-	// private Element preparePresence(JID destinationJID, final Element
-	// presence, Room room, BareJID roomJID,
-	// String occupantNickname, Affiliation affiliation, Role role, JID
-	// senderJID, boolean newRoomCreated,
-	// String newNickName) {
-	// }
-
 	public boolean isLockNewRoom() {
 		return lockNewRoom;
 	}
@@ -292,62 +348,6 @@ public class PresenceModule extends AbstractModule {
 
 		return wrapper;
 
-	}
-
-	private PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, BareJID occupantJID,
-			String occupantNickname, Affiliation occupantAffiliation, Role occupantRole) throws TigaseStringprepException {
-
-		Anonymity anonymity = room.getConfig().getRoomAnonymity();
-
-		final Affiliation destinationAffiliation = room.getAffiliation(destinationJID.getBareJID());
-
-		try {
-			presence.setAttribute("from", JID.jidInstance(room.getRoomJID(), occupantNickname).toString());
-		} catch (TigaseStringprepException e) {
-			presence.setAttribute("from", room.getRoomJID() + "/" + occupantNickname);
-		}
-		presence.setAttribute("to", destinationJID.toString());
-		Element x = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
-		Element item = new Element("item", new String[] { "affiliation", "role", "nick" }, new String[] {
-				occupantAffiliation.name(), occupantRole.name(), occupantNickname });
-		x.addChild(item);
-		presence.addChild(x);
-		Packet packet = Packet.packetInstance(presence);
-		PresenceWrapper wrapper = new PresenceWrapper(packet, x, item);
-
-		if (occupantJID.equals(destinationJID.getBareJID())) {
-			wrapper.packet.setPriority(Priority.HIGH);
-			wrapper.addStatusCode(110);
-			if (anonymity == Anonymity.nonanonymous) {
-				wrapper.addStatusCode(100);
-			}
-			if (room.getConfig().isLoggingEnabled()) {
-				wrapper.addStatusCode(170);
-			}
-		}
-		if (anonymity == Anonymity.nonanonymous
-				|| (anonymity == Anonymity.semianonymous && destinationAffiliation.isViewOccupantsJid())) {
-			item.setAttribute("jid", occupantJID.toString());
-		}
-
-		return wrapper;
-
-	}
-
-	private PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, JID occupantJID)
-			throws TigaseStringprepException {
-		final String occupantNickname = room.getOccupantsNickname(occupantJID);
-		return preparePresenceW(room, destinationJID, presence, occupantNickname);
-	}
-
-	private PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, String occupantNickname)
-			throws TigaseStringprepException {
-		final BareJID occupantJID = room.getOccupantsJidByNickname(occupantNickname);
-		final Affiliation occupantAffiliation = room.getAffiliation(occupantJID);
-		final Role occupantRole = room.getRole(occupantNickname);
-
-		return preparePresenceW(room, destinationJID, presence, occupantJID, occupantNickname, occupantAffiliation,
-				occupantRole);
 	}
 
 	@Override

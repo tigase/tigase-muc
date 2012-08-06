@@ -27,9 +27,11 @@ import tigase.form.Form;
 import tigase.muc.Affiliation;
 import tigase.muc.ElementWriter;
 import tigase.muc.MucConfig;
+import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
+import tigase.muc.modules.PresenceModule.PresenceWrapper;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.RepositoryException;
 import tigase.server.Packet;
@@ -129,17 +131,38 @@ public class RoomConfigurationModule extends AbstractModule {
 			Room room = repository.getRoom(roomJID.getBareJID());
 			if (room == null) {
 				room = repository.createNewRoom(roomJID.getBareJID(), senderJID);
-			} else {
-				if (room.getAffiliation(senderJID.getBareJID()) != Affiliation.owner) {
-					throw new MUCException(Authorization.FORBIDDEN);
-				}
+			}
+
+			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
+			if (room.getAffiliation(senderJID.getBareJID()) != Affiliation.owner) {
+				throw new MUCException(Authorization.FORBIDDEN);
 			}
 
 			final Element x = query.getChild("x", "jabber:x:data");
 			final Element destroy = query.getChild("destroy");
 			if (destroy != null) {
+				if (!affiliation.isDestroyRoom())
+					throw new MUCException(Authorization.FORBIDDEN);
+
+				for (String occupantNickname : room.getOccupantsNicknames()) {
+					for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
+						final Element p = new Element("presence");
+						p.addAttribute("type", "unavailable");
+
+						PresenceWrapper presence = PresenceModule.preparePresenceW(room, occupantJid, p,
+								occupantJid.getBareJID(), occupantNickname, Affiliation.none, Role.none);
+						presence.x.addChild(destroy);
+
+						writer.write(presence.packet);
+					}
+				}
+
 				// XXX TODO
-				throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
+				// throw new
+				// MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
+
+				writer.write(element.okResult((Element) null, 0));
+				repository.destroyRoom(room);
 			} else if (x != null) {
 				Form form = new Form(x);
 				if ("submit".equals(form.getType())) {

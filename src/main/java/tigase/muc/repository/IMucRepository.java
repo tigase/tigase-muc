@@ -36,6 +36,8 @@ public interface IMucRepository {
 
 	Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException;
 
+	void destroyRoom(Room room) throws RepositoryException;
+
 	RoomConfig getDefaultRoomConfig() throws RepositoryException;
 
 	BareJID[] getPublicVisibleRoomsIdList() throws RepositoryException;

@@ -157,6 +157,15 @@ public class InMemoryMucRepository implements IMucRepository {
 	}
 
 	@Override
+	public void destroyRoom(Room room) throws RepositoryException {
+		final BareJID roomJID = room.getRoomJID();
+		log.fine("Destroying room '" + roomJID);
+		this.rooms.remove(roomJID);
+		this.allRooms.remove(roomJID);
+		dao.destroyRoom(roomJID);
+	}
+
+	@Override
 	public RoomConfig getDefaultRoomConfig() throws RepositoryException {
 		if (defaultConfig == null) {
 			defaultConfig = new RoomConfig(null, this.mucConfig.isPublicLoggingEnabled());

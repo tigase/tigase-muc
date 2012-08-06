@@ -137,6 +137,18 @@ public class RoomTest extends XMPPTestCase {
 	}
 
 	@org.junit.Test
+	public void test_destroyRoom() {
+		test("src/test/scripts/destroying-room.cor", xmlio);
+		try {
+			Room room = pubsub.getMucRepository().getRoom(BareJID.bareJIDInstance("darkcave@macbeth.shakespeare.lit"));
+			Assert.assertNull("Room should be destroyed", room);
+		} catch (Exception e) {
+			e.printStackTrace();
+			Assert.fail(e.getMessage());
+		}
+	}
+
+	@org.junit.Test
 	public void test_nonpersistentRoomProblem() {
 		test("src/test/scripts/nonpersistent-room-problem.cor", xmlio);
 		try {
