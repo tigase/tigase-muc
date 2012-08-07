@@ -35,7 +35,7 @@ import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
-import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -71,26 +71,29 @@ public class DiscoInfoModule extends AbstractModule {
 	public void process(Packet element) throws MUCException {
 		try {
 			String toXML = element.getAttribute("to");
-			final BareJID roomJID = BareJID.bareJIDInstance(toXML);
+			final String node = element.getAttribute("/iq/query", "node");
+			final JID requestedJID = JID.jidInstance(toXML);
 			Element resultQuery = new Element("query", new String[] { "xmlns" },
 					new String[] { "http://jabber.org/protocol/disco#info" });
 
 			Packet result = element.okResult(resultQuery, 0);
 
-			if (roomJID.getLocalpart() == null) {
+			if (node == null && requestedJID.getLocalpart() == null && requestedJID.getResource() == null) {
 				Element resultIdentity = new Element("identity", new String[] { "category", "name", "type" }, new String[] {
 						"conference", "Multi User Chat", "text" });
 				resultQuery.addChild(resultIdentity);
 				resultQuery.addChild(new Element("feature", new String[] { "var" },
 						new String[] { "http://jabber.org/protocol/muc" }));
+				resultQuery.addChild(new Element("feature", new String[] { "var" },
+						new String[] { "http://jabber.org/protocol/commands" }));
 				final Set<String> features = this.muc.getFeaturesFromModule();
 				if (features != null) {
 					for (String featur : features) {
 						resultQuery.addChild(new Element("feature", new String[] { "var" }, new String[] { featur }));
 					}
 				}
-			} else {
-				Room room = repository.getRoom(roomJID);
+			} else if (node == null && requestedJID.getLocalpart() != null && requestedJID.getResource() == null) {
+				Room room = repository.getRoom(requestedJID.getBareJID());
 				if (room == null) {
 					throw new MUCException(Authorization.ITEM_NOT_FOUND);
 				}
@@ -144,6 +147,10 @@ public class DiscoInfoModule extends AbstractModule {
 					addFeature(resultQuery, "muc_unsecured");
 				}
 
+			} else if (node == null && requestedJID.getLocalpart() != null && requestedJID.getResource() != null) {
+				// throw new MUCException(Authorization.BAD_REQUEST);
+			} else {
+				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
 			writer.write(result);

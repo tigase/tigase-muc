@@ -59,6 +59,38 @@ public class RoomConfigurationModule extends AbstractModule {
 		this.messageModule = messageModule;
 	}
 
+	private void destroy(Room room, Element destroyElement) throws TigaseStringprepException, RepositoryException {
+		for (String occupantNickname : room.getOccupantsNicknames()) {
+			for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
+				final Element p = new Element("presence");
+				p.addAttribute("type", "unavailable");
+
+				PresenceWrapper presence = PresenceModule.preparePresenceW(room, occupantJid, p, occupantJid.getBareJID(),
+						occupantNickname, Affiliation.none, Role.none);
+				presence.x.addChild(destroyElement);
+
+				writer.write(presence.packet);
+			}
+		}
+
+		// XXX TODO
+		// throw new
+		// MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
+
+		repository.destroyRoom(room);
+	}
+
+	public void destroy(Room room, String jid, String reason) throws TigaseStringprepException, RepositoryException {
+		Element destroy = new Element("destroy");
+		if (jid != null)
+			destroy.addAttribute("jid", jid);
+
+		if (reason != null)
+			destroy.addChild(new Element("reason", reason));
+
+		destroy(room, destroy);
+	}
+
 	@Override
 	public String[] getFeatures() {
 		return null;
@@ -144,25 +176,8 @@ public class RoomConfigurationModule extends AbstractModule {
 				if (!affiliation.isDestroyRoom())
 					throw new MUCException(Authorization.FORBIDDEN);
 
-				for (String occupantNickname : room.getOccupantsNicknames()) {
-					for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
-						final Element p = new Element("presence");
-						p.addAttribute("type", "unavailable");
-
-						PresenceWrapper presence = PresenceModule.preparePresenceW(room, occupantJid, p,
-								occupantJid.getBareJID(), occupantNickname, Affiliation.none, Role.none);
-						presence.x.addChild(destroy);
-
-						writer.write(presence.packet);
-					}
-				}
-
-				// XXX TODO
-				// throw new
-				// MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
-
+				destroy(room, destroy);
 				writer.write(element.okResult((Element) null, 0));
-				repository.destroyRoom(room);
 			} else if (x != null) {
 				Form form = new Form(x);
 				if ("submit".equals(form.getType())) {

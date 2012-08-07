@@ -24,11 +24,13 @@ package tigase.muc;
 
 //~--- non-JDK imports --------------------------------------------------------
 
+import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -284,13 +286,22 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	 */
 	public Set<String> getFeaturesFromModule() {
 		HashSet<String> result = new HashSet<String>();
-		result.add("http://jabber.org/protocol/muc");
 		result.addAll(this.modulesManager.getFeatures());
 		return result;
 	}
 
 	public IMucRepository getMucRepository() {
 		return mucRepository;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see tigase.server.BasicComponent#getName()
+	 */
+	@Override
+	public String getName() {
+		return "muc";
 	}
 
 	protected void init() {
@@ -304,10 +315,29 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		this.modulesManager.register(new ModeratorModule(this.config, writer, this.mucRepository));
 		this.modulesManager.register(new SoftwareVersionModule(writer));
 		this.modulesManager.register(new XmppPingModule(writer));
-		this.modulesManager.register(new DiscoItemsModule(this.config, writer, this.mucRepository));
+		this.modulesManager.register(new DiscoItemsModule(this.config, writer, this.mucRepository, scriptCommands, this));
 		this.modulesManager.register(new DiscoInfoModule(this.config, writer, this.mucRepository, this));
 		this.modulesManager.register(new MediatedInvitationModule(this.config, writer, this.mucRepository));
 		this.modulesManager.register(new UniqueRoomNameModule(this.config, writer, this.mucRepository));
+	}
+
+	/**
+	 * @param packet
+	 */
+	private void processCommandPacket(Packet packet) {
+		Queue<Packet> results = new ArrayDeque<Packet>();
+
+		processScriptCommand(packet, results);
+
+		if (results.size() > 0) {
+			for (Packet res : results) {
+
+				// No more recurrential calls!!
+				addOutPacketNB(res);
+
+				// processPacket(res);
+			} // end of for ()
+		}
 	}
 
 	/**
@@ -318,7 +348,11 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	 */
 	@Override
 	public void processPacket(Packet packet) {
-		processStanzaPacket(packet);
+		if (packet.isCommand()) {
+			processCommandPacket(packet);
+		} else {
+			processStanzaPacket(packet);
+		}
 	}
 
 	protected void processStanzaPacket(final Packet packet) {
