@@ -27,6 +27,7 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
@@ -71,7 +72,8 @@ public class GroupchatMessageModule extends AbstractModule {
 		this.historyProvider = historyProvider;
 		this.mucLogger = mucLogger;
 		this.filterEnabled = config.isMessageFilterEnabled();
-		log.config("Filtering message children is " + (filterEnabled ? "enabled" : "disabled"));
+		if (log.isLoggable(Level.CONFIG))
+			log.config("Filtering message children is " + (filterEnabled ? "enabled" : "disabled"));
 	}
 
 	/**
@@ -233,10 +235,12 @@ public class GroupchatMessageModule extends AbstractModule {
 
 	public void setChatStateAllowed(Boolean allowed) {
 		if (allowed != null && allowed) {
-			log.config("Chat state allowed");
+			if (log.isLoggable(Level.CONFIG))
+				log.config("Chat state allowed");
 			allowedElements.add(CRIT_CHAT_STAT);
 		} else {
-			log.config("Chat state disallowed");
+			if (log.isLoggable(Level.CONFIG))
+				log.config("Chat state disallowed");
 			allowedElements.remove(CRIT_CHAT_STAT);
 		}
 	}

@@ -102,7 +102,8 @@ public class PresenceModule extends AbstractModule {
 								try {
 									sender.sendDelayedPacket(Packet.packetInstance(element));
 								} catch (TigaseStringprepException ex) {
-									log.info("Packet addressing problem, stringprep failed: " + element);
+									if (log.isLoggable(Level.INFO))
+										log.info("Packet addressing problem, stringprep failed: " + element);
 								}
 							}
 						}
@@ -253,7 +254,8 @@ public class PresenceModule extends AbstractModule {
 		allowedElements.add(ElementCriteria.name("status"));
 		allowedElements.add(ElementCriteria.name("priority"));
 		allowedElements.add(ElementCriteria.xmlns("http://jabber.org/protocol/caps"));
-		log.config("Filtering presence children is " + (filterEnabled ? "enabled" : "disabled"));
+		if (log.isLoggable(Level.CONFIG))
+			log.config("Filtering presence children is " + (filterEnabled ? "enabled" : "disabled"));
 	}
 
 	/**
@@ -380,7 +382,8 @@ public class PresenceModule extends AbstractModule {
 			final boolean roomCreated;
 
 			if (room == null) {
-				log.info("Creating new room '" + roomJID + "' by user " + nickName + "' <" + senderJID.toString() + ">");
+				if (log.isLoggable(Level.INFO))
+					log.info("Creating new room '" + roomJID + "' by user " + nickName + "' <" + senderJID.toString() + ">");
 				room = repository.createNewRoom(roomJID, senderJID);
 				room.addAffiliationByJid(senderJID.getBareJID(), Affiliation.owner);
 				room.setRoomLocked(this.lockNewRoom);
@@ -440,7 +443,6 @@ public class PresenceModule extends AbstractModule {
 			log.finest("Processing stanza " + element.toString());
 
 		final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
-		final Anonymity anonymity = room.getConfig().getRoomAnonymity();
 		final Element xElement = element.getChild("x", "http://jabber.org/protocol/muc");
 		final Element password = xElement == null ? null : xElement.getChild("password");
 
@@ -449,7 +451,8 @@ public class PresenceModule extends AbstractModule {
 			final String roomPassword = room.getConfig().getPassword();
 			if (psw == null || !psw.equals(roomPassword)) {
 				// Service Denies Access Because No Password Provided
-				log.finest("Password '" + psw + "' is not match to room password '" + roomPassword + "' ");
+				if (log.isLoggable(Level.FINEST))
+					log.finest("Password '" + psw + "' is not match to room password '" + roomPassword + "' ");
 				throw new MUCException(Authorization.NOT_AUTHORIZED);
 			}
 		}
@@ -461,12 +464,15 @@ public class PresenceModule extends AbstractModule {
 
 		if (!affiliation.isEnterOpenRoom()) {
 			// Service Denies Access Because User is Banned
-			log.info("User " + nickname + "' <" + senderJID.toString() + "> is on rooms '" + room.getRoomJID() + "' blacklist");
+			if (log.isLoggable(Level.INFO))
+				log.info("User " + nickname + "' <" + senderJID.toString() + "> is on rooms '" + room.getRoomJID()
+						+ "' blacklist");
 			throw new MUCException(Authorization.FORBIDDEN);
 		} else if (room.getConfig().isRoomMembersOnly() && !affiliation.isEnterMembersOnlyRoom()) {
 			// Service Denies Access Because User Is Not on Member List
-			log.info("User " + nickname + "' <" + senderJID.toString() + "> is NOT on rooms '" + room.getRoomJID()
-					+ "' member list.");
+			if (log.isLoggable(Level.INFO))
+				log.info("User " + nickname + "' <" + senderJID.toString() + "> is NOT on rooms '" + room.getRoomJID()
+						+ "' member list.");
 			throw new MUCException(Authorization.REGISTRATION_REQUIRED);
 		}
 
@@ -480,8 +486,6 @@ public class PresenceModule extends AbstractModule {
 
 		// Service Sends Presence from Existing Occupants to New Occupant
 		for (String occupantNickname : room.getOccupantsNicknames()) {
-			final Affiliation occupantAffiliation = room.getAffiliation(occupantNickname);
-			final Role occupantRole = room.getRole(occupantNickname);
 			final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNickname);
 
 			Element op = room.getLastPresenceCopyByJid(occupantJid);
@@ -495,8 +499,9 @@ public class PresenceModule extends AbstractModule {
 		}
 
 		final Role newRole = getDefaultRole(room.getConfig(), affiliation);
-		log.finest("Occupant '" + nickname + "' <" + senderJID.toString() + "> is entering room " + room.getRoomJID()
-				+ " as role=" + newRole.name() + ", affiliation=" + affiliation.name());
+		if (log.isLoggable(Level.FINEST))
+			log.finest("Occupant '" + nickname + "' <" + senderJID.toString() + "> is entering room " + room.getRoomJID()
+					+ " as role=" + newRole.name() + ", affiliation=" + affiliation.name());
 		room.addOccupantByJid(senderJID, nickname, newRole);
 		Element pe = clonePresence(element);
 		room.updatePresenceByJid(null, pe);

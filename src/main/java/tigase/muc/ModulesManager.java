@@ -69,13 +69,15 @@ public class ModulesManager {
 	}
 
 	public <T extends Module> T register(final T module) {
-		log.config("Register PubSub module: " + module.getClass().getCanonicalName());
+		if (log.isLoggable(Level.CONFIG))
+			log.config("Register PubSub module: " + module.getClass().getCanonicalName());
 		this.modules.add(module);
 		return module;
 	}
 
 	public void unregister(final Module module) {
-		log.config("Unregister PubSub module: " + module.getClass().getCanonicalName());
+		if (log.isLoggable(Level.CONFIG))
+			log.config("Unregister PubSub module: " + module.getClass().getCanonicalName());
 		this.modules.remove(module);
 	}
 

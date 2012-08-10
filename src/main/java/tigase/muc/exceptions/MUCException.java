@@ -29,7 +29,8 @@ public class MUCException extends Exception {
 
 	private static final long serialVersionUID = 1L;
 
-	private static final String xmlns = "urn:ietf:params:xml:ns:xmpp-stanzas";
+	// private static final String xmlns =
+	// "urn:ietf:params:xml:ns:xmpp-stanzas";
 
 	private Authorization errorCondition;
 

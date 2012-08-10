@@ -22,6 +22,7 @@
 package tigase.muc.history;
 
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.db.DataRepository;
@@ -43,7 +44,8 @@ public class HistoryManagerFactory {
 		try {
 			String uri = (String) params.get(DB_URI_KEY);
 			String cl = (String) params.get(DB_CLASS_KEY);
-			log.config("Used History Provider: " + cl);
+			if (log.isLoggable(Level.CONFIG))
+				log.config("Used History Provider: " + cl);
 			if (cl.contains("memory")) {
 				return new MemoryHistoryProvider();
 			} else if (cl.contains("mysql")) {

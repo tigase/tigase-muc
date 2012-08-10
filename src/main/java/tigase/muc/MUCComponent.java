@@ -506,7 +506,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		if (props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY)) {
 			String loggerClassName = (String) props.get(MucLogger.MUC_LOGGER_CLASS_KEY);
 			try {
-				log.config("Using Room Logger: " + loggerClassName);
+				if (log.isLoggable(Level.CONFIG))
+					log.config("Using Room Logger: " + loggerClassName);
 				this.roomLogger = (MucLogger) Class.forName(loggerClassName).newInstance();
 				this.roomLogger.init(props);
 			} catch (Exception e) {
@@ -521,7 +522,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		}
 
 		this.config.setPublicLoggingEnabled(this.roomLogger != null || this.historyProvider.isPersistent());
-		log.config("Public Logging Allowed: " + this.config.isPublicLoggingEnabled());
+		if (log.isLoggable(Level.CONFIG))
+			log.config("Public Logging Allowed: " + this.config.isPublicLoggingEnabled());
 
 		if (userRepository == null) {
 			userRepository = (UserRepository) props.get(SHARED_USER_REPO_PROP_KEY);
@@ -538,7 +540,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 				dao = new MucDAO(this.config, this.userRepository);
 				mucRepository = new InMemoryMucRepository(this.config, dao);
 			} catch (Exception e) {
-				log.severe("Can't initialize MUC repository: " + e);
+				if (log.isLoggable(Level.SEVERE))
+					log.severe("Can't initialize MUC repository: " + e);
 				e.printStackTrace();
 
 				// System.exit(1);
@@ -549,7 +552,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 		this.messageModule.setChatStateAllowed((Boolean) props.get(MUC_ALLOW_CHAT_STATES_KEY));
 		this.presenceModule.setLockNewRoom((Boolean) props.get(MUC_LOCK_NEW_ROOM_KEY));
-		log.info("Tigase MUC Component ver. " + MucVersion.getVersion() + " started.");
+		if (log.isLoggable(Level.INFO))
+			log.info("Tigase MUC Component ver. " + MucVersion.getVersion() + " started.");
 	}
 
 }

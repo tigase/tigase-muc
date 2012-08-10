@@ -78,11 +78,13 @@ public class MucDAO {
 				this.repository.setData(this.mucConfig.getServiceName(), "last-start",
 						String.valueOf(System.currentTimeMillis()));
 			} catch (Exception e1) {
-				log.log(Level.SEVERE, "MUC repository initialization problem", e1);
+				if (log.isLoggable(Level.SEVERE))
+					log.log(Level.SEVERE, "MUC repository initialization problem", e1);
 				throw new RepositoryException("Cannot initialize MUC repository", e);
 			}
 		} catch (TigaseDBException e) {
-			log.log(Level.SEVERE, "MUC repository initialization problem", e);
+			if (log.isLoggable(Level.SEVERE))
+				log.log(Level.SEVERE, "MUC repository initialization problem", e);
 			throw new RepositoryException("Cannot initialize MUC repository", e);
 		}
 
@@ -244,7 +246,8 @@ public class MucDAO {
 		} catch (tigase.util.TigaseStringprepException e) {
 			throw e;
 		} catch (Exception e) {
-			log.log(Level.WARNING, "Room reading error", e);
+			if (log.isLoggable(Level.WARNING))
+				log.log(Level.WARNING, "Room reading error", e);
 			throw new RepositoryException("Room reading error", e);
 		}
 	}

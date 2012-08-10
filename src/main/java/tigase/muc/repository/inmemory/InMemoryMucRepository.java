@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.muc.Affiliation;
@@ -141,7 +142,8 @@ public class InMemoryMucRepository implements IMucRepository {
 	 */
 	@Override
 	public Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException {
-		log.fine("Creating new room '" + roomJID + "'");
+		if (log.isLoggable(Level.FINE))
+			log.fine("Creating new room '" + roomJID + "'");
 
 		RoomConfig rc = new RoomConfig(roomJID, this.mucConfig.isPublicLoggingEnabled());
 
@@ -159,7 +161,8 @@ public class InMemoryMucRepository implements IMucRepository {
 	@Override
 	public void destroyRoom(Room room) throws RepositoryException {
 		final BareJID roomJID = room.getRoomJID();
-		log.fine("Destroying room '" + roomJID);
+		if (log.isLoggable(Level.FINE))
+			log.fine("Destroying room '" + roomJID);
 		this.rooms.remove(roomJID);
 		this.allRooms.remove(roomJID);
 		dao.destroyRoom(roomJID);
@@ -232,7 +235,8 @@ public class InMemoryMucRepository implements IMucRepository {
 	@Override
 	public void leaveRoom(Room room) {
 		final BareJID roomJID = room.getRoomJID();
-		log.fine("Removing room '" + roomJID + "' from memory");
+		if (log.isLoggable(Level.FINE))
+			log.fine("Removing room '" + roomJID + "' from memory");
 		this.rooms.remove(roomJID);
 		if (!room.getConfig().isPersistentRoom()) {
 			this.allRooms.remove(roomJID);

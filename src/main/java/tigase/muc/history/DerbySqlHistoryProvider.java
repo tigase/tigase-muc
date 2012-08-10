@@ -96,7 +96,8 @@ public class DerbySqlHistoryProvider extends AbstractHistoryProvider {
 				st.executeUpdate();
 			}
 		} catch (SQLException e) {
-			log.log(Level.WARNING, "Can't add MUC message to database", e);
+			if (log.isLoggable(Level.WARNING))
+				log.log(Level.WARNING, "Can't add MUC message to database", e);
 			throw new RuntimeException(e);
 		}
 	}
@@ -159,7 +160,8 @@ public class DerbySqlHistoryProvider extends AbstractHistoryProvider {
 			}
 
 		} catch (Exception e) {
-			log.log(Level.SEVERE, "Can't get history", e);
+			if (log.isLoggable(Level.SEVERE))
+				log.log(Level.SEVERE, "Can't get history", e);
 			throw new RuntimeException(e);
 		} finally {
 			dataRepository.release(null, rs);
@@ -174,15 +176,18 @@ public class DerbySqlHistoryProvider extends AbstractHistoryProvider {
 
 			internalInit();
 		} catch (SQLException e) {
-			log.log(Level.WARNING, "Initializing problem", e);
+			if (log.isLoggable(Level.WARNING))
+				log.log(Level.WARNING, "Initializing problem", e);
 			try {
-				log.info("Trying to create tables: " + createMucHistoryTable);
+				if (log.isLoggable(Level.INFO))
+					log.info("Trying to create tables: " + createMucHistoryTable);
 				Statement st = this.dataRepository.createStatement(null);
 				st.execute(createMucHistoryTable);
 
 				internalInit();
 			} catch (SQLException e1) {
-				log.log(Level.WARNING, "Can't initialize muc history", e1);
+				if (log.isLoggable(Level.WARNING))
+					log.log(Level.WARNING, "Can't initialize muc history", e1);
 				throw new RuntimeException(e1);
 			}
 		}

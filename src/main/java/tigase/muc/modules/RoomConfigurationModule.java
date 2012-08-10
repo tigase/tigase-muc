@@ -21,6 +21,8 @@
  */
 package tigase.muc.modules;
 
+import java.util.logging.Level;
+
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.form.Form;
@@ -198,7 +200,8 @@ public class RoomConfigurationModule extends AbstractModule {
 					final RoomConfig oldConfig = room.getConfig().clone();
 					if (room.isRoomLocked()) {
 						room.setRoomLocked(false);
-						log.fine("Room " + room.getRoomJID() + " is now unlocked");
+						if (log.isLoggable(Level.FINE))
+							log.fine("Room " + room.getRoomJID() + " is now unlocked");
 						sendMucMessage(room, room.getOccupantsNickname(senderJID), "Room is now unlocked");
 					}
 

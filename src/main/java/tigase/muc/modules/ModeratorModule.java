@@ -377,8 +377,6 @@ public class ModeratorModule extends AbstractModule {
 
 		Collection<String> occupantsNicknames = room.getOccupantsNicknames(occupantBareJid);
 		for (String occupantNick : occupantsNicknames) {
-			final Role currentRole = room.getRole(occupantNick);
-
 			if (newAffiliation == Affiliation.outcast) {
 				codes.add("301");
 				isUnavailable = true;
