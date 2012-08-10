@@ -97,10 +97,10 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	public static final String MUC_LOCK_NEW_ROOM_KEY = "muc-lock-new-room";
 	protected static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
 	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
+	private static final String MUC_REPOSITORY_VAR = "mucRepository";
+	private static final String OWNER_MODULE_VAR = "ownerModule";
 	public static final String PRESENCE_FILTER_ENABLED_KEY = "presence-filter-enabled";
 	private static final String PRESENCE_MODULE_VAR = "presenceModule";
-	private static final String OWNER_MODULE_VAR = "ownerModule";
-	private static final String MUC_REPOSITORY_VAR = "mucRepository";
 	private MucConfig config = new MucConfig();
 	private MucDAO dao;
 	private HistoryProvider historyProvider;
@@ -115,6 +115,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	// ~--- get methods
 	// ----------------------------------------------------------
 
+	private RoomConfigurationModule ownerModule;
+
 	private PresenceModule presenceModule;
 
 	private MucLogger roomLogger;
@@ -122,9 +124,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	private ServiceEntity serviceEntity;
 
 	private UserRepository userRepository;
-
 	private final tigase.muc.ElementWriter writer;
-	private RoomConfigurationModule ownerModule;
 
 	/**
 	 * 
@@ -247,18 +247,6 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		return null;
 	}
 
-	
-	/* (non-Javadoc)
-	 * @see tigase.server.BasicComponent#initBindings(javax.script.Bindings)
-	 */
-	@Override
-	public void initBindings(Bindings binds) {
-		super.initBindings(binds);
-		binds.put(PRESENCE_MODULE_VAR, presenceModule);
-		binds.put(OWNER_MODULE_VAR, ownerModule);
-		binds.put(MUC_REPOSITORY_VAR, mucRepository);
-	}
-	
 	/**
 	 * Method description
 	 * 
@@ -293,9 +281,6 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		}
 	}
 
-	// ~--- methods
-	// --------------------------------------------------------------
-
 	/**
 	 * Method description
 	 * 
@@ -307,6 +292,9 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		result.addAll(this.modulesManager.getFeatures());
 		return result;
 	}
+
+	// ~--- methods
+	// --------------------------------------------------------------
 
 	public IMucRepository getMucRepository() {
 		return mucRepository;
@@ -329,7 +317,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 				historyProvider, roomLogger));
 		presenceModule = this.modulesManager.register(new PresenceModule(this.config, writer, this.mucRepository,
 				this.historyProvider, this, roomLogger));
-	ownerModule=	this.modulesManager.register(new RoomConfigurationModule(this.config, writer, this.mucRepository, messageModule));
+		ownerModule = this.modulesManager.register(new RoomConfigurationModule(this.config, writer, this.mucRepository,
+				this.historyProvider, messageModule));
 		this.modulesManager.register(new ModeratorModule(this.config, writer, this.mucRepository));
 		this.modulesManager.register(new SoftwareVersionModule(writer));
 		this.modulesManager.register(new XmppPingModule(writer));
@@ -337,6 +326,19 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		this.modulesManager.register(new DiscoInfoModule(this.config, writer, this.mucRepository, this));
 		this.modulesManager.register(new MediatedInvitationModule(this.config, writer, this.mucRepository));
 		this.modulesManager.register(new UniqueRoomNameModule(this.config, writer, this.mucRepository));
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see tigase.server.BasicComponent#initBindings(javax.script.Bindings)
+	 */
+	@Override
+	public void initBindings(Bindings binds) {
+		super.initBindings(binds);
+		binds.put(PRESENCE_MODULE_VAR, presenceModule);
+		binds.put(OWNER_MODULE_VAR, ownerModule);
+		binds.put(MUC_REPOSITORY_VAR, mucRepository);
 	}
 
 	/**
@@ -550,6 +552,4 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		log.info("Tigase MUC Component ver. " + MucVersion.getVersion() + " started.");
 	}
 
-	
-	
 }

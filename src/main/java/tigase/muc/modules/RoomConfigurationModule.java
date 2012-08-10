@@ -31,6 +31,7 @@ import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
+import tigase.muc.history.HistoryProvider;
 import tigase.muc.modules.PresenceModule.PresenceWrapper;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.RepositoryException;
@@ -51,12 +52,15 @@ public class RoomConfigurationModule extends AbstractModule {
 	private static final Criteria CRIT = ElementCriteria.name("iq").add(
 			ElementCriteria.name("query", "http://jabber.org/protocol/muc#owner"));
 
+	private final HistoryProvider historyProvider;
+
 	private final GroupchatMessageModule messageModule;
 
 	public RoomConfigurationModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository,
-			GroupchatMessageModule messageModule) {
+			HistoryProvider historyProvider, GroupchatMessageModule messageModule) {
 		super(config, writer, mucRepository);
 		this.messageModule = messageModule;
+		this.historyProvider = historyProvider;
 	}
 
 	private void destroy(Room room, Element destroyElement) throws TigaseStringprepException, RepositoryException {
@@ -78,6 +82,8 @@ public class RoomConfigurationModule extends AbstractModule {
 		// MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
 
 		repository.destroyRoom(room);
+		if (historyProvider != null)
+			historyProvider.removeHistory(room);
 	}
 
 	public void destroy(Room room, String jid, String reason) throws TigaseStringprepException, RepositoryException {
