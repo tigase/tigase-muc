@@ -48,6 +48,7 @@ public class MockMucRepository implements IMucRepository {
 
 	private final Map<BareJID, InternalRoom> allRooms = new HashMap<BareJID, InternalRoom>();
 
+	@SuppressWarnings("unused")
 	private final MucConfig config;
 
 	private RoomConfig defaultConfig = new RoomConfig(null, true);
@@ -76,6 +77,7 @@ public class MockMucRepository implements IMucRepository {
 					if (modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PERSISTENTROOM_KEY)) {
 						if (roomConfig.isPersistentRoom()) {
 							System.out.println("now is PERSISTENT");
+							@SuppressWarnings("unused")
 							final Room room = getRoom(roomConfig.getRoomJID());
 							// dao.createRoom(room);
 						} else {
