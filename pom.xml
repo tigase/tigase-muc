@@ -85,8 +85,8 @@
 						</manifest>
 						<manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
 						<manifestEntries>
-							<Implementation-Version>${pom.version} (${buildNumber})</Implementation-Version>
-							<Implementation-Build>${buildNumber}</Implementation-Build>
+							<Implementation-Version>${pom.version}</Implementation-Version>
+							<Implementation-Build>${buildNumber} (${today})</Implementation-Build>
 						</manifestEntries>
 					</archive>
 				</configuration>
