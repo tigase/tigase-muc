@@ -21,6 +21,8 @@
  */
 package tigase.muc.modules;
 
+import java.util.List;
+
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.Affiliation;
@@ -85,32 +87,43 @@ public class MediatedInvitationModule extends AbstractModule {
 			}
 
 			final Element x = element.getElement().getChild("x", "http://jabber.org/protocol/muc#user");
-			final Element invite = x.getChild("invite");
-			final Element reason = invite.getChild("reason");
-			final String recipient = invite.getAttribute("to");
 
-			final Element resultMessage = new Element("message", new String[] { "from", "to" }, new String[] {
-					roomJID.toString(), recipient });
-			final Element resultX = new Element("x", new String[] { "xmlns" },
-					new String[] { "http://jabber.org/protocol/muc#user" });
-			resultMessage.addChild(resultX);
+			List<Element> ch = x.getChildren();
+			for (Element invite : ch) {
+				if (!"invite".equals(invite.getName()))
+					continue;
+				final Element reason = invite.getChild("reason");
+				final Element cont = invite.getChild("continue");
+				final String recipient = invite.getAttribute("to");
 
-			if (room.getConfig().isRoomMembersOnly() && senderAffiliation.isEditMemberList()) {
-				room.addAffiliationByJid(JID.jidInstance(recipient).getBareJID(), Affiliation.member);
+				final Element resultMessage = new Element("message", new String[] { "from", "to" }, new String[] {
+						roomJID.toString(), recipient });
+				final Element resultX = new Element("x", new String[] { "xmlns" },
+						new String[] { "http://jabber.org/protocol/muc#user" });
+				resultMessage.addChild(resultX);
+
+				if (room.getConfig().isRoomMembersOnly() && senderAffiliation.isEditMemberList()) {
+					room.addAffiliationByJid(JID.jidInstance(recipient).getBareJID(), Affiliation.member);
+				}
+
+				final Element resultInvite = new Element("invite", new String[] { "from" },
+						new String[] { senderJID.toString() });
+				resultX.addChild(resultInvite);
+
+				if (room.getConfig().isPasswordProtectedRoom()) {
+					resultX.addChild(new Element("password", room.getConfig().getPassword()));
+				}
+
+				if (reason != null) {
+					resultInvite.addChild(reason.clone());
+				}
+				if (cont != null) {
+					resultInvite.addChild(cont.clone());
+				}
+				writer.write(Packet.packetInstance(resultMessage));
+
 			}
 
-			final Element resultInvite = new Element("invite", new String[] { "from" }, new String[] { senderJID.toString() });
-			resultX.addChild(resultInvite);
-
-			if (room.getConfig().isPasswordProtectedRoom()) {
-				resultX.addChild(new Element("password", room.getConfig().getPassword()));
-			}
-
-			if (reason != null) {
-				resultInvite.addChild(reason.clone());
-			}
-
-			writer.write(Packet.packetInstance(resultMessage));
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (Exception e) {

@@ -30,6 +30,8 @@ import java.util.Set;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.muc.Affiliation;
+import tigase.muc.DateUtil;
 import tigase.muc.ElementWriter;
 import tigase.muc.MucConfig;
 import tigase.muc.Role;
@@ -139,18 +141,22 @@ public class GroupchatMessageModule extends AbstractModule {
 
 			final String nickName = room.getOccupantsNickname(senderJID);
 			final Role role = room.getRole(nickName);
+			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
 			if (!role.isSendMessagesToAll() || (room.getConfig().isRoomModerated() && role == Role.visitor)) {
 				throw new MUCException(Authorization.FORBIDDEN);
 			}
 
 			Element body = null;
 			Element subject = null;
+			Element delay = null;
 			ArrayList<Element> content = new ArrayList<Element>();
 
 			List<Element> ccs = packet.getElement().getChildren();
 			if (ccs != null)
 				for (Element c : ccs) {
-					if ("body".equals(c.getName())) {
+					if ("delay".equals(c.getName())) {
+						delay = c;
+					} else if ("body".equals(c.getName())) {
 						body = c;
 						content.add(c);
 					} else if ("subject".equals(c.getName())) {
@@ -177,7 +183,12 @@ public class GroupchatMessageModule extends AbstractModule {
 				room.setNewSubject(msg, nickName);
 			}
 
-			Date sendDate = new Date();
+			Date sendDate;
+			if (delay != null && affiliation == Affiliation.owner) {
+				sendDate = DateUtil.parse(delay.getAttribute("stamp"));
+			} else {
+				sendDate = new Date();
+			}
 
 			if (body != null)
 				addMessageToHistory(room, body.getCData(), senderJID, nickName, sendDate);
