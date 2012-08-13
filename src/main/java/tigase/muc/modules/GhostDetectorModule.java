@@ -44,7 +44,7 @@ import tigase.xmpp.JID;
  * @author bmalkow
  * 
  */
-public class GhostUsersModule extends AbstractModule {
+public class GhostDetectorModule extends AbstractModule {
 
 	private final Criteria criteria;
 
@@ -58,7 +58,8 @@ public class GhostUsersModule extends AbstractModule {
 	 * @param mucRepository
 	 * @param presenceModule
 	 */
-	public GhostUsersModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository, PresenceModule presenceModule) {
+	public GhostDetectorModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository,
+			PresenceModule presenceModule) {
 		super(config, writer, mucRepository);
 		this.presenceModule = presenceModule;
 		HashSet<String> s = new HashSet<String>();
