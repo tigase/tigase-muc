@@ -21,6 +21,8 @@
  */
 package tigase.muc.repository;
 
+import java.util.Map;
+
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
@@ -37,6 +39,8 @@ public interface IMucRepository {
 	Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException;
 
 	void destroyRoom(Room room) throws RepositoryException;
+
+	Map<BareJID, Room> getActiveRooms();
 
 	RoomConfig getDefaultRoomConfig() throws RepositoryException;
 

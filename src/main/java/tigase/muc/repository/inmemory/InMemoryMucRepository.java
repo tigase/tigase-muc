@@ -22,12 +22,14 @@
 package tigase.muc.repository.inmemory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -69,7 +71,7 @@ public class InMemoryMucRepository implements IMucRepository {
 
 	private final RoomListener roomListener;
 
-	private final HashMap<BareJID, Room> rooms = new HashMap<BareJID, Room>();
+	private final Map<BareJID, Room> rooms = new ConcurrentHashMap<BareJID, Room>();
 
 	public InMemoryMucRepository(final MucConfig mucConfig, final MucDAO dao) throws RepositoryException {
 		this.dao = dao;
@@ -166,6 +168,11 @@ public class InMemoryMucRepository implements IMucRepository {
 		this.rooms.remove(roomJID);
 		this.allRooms.remove(roomJID);
 		dao.destroyRoom(roomJID);
+	}
+
+	@Override
+	public Map<BareJID, Room> getActiveRooms() {
+		return Collections.unmodifiableMap(rooms);
 	}
 
 	@Override

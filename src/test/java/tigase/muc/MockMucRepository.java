@@ -22,6 +22,7 @@
 package tigase.muc;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -125,6 +126,16 @@ public class MockMucRepository implements IMucRepository {
 		final BareJID roomJID = room.getRoomJID();
 		this.rooms.remove(roomJID);
 		this.allRooms.remove(roomJID);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see tigase.muc.repository.IMucRepository#getActiveRooms()
+	 */
+	@Override
+	public Map<BareJID, Room> getActiveRooms() {
+		return Collections.unmodifiableMap(rooms);
 	}
 
 	@Override

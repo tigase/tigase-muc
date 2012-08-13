@@ -50,7 +50,6 @@ import tigase.muc.history.MemoryHistoryProvider;
 import tigase.muc.logger.MucLogger;
 import tigase.muc.modules.DiscoInfoModule;
 import tigase.muc.modules.DiscoItemsModule;
-import tigase.muc.modules.GhostDetectorModule;
 import tigase.muc.modules.GroupchatMessageModule;
 import tigase.muc.modules.MediatedInvitationModule;
 import tigase.muc.modules.ModeratorModule;
@@ -104,17 +103,19 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	private static final String PRESENCE_MODULE_VAR = "presenceModule";
 	private MucConfig config = new MucConfig();
 	private MucDAO dao;
+	private Ghostbuster ghostbuster = new Ghostbuster();
 	private HistoryProvider historyProvider;
 	/** Field description */
 	public String[] HOSTNAMES_PROP_VAL = { "localhost", "hostname" };
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 	private GroupchatMessageModule messageModule;
-	private final ModulesManager modulesManager = new ModulesManager();
 
-	private IMucRepository mucRepository;
+	private final ModulesManager modulesManager = new ModulesManager();
 
 	// ~--- get methods
 	// ----------------------------------------------------------
+
+	private IMucRepository mucRepository;
 
 	private RoomConfigurationModule ownerModule;
 
@@ -315,7 +316,10 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		System.out.println("INIT MUC");
 
 		presenceModule = new PresenceModule(this.config, writer, this.mucRepository, this.historyProvider, this, roomLogger);
-		this.modulesManager.register(new GhostDetectorModule(this.config, writer, this.mucRepository, presenceModule));
+
+		ghostbuster.setMucRepository(mucRepository);
+		ghostbuster.setPresenceModule(presenceModule);
+
 		this.modulesManager.register(new PrivateMessageModule(this.config, writer, this.mucRepository));
 		messageModule = this.modulesManager.register(new GroupchatMessageModule(this.config, writer, this.mucRepository,
 				historyProvider, roomLogger));
@@ -380,6 +384,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 	protected void processStanzaPacket(final Packet packet) {
 		try {
+			ghostbuster.update(packet);
+
 			boolean handled = this.modulesManager.process(packet, writer);
 
 			if (!handled) {
