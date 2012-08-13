@@ -103,7 +103,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	private static final String PRESENCE_MODULE_VAR = "presenceModule";
 	private MucConfig config = new MucConfig();
 	private MucDAO dao;
-	private Ghostbuster ghostbuster = new Ghostbuster();
+	private Ghostbuster ghostbuster;
 	private HistoryProvider historyProvider;
 	/** Field description */
 	public String[] HOSTNAMES_PROP_VAL = { "localhost", "hostname" };
@@ -179,6 +179,24 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 	public MUCComponent(ElementWriter writer) {
 		this.writer = writer;
+	}
+
+	@Override
+	public synchronized void everyHour() {
+		super.everyHour();
+		if (ghostbuster != null) {
+			new Thread() {
+				@Override
+				public void run() {
+					try {
+						ghostbuster.ping();
+					} catch (Exception e) {
+						log.log(Level.SEVERE, "Can't ping all known JIDs", e);
+					}
+
+				}
+			};
+		}
 	}
 
 	/**
@@ -283,6 +301,9 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		}
 	}
 
+	// ~--- methods
+	// --------------------------------------------------------------
+
 	/**
 	 * Method description
 	 * 
@@ -294,9 +315,6 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		result.addAll(this.modulesManager.getFeatures());
 		return result;
 	}
-
-	// ~--- methods
-	// --------------------------------------------------------------
 
 	public IMucRepository getMucRepository() {
 		return mucRepository;
@@ -313,11 +331,10 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	}
 
 	protected void init() {
-		System.out.println("INIT MUC");
+		this.ghostbuster = new Ghostbuster(config, mucRepository, writer);
 
 		presenceModule = new PresenceModule(this.config, writer, this.mucRepository, this.historyProvider, this, roomLogger);
 
-		ghostbuster.setMucRepository(mucRepository);
 		ghostbuster.setPresenceModule(presenceModule);
 
 		this.modulesManager.register(new PrivateMessageModule(this.config, writer, this.mucRepository));

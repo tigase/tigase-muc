@@ -23,7 +23,9 @@ package tigase.muc;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -39,14 +41,6 @@ import tigase.xmpp.JID;
  * 
  */
 public class Ghostbuster {
-
-	private class KnownJID {
-
-		private long lastActivity = Long.MIN_VALUE;
-
-		private long lastPing = Long.MIN_VALUE;
-
-	}
 
 	private static final Set<String> intReasons = new HashSet<String>() {
 
@@ -64,11 +58,28 @@ public class Ghostbuster {
 
 	public static final Set<String> R = Collections.unmodifiableSet(intReasons);
 
-	private final Map<JID, KnownJID> knownJids = new ConcurrentHashMap<JID, KnownJID>();
+	private final MucConfig config;
 
-	private IMucRepository mucRepository;
+	private long idCounter;
+
+	private final Map<JID, Long> lastActivity = new ConcurrentHashMap<JID, Long>();
+
+	private final IMucRepository mucRepository;
 
 	private PresenceModule presenceModule;
+
+	private final ElementWriter writer;
+
+	/**
+	 * @param config2
+	 * @param mucRepository2
+	 * @param writer
+	 */
+	public Ghostbuster(MucConfig config, IMucRepository mucRepository, ElementWriter writer) {
+		this.config = config;
+		this.mucRepository = mucRepository;
+		this.writer = writer;
+	}
 
 	/**
 	 * @param packet
@@ -98,7 +109,7 @@ public class Ghostbuster {
 	 * @param senderJID
 	 */
 	public void delete(final JID jid) {
-		this.knownJids.remove(jid);
+		this.lastActivity.remove(jid);
 	}
 
 	public IMucRepository getMucRepository() {
@@ -110,6 +121,33 @@ public class Ghostbuster {
 	}
 
 	/**
+	 * 
+	 */
+	public void ping() {
+		int c = 0;
+		final long now = System.currentTimeMillis();
+		final long border = now + 1000 * 60 * 59;
+		Iterator<Entry<JID, Long>> it = lastActivity.entrySet().iterator();
+		while (it.hasNext() && c < 1000) {
+			Entry<JID, Long> entry = it.next();
+			if (border > entry.getValue()) {
+				++c;
+				ping(entry.getKey());
+			}
+		}
+
+	}
+
+	private void ping(JID jid) {
+		final String id = "png-" + (++idCounter);
+		Element ping = new Element("iq", new String[] { "type", "id", "from", "to" }, new String[] { "get", id,
+				config.getServiceName().toString(), jid.toString() });
+		ping.addChild(new Element("ping", new String[] { "xmlns" }, new String[] { "urn:xmpp:ping" }));
+
+		writer.writeElement(ping);
+	}
+
+	/**
 	 * @param packet
 	 * @throws TigaseStringprepException
 	 */
@@ -117,16 +155,12 @@ public class Ghostbuster {
 		if (presenceModule == null || mucRepository == null)
 			return;
 
-		this.knownJids.remove(packet.getStanzaFrom());
+		this.lastActivity.remove(packet.getStanzaFrom());
 		for (Room r : mucRepository.getActiveRooms().values()) {
 			if (r.isOccupantInRoom(packet.getStanzaFrom())) {
 				presenceModule.doQuit(r, packet.getStanzaFrom());
 			}
 		}
-	}
-
-	public void setMucRepository(IMucRepository mucRepository) {
-		this.mucRepository = mucRepository;
 	}
 
 	public void setPresenceModule(PresenceModule presenceModule) {
@@ -142,17 +176,14 @@ public class Ghostbuster {
 		if (type != null && type.equals("error") && checkError(packet)) {
 			processError(packet);
 		} else if ("presence".equals(packet.getElemName()) && type != null && type.equals("unavailable")) {
-			this.knownJids.remove(packet.getStanzaFrom());
+			this.lastActivity.remove(packet.getStanzaFrom());
 		} else if ("presence".equals(packet.getElemName()) && (type == null || !type.equals("error"))) {
-			if (!knownJids.containsKey(packet.getStanzaFrom())) {
-				KnownJID k = new KnownJID();
-				knownJids.put(packet.getStanzaFrom(), k);
-			}
+			lastActivity.put(packet.getStanzaFrom(), System.currentTimeMillis());
 		}
 
-		if (knownJids.containsKey(packet.getStanzaFrom())) {
-			knownJids.get(packet.getStanzaFrom()).lastActivity = System.currentTimeMillis();
+		if (lastActivity.containsKey(packet.getStanzaFrom())) {
+			lastActivity.put(packet.getStanzaFrom(), System.currentTimeMillis());
 		}
+
 	}
-
 }
