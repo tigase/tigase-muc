@@ -412,7 +412,10 @@ public class Room {
 	 * @throws TigaseStringprepException
 	 */
 	public void updatePresenceByJid(JID jid, Element cp) throws TigaseStringprepException {
-		this.presences.update(cp);
+		if (cp == null)
+			this.presences.remove(jid);
+		else
+			this.presences.update(cp);
 	}
 
 }

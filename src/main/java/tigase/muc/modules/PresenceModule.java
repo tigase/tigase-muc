@@ -321,6 +321,46 @@ public class PresenceModule extends AbstractModule {
 		return presence;
 	}
 
+	/**
+	 * @param room
+	 * @param senderJID
+	 * @throws TigaseStringprepException
+	 */
+	public void doQuit(final Room room, final JID senderJID) throws TigaseStringprepException {
+		// TODO Auto-generated method stub
+
+		final String leavingNickname = room.getOccupantsNickname(senderJID);
+		final Affiliation leavingAffiliation = room.getAffiliation(leavingNickname);
+		final Role leavingRole = room.getRole(leavingNickname);
+
+		boolean nicknameGone = room.removeOccupant(senderJID);
+		room.updatePresenceByJid(senderJID, null);
+
+		if (nicknameGone) {
+			for (String occupantNickname : room.getOccupantsNicknames()) {
+				for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
+					Element presenceElement = new Element("presence");
+					presenceElement.setAttribute("type", "unavailable");
+
+					PresenceWrapper presence = preparePresenceW(room, occupantJid, presenceElement, senderJID.getBareJID(),
+							leavingNickname, leavingAffiliation, leavingRole);
+					writer.write(presence.packet);
+				}
+			}
+
+			if (room.getConfig().isLoggingEnabled()) {
+				addLeaveToHistory(room, new Date(), senderJID, leavingNickname);
+			}
+		}
+
+		if (room.getOccupantsCount() == 0) {
+			if (historyProvider != null && !room.getConfig().isPersistentRoom()) {
+				this.historyProvider.removeHistory(room);
+			}
+			this.repository.leaveRoom(room);
+		}
+	}
+
 	@Override
 	public String[] getFeatures() {
 		return null;

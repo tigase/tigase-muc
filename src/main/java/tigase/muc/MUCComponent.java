@@ -50,6 +50,7 @@ import tigase.muc.history.MemoryHistoryProvider;
 import tigase.muc.logger.MucLogger;
 import tigase.muc.modules.DiscoInfoModule;
 import tigase.muc.modules.DiscoItemsModule;
+import tigase.muc.modules.GhostUsersModule;
 import tigase.muc.modules.GroupchatMessageModule;
 import tigase.muc.modules.MediatedInvitationModule;
 import tigase.muc.modules.ModeratorModule;
@@ -312,11 +313,13 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 	protected void init() {
 		System.out.println("INIT MUC");
+
+		presenceModule = new PresenceModule(this.config, writer, this.mucRepository, this.historyProvider, this, roomLogger);
+		this.modulesManager.register(new GhostUsersModule(this.config, writer, this.mucRepository, presenceModule));
 		this.modulesManager.register(new PrivateMessageModule(this.config, writer, this.mucRepository));
 		messageModule = this.modulesManager.register(new GroupchatMessageModule(this.config, writer, this.mucRepository,
 				historyProvider, roomLogger));
-		presenceModule = this.modulesManager.register(new PresenceModule(this.config, writer, this.mucRepository,
-				this.historyProvider, this, roomLogger));
+		this.modulesManager.register(presenceModule);
 		ownerModule = this.modulesManager.register(new RoomConfigurationModule(this.config, writer, this.mucRepository,
 				this.historyProvider, messageModule));
 		this.modulesManager.register(new ModeratorModule(this.config, writer, this.mucRepository));

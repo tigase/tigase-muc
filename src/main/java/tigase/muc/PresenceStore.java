@@ -88,6 +88,24 @@ public class PresenceStore {
 
 	}
 
+	/**
+	 * @param jid
+	 * @throws TigaseStringprepException
+	 */
+	public void remove(final JID from) throws TigaseStringprepException {
+		final String resource = from.getResource() == null ? "" : from.getResource();
+
+		this.presenceByJid.remove(from);
+		Map<String, Presence> m = this.presencesMapByBareJid.get(from.getBareJID());
+		if (m != null) {
+			m.remove(resource);
+			if (m.isEmpty())
+				this.presencesMapByBareJid.remove(from.getBareJID());
+		}
+
+		updateBestPresence(from.getBareJID());
+	}
+
 	public void update(final Element presence) throws TigaseStringprepException {
 		String f = presence.getAttribute("from");
 		if (f == null)
@@ -115,11 +133,10 @@ public class PresenceStore {
 			}
 			m.put(resource, p);
 		}
-		updateBestPresence(presence);
+		updateBestPresence(bareFrom);
 	}
 
-	private void updateBestPresence(final Element presence) throws TigaseStringprepException {
-		final BareJID bareFrom = BareJID.bareJIDInstance(presence.getAttribute("from"));
+	private void updateBestPresence(final BareJID bareFrom) throws TigaseStringprepException {
 		Presence x = intGetBestPresence(bareFrom);
 		if (x == null) {
 			this.bestPresence.remove(bareFrom);
