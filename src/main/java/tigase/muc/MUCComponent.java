@@ -195,17 +195,17 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	public synchronized void everyHour() {
 		super.everyHour();
 		if (ghostbuster != null) {
-			new Thread() {
+			(new Thread() {
 				@Override
 				public void run() {
 					try {
 						ghostbuster.ping();
 					} catch (Exception e) {
-						log.log(Level.SEVERE, "Can't ping all known JIDs", e);
+						log.log(Level.SEVERE, "Can't ping known JIDs", e);
 					}
 
 				}
-			};
+			}).start();
 		}
 	}
 
@@ -414,6 +414,10 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	protected void processStanzaPacket(final Packet packet) {
 		try {
 			ghostbuster.update(packet);
+		} catch (Exception e) {
+			log.log(Level.WARNING, "There is no Dana, there is only Zuul", e);
+		}
+		try {
 
 			boolean handled = this.modulesManager.process(packet, writer);
 
