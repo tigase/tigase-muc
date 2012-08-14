@@ -45,6 +45,46 @@ import tigase.xmpp.JID;
  */
 public class Ghostbuster {
 
+	private static class JIDDomain {
+
+		private String cacheKey;
+
+		private final String domain;
+
+		private final JID source;
+
+		/**
+		 * 
+		 */
+		public JIDDomain(JID source, String domain) {
+			this.source = source;
+			this.domain = domain;
+			cacheKey = (this.source == null ? "-" : this.source.toString()) + ":"
+					+ (this.domain == null ? "-" : this.domain.toString());
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (obj == this)
+				return true;
+			if (!(obj instanceof JIDDomain))
+				return false;
+
+			return cacheKey.equals(((JIDDomain) obj).cacheKey);
+		}
+
+		@Override
+		public int hashCode() {
+			return cacheKey.hashCode();
+		}
+
+		@Override
+		public String toString() {
+			return cacheKey;
+		}
+
+	}
+
 	private static final Set<String> intReasons = new HashSet<String>() {
 
 		private static final long serialVersionUID = 1L;
@@ -63,7 +103,7 @@ public class Ghostbuster {
 
 	private long idCounter;
 
-	private final Map<JID, Long> lastActivity = new ConcurrentHashMap<JID, Long>();
+	private final Map<JIDDomain, Long> lastActivity = new ConcurrentHashMap<JIDDomain, Long>();
 
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -86,7 +126,7 @@ public class Ghostbuster {
 			@Override
 			public void responseReceived(Packet data, Packet response) {
 				try {
-					onPingReceived(response.getStanzaFrom());
+					onPingReceived(response.getStanzaTo().getDomain(), response.getStanzaFrom());
 				} catch (Exception e) {
 					if (log.isLoggable(Level.WARNING))
 						log.log(Level.WARNING, "Problem on handling ping response", e);
@@ -96,7 +136,7 @@ public class Ghostbuster {
 			@Override
 			public void timeOutExpired(Packet data) {
 				try {
-					onPingTimeout(data.getStanzaTo());
+					onPingTimeout(data.getStanzaFrom().getDomain(), data.getStanzaTo());
 				} catch (Exception e) {
 					if (log.isLoggable(Level.WARNING))
 						log.log(Level.WARNING, "Problem on handling ping timeout", e);
@@ -129,13 +169,6 @@ public class Ghostbuster {
 		return true;
 	}
 
-	/**
-	 * @param senderJID
-	 */
-	public void delete(final JID jid) {
-		this.lastActivity.remove(jid);
-	}
-
 	public PresenceModule getPresenceModule() {
 		return presenceModule;
 	}
@@ -143,18 +176,22 @@ public class Ghostbuster {
 	/**
 	 * @param stanzaFrom
 	 */
-	protected void onPingReceived(final JID jid) {
-		if (lastActivity.containsKey(jid)) {
-			lastActivity.put(jid, System.currentTimeMillis());
+	protected void onPingReceived(final String domain, final JID jid) {
+		JIDDomain k = new JIDDomain(jid, domain);
+		if (lastActivity.containsKey(k)) {
+			if (log.isLoggable(Level.FINEST))
+				log.finest("Update last activity for " + k);
+			lastActivity.put(k, System.currentTimeMillis());
 		}
 	}
 
 	/**
+	 * @param domain
 	 * @param stanzaTo
 	 */
-	protected void onPingTimeout(final JID jid) {
+	protected void onPingTimeout(String domain, final JID jid) {
 		try {
-			processError(jid);
+			processError(new JIDDomain(jid, domain));
 		} catch (TigaseStringprepException e) {
 			if (log.isLoggable(Level.WARNING))
 				log.log(Level.WARNING, "Invalid jid?", e);
@@ -172,24 +209,24 @@ public class Ghostbuster {
 		int c = 0;
 		final long now = System.currentTimeMillis();
 		final long border = now + 1000 * 60 * 59;
-		Iterator<Entry<JID, Long>> it = lastActivity.entrySet().iterator();
+		Iterator<Entry<JIDDomain, Long>> it = lastActivity.entrySet().iterator();
 		while (it.hasNext() && c < 1000) {
-			Entry<JID, Long> entry = it.next();
+			Entry<JIDDomain, Long> entry = it.next();
 			if (border > entry.getValue()) {
 				++c;
-				ping(entry.getKey());
+				ping(entry.getKey().domain, entry.getKey().source);
 			}
 		}
 	}
 
-	private void ping(JID jid) throws TigaseStringprepException {
+	private void ping(String fromDomain, JID jid) throws TigaseStringprepException {
 		final String id = "png-" + (++idCounter);
 
 		if (log.isLoggable(Level.FINER))
 			log.log(Level.FINER, "Pinging " + jid + ". id=" + id);
 
-		Element ping = new Element("iq", new String[] { "type", "id", "from", "to" }, new String[] { "get", id,
-				mucComponent.getConfig().getServiceName().toString(), jid.toString() });
+		Element ping = new Element("iq", new String[] { "type", "id", "from", "to" }, new String[] { "get", id, fromDomain,
+				jid.toString() });
 		ping.addChild(new Element("ping", new String[] { "xmlns" }, new String[] { "urn:xmpp:ping" }));
 
 		Packet packet = Packet.packetInstance(ping);
@@ -201,14 +238,16 @@ public class Ghostbuster {
 	 * @param packet
 	 * @throws TigaseStringprepException
 	 */
-	private void processError(JID jid) throws TigaseStringprepException {
+	private void processError(JIDDomain k) throws TigaseStringprepException {
 		if (presenceModule == null || mucComponent.getMucRepository() == null)
 			return;
 
-		this.lastActivity.remove(jid);
+		if (log.isLoggable(Level.FINEST))
+			log.finest("Forced removal last activity of " + k);
+		this.lastActivity.remove(k);
 		for (Room r : mucComponent.getMucRepository().getActiveRooms().values()) {
-			if (r.isOccupantInRoom(jid)) {
-				presenceModule.doQuit(r, jid);
+			if (r.getRoomJID().getDomain().equals(k.domain) && r.isOccupantInRoom(k.source)) {
+				presenceModule.doQuit(r, k.source);
 			}
 		}
 	}
@@ -221,18 +260,27 @@ public class Ghostbuster {
 		if (packet.getStanzaFrom() == null || packet.getStanzaFrom().getResource() == null)
 			return;
 
+		final JIDDomain k = new JIDDomain(packet.getStanzaFrom(), packet.getStanzaTo().getDomain());
+
 		final String type = packet.getElement().getAttribute("type");
 
 		if (type != null && type.equals("error") && checkError(packet)) {
-			processError(packet.getStanzaFrom());
+			processError(k);
 		} else if ("presence".equals(packet.getElemName()) && type != null && type.equals("unavailable")) {
-			this.lastActivity.remove(packet.getStanzaFrom());
+			if (log.isLoggable(Level.FINEST))
+				log.finest("Removal last activity of " + k);
+			this.lastActivity.remove(k);
 		} else if ("presence".equals(packet.getElemName()) && (type == null || !type.equals("error"))) {
-			lastActivity.put(packet.getStanzaFrom(), System.currentTimeMillis());
+			if (log.isLoggable(Level.FINEST))
+				log.finest("Creation last activity entry for " + k);
+			lastActivity.put(k, System.currentTimeMillis());
+			return;
 		}
 
-		if (lastActivity.containsKey(packet.getStanzaFrom())) {
-			lastActivity.put(packet.getStanzaFrom(), System.currentTimeMillis());
+		if (lastActivity.containsKey(k)) {
+			if (log.isLoggable(Level.FINEST))
+				log.finest("Update last activity for " + k);
+			lastActivity.put(k, System.currentTimeMillis());
 		}
 
 	}
