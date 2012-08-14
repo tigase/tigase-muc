@@ -28,10 +28,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import tigase.muc.modules.PresenceModule;
-import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
+import tigase.server.ReceiverTimeoutHandler;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
@@ -58,27 +61,48 @@ public class Ghostbuster {
 
 	public static final Set<String> R = Collections.unmodifiableSet(intReasons);
 
-	private final MucConfig config;
-
 	private long idCounter;
 
 	private final Map<JID, Long> lastActivity = new ConcurrentHashMap<JID, Long>();
 
-	private final IMucRepository mucRepository;
+	protected Logger log = Logger.getLogger(this.getClass().getName());
+
+	private final MUCComponent mucComponent;
+
+	private final ReceiverTimeoutHandler pingHandler;
 
 	private PresenceModule presenceModule;
 
-	private final ElementWriter writer;
-
 	/**
+	 * @param mucComponent
 	 * @param config2
 	 * @param mucRepository2
 	 * @param writer
 	 */
-	public Ghostbuster(MucConfig config, IMucRepository mucRepository, ElementWriter writer) {
-		this.config = config;
-		this.mucRepository = mucRepository;
-		this.writer = writer;
+	public Ghostbuster(MUCComponent mucComponent) {
+		this.mucComponent = mucComponent;
+		this.pingHandler = new ReceiverTimeoutHandler() {
+
+			@Override
+			public void responseReceived(Packet data, Packet response) {
+				try {
+					onPingReceived(response.getStanzaFrom());
+				} catch (Exception e) {
+					if (log.isLoggable(Level.WARNING))
+						log.log(Level.WARNING, "Problem on handling ping response", e);
+				}
+			}
+
+			@Override
+			public void timeOutExpired(Packet data) {
+				try {
+					onPingTimeout(data.getStanzaTo());
+				} catch (Exception e) {
+					if (log.isLoggable(Level.WARNING))
+						log.log(Level.WARNING, "Problem on handling ping timeout", e);
+				}
+			}
+		};
 	}
 
 	/**
@@ -112,18 +136,39 @@ public class Ghostbuster {
 		this.lastActivity.remove(jid);
 	}
 
-	public IMucRepository getMucRepository() {
-		return mucRepository;
-	}
-
 	public PresenceModule getPresenceModule() {
 		return presenceModule;
 	}
 
 	/**
+	 * @param stanzaFrom
+	 */
+	protected void onPingReceived(final JID jid) {
+		if (lastActivity.containsKey(jid)) {
+			lastActivity.put(jid, System.currentTimeMillis());
+		}
+	}
+
+	/**
+	 * @param stanzaTo
+	 */
+	protected void onPingTimeout(final JID jid) {
+		try {
+			processError(jid);
+		} catch (TigaseStringprepException e) {
+			if (log.isLoggable(Level.WARNING))
+				log.log(Level.WARNING, "Invalid jid?", e);
+		}
+	}
+
+	/**
+	 * @throws TigaseStringprepException
 	 * 
 	 */
-	public void ping() {
+	public void ping() throws TigaseStringprepException {
+		if (log.isLoggable(Level.FINE))
+			log.log(Level.FINE, "Pinging 1000 known jids");
+
 		int c = 0;
 		final long now = System.currentTimeMillis();
 		final long border = now + 1000 * 60 * 59;
@@ -135,30 +180,35 @@ public class Ghostbuster {
 				ping(entry.getKey());
 			}
 		}
-
 	}
 
-	private void ping(JID jid) {
+	private void ping(JID jid) throws TigaseStringprepException {
 		final String id = "png-" + (++idCounter);
+
+		if (log.isLoggable(Level.FINER))
+			log.log(Level.FINER, "Pinging " + jid + ". id=" + id);
+
 		Element ping = new Element("iq", new String[] { "type", "id", "from", "to" }, new String[] { "get", id,
-				config.getServiceName().toString(), jid.toString() });
+				mucComponent.getConfig().getServiceName().toString(), jid.toString() });
 		ping.addChild(new Element("ping", new String[] { "xmlns" }, new String[] { "urn:xmpp:ping" }));
 
-		writer.writeElement(ping);
+		Packet packet = Packet.packetInstance(ping);
+
+		mucComponent.addOutPacket(packet, pingHandler, 1, TimeUnit.MINUTES);
 	}
 
 	/**
 	 * @param packet
 	 * @throws TigaseStringprepException
 	 */
-	private void processError(Packet packet) throws TigaseStringprepException {
-		if (presenceModule == null || mucRepository == null)
+	private void processError(JID jid) throws TigaseStringprepException {
+		if (presenceModule == null || mucComponent.getMucRepository() == null)
 			return;
 
-		this.lastActivity.remove(packet.getStanzaFrom());
-		for (Room r : mucRepository.getActiveRooms().values()) {
-			if (r.isOccupantInRoom(packet.getStanzaFrom())) {
-				presenceModule.doQuit(r, packet.getStanzaFrom());
+		this.lastActivity.remove(jid);
+		for (Room r : mucComponent.getMucRepository().getActiveRooms().values()) {
+			if (r.isOccupantInRoom(jid)) {
+				presenceModule.doQuit(r, jid);
 			}
 		}
 	}
@@ -174,7 +224,7 @@ public class Ghostbuster {
 		final String type = packet.getElement().getAttribute("type");
 
 		if (type != null && type.equals("error") && checkError(packet)) {
-			processError(packet);
+			processError(packet.getStanzaFrom());
 		} else if ("presence".equals(packet.getElemName()) && type != null && type.equals("unavailable")) {
 			this.lastActivity.remove(packet.getStanzaFrom());
 		} else if ("presence".equals(packet.getElemName()) && (type == null || !type.equals("error"))) {

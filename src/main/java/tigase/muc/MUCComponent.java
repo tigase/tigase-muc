@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -66,6 +67,7 @@ import tigase.muc.repository.inmemory.InMemoryMucRepository;
 import tigase.server.AbstractMessageReceiver;
 import tigase.server.DisableDisco;
 import tigase.server.Packet;
+import tigase.server.ReceiverTimeoutHandler;
 import tigase.util.DNSResolver;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
@@ -90,10 +92,6 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	public static final String LOG_DIR_KEY = "room-log-directory";
 	public static final String MESSAGE_FILTER_ENABLED_KEY = "message-filter-enabled";
 	public static final String MUC_ALLOW_CHAT_STATES_KEY = "muc-allow-chat-states";
-
-	// ~--- fields
-	// ---------------------------------------------------------------
-
 	public static final String MUC_LOCK_NEW_ROOM_KEY = "muc-lock-new-room";
 	protected static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
 	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
@@ -101,19 +99,23 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	private static final String OWNER_MODULE_VAR = "ownerModule";
 	public static final String PRESENCE_FILTER_ENABLED_KEY = "presence-filter-enabled";
 	private static final String PRESENCE_MODULE_VAR = "presenceModule";
+
 	private MucConfig config = new MucConfig();
+
 	private MucDAO dao;
-	private Ghostbuster ghostbuster;
+
+	private final Ghostbuster ghostbuster;
+
 	private HistoryProvider historyProvider;
+
 	/** Field description */
 	public String[] HOSTNAMES_PROP_VAL = { "localhost", "hostname" };
+
 	protected Logger log = Logger.getLogger(this.getClass().getName());
+
 	private GroupchatMessageModule messageModule;
 
 	private final ModulesManager modulesManager = new ModulesManager();
-
-	// ~--- get methods
-	// ----------------------------------------------------------
 
 	private IMucRepository mucRepository;
 
@@ -126,12 +128,15 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	private ServiceEntity serviceEntity;
 
 	private UserRepository userRepository;
+
 	private final tigase.muc.ElementWriter writer;
 
 	/**
 	 * 
 	 */
 	public MUCComponent() {
+		this.ghostbuster = new Ghostbuster(this);
+
 		this.writer = new ElementWriter() {
 
 			@Override
@@ -178,7 +183,12 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	}
 
 	public MUCComponent(ElementWriter writer) {
+		this.ghostbuster = new Ghostbuster(this);
 		this.writer = writer;
+	}
+
+	boolean addOutPacket(Packet packet, ReceiverTimeoutHandler handler, long delay, TimeUnit unit) {
+		return super.addOutPacketWithTimeout(packet, handler, delay, unit);
 	}
 
 	@Override
@@ -197,6 +207,10 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 				}
 			};
 		}
+	}
+
+	public MucConfig getConfig() {
+		return config;
 	}
 
 	/**
@@ -281,6 +295,9 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		return null;
 	}
 
+	// ~--- methods
+	// --------------------------------------------------------------
+
 	/**
 	 * Method description
 	 * 
@@ -300,9 +317,6 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 			return null;
 		}
 	}
-
-	// ~--- methods
-	// --------------------------------------------------------------
 
 	/**
 	 * Method description
@@ -331,8 +345,6 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	}
 
 	protected void init() {
-		this.ghostbuster = new Ghostbuster(config, mucRepository, writer);
-
 		presenceModule = new PresenceModule(this.config, writer, this.mucRepository, this.historyProvider, this, roomLogger);
 
 		ghostbuster.setPresenceModule(presenceModule);
