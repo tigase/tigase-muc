@@ -54,7 +54,12 @@ public class HistoryManagerFactory {
 			} else if (cl.contains("derby")) {
 				DataRepository dataRepository = RepositoryFactory.getDataRepository(null, uri, null);
 				return new DerbySqlHistoryProvider(dataRepository);
-			} else
+			} else if (cl.contains("pgsql")) {
+				DataRepository dataRepository = RepositoryFactory.getDataRepository(null, uri, null);
+				return new PostgreSqlHistoryProvider(dataRepository);
+			}
+
+			else
 				throw new RuntimeException("Database not supported");
 		} catch (Exception e) {
 			throw new RuntimeException(e);
