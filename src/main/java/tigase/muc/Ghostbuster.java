@@ -126,7 +126,7 @@ public class Ghostbuster {
 			@Override
 			public void responseReceived(Packet data, Packet response) {
 				try {
-					onPingReceived(response.getStanzaTo().getDomain(), response.getStanzaFrom());
+					onPingReceived(response);
 				} catch (Exception e) {
 					if (log.isLoggable(Level.WARNING))
 						log.log(Level.WARNING, "Problem on handling ping response", e);
@@ -136,6 +136,8 @@ public class Ghostbuster {
 			@Override
 			public void timeOutExpired(Packet data) {
 				try {
+					if (log.isLoggable(Level.FINEST))
+						log.finest("Received ping timeout for ping " + data.getElement().getAttribute("id"));
 					onPingTimeout(data.getStanzaFrom().getDomain(), data.getStanzaTo());
 				} catch (Exception e) {
 					if (log.isLoggable(Level.WARNING))
@@ -148,25 +150,24 @@ public class Ghostbuster {
 	/**
 	 * @param packet
 	 */
-	private boolean checkError(final Packet packet) {
+	private String checkError(final Packet packet) {
+		final String type = packet.getElement().getAttribute("type");
+		if (type == null || !type.equals("error"))
+			return null;
 		final Element errorElement = packet.getElement().getChild("error");
 		if (errorElement == null)
-			return false;
+			return null;
 
-		boolean x = false;
 		for (Element reason : errorElement.getChildren()) {
 			if (reason.getXMLNS() == null || !reason.getXMLNS().equals("urn:ietf:params:xml:ns:xmpp-stanzas"))
 				continue;
 
 			if (Ghostbuster.R.contains(reason.getName())) {
-				x = true;
-				break;
+				return reason.getName();
 			}
 		}
-		if (!x)
-			return false;
 
-		return true;
+		return null;
 	}
 
 	public PresenceModule getPresenceModule() {
@@ -175,13 +176,22 @@ public class Ghostbuster {
 
 	/**
 	 * @param stanzaFrom
+	 * @throws TigaseStringprepException
 	 */
-	protected void onPingReceived(final String domain, final JID jid) {
-		JIDDomain k = new JIDDomain(jid, domain);
+	protected void onPingReceived(final Packet response) throws TigaseStringprepException {
+		final JIDDomain k = new JIDDomain(response.getStanzaFrom(), response.getStanzaTo().getDomain());
 		if (lastActivity.containsKey(k)) {
-			if (log.isLoggable(Level.FINEST))
-				log.finest("Update last activity for " + k);
-			lastActivity.put(k, System.currentTimeMillis());
+			final String errorCause = checkError(response);
+			if (errorCause != null) {
+				if (log.isLoggable(Level.FINEST))
+					log.finest("Received error response for ping " + response.getElement().getAttribute("id") + "("
+							+ checkError(response) + ") of" + k);
+				processError(k);
+			} else {
+				if (log.isLoggable(Level.FINEST))
+					log.finest("Update last activity for " + k);
+				lastActivity.put(k, System.currentTimeMillis());
+			}
 		}
 	}
 
@@ -264,13 +274,16 @@ public class Ghostbuster {
 
 		final String type = packet.getElement().getAttribute("type");
 
-		if (type != null && type.equals("error") && checkError(packet)) {
+		if (checkError(packet) != null) {
+			if (log.isLoggable(Level.FINEST))
+				log.finest("Received presence error: " + packet.getElement().toString());
 			processError(k);
 		} else if ("presence".equals(packet.getElemName()) && type != null && type.equals("unavailable")) {
 			if (log.isLoggable(Level.FINEST))
 				log.finest("Removal last activity of " + k);
 			this.lastActivity.remove(k);
-		} else if ("presence".equals(packet.getElemName()) && (type == null || !type.equals("error"))) {
+		} else if (!lastActivity.containsKey(k) && "presence".equals(packet.getElemName())
+				&& (type == null || !type.equals("error"))) {
 			if (log.isLoggable(Level.FINEST))
 				log.finest("Creation last activity entry for " + k);
 			lastActivity.put(k, System.currentTimeMillis());
