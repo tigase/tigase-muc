@@ -218,11 +218,11 @@ public class Ghostbuster {
 
 		int c = 0;
 		final long now = System.currentTimeMillis();
-		final long border = now + 1000 * 60 * 59;
+		final long border = now - 1000 * 60 * 59;
 		Iterator<Entry<JIDDomain, Long>> it = lastActivity.entrySet().iterator();
 		while (it.hasNext() && c < 1000) {
 			Entry<JIDDomain, Long> entry = it.next();
-			if (border > entry.getValue()) {
+			if (border < entry.getValue()) {
 				++c;
 				ping(entry.getKey().domain, entry.getKey().source);
 			}

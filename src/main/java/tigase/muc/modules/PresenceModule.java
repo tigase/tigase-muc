@@ -325,21 +325,29 @@ public class PresenceModule extends AbstractModule {
 	 * @param room
 	 * @param senderJID
 	 * @throws TigaseStringprepException
+	 * @throws MUCException
 	 */
 	public void doQuit(final Room room, final JID senderJID) throws TigaseStringprepException {
-		// TODO Auto-generated method stub
-
 		final String leavingNickname = room.getOccupantsNickname(senderJID);
 		final Affiliation leavingAffiliation = room.getAffiliation(leavingNickname);
 		final Role leavingRole = room.getRole(leavingNickname);
 
+		Element presenceElement = new Element("presence");
+		presenceElement.setAttribute("type", "unavailable");
+		final PresenceWrapper selfPresence = preparePresenceW(room, senderJID, presenceElement, senderJID);
+
 		boolean nicknameGone = room.removeOccupant(senderJID);
 		room.updatePresenceByJid(senderJID, null);
+
+		writer.write(selfPresence.packet);
+
+		// TODO if highest priority is gone, then send current highest priority
+		// to occupants
 
 		if (nicknameGone) {
 			for (String occupantNickname : room.getOccupantsNicknames()) {
 				for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
-					Element presenceElement = new Element("presence");
+					presenceElement = new Element("presence");
 					presenceElement.setAttribute("type", "unavailable");
 
 					PresenceWrapper presence = preparePresenceW(room, occupantJid, presenceElement, senderJID.getBareJID(),
@@ -613,44 +621,11 @@ public class PresenceModule extends AbstractModule {
 			throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unkown room");
 
 		final String leavingNickname = room.getOccupantsNickname(senderJID);
-		final Affiliation leavingAffiliation = room.getAffiliation(leavingNickname);
-		final Role leavingRole = room.getRole(leavingNickname);
 
 		if (leavingNickname == null)
 			throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unkown occupant");
 
-		final PresenceWrapper selfPresence = preparePresence(senderJID, clonePresence(presenceElement), room, senderJID, false,
-				null);
-
-		boolean nicknameGone = room.removeOccupant(senderJID);
-		room.updatePresenceByJid(senderJID, presenceElement);
-
-		writer.write(selfPresence.packet);
-
-		// TODO if highest priority is gone, then send current highest priority
-		// to occupants
-
-		if (nicknameGone) {
-			for (String occupantNickname : room.getOccupantsNicknames()) {
-				for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
-					PresenceWrapper presence = preparePresenceW(room, occupantJid, clonePresence(presenceElement),
-							senderJID.getBareJID(), leavingNickname, leavingAffiliation, leavingRole);
-					writer.write(presence.packet);
-				}
-			}
-
-			if (room.getConfig().isLoggingEnabled()) {
-				addLeaveToHistory(room, new Date(), senderJID, leavingNickname);
-			}
-		}
-
-		if (room.getOccupantsCount() == 0) {
-			if (historyProvider != null && !room.getConfig().isPersistentRoom()) {
-				this.historyProvider.removeHistory(room);
-			}
-			this.repository.leaveRoom(room);
-		}
-
+		doQuit(room, senderJID);
 	}
 
 	/**

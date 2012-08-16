@@ -97,6 +97,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
 	private static final String MUC_REPOSITORY_VAR = "mucRepository";
 	private static final String OWNER_MODULE_VAR = "ownerModule";
+	public static final String PING_EVERY_MINUTE_KEY = "ping-every-minute";
 	public static final String PRESENCE_FILTER_ENABLED_KEY = "presence-filter-enabled";
 	private static final String PRESENCE_MODULE_VAR = "presenceModule";
 
@@ -120,6 +121,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	private IMucRepository mucRepository;
 
 	private RoomConfigurationModule ownerModule;
+
+	private boolean pingEveryMinute = false;
 
 	private PresenceModule presenceModule;
 
@@ -194,6 +197,23 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	@Override
 	public synchronized void everyHour() {
 		super.everyHour();
+		if (!pingEveryMinute)
+			executePingInThread();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see tigase.server.AbstractMessageReceiver#everyMinute()
+	 */
+	@Override
+	public synchronized void everyMinute() {
+		super.everyMinute();
+		if (pingEveryMinute)
+			executePingInThread();
+	}
+
+	private void executePingInThread() {
 		if (ghostbuster != null) {
 			(new Thread() {
 				@Override
@@ -233,6 +253,7 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 		props.put(MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
 		props.put(PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
+		props.put(PING_EVERY_MINUTE_KEY, Boolean.FALSE);
 
 		String[] hostnames = new String[HOSTNAMES_PROP_VAL.length];
 		int i = 0;
@@ -522,6 +543,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 			// of it's settings
 			return;
 		}
+
+		this.pingEveryMinute = (Boolean) props.get(PING_EVERY_MINUTE_KEY);
 
 		// String[] hostnames = (String[]) props.get(HOSTNAMES_PROP_KEY);
 		// if (hostnames == null || hostnames.length == 0) {
