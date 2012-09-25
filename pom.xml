@@ -5,7 +5,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>tigase</groupId>
 	<artifactId>tigase-muc</artifactId>
-	<name>tigase-muc</name>
+	<name>Tigase MUC</name>
 	<version>2.2.0-SNAPSHOT</version>
 	<packaging>jar</packaging>
 	<description>Multi User Chat component for Tigase</description>
@@ -31,13 +31,13 @@
 	<licenses>
 		<license>
 			<name>GNU Affero General Public License</name>
-			<url>http://www.gnu.org/licenses/gpl.txt</url>
+			<url>http://www.gnu.org/licenses/agpl.txt</url>
 		</license>
 	</licenses>
 	<scm>
-		<connection>scm:svn:https://svn.tigase.org/reps/tigase-muc/trunk</connection>
-		<developerConnection>scm:svn:https://svn.tigase.org/reps/tigase-muc/trunk</developerConnection>
-		<url>https://svn.tigase.org/reps/tigase-muc</url>
+		<connection>scm:git:https://svn.tigase.org/git/tigase-muc.git</connection>
+		<developerConnection>scm:git:https://svn.tigase.org/git/tigase-muc.git</developerConnection>
+		<url>https://projects.tigase.org/projects/tigase-muc/repository</url>
 	</scm>
 	<organization>
 		<name>Tigase</name>
@@ -51,6 +51,7 @@
 				<version>1.1</version>
 				<configuration>
 					<timestampFormat>{0,date} {0,time}</timestampFormat>
+					 <shortRevisionLength>8</shortRevisionLength>
 				</configuration>
 				<executions>
 					<execution>
@@ -95,42 +96,59 @@
 				<artifactId>wagon-ssh-external</artifactId>
 				<version>2.2</version>
 			</extension>
+			<extension>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ssh</artifactId>
+				<version>2.2</version>
+			</extension>
 		</extensions>
 	</build>
-	<repositories>
-		<repository>
-			<snapshots />
-			<id>tigase</id>
-			<name>Tigase rpos</name>
-			<url>http://maven.tigase.org</url>
-		</repository>
-	</repositories>
 	<dependencies>
 		<dependency>
 			<groupId>tigase</groupId>
 			<artifactId>tigase-testsuite</artifactId>
-			<version>2.1.3</version>
+			<version>2.2.0-SNAPSHOT</version>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
 			<groupId>tigase</groupId>
 			<artifactId>tigase-server</artifactId>
-			<version>5.1.0</version>
+			<version>5.2.0-SNAPSHOT</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>tigase</groupId>
 			<artifactId>tigase-utils</artifactId>
-			<version>3.3.11</version>
+			<version>3.4.0-SNAPSHOT</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>tigase</groupId>
 			<artifactId>tigase-xmltools</artifactId>
-			<version>3.3.6</version>
+			<version>3.4.0-SNAPSHOT</version>
 			<scope>compile</scope>
 		</dependency>
 	</dependencies>
+	<repositories>
+		<repository>
+			<snapshots />
+			<id>tigase</id>
+			<name>Tigase repository</name>
+			<url>http://maven.tigase.org</url>
+		</repository>
+	</repositories>
+	<distributionManagement>
+		<repository>
+			<id>tigase</id>
+			<name>Tigase repository</name>
+			<url>scp://maven.tigase.org:/home/webapp/maven-repository</url>
+		</repository>
+		<snapshotRepository>
+			<id>tigase</id>
+			<name>Tigase snapshot repository</name>
+			<url>scp://maven.tigase.org:/home/webapp/maven-repository</url>
+		</snapshotRepository>
+	</distributionManagement>
 	<reporting>
 		<plugins>
 		</plugins>
@@ -139,18 +157,6 @@
 		<dependencies>
 		</dependencies>
 	</dependencyManagement>
-	<distributionManagement>
-		<repository>
-			<id>tigase</id>
-			<name>Tigase Repo</name>
-			<url>scpexe://maven.tigase.org:/home/webapp/maven-repository</url>
-		</repository>
-		<snapshotRepository>
-			<id>tigase</id>
-			<name>Tigase Repo</name>
-			<url>scpexe://maven.tigase.org:/home/webapp/maven-repository</url>
-		</snapshotRepository>
-	</distributionManagement>
 </project>
 
 
