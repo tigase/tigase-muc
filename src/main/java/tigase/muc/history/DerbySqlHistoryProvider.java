@@ -31,9 +31,9 @@ import java.util.Date;
 import java.util.Map;
 import java.util.logging.Level;
 
+import tigase.component.ElementWriter;
 import tigase.db.DataRepository;
 import tigase.muc.Affiliation;
-import tigase.muc.ElementWriter;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
 import tigase.xml.Element;

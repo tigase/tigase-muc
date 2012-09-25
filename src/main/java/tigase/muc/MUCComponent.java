@@ -24,13 +24,10 @@ package tigase.muc;
 
 //~--- non-JDK imports --------------------------------------------------------
 
-import java.util.ArrayDeque;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -38,13 +35,15 @@ import java.util.logging.Logger;
 
 import javax.script.Bindings;
 
+import tigase.component.AbstractComponent;
+import tigase.component.ElementWriter;
+import tigase.component.modules.ModulesManager;
 import tigase.conf.Configurable;
 import tigase.db.RepositoryFactory;
 import tigase.db.UserRepository;
 import tigase.disco.ServiceEntity;
 import tigase.disco.ServiceIdentity;
 import tigase.disco.XMPPService;
-import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryManagerFactory;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.history.MemoryHistoryProvider;
@@ -64,17 +63,12 @@ import tigase.muc.modules.XmppPingModule;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.MucDAO;
 import tigase.muc.repository.inmemory.InMemoryMucRepository;
-import tigase.server.AbstractMessageReceiver;
 import tigase.server.DisableDisco;
 import tigase.server.Packet;
 import tigase.server.ReceiverTimeoutHandler;
 import tigase.util.DNSResolver;
-import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
-import tigase.xmpp.Authorization;
-import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
-import tigase.xmpp.StanzaType;
 
 //~--- classes ----------------------------------------------------------------
 
@@ -85,7 +79,7 @@ import tigase.xmpp.StanzaType;
  * @version 5.1.0, 2010.11.02 at 01:01:31 MDT
  * @author Artur Hefczyc <artur.hefczyc@tigase.org>
  */
-public class MUCComponent extends AbstractMessageReceiver implements DelDeliverySend, XMPPService, Configurable, DisableDisco {
+public class MUCComponent extends AbstractComponent implements DelDeliverySend, XMPPService, Configurable, DisableDisco {
 
 	/** Field description */
 	public static final String ADMINS_KEY = "admins";
@@ -116,8 +110,6 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 	private GroupchatMessageModule messageModule;
 
-	private final ModulesManager modulesManager = new ModulesManager();
-
 	private IMucRepository mucRepository;
 
 	private RoomConfigurationModule ownerModule;
@@ -132,62 +124,17 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 
 	private UserRepository userRepository;
 
-	private final tigase.muc.ElementWriter writer;
-
 	/**
 	 * 
 	 */
 	public MUCComponent() {
+		super();
 		this.ghostbuster = new Ghostbuster(this);
-
-		this.writer = new ElementWriter() {
-
-			@Override
-			public void write(Collection<Packet> elements) {
-				if (elements != null) {
-					for (Packet element : elements) {
-						if (element != null) {
-							write(element);
-						}
-					}
-				}
-			}
-
-			@Override
-			public void write(Packet packet) {
-				if (log.isLoggable(Level.FINER))
-					log.finer("Sent: " + packet.getElement());
-				addOutPacket(packet);
-			}
-
-			@Override
-			public void writeElement(Collection<Element> elements) {
-				if (elements != null) {
-					for (Element element : elements) {
-						if (element != null) {
-							writeElement(element);
-						}
-					}
-				}
-			}
-
-			@Override
-			public void writeElement(final Element element) {
-				if (element != null) {
-					try {
-						if (log.isLoggable(Level.FINER))
-							log.finer("Sent: " + element);
-						addOutPacket(Packet.packetInstance(element));
-					} catch (TigaseStringprepException e) {
-					}
-				}
-			}
-		};
 	}
 
 	public MUCComponent(ElementWriter writer) {
+		super(writer);
 		this.ghostbuster = new Ghostbuster(this);
-		this.writer = writer;
 	}
 
 	boolean addOutPacket(Packet packet, ReceiverTimeoutHandler handler, long delay, TimeUnit unit) {
@@ -366,6 +313,8 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	}
 
 	protected void init() {
+		final ElementWriter writer = getWriter();
+
 		presenceModule = new PresenceModule(this.config, writer, this.mucRepository, this.historyProvider, this, roomLogger);
 
 		ghostbuster.setPresenceModule(presenceModule);
@@ -398,75 +347,14 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 		binds.put(MUC_REPOSITORY_VAR, mucRepository);
 	}
 
-	/**
-	 * @param packet
-	 */
-	private void processCommandPacket(Packet packet) {
-		Queue<Packet> results = new ArrayDeque<Packet>();
-
-		processScriptCommand(packet, results);
-
-		if (results.size() > 0) {
-			for (Packet res : results) {
-
-				// No more recurrential calls!!
-				addOutPacketNB(res);
-
-				// processPacket(res);
-			} // end of for ()
-		}
-	}
-
-	/**
-	 * Method description
-	 * 
-	 * 
-	 * @param packet
-	 */
 	@Override
-	public void processPacket(Packet packet) {
-		if (packet.isCommand()) {
-			processCommandPacket(packet);
-		} else {
-			processStanzaPacket(packet);
-		}
-	}
-
 	protected void processStanzaPacket(final Packet packet) {
 		try {
 			ghostbuster.update(packet);
 		} catch (Exception e) {
 			log.log(Level.WARNING, "There is no Dana, there is only Zuul", e);
 		}
-		try {
-
-			boolean handled = this.modulesManager.process(packet, writer);
-
-			if (!handled) {
-				final String t = packet.getElement().getAttribute("type");
-				final StanzaType type = t == null ? null : StanzaType.valueof(t);
-				if (type != StanzaType.error) {
-					throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
-				} else {
-					if (log.isLoggable(Level.FINER))
-						log.finer(packet.getElemName() + " stanza with type='error' ignored");
-				}
-			}
-		} catch (TigaseStringprepException e) {
-			if (log.isLoggable(Level.FINER)) {
-				log.log(Level.FINER, "Exception thrown for " + packet.toString(), e);
-			} else if (log.isLoggable(Level.FINE)) {
-				log.log(Level.FINE, "PubSubException on stanza id=" + packet.getAttribute("id") + " " + e.getMessage());
-			}
-			sendException(packet, new MUCException(Authorization.JID_MALFORMED));
-		} catch (MUCException e) {
-			if (log.isLoggable(Level.FINER)) {
-				log.log(Level.FINER, "Exception thrown for " + packet.toString(), e);
-			} else if (log.isLoggable(Level.FINE)) {
-				log.log(Level.FINE, "PubSubException on stanza id=" + packet.getAttribute("id") + " " + e.getMessage());
-			}
-			sendException(packet, e);
-		}
+		super.processStanzaPacket(packet);
 	}
 
 	/**
@@ -478,32 +366,6 @@ public class MUCComponent extends AbstractMessageReceiver implements DelDelivery
 	@Override
 	public void sendDelayedPacket(Packet packet) {
 		addOutPacket(packet);
-	}
-
-	// ~--- set methods
-	// ----------------------------------------------------------
-
-	private void sendException(final Packet packet, final MUCException e) {
-		try {
-
-			final String t = packet.getElement().getAttribute("type");
-			if (t != null && t == "error") {
-				if (log.isLoggable(Level.FINER))
-					log.finer(packet.getElemName() + " stanza already with type='error' ignored");
-				return;
-			}
-
-			Packet result = e.makeElement(packet, true);
-			Element el = result.getElement();
-			el.setAttribute("from", BareJID.bareJIDInstance(el.getAttribute("from")).toString());
-			if (log.isLoggable(Level.FINEST)) {
-				log.log(Level.FINEST, "Sending back: " + result.toString());
-			}
-			writer.write(result);
-		} catch (Exception e1) {
-			if (log.isLoggable(Level.WARNING))
-				log.log(Level.WARNING, "Problem during generate error response", e1);
-		}
 	}
 
 	/**

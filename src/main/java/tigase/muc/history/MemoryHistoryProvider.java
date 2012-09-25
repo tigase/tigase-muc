@@ -26,8 +26,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
 
+import tigase.component.ElementWriter;
 import tigase.muc.Affiliation;
-import tigase.muc.ElementWriter;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
 import tigase.xml.Element;

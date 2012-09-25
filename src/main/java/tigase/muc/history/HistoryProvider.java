@@ -24,7 +24,7 @@ package tigase.muc.history;
 import java.util.Date;
 import java.util.Map;
 
-import tigase.muc.ElementWriter;
+import tigase.component.ElementWriter;
 import tigase.muc.Room;
 import tigase.xmpp.JID;
 

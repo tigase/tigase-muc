@@ -29,11 +29,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
 
+import tigase.component.ElementWriter;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.Affiliation;
 import tigase.muc.DateUtil;
-import tigase.muc.ElementWriter;
 import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;

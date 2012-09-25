@@ -30,6 +30,7 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Before;
 
+import tigase.component.ElementWriter;
 import tigase.muc.repository.RepositoryException;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;

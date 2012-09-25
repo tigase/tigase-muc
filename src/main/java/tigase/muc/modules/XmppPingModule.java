@@ -21,16 +21,14 @@
  */
 package tigase.muc.modules;
 
+import tigase.component.ElementWriter;
+import tigase.component.modules.Module;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.criteria.Or;
-import tigase.muc.ElementWriter;
-import tigase.muc.Module;
 import tigase.muc.exceptions.MUCException;
 import tigase.server.Packet;
-import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
-import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -56,16 +54,6 @@ public class XmppPingModule implements Module {
 	@Override
 	public Criteria getModuleCriteria() {
 		return CRIT;
-	}
-
-	@Override
-	public boolean isProcessedByModule(Element element) {
-		try {
-			JID jid = JID.jidInstance(element.getAttribute("to"));
-			return jid != null && jid.getResource() == null;
-		} catch (TigaseStringprepException e) {
-			return false;
-		}
 	}
 
 	@Override

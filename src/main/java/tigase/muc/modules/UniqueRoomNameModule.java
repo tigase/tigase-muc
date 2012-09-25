@@ -24,9 +24,9 @@ package tigase.muc.modules;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
+import tigase.component.ElementWriter;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
-import tigase.muc.ElementWriter;
 import tigase.muc.MucConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;

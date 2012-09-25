@@ -24,8 +24,8 @@ package tigase.muc.modules;
 import java.util.Collection;
 import java.util.logging.Logger;
 
-import tigase.muc.ElementWriter;
-import tigase.muc.Module;
+import tigase.component.ElementWriter;
+import tigase.component.modules.Module;
 import tigase.muc.MucConfig;
 import tigase.muc.Room;
 import tigase.muc.repository.IMucRepository;
@@ -64,11 +64,6 @@ public abstract class AbstractModule implements Module {
 		this.config = config;
 		this.repository = mucRepository;
 		this.writer = writer;
-	}
-
-	@Override
-	public boolean isProcessedByModule(Element element) {
-		return true;
 	}
 
 	protected void sendMucMessage(Room room, String recipientNickame, String message) throws TigaseStringprepException {

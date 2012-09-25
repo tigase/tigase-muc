@@ -23,9 +23,9 @@ package tigase.muc.modules;
 
 import java.util.Set;
 
+import tigase.component.ElementWriter;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
-import tigase.muc.ElementWriter;
 import tigase.muc.MUCComponent;
 import tigase.muc.MucConfig;
 import tigase.muc.Room;
