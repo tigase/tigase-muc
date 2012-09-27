@@ -31,7 +31,7 @@ import org.junit.Assert;
 import org.junit.Before;
 
 import tigase.component.ElementWriter;
-import tigase.muc.repository.RepositoryException;
+import tigase.component.exceptions.RepositoryException;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
 import tigase.test.junit.XMPPTestCase;
@@ -96,16 +96,14 @@ public class RoomTest extends XMPPTestCase {
 		};
 		this.pubsub.setName("xxx");
 
-		MucConfig config = new MucConfig();
 		Map<String, Object> props = new HashMap<String, Object>();
 		props.put("multi-user-chat", BareJID.bareJIDInstance("multi-user-chat"));
 		props.put(MUCComponent.MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
 		props.put(MUCComponent.PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
 		props.put(MUCComponent.LOG_DIR_KEY, "./");
 
-		config.init(props);
-		pubsub.setConfig(config);
-		this.pubsub.setMucRepository(new MockMucRepository(config));
+		pubsub.getConfig().setProperties(props);
+		this.pubsub.setMucRepository(new MockMucRepository(pubsub.getConfig()));
 
 		xmlio = new JUnitXMLIO() {
 

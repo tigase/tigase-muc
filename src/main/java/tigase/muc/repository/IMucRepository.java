@@ -23,6 +23,7 @@ package tigase.muc.repository;
 
 import java.util.Map;
 
+import tigase.component.exceptions.RepositoryException;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;

@@ -34,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import tigase.collections.TwoHashBidiMap;
-import tigase.muc.repository.RepositoryException;
+import tigase.component.exceptions.RepositoryException;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;

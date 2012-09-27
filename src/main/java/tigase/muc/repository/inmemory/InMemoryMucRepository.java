@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import tigase.component.exceptions.RepositoryException;
 import tigase.muc.Affiliation;
 import tigase.muc.MucConfig;
 import tigase.muc.Room;
@@ -42,7 +43,6 @@ import tigase.muc.RoomConfig.RoomConfigListener;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.MucDAO;
-import tigase.muc.repository.RepositoryException;
 import tigase.util.TigaseStringprepException;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;

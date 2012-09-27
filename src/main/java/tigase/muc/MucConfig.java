@@ -23,13 +23,15 @@ package tigase.muc;
 
 import java.util.Map;
 
+import tigase.component.AbstractComponent;
+import tigase.component.ComponentConfig;
 import tigase.xmpp.BareJID;
 
 /**
  * @author bmalkow
  * 
  */
-public class MucConfig {
+public class MucConfig extends ComponentConfig {
 
 	private boolean messageFilterEnabled;
 
@@ -41,19 +43,22 @@ public class MucConfig {
 
 	private BareJID serviceName;
 
+	protected MucConfig(AbstractComponent<?> component) {
+		super(component);
+	}
+
+	@Override
+	public Map<String, Object> getDefaults(Map<String, Object> params) {
+		return null;
+	}
+
 	public Map<String, Object> getProps() {
 		return props;
 	}
 
+	@Override
 	public BareJID getServiceName() {
 		return serviceName;
-	}
-
-	public void init(Map<String, Object> props) {
-		this.props = props;
-		this.serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
-		this.messageFilterEnabled = (Boolean) props.get(MUCComponent.MESSAGE_FILTER_ENABLED_KEY);
-		this.presenceFilterEnabled = (Boolean) props.get(MUCComponent.PRESENCE_FILTER_ENABLED_KEY);
 	}
 
 	public boolean isMessageFilterEnabled() {
@@ -69,6 +74,14 @@ public class MucConfig {
 	 */
 	public boolean isPublicLoggingEnabled() {
 		return publicLoggingEnabled;
+	}
+
+	@Override
+	public void setProperties(Map<String, Object> props) {
+		this.props = props;
+		this.serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
+		this.messageFilterEnabled = (Boolean) props.get(MUCComponent.MESSAGE_FILTER_ENABLED_KEY);
+		this.presenceFilterEnabled = (Boolean) props.get(MUCComponent.PRESENCE_FILTER_ENABLED_KEY);
 	}
 
 	/**

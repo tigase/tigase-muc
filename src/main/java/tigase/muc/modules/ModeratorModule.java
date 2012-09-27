@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 
 import tigase.component.ElementWriter;
+import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.Affiliation;
@@ -37,7 +38,6 @@ import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
-import tigase.muc.repository.RepositoryException;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;

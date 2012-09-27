@@ -19,7 +19,7 @@
  * Last modified by $Author$
  * $Date$
  */
-package tigase.muc.repository;
+package tigase.component.exceptions;
 
 public class RepositoryException extends Exception {
 

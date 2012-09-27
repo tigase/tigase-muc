@@ -37,7 +37,6 @@ import javax.script.Bindings;
 
 import tigase.component.AbstractComponent;
 import tigase.component.ElementWriter;
-import tigase.component.modules.ModulesManager;
 import tigase.conf.Configurable;
 import tigase.db.RepositoryFactory;
 import tigase.db.UserRepository;
@@ -79,7 +78,8 @@ import tigase.xmpp.JID;
  * @version 5.1.0, 2010.11.02 at 01:01:31 MDT
  * @author Artur Hefczyc <artur.hefczyc@tigase.org>
  */
-public class MUCComponent extends AbstractComponent implements DelDeliverySend, XMPPService, Configurable, DisableDisco {
+public class MUCComponent extends AbstractComponent<MucConfig> implements DelDeliverySend, XMPPService, Configurable,
+		DisableDisco {
 
 	/** Field description */
 	public static final String ADMINS_KEY = "admins";
@@ -94,8 +94,6 @@ public class MUCComponent extends AbstractComponent implements DelDeliverySend, 
 	public static final String PING_EVERY_MINUTE_KEY = "ping-every-minute";
 	public static final String PRESENCE_FILTER_ENABLED_KEY = "presence-filter-enabled";
 	private static final String PRESENCE_MODULE_VAR = "presenceModule";
-
-	private MucConfig config = new MucConfig();
 
 	private MucDAO dao;
 
@@ -141,6 +139,18 @@ public class MUCComponent extends AbstractComponent implements DelDeliverySend, 
 		return super.addOutPacketWithTimeout(packet, handler, delay, unit);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * tigase.component.AbstractComponent#createComponentConfigInstance(tigase
+	 * .component.AbstractComponent)
+	 */
+	@Override
+	protected MucConfig createComponentConfigInstance(AbstractComponent<?> abstractComponent) {
+		return new MucConfig(abstractComponent);
+	}
+
 	@Override
 	public synchronized void everyHour() {
 		super.everyHour();
@@ -177,7 +187,7 @@ public class MUCComponent extends AbstractComponent implements DelDeliverySend, 
 	}
 
 	public MucConfig getConfig() {
-		return config;
+		return componentConfig;
 	}
 
 	/**
@@ -249,6 +259,9 @@ public class MUCComponent extends AbstractComponent implements DelDeliverySend, 
 		return null;
 	}
 
+	// ~--- methods
+	// --------------------------------------------------------------
+
 	/**
 	 * Method description
 	 * 
@@ -262,9 +275,6 @@ public class MUCComponent extends AbstractComponent implements DelDeliverySend, 
 	public Element getDiscoInfo(String node, JID jid) {
 		return null;
 	}
-
-	// ~--- methods
-	// --------------------------------------------------------------
 
 	/**
 	 * Method description
@@ -315,23 +325,25 @@ public class MUCComponent extends AbstractComponent implements DelDeliverySend, 
 	protected void init() {
 		final ElementWriter writer = getWriter();
 
-		presenceModule = new PresenceModule(this.config, writer, this.mucRepository, this.historyProvider, this, roomLogger);
+		presenceModule = new PresenceModule(this.componentConfig, writer, this.mucRepository, this.historyProvider, this,
+				roomLogger);
 
 		ghostbuster.setPresenceModule(presenceModule);
 
-		this.modulesManager.register(new PrivateMessageModule(this.config, writer, this.mucRepository));
-		messageModule = this.modulesManager.register(new GroupchatMessageModule(this.config, writer, this.mucRepository,
-				historyProvider, roomLogger));
+		this.modulesManager.register(new PrivateMessageModule(this.componentConfig, writer, this.mucRepository));
+		messageModule = this.modulesManager.register(new GroupchatMessageModule(this.componentConfig, writer,
+				this.mucRepository, historyProvider, roomLogger));
 		this.modulesManager.register(presenceModule);
-		ownerModule = this.modulesManager.register(new RoomConfigurationModule(this.config, writer, this.mucRepository,
-				this.historyProvider, messageModule));
-		this.modulesManager.register(new ModeratorModule(this.config, writer, this.mucRepository));
+		ownerModule = this.modulesManager.register(new RoomConfigurationModule(this.componentConfig, writer,
+				this.mucRepository, this.historyProvider, messageModule));
+		this.modulesManager.register(new ModeratorModule(this.componentConfig, writer, this.mucRepository));
 		this.modulesManager.register(new SoftwareVersionModule(writer));
 		this.modulesManager.register(new XmppPingModule(writer));
-		this.modulesManager.register(new DiscoItemsModule(this.config, writer, this.mucRepository, scriptCommands, this));
-		this.modulesManager.register(new DiscoInfoModule(this.config, writer, this.mucRepository, this));
-		this.modulesManager.register(new MediatedInvitationModule(this.config, writer, this.mucRepository));
-		this.modulesManager.register(new UniqueRoomNameModule(this.config, writer, this.mucRepository));
+		this.modulesManager.register(new DiscoItemsModule(this.componentConfig, writer, this.mucRepository, scriptCommands,
+				this));
+		this.modulesManager.register(new DiscoInfoModule(this.componentConfig, writer, this.mucRepository, this));
+		this.modulesManager.register(new MediatedInvitationModule(this.componentConfig, writer, this.mucRepository));
+		this.modulesManager.register(new UniqueRoomNameModule(this.componentConfig, writer, this.mucRepository));
 	}
 
 	/*
@@ -368,12 +380,8 @@ public class MUCComponent extends AbstractComponent implements DelDeliverySend, 
 		addOutPacket(packet);
 	}
 
-	/**
-	 * @param config2
-	 */
-	public void setConfig(MucConfig config2) {
-		this.config = config2;
-	}
+	// ~--- methods
+	// --------------------------------------------------------------
 
 	/**
 	 * Method description
@@ -384,9 +392,6 @@ public class MUCComponent extends AbstractComponent implements DelDeliverySend, 
 	public void setMucRepository(IMucRepository mucRepository) {
 		this.mucRepository = mucRepository;
 	}
-
-	// ~--- methods
-	// --------------------------------------------------------------
 
 	/**
 	 * Method description
@@ -420,7 +425,6 @@ public class MUCComponent extends AbstractComponent implements DelDeliverySend, 
 		serviceEntity = new ServiceEntity(getName(), null, "Multi User Chat");
 		serviceEntity.addIdentities(new ServiceIdentity("conference", "text", "Multi User Chat"));
 		serviceEntity.addFeatures("http://jabber.org/protocol/muc");
-		this.config.init(props);
 
 		try {
 			this.historyProvider = HistoryManagerFactory.getHistoryManager(props);
@@ -448,9 +452,9 @@ public class MUCComponent extends AbstractComponent implements DelDeliverySend, 
 			}
 		}
 
-		this.config.setPublicLoggingEnabled(this.roomLogger != null || this.historyProvider.isPersistent());
+		this.componentConfig.setPublicLoggingEnabled(this.roomLogger != null || this.historyProvider.isPersistent());
 		if (log.isLoggable(Level.CONFIG))
-			log.config("Public Logging Allowed: " + this.config.isPublicLoggingEnabled());
+			log.config("Public Logging Allowed: " + this.componentConfig.isPublicLoggingEnabled());
 
 		if (userRepository == null) {
 			userRepository = (UserRepository) props.get(SHARED_USER_REPO_PROP_KEY);
@@ -464,8 +468,8 @@ public class MUCComponent extends AbstractComponent implements DelDeliverySend, 
 					userRepository.initRepository(res_uri, null);
 				}
 
-				dao = new MucDAO(this.config, this.userRepository);
-				mucRepository = new InMemoryMucRepository(this.config, dao);
+				dao = new MucDAO(this.componentConfig, this.userRepository);
+				mucRepository = new InMemoryMucRepository(this.componentConfig, dao);
 			} catch (Exception e) {
 				if (log.isLoggable(Level.SEVERE))
 					log.severe("Can't initialize MUC repository: " + e);

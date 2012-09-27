@@ -32,6 +32,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.component.ElementWriter;
+import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.Affiliation;
@@ -46,7 +47,6 @@ import tigase.muc.history.HistoryProvider;
 import tigase.muc.logger.MucLogger;
 import tigase.muc.modules.PresenceModule.DelayDeliveryThread.DelDeliverySend;
 import tigase.muc.repository.IMucRepository;
-import tigase.muc.repository.RepositoryException;
 import tigase.server.Packet;
 import tigase.server.Priority;
 import tigase.util.TigaseStringprepException;

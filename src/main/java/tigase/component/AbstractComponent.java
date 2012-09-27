@@ -2,6 +2,7 @@ package tigase.component;
 
 import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Queue;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -17,7 +18,9 @@ import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.StanzaType;
 
-public abstract class AbstractComponent extends AbstractMessageReceiver implements XMPPService {
+public abstract class AbstractComponent<T extends ComponentConfig> extends AbstractMessageReceiver implements XMPPService {
+
+	protected final T componentConfig;
 
 	private final ElementWriter DEFAULT_WRITER = new ElementWriter() {
 
@@ -67,7 +70,7 @@ public abstract class AbstractComponent extends AbstractMessageReceiver implemen
 
 	protected final ModulesManager modulesManager = new ModulesManager();
 
-	private ElementWriter writer;
+	private final ElementWriter writer;
 
 	public AbstractComponent() {
 		this(null);
@@ -75,11 +78,25 @@ public abstract class AbstractComponent extends AbstractMessageReceiver implemen
 
 	public AbstractComponent(ElementWriter writer) {
 		this.writer = writer != null ? writer : DEFAULT_WRITER;
+		this.componentConfig = createComponentConfigInstance(this);
 	}
+
+	protected abstract T createComponentConfigInstance(AbstractComponent<?> abstractComponent);
+
+	@Override
+	public Map<String, Object> getDefaults(Map<String, Object> params) {
+		final Map<String, Object> props = super.getDefaults(params);
+
+		Map<String, Object> x = componentConfig.getDefaults(props);
+		if (x != null)
+			props.putAll(x);
+
+		return props;
+	};
 
 	protected ElementWriter getWriter() {
 		return writer;
-	};
+	}
 
 	/**
 	 * @param packet
@@ -162,6 +179,12 @@ public abstract class AbstractComponent extends AbstractMessageReceiver implemen
 			if (log.isLoggable(Level.WARNING))
 				log.log(Level.WARNING, "Problem during generate error response", e1);
 		}
+	}
+
+	@Override
+	public void setProperties(Map<String, Object> props) {
+		super.setProperties(props);
+		componentConfig.setProperties(props);
 	}
 
 }

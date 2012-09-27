@@ -24,6 +24,7 @@ package tigase.muc.modules;
 import java.util.logging.Level;
 
 import tigase.component.ElementWriter;
+import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.form.Form;
@@ -36,7 +37,6 @@ import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.modules.PresenceModule.PresenceWrapper;
 import tigase.muc.repository.IMucRepository;
-import tigase.muc.repository.RepositoryException;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
