@@ -8,16 +8,18 @@ public abstract class ComponentConfig {
 
 	protected final AbstractComponent<?> component;
 
-	private final BareJID serviceName;
+	private BareJID serviceName;
 
 	protected ComponentConfig(AbstractComponent<?> component) {
 		this.component = component;
-		this.serviceName = BareJID.bareJIDInstanceNS(component.getName());
 	}
 
 	public abstract Map<String, Object> getDefaults(Map<String, Object> params);
 
 	public BareJID getServiceName() {
+		if (serviceName == null) {
+			serviceName = BareJID.bareJIDInstanceNS(component.getName());
+		}
 		return serviceName;
 	}
 

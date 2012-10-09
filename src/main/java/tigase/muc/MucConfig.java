@@ -21,6 +21,7 @@
  */
 package tigase.muc;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import tigase.component.AbstractComponent;
@@ -49,7 +50,9 @@ public class MucConfig extends ComponentConfig {
 
 	@Override
 	public Map<String, Object> getDefaults(Map<String, Object> params) {
-		return null;
+		final HashMap<String, Object> props = new HashMap<String, Object>();
+		return props;
+
 	}
 
 	public Map<String, Object> getProps() {
@@ -80,8 +83,15 @@ public class MucConfig extends ComponentConfig {
 	public void setProperties(Map<String, Object> props) {
 		this.props = props;
 		this.serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
-		this.messageFilterEnabled = (Boolean) props.get(MUCComponent.MESSAGE_FILTER_ENABLED_KEY);
-		this.presenceFilterEnabled = (Boolean) props.get(MUCComponent.PRESENCE_FILTER_ENABLED_KEY);
+		if (props.containsKey(MUCComponent.MESSAGE_FILTER_ENABLED_KEY))
+			this.messageFilterEnabled = (Boolean) props.get(MUCComponent.MESSAGE_FILTER_ENABLED_KEY);
+		else
+			this.messageFilterEnabled = true;
+
+		if (props.containsKey(MUCComponent.PRESENCE_FILTER_ENABLED_KEY))
+			this.presenceFilterEnabled = (Boolean) props.get(MUCComponent.PRESENCE_FILTER_ENABLED_KEY);
+		else
+			this.presenceFilterEnabled = false;
 	}
 
 	/**
