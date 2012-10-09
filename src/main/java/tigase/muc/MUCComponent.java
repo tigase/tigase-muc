@@ -312,16 +312,6 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		return mucRepository;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see tigase.server.BasicComponent#getName()
-	 */
-	@Override
-	public String getName() {
-		return "muc";
-	}
-
 	protected void init() {
 		final ElementWriter writer = getWriter();
 
