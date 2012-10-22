@@ -24,7 +24,6 @@ package tigase.muc.repository.inmemory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -57,7 +56,7 @@ public class InMemoryMucRepository implements IMucRepository {
 		boolean listPublic = true;
 	}
 
-	private final Map<BareJID, InternalRoom> allRooms = new HashMap<BareJID, InternalRoom>();
+	private final Map<BareJID, InternalRoom> allRooms = new ConcurrentHashMap<BareJID, InternalRoom>();
 
 	private final MucDAO dao;
 

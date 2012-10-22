@@ -22,9 +22,9 @@
 package tigase.muc.history;
 
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import tigase.component.ElementWriter;
 import tigase.muc.Affiliation;
@@ -47,7 +47,7 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 		Date timestamp;
 	}
 
-	private final HashMap<BareJID, LinkedList<HItem>> history = new HashMap<BareJID, LinkedList<HItem>>();
+	private final Map<BareJID, LinkedList<HItem>> history = new ConcurrentHashMap<BareJID, LinkedList<HItem>>();
 
 	private int maxSize = 256;
 

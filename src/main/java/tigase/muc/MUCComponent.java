@@ -259,9 +259,6 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		return null;
 	}
 
-	// ~--- methods
-	// --------------------------------------------------------------
-
 	/**
 	 * Method description
 	 * 
@@ -347,6 +344,16 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		binds.put(PRESENCE_MODULE_VAR, presenceModule);
 		binds.put(OWNER_MODULE_VAR, ownerModule);
 		binds.put(MUC_REPOSITORY_VAR, mucRepository);
+	}
+
+	@Override
+	public int processingInThreads() {
+		return Runtime.getRuntime().availableProcessors();
+	}
+
+	@Override
+	public int processingOutThreads() {
+		return Runtime.getRuntime().availableProcessors();
 	}
 
 	@Override
