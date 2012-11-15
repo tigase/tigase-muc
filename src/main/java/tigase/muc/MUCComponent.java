@@ -349,6 +349,12 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		binds.put(MUC_REPOSITORY_VAR, mucRepository);
 	}
 
+        @Override
+        public boolean isSubdomain() {
+                return true;
+        }
+        
+        
 	@Override
 	protected void processStanzaPacket(final Packet packet) {
 		try {
