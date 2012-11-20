@@ -346,12 +346,11 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		binds.put(MUC_REPOSITORY_VAR, mucRepository);
 	}
 
-        @Override
-        public boolean isSubdomain() {
-                return true;
-        }
-        
-        
+	@Override
+	public boolean isSubdomain() {
+		return true;
+	}
+
 	@Override
 	public int processingInThreads() {
 		return Runtime.getRuntime().availableProcessors();
