@@ -142,18 +142,12 @@ public abstract class AbstractComponent<T extends ComponentConfig> extends Abstr
 				}
 			}
 		} catch (TigaseStringprepException e) {
-			if (log.isLoggable(Level.FINER)) {
-				log.log(Level.FINER, "Exception thrown for " + packet.toString(), e);
-			} else if (log.isLoggable(Level.FINE)) {
-				log.log(Level.FINE, "PubSubException on stanza id=" + packet.getAttribute("id") + " " + e.getMessage());
-			}
+			if (log.isLoggable(Level.FINEST))
+				log.log(Level.FINEST, e.getMessage() + " when processing " + packet.toString());
 			sendException(packet, new ComponentException(Authorization.JID_MALFORMED));
 		} catch (ComponentException e) {
-			if (log.isLoggable(Level.FINER)) {
-				log.log(Level.FINER, "Exception thrown for " + packet.toString(), e);
-			} else if (log.isLoggable(Level.FINE)) {
-				log.log(Level.FINE, "PubSubException on stanza id=" + packet.getAttribute("id") + " " + e.getMessage());
-			}
+			if (log.isLoggable(Level.FINEST))
+				log.log(Level.FINEST, e.getMessageWithPosition() + " when processing " + packet.toString());
 			sendException(packet, e);
 		}
 	}

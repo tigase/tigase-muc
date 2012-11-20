@@ -507,7 +507,7 @@ public class PresenceModule extends AbstractModule {
 
 		if (room.isRoomLocked() && affiliation != Affiliation.owner) {
 			// Service Denies Access Because Room Does Not (Yet) Exist
-			throw new MUCException(Authorization.ITEM_NOT_FOUND);
+			throw new MUCException(Authorization.ITEM_NOT_FOUND, null, "Room exists but is locked");
 		}
 
 		if (!affiliation.isEnterOpenRoom()) {

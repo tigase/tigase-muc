@@ -32,7 +32,26 @@ public class MUCException extends ComponentException {
 		super(errorCondition);
 	}
 
-	public MUCException(Authorization errorCondition, String message) {
-		super(errorCondition, message);
+	/**
+	 * 
+	 * @param errorCondition
+	 * @param text
+	 *            human readable message will be send to client
+	 */
+	public MUCException(Authorization errorCondition, String text) {
+		super(errorCondition, text);
 	}
+
+	/**
+	 * 
+	 * @param errorCondition
+	 * @param text
+	 *            human readable message will be send to client
+	 * @param message
+	 *            exception message for logging only
+	 */
+	public MUCException(Authorization errorCondition, String text, String message) {
+		super(errorCondition, text, message);
+	}
+
 }
