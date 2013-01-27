@@ -4,8 +4,8 @@
 	</properties>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>tigase</groupId>
-	<artifactId>tigase-muc-osgi</artifactId>
-	<name>Tigase MUC OSGi bundle</name>
+	<artifactId>tigase-muc</artifactId>
+	<name>Tigase MUC</name>
 	<version>2.2.0-SNAPSHOT</version>
 	<packaging>bundle</packaging>
 	<description>Multi User Chat component for Tigase</description>
