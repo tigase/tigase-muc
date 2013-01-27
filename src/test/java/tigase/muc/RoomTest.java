@@ -153,6 +153,16 @@ public class RoomTest extends XMPPTestCase {
 	}
 
 	@org.junit.Test
+	public void test_hiddenRoomProblem() {
+		test("src/test/scripts/hidden-room-problem.cor", xmlio);
+	}
+
+	// @org.junit.Test
+	// public void test_presences() {
+	// test("src/test/scripts/processPresence-empty.cor", xmlio);
+	// }
+
+	@org.junit.Test
 	public void test_nonpersistentRoomProblem() {
 		test("src/test/scripts/nonpersistent-room-problem.cor", xmlio);
 		try {
@@ -164,11 +174,6 @@ public class RoomTest extends XMPPTestCase {
 		}
 	}
 
-	// @org.junit.Test
-	// public void test_presences() {
-	// test("src/test/scripts/processPresence-empty.cor", xmlio);
-	// }
-
 	@org.junit.Test
 	public void test_pings() {
 		test("src/test/scripts/ping.cor", xmlio);
@@ -178,5 +183,4 @@ public class RoomTest extends XMPPTestCase {
 	public void test_presences2() {
 		test("src/test/scripts/processPresence2.cor", xmlio);
 	}
-
 }
