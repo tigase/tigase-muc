@@ -6,7 +6,8 @@
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License.
+ * the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -124,11 +125,12 @@ public class DiscoItemsModule
 	@Override
 	public void process(Packet element) throws MUCException {
 		try {
-			final JID requestedJID = JID.jidInstance(element.getAttribute("to"));
-			final String node      = element.getAttributeStaticStr(Iq.IQ_QUERY_PATH, "node");
-			Element resultQuery    = new Element("query", new String[] { "xmlns" },
-																 new String[] {
-																	 "http://jabber.org/protocol/disco#items" });
+			final JID requestedJID =
+				JID.jidInstance(element.getAttributeStaticStr(Packet.TO_ATT));
+			final String node   = element.getAttributeStaticStr(Iq.IQ_QUERY_PATH, "node");
+			Element resultQuery = new Element("query", new String[] { Packet.XMLNS_ATT },
+																				new String[] {
+																					"http://jabber.org/protocol/disco#items" });
 			Packet result = element.okResult(resultQuery, 0);
 
 			if ((node != null) && node.equals("http://jabber.org/protocol/commands")) {
@@ -196,4 +198,4 @@ public class DiscoItemsModule
 }
 
 
-//~ Formatted in Tigase Code Convention on 13/02/16
+//~ Formatted in Tigase Code Convention on 13/02/20

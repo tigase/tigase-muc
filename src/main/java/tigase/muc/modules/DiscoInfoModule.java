@@ -6,7 +6,8 @@
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License.
+ * the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -125,7 +126,7 @@ public class DiscoInfoModule
 	@Override
 	public void process(Packet element) throws MUCException {
 		try {
-			String toXML           = element.getAttribute("to");
+			String toXML           = element.getAttributeStaticStr(Packet.TO_ATT);
 			final String node      = element.getAttributeStaticStr(Iq.IQ_QUERY_PATH, "node");
 			final JID requestedJID = JID.jidInstance(toXML);
 			Element resultQuery    = new Element("query", new String[] { "xmlns" },
@@ -136,7 +137,7 @@ public class DiscoInfoModule
 			if ((node == null) && (requestedJID.getLocalpart() == null) &&
 					(requestedJID.getResource() == null)) {
 				Element resultIdentity = new Element("identity", new String[] { "category",
-								"name", "type" }, new String[] { "conference", "Multi User Chat",
+								"name", Packet.TYPE_ATT }, new String[] { "conference", "Multi User Chat",
 								"text" });
 
 				resultQuery.addChild(resultIdentity);
@@ -233,4 +234,4 @@ public class DiscoInfoModule
 }
 
 
-//~ Formatted in Tigase Code Convention on 13/02/16
+//~ Formatted in Tigase Code Convention on 13/02/20

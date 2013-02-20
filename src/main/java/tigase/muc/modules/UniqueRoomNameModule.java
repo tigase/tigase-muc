@@ -1,10 +1,13 @@
 /*
- * Tigase Jabber/XMPP Multi-User Chat Component
- * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
+ * UniqueRoomNameModule.java
+ *
+ * Tigase Jabber/XMPP Server
+ * Copyright (C) 2004-2012 "Artur Hefczyc" <artur.hefczyc@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License.
+ * the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,40 +18,62 @@
  * along with this program. Look for COPYING file in the top folder.
  * If not, see http://www.gnu.org/licenses/.
  *
- * $Rev$
- * Last modified by $Author$
- * $Date$
  */
+
+
+
 package tigase.muc.modules;
+
+//~--- non-JDK imports --------------------------------------------------------
+
+import tigase.component.ElementWriter;
+
+import tigase.criteria.Criteria;
+import tigase.criteria.ElementCriteria;
+
+import tigase.muc.exceptions.MUCException;
+import tigase.muc.MucConfig;
+import tigase.muc.repository.IMucRepository;
+
+import tigase.server.Packet;
+
+import tigase.xml.Element;
+
+import tigase.xmpp.Authorization;
+import tigase.xmpp.JID;
+
+//~--- JDK imports ------------------------------------------------------------
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 
-import tigase.component.ElementWriter;
-import tigase.criteria.Criteria;
-import tigase.criteria.ElementCriteria;
-import tigase.muc.MucConfig;
-import tigase.muc.exceptions.MUCException;
-import tigase.muc.repository.IMucRepository;
-import tigase.server.Packet;
-import tigase.xml.Element;
-import tigase.xmpp.Authorization;
-import tigase.xmpp.JID;
-
 /**
  * @author bmalkow
- * 
+ *
  */
-public class UniqueRoomNameModule extends AbstractModule {
+public class UniqueRoomNameModule
+				extends AbstractModule {
+	private final static String CHARS  = "abcdefghijklmnopqrstuvwxyz0123456789";
+	private static final Criteria CRIT = ElementCriteria.nameType("iq",
+																				 "get").add(ElementCriteria.name("unique",
+																					 "http://jabber.org/protocol/muc#unique"));
 
-	private final static String CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
-
-	private static final Criteria CRIT = ElementCriteria.nameType("iq", "get").add(
-			ElementCriteria.name("unique", "http://jabber.org/protocol/muc#unique"));
+	//~--- fields ---------------------------------------------------------------
 
 	private SecureRandom random;
 
-	public UniqueRoomNameModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository) {
+	//~--- constructors ---------------------------------------------------------
+
+	/**
+	 * Constructs ...
+	 *
+	 *
+	 * @param config
+	 * @param writer
+	 * @param mucRepository
+	 */
+	public UniqueRoomNameModule(MucConfig config, ElementWriter writer,
+															IMucRepository mucRepository) {
 		super(config, writer, mucRepository);
 		try {
 			this.random = SecureRandom.getInstance("SHA1PRNG");
@@ -57,48 +82,85 @@ public class UniqueRoomNameModule extends AbstractModule {
 		}
 	}
 
+	//~--- methods --------------------------------------------------------------
+
 	private String generateName(int len) {
 		StringBuilder sb = new StringBuilder();
+
 		for (int i = 0; i < len; i++) {
 			int a = random.nextInt(CHARS.length());
+
 			sb.append(CHARS.charAt(a));
 		}
+
 		return sb.toString();
 	}
 
+	//~--- get methods ----------------------------------------------------------
+
+	/**
+	 * Method description
+	 *
+	 *
+	 * @return
+	 */
 	@Override
 	public String[] getFeatures() {
 		return null;
 	}
 
+	/**
+	 * Method description
+	 *
+	 *
+	 * @return
+	 */
 	@Override
 	public Criteria getModuleCriteria() {
 		return CRIT;
 	}
 
+	//~--- methods --------------------------------------------------------------
+
+	/**
+	 * Method description
+	 *
+	 *
+	 * @param element
+	 *
+	 * @throws MUCException
+	 */
 	@Override
 	public void process(Packet element) throws MUCException {
 		try {
-			JID jid = JID.jidInstance(element.getAttribute("to"));
+			JID jid = JID.jidInstance(element.getAttributeStaticStr(Packet.TO_ATT));
+
 			if (jid.getResource() != null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
-			final String host = jid.getDomain();
 
+			final String host = jid.getDomain();
 			String newRoomName;
+
 			do {
 				newRoomName = generateName(30);
 			} while (repository.isRoomIdExists(newRoomName + "@" + host));
 
 			Element unique = new Element("unique", new String[] { "xmlns" },
-					new String[] { "http://jabber.org/protocol/muc#unique" });
+																	 new String[] {
+																		 "http://jabber.org/protocol/muc#unique" });
+
 			unique.setCData(newRoomName);
 			writer.write(element.okResult(unique, 0));
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (Exception e) {
 			e.printStackTrace();
+
 			throw new RuntimeException(e);
 		}
 	}
 }
+
+
+//~ Formatted in Tigase Code Convention on 13/02/20

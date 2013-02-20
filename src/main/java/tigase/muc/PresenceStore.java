@@ -6,7 +6,8 @@
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License.
+ * the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -24,6 +25,8 @@
 package tigase.muc;
 
 //~--- non-JDK imports --------------------------------------------------------
+
+import tigase.server.Packet;
 
 import tigase.util.TigaseStringprepException;
 
@@ -182,7 +185,7 @@ public class PresenceStore {
 	 * @throws TigaseStringprepException
 	 */
 	public void update(final Element presence) throws TigaseStringprepException {
-		String f = presence.getAttribute("from");
+		String f = presence.getAttributeStaticStr(Packet.FROM_ATT);
 
 		if (f == null) {
 			return;
@@ -245,7 +248,7 @@ public class PresenceStore {
 		 */
 		public Presence(Element presence) {
 			this.element = presence;
-			this.type    = presence.getAttribute("type");
+			this.type    = presence.getAttributeStaticStr(Packet.TYPE_ATT);
 
 			String p =
 				presence.getChildCDataStaticStr(tigase.server.Presence.PRESENCE_PRIORITY_PATH);
@@ -260,4 +263,4 @@ public class PresenceStore {
 }
 
 
-//~ Formatted in Tigase Code Convention on 13/02/16
+//~ Formatted in Tigase Code Convention on 13/02/20
