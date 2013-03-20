@@ -249,7 +249,7 @@ public class Ghostbuster {
 	 */
 	public void ping() throws TigaseStringprepException {
 		if (log.isLoggable(Level.FINE)) {
-			log.log(Level.FINE, "Pinging 1000 known jids");
+			log.log(Level.FINE, "Pinging up to 1000 known JIDs with 1h of inactivity");
 		}
 
 		int c = 0;
@@ -284,6 +284,9 @@ public class Ghostbuster {
 		Packet packet = Packet.packetInstance(ping);
 
 		mucComponent.addOutPacket(packet, pingHandler, 1, TimeUnit.MINUTES);
+
+		if (log.isLoggable(Level.FINER))
+			log.log(Level.FINER, "Pinged " + jid);
 	}
 
 	/**
