@@ -91,7 +91,14 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
 	private static final String MUC_REPOSITORY_VAR = "mucRepository";
 	private static final String OWNER_MODULE_VAR = "ownerModule";
+
+	/**
+	 * @deprecated Use {@linkplain MUCComponent#SEARCH_GHOSTS_EVERY_MINUTE_KEY
+	 *             SEARCH_GHOSTS_MINUTE_KEY} instead.
+	 */
+	@Deprecated
 	public static final String PING_EVERY_MINUTE_KEY = "ping-every-minute";
+	public static final String SEARCH_GHOSTS_EVERY_MINUTE_KEY = "search-ghosts-every-minute";
 	public static final String PRESENCE_FILTER_ENABLED_KEY = "presence-filter-enabled";
 	private static final String PRESENCE_MODULE_VAR = "presenceModule";
 
@@ -112,7 +119,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 
 	private RoomConfigurationModule ownerModule;
 
-	private boolean pingEveryMinute = false;
+	private boolean searchGhostsEveryMinute = false;
 
 	private PresenceModule presenceModule;
 
@@ -154,7 +161,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 	@Override
 	public synchronized void everyHour() {
 		super.everyHour();
-		if (!pingEveryMinute)
+		if (!searchGhostsEveryMinute)
 			executePingInThread();
 	}
 
@@ -166,7 +173,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 	@Override
 	public synchronized void everyMinute() {
 		super.everyMinute();
-		if (pingEveryMinute)
+		if (searchGhostsEveryMinute)
 			executePingInThread();
 	}
 
@@ -210,7 +217,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 
 		props.put(MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
 		props.put(PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
-		props.put(PING_EVERY_MINUTE_KEY, Boolean.FALSE);
+		props.put(SEARCH_GHOSTS_EVERY_MINUTE_KEY, Boolean.FALSE);
 
 		String[] hostnames = new String[HOSTNAMES_PROP_VAL.length];
 		int i = 0;
@@ -413,7 +420,10 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 			return;
 		}
 
-		this.pingEveryMinute = (Boolean) props.get(PING_EVERY_MINUTE_KEY);
+		if (props.containsKey(PING_EVERY_MINUTE_KEY)) {
+			this.searchGhostsEveryMinute = (Boolean) props.get(PING_EVERY_MINUTE_KEY);
+		} else
+			this.searchGhostsEveryMinute = (Boolean) props.get(SEARCH_GHOSTS_EVERY_MINUTE_KEY);
 
 		// String[] hostnames = (String[]) props.get(HOSTNAMES_PROP_KEY);
 		// if (hostnames == null || hostnames.length == 0) {
