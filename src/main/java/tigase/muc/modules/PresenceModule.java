@@ -792,7 +792,10 @@ public class PresenceModule
 		final String leavingNickname = room.getOccupantsNickname(senderJID);
 
 		if (leavingNickname == null) {
-			throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unkown occupant");
+			// do it quietly
+			// throw new MUCException(Authorization.ITEM_NOT_FOUND,
+			// "Unkown occupant");
+			return;
 		}
 		doQuit(room, senderJID);
 	}
