@@ -36,7 +36,7 @@ import tigase.db.DataRepository;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
-import tigase.xml.Element;
+import tigase.server.Packet;
 import tigase.xmpp.JID;
 
 /**
@@ -143,20 +143,20 @@ public class DerbySqlHistoryProvider extends AbstractHistoryProvider {
 					|| room.getConfig().getRoomAnonymity() == Anonymity.semianonymous
 					&& (recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
 
-			ArrayList<Element> result = new ArrayList<Element>();
+			ArrayList<Packet> result = new ArrayList<Packet>();
 			for (; rs.next() && (maxStanzas == null || maxStanzas > i); i++) {
 				String msgSenderNickname = rs.getString("sender_nickname");
 				Timestamp msgTimestamp = rs.getTimestamp("timestamp");
 				String msgSenderJid = rs.getString("sender_jid");
 				String msg = rs.getString("body");
 
-				Element m = createMessage(roomJID, senderJID.toString(), msgSenderNickname, msg, msgSenderJid, addRealJids,
+				Packet m = createMessage(room.getRoomJID(), senderJID, msgSenderNickname, msg, msgSenderJid, addRealJids,
 						msgTimestamp);
 				result.add(0, m);
 			}
 
-			for (Element element : result) {
-				writer.writeElement(element);
+			for (Packet element : result) {
+				writer.write(element);
 			}
 
 		} catch (Exception e) {

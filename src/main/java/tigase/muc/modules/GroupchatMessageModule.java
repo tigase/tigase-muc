@@ -20,92 +20,83 @@
  *
  */
 
-
-
 package tigase.muc.modules;
 
 //~--- non-JDK imports --------------------------------------------------------
-
-import tigase.component.ElementWriter;
-
-import tigase.criteria.Criteria;
-import tigase.criteria.ElementCriteria;
-
-import tigase.muc.Affiliation;
-import tigase.muc.DateUtil;
-import tigase.muc.exceptions.MUCException;
-import tigase.muc.history.HistoryProvider;
-import tigase.muc.logger.MucLogger;
-import tigase.muc.MucConfig;
-import tigase.muc.repository.IMucRepository;
-import tigase.muc.Role;
-import tigase.muc.Room;
-
-import tigase.server.Packet;
-
-import tigase.util.TigaseStringprepException;
-
-import tigase.xml.Element;
-
-import tigase.xmpp.Authorization;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
-
-//~--- JDK imports ------------------------------------------------------------
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.Set;
+import java.util.logging.Level;
+
+import tigase.component.ElementWriter;
+import tigase.criteria.Criteria;
+import tigase.criteria.ElementCriteria;
+import tigase.muc.Affiliation;
+import tigase.muc.DateUtil;
+import tigase.muc.MucConfig;
+import tigase.muc.Role;
+import tigase.muc.Room;
+import tigase.muc.exceptions.MUCException;
+import tigase.muc.history.HistoryProvider;
+import tigase.muc.logger.MucLogger;
+import tigase.muc.repository.IMucRepository;
+import tigase.server.Message;
+import tigase.server.Packet;
+import tigase.util.TigaseStringprepException;
+import tigase.xml.Element;
+import tigase.xmpp.Authorization;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
+import tigase.xmpp.StanzaType;
+
+//~--- JDK imports ------------------------------------------------------------
 
 /**
  * @author bmalkow
- *
+ * 
  */
-public class GroupchatMessageModule
-				extends AbstractModule {
-	private static final Criteria CRIT           = ElementCriteria.nameType("message",
-																									 "groupchat");
-	private static final Criteria CRIT_CHAT_STAT =
-		ElementCriteria.xmlns("http://jabber.org/protocol/chatstates");
+public class GroupchatMessageModule extends AbstractModule {
+	private static final Criteria CRIT = ElementCriteria.nameType("message", "groupchat");
+	private static final Criteria CRIT_CHAT_STAT = ElementCriteria.xmlns("http://jabber.org/protocol/chatstates");
 
-	//~--- fields ---------------------------------------------------------------
+	// ~--- fields
+	// ---------------------------------------------------------------
 
 	private final Set<Criteria> allowedElements = new HashSet<Criteria>();
-	private boolean filterEnabled               = true;
+	private boolean filterEnabled = true;
 	private final HistoryProvider historyProvider;
 	private final MucLogger mucLogger;
 
-	//~--- constructors ---------------------------------------------------------
+	// ~--- constructors
+	// ---------------------------------------------------------
 
 	/**
 	 * Constructs ...
-	 *
-	 *
+	 * 
+	 * 
 	 * @param config
 	 * @param writer
 	 * @param mucRepository
 	 * @param historyProvider
 	 * @param mucLogger
 	 */
-	public GroupchatMessageModule(MucConfig config, ElementWriter writer,
-																IMucRepository mucRepository,
-																HistoryProvider historyProvider, MucLogger mucLogger) {
+	public GroupchatMessageModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository,
+			HistoryProvider historyProvider, MucLogger mucLogger) {
 		super(config, writer, mucRepository);
 		this.historyProvider = historyProvider;
-		this.mucLogger       = mucLogger;
-		this.filterEnabled   = config.isMessageFilterEnabled();
+		this.mucLogger = mucLogger;
+		this.filterEnabled = config.isMessageFilterEnabled();
 		if (log.isLoggable(Level.CONFIG)) {
-			log.config("Filtering message children is " + (filterEnabled
-							? "enabled"
-							: "disabled"));
+			log.config("Filtering message children is " + (filterEnabled ? "enabled" : "disabled"));
 		}
 	}
 
-	//~--- methods --------------------------------------------------------------
+	// ~--- methods
+	// --------------------------------------------------------------
 
 	/**
 	 * @param room
@@ -114,8 +105,7 @@ public class GroupchatMessageModule
 	 * @param nickName
 	 * @param sendDate
 	 */
-	private void addMessageToHistory(Room room, final String message, JID senderJid,
-																	 String senderNickname, Date time) {
+	private void addMessageToHistory(Room room, final String message, JID senderJid, String senderNickname, Date time) {
 		if (historyProvider != null) {
 			historyProvider.addMessage(room, message, senderJid, senderNickname, time);
 		}
@@ -131,8 +121,7 @@ public class GroupchatMessageModule
 	 * @param nickName
 	 * @param sendDate
 	 */
-	private void addSubjectChangeToHistory(Room room, final String subject, JID senderJid,
-					String senderNickname, Date time) {
+	private void addSubjectChangeToHistory(Room room, final String subject, JID senderJid, String senderNickname, Date time) {
 		if (historyProvider != null) {
 			historyProvider.addSubjectChange(room, subject, senderJid, senderNickname, time);
 		}
@@ -141,12 +130,13 @@ public class GroupchatMessageModule
 		}
 	}
 
-	//~--- get methods ----------------------------------------------------------
+	// ~--- get methods
+	// ----------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @return
 	 */
 	@Override
@@ -162,8 +152,8 @@ public class GroupchatMessageModule
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @return
 	 */
 	@Override
@@ -173,34 +163,32 @@ public class GroupchatMessageModule
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @return
 	 */
 	public boolean isChatStateAllowed() {
 		return allowedElements.contains(CRIT_CHAT_STAT);
 	}
 
-	//~--- methods --------------------------------------------------------------
+	// ~--- methods
+	// --------------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param packet
-	 *
+	 * 
 	 * @throws MUCException
 	 */
 	@Override
 	public void process(Packet packet) throws MUCException {
 		try {
-			final JID senderJID =
-				JID.jidInstance(packet.getAttributeStaticStr(Packet.FROM_ATT));
-			final BareJID roomJID =
-				BareJID.bareJIDInstance(packet.getAttributeStaticStr(Packet.TO_ATT));
+			final JID senderJID = JID.jidInstance(packet.getAttributeStaticStr(Packet.FROM_ATT));
+			final BareJID roomJID = BareJID.bareJIDInstance(packet.getAttributeStaticStr(Packet.TO_ATT));
 
-			if (getNicknameFromJid(
-							JID.jidInstance(packet.getAttributeStaticStr(Packet.TO_ATT))) != null) {
+			if (getNicknameFromJid(JID.jidInstance(packet.getAttributeStaticStr(Packet.TO_ATT))) != null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
@@ -210,20 +198,19 @@ public class GroupchatMessageModule
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
 
-			final String nickName         = room.getOccupantsNickname(senderJID);
-			final Role role               = room.getRole(nickName);
+			final String nickName = room.getOccupantsNickname(senderJID);
+			final Role role = room.getRole(nickName);
 			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
 
-			if (!role.isSendMessagesToAll() ||
-					(room.getConfig().isRoomModerated() && (role == Role.visitor))) {
+			if (!role.isSendMessagesToAll() || (room.getConfig().isRoomModerated() && (role == Role.visitor))) {
 				throw new MUCException(Authorization.FORBIDDEN);
 			}
 
-			Element body               = null;
-			Element subject            = null;
-			Element delay              = null;
+			Element body = null;
+			Element subject = null;
+			Element delay = null;
 			ArrayList<Element> content = new ArrayList<Element>();
-			List<Element> ccs          = packet.getElement().getChildren();
+			List<Element> ccs = packet.getElement().getChildren();
 
 			if (ccs != null) {
 				for (Element c : ccs) {
@@ -252,8 +239,7 @@ public class GroupchatMessageModule
 			final JID senderRoomJID = JID.jidInstance(roomJID, nickName);
 
 			if (subject != null) {
-				if (!(room.getConfig().isChangeSubject() && (role == Role.participant)) &&
-						!role.isModifySubject()) {
+				if (!(room.getConfig().isChangeSubject() && (role == Role.participant)) && !role.isModifySubject()) {
 					throw new MUCException(Authorization.FORBIDDEN);
 				}
 
@@ -273,8 +259,7 @@ public class GroupchatMessageModule
 				addMessageToHistory(room, body.getCData(), senderJID, nickName, sendDate);
 			}
 			if (subject != null) {
-				addSubjectChangeToHistory(room, subject.getCData(), senderJID, nickName,
-																	sendDate);
+				addSubjectChangeToHistory(room, subject.getCData(), senderJID, nickName, sendDate);
 			}
 			sendMessagesToAllOccupants(room, senderRoomJID, content.toArray(new Element[] {}));
 		} catch (MUCException e1) {
@@ -290,17 +275,16 @@ public class GroupchatMessageModule
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param room
 	 * @param fromJID
 	 * @param content
-	 *
+	 * 
 	 * @throws TigaseStringprepException
 	 */
-	public void sendMessagesToAllOccupants(final Room room, final JID fromJID,
-					final Element... content)
-					throws TigaseStringprepException {
+	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, final Element... content)
+			throws TigaseStringprepException {
 		for (String nickname : room.getOccupantsNicknames()) {
 			final Role role = room.getRole(nickname);
 
@@ -311,28 +295,27 @@ public class GroupchatMessageModule
 			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
 
 			for (JID jid : occupantJids) {
-				Element message = new Element("message", new String[] { "type", "from", "to" },
-																			new String[] { "groupchat",
-								fromJID.toString(), jid.toString() });
+				Packet message = Message.getMessage(fromJID, jid, StanzaType.groupchat, null, null, null, null);
 
 				if (content != null) {
 					for (Element sub : content) {
 						if (sub != null) {
-							message.addChild(sub);
+							message.getElement().addChild(sub);
 						}
 					}
 				}
-				writer.write(Packet.packetInstance(message));
+				writer.write(message);
 			}
 		}
 	}
 
-	//~--- set methods ----------------------------------------------------------
+	// ~--- set methods
+	// ----------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param allowed
 	 */
 	public void setChatStateAllowed(Boolean allowed) {
@@ -350,5 +333,4 @@ public class GroupchatMessageModule
 	}
 }
 
-
-//~ Formatted in Tigase Code Convention on 13/02/20
+// ~ Formatted in Tigase Code Convention on 13/02/20

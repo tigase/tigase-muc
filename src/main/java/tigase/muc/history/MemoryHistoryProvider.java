@@ -25,12 +25,13 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
 
 import tigase.component.ElementWriter;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
-import tigase.xml.Element;
+import tigase.server.Packet;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
@@ -122,11 +123,17 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 					|| room.getConfig().getRoomAnonymity() == Anonymity.semianonymous
 					&& (recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
 
-			Element message = createMessage(room.getRoomJID().toString(), senderJID.toString(), item.senderNickname,
-					item.message, item.senderJid.toString(), addRealJids, item.timestamp);
+			try {
+				Packet message = createMessage(room.getRoomJID(), senderJID, item.senderNickname, item.message,
+						item.senderJid.toString(), addRealJids, item.timestamp);
 
-			writer.writeElement(message);
-			++c;
+				writer.write(message);
+				++c;
+			} catch (Exception e) {
+				if (log.isLoggable(Level.SEVERE))
+					log.log(Level.SEVERE, "Can't get history", e);
+				throw new RuntimeException(e);
+			}
 		}
 	}
 

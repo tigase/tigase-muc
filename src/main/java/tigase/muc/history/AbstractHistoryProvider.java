@@ -25,7 +25,13 @@ import java.util.Date;
 import java.util.logging.Logger;
 
 import tigase.muc.DateUtil;
+import tigase.server.Message;
+import tigase.server.Packet;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
+import tigase.xmpp.StanzaType;
 
 /**
  * @author bmalkow
@@ -35,18 +41,20 @@ public abstract class AbstractHistoryProvider implements HistoryProvider {
 
 	protected final Logger log = Logger.getLogger(this.getClass().getName());
 
-	protected Element createMessage(String roomJID, String senderJID, String msgSenderNickname, String msg,
-			String msgSenderJid, boolean addRealJids, Date msgTimestamp) {
-		Element message = new Element("message", new String[] { "from", "to", "type" }, new String[] {
-				roomJID + "/" + msgSenderNickname, senderJID, "groupchat" });
-		message.addChild(new Element("body", msg));
+	protected Packet createMessage(BareJID roomJID, JID senderJID, String msgSenderNickname, String msg, String msgSenderJid,
+			boolean addRealJids, Date msgTimestamp) throws TigaseStringprepException {
+
+		Packet message = Message.getMessage(JID.jidInstance(roomJID, msgSenderNickname), senderJID, StanzaType.groupchat, msg,
+				null, null, null);
+
+		message.getElement().addChild(new Element("body", msg));
 		String from = addRealJids ? msgSenderJid : roomJID + "/" + msgSenderNickname;
 		Element delay = new Element("delay", new String[] { "xmlns", "from", "stamp" }, new String[] { "urn:xmpp:delay", from,
 				DateUtil.formatDatetime(msgTimestamp) });
 		Element x = new Element("x", new String[] { "xmlns", "from", "stamp" }, new String[] { "jabber:x:delay", from,
 				DateUtil.formatOld(msgTimestamp) });
-		message.addChild(delay);
-		message.addChild(x);
+		message.getElement().addChild(delay);
+		message.getElement().addChild(x);
 
 		return message;
 	}

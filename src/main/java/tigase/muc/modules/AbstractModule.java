@@ -20,94 +20,53 @@
  *
  */
 
-
-
 package tigase.muc.modules;
 
 //~--- non-JDK imports --------------------------------------------------------
 
-import tigase.component.ElementWriter;
-import tigase.component.modules.Module;
-
-import tigase.muc.MucConfig;
-import tigase.muc.repository.IMucRepository;
-import tigase.muc.Room;
-
-import tigase.server.Iq;
-import tigase.server.Packet;
-
-import tigase.util.TigaseStringprepException;
-
-import tigase.xml.Element;
-
-import tigase.xmpp.JID;
-
-//~--- JDK imports ------------------------------------------------------------
-
 import java.util.Collection;
 import java.util.logging.Logger;
 
+import tigase.component.ElementWriter;
+import tigase.component.modules.Module;
+import tigase.muc.MucConfig;
+import tigase.muc.Room;
+import tigase.muc.repository.IMucRepository;
+import tigase.server.Iq;
+import tigase.server.Message;
+import tigase.server.Packet;
+import tigase.util.TigaseStringprepException;
+import tigase.xml.Element;
+import tigase.xmpp.JID;
+import tigase.xmpp.StanzaType;
+
+//~--- JDK imports ------------------------------------------------------------
+
 /**
  * @author bmalkow
- *
+ * 
  */
-public abstract class AbstractModule
-				implements Module {
-	/** Field description */
-	protected Logger log = Logger.getLogger(this.getClass().getName());
-
-	/** Field description */
-	protected final MucConfig config;
-
-	/** Field description */
-	protected final IMucRepository repository;
-
-	/** Field description */
-	protected final ElementWriter writer;
-
-	//~--- constructors ---------------------------------------------------------
-
-	/**
-	 * Constructs ...
-	 *
-	 *
-	 * @param config
-	 * @param writer
-	 * @param mucRepository
-	 */
-	public AbstractModule(final MucConfig config, ElementWriter writer,
-												final IMucRepository mucRepository) {
-		this.config     = config;
-		this.repository = mucRepository;
-		this.writer     = writer;
-	}
-
-	//~--- methods --------------------------------------------------------------
-
+public abstract class AbstractModule implements Module {
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param iq
-	 *
+	 * 
 	 * @return
 	 */
 	public static Element createResultIQ(Element iq) {
-		return new Element(Iq.ELEM_NAME, new String[] { Packet.TYPE_ATT, Packet.FROM_ATT,
-						Packet.TO_ATT, Packet.ID_ATT }, new String[] { "result",
-						iq.getAttributeStaticStr(Packet.TO_ATT),
-						iq.getAttributeStaticStr(Packet.FROM_ATT),
+		return new Element(Iq.ELEM_NAME, new String[] { Packet.TYPE_ATT, Packet.FROM_ATT, Packet.TO_ATT, Packet.ID_ATT },
+				new String[] { "result", iq.getAttributeStaticStr(Packet.TO_ATT), iq.getAttributeStaticStr(Packet.FROM_ATT),
 						iq.getAttributeStaticStr(Packet.ID_ATT) });
 	}
 
-	//~--- get methods ----------------------------------------------------------
-
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param jid
-	 *
+	 * 
 	 * @return
 	 */
 	public static String getNicknameFromJid(JID jid) {
@@ -118,32 +77,63 @@ public abstract class AbstractModule
 		}
 	}
 
-	//~--- methods --------------------------------------------------------------
+	/** Field description */
+	protected final MucConfig config;
+
+	/** Field description */
+	protected Logger log = Logger.getLogger(this.getClass().getName());
+
+	// ~--- constructors
+	// ---------------------------------------------------------
+
+	/** Field description */
+	protected final IMucRepository repository;
+
+	// ~--- methods
+	// --------------------------------------------------------------
+
+	/** Field description */
+	protected final ElementWriter writer;
+
+	// ~--- get methods
+	// ----------------------------------------------------------
+
+	/**
+	 * Constructs ...
+	 * 
+	 * 
+	 * @param config
+	 * @param writer
+	 * @param mucRepository
+	 */
+	public AbstractModule(final MucConfig config, ElementWriter writer, final IMucRepository mucRepository) {
+		this.config = config;
+		this.repository = mucRepository;
+		this.writer = writer;
+	}
+
+	// ~--- methods
+	// --------------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param room
 	 * @param recipientNickame
 	 * @param message
-	 *
+	 * 
 	 * @throws TigaseStringprepException
 	 */
-	protected void sendMucMessage(Room room, String recipientNickame, String message)
-					throws TigaseStringprepException {
+	protected void sendMucMessage(Room room, String recipientNickame, String message) throws TigaseStringprepException {
 		Collection<JID> occupantJids = room.getOccupantsJidsByNickname(recipientNickame);
 
 		for (JID jid : occupantJids) {
-			Element msg = new Element("message", new String[] { "from", "to", "type" },
-																new String[] { room.getRoomJID().toString(),
-							jid.toString(), "groupchat" });
-
-			msg.addChild(new Element("body", message));
-			writer.write(Packet.packetInstance(msg));
+			Packet msg = Message.getMessage(JID.jidInstance(room.getRoomJID()), jid, StanzaType.groupchat, message, null, null,
+					null);
+			writer.write(msg);
 		}
 	}
 }
 
-
-//~ Formatted in Tigase Code Convention on 13/02/20
+// ~ Formatted in Tigase Code Convention on 13/02/20
