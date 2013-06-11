@@ -758,7 +758,7 @@ public class PresenceModule
 			sb.append("Welcome! You created new Multi User Chat Room.");
 			if (room.isRoomLocked()) {
 				sb.append(" Room is locked now. Configure it please!");
-			} else {
+			} else if (lockNewRoom) {
 				sb.append(" Room is unlocked and ready for occupants!");
 			}
 			sendMucMessage(room, room.getOccupantsNickname(senderJID), sb.toString());
