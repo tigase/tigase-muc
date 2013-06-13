@@ -36,6 +36,8 @@ public class MucConfig extends ComponentConfig {
 
 	private boolean messageFilterEnabled;
 
+	private boolean multiItemMode = true;
+
 	private boolean presenceFilterEnabled;
 
 	private Map<String, Object> props;
@@ -68,6 +70,10 @@ public class MucConfig extends ComponentConfig {
 		return messageFilterEnabled;
 	}
 
+	public boolean isMultiItemMode() {
+		return multiItemMode;
+	}
+
 	public boolean isPresenceFilterEnabled() {
 		return presenceFilterEnabled;
 	}
@@ -79,6 +85,10 @@ public class MucConfig extends ComponentConfig {
 		return publicLoggingEnabled;
 	}
 
+	public void setMultiItemMode(boolean multiItemMode) {
+		this.multiItemMode = multiItemMode;
+	}
+
 	@Override
 	public void setProperties(Map<String, Object> props) {
 		this.props = props;
@@ -87,6 +97,11 @@ public class MucConfig extends ComponentConfig {
 			this.messageFilterEnabled = (Boolean) props.get(MUCComponent.MESSAGE_FILTER_ENABLED_KEY);
 		else
 			this.messageFilterEnabled = true;
+
+		if (props.containsKey(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY))
+			this.multiItemMode = (Boolean) props.get(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY);
+		else
+			this.multiItemMode = true;
 
 		if (props.containsKey(MUCComponent.PRESENCE_FILTER_ENABLED_KEY))
 			this.presenceFilterEnabled = (Boolean) props.get(MUCComponent.PRESENCE_FILTER_ENABLED_KEY);

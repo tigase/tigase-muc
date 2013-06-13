@@ -27,7 +27,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Assert;
 import org.junit.Before;
 
 import tigase.component.ElementWriter;
@@ -44,7 +43,7 @@ import tigase.xmpp.JID;
  * @author bmalkow
  * 
  */
-public class RoomTest extends XMPPTestCase {
+public class PresenceTestNAMultiPresenceTest extends XMPPTestCase {
 
 	private final class ArrayWriter implements ElementWriter {
 
@@ -100,6 +99,7 @@ public class RoomTest extends XMPPTestCase {
 		props.put("multi-user-chat", BareJID.bareJIDInstance("multi-user-chat"));
 		props.put(MUCComponent.MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
 		props.put(MUCComponent.PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
+		props.put(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY, Boolean.FALSE);
 		props.put(MUCComponent.LOG_DIR_KEY, "./");
 
 		pubsub.getConfig().setProperties(props);
@@ -136,57 +136,7 @@ public class RoomTest extends XMPPTestCase {
 	}
 
 	@org.junit.Test
-	public void test_destroyRoom() {
-		test("src/test/scripts/destroying-room.cor", xmlio);
-		try {
-			Room room = pubsub.getMucRepository().getRoom(BareJID.bareJIDInstance("darkcave@macbeth.shakespeare.lit"));
-			Assert.assertNull("Room should be destroyed", room);
-		} catch (Exception e) {
-			e.printStackTrace();
-			Assert.fail(e.getMessage());
-		}
-	}
-
-	@org.junit.Test
-	public void test_ghostUser() {
-		test("src/test/scripts/ghostUser.cor", xmlio);
-	}
-
-	@org.junit.Test
-	public void test_hiddenRoomProblem() {
-		test("src/test/scripts/hidden-room-problem.cor", xmlio);
-	}
-
-	// @org.junit.Test
-	// public void test_presences() {
-	// test("src/test/scripts/processPresence-empty.cor", xmlio);
-	// }
-
-	@org.junit.Test
-	public void test_nonpersistentRoomProblem() {
-		test("src/test/scripts/nonpersistent-room-problem.cor", xmlio);
-		try {
-			Room room = pubsub.getMucRepository().getRoom(BareJID.bareJIDInstance("darkcave@macbeth.shakespeare.lit"));
-			Assert.assertNull("Room should be destroyed", room);
-		} catch (Exception e) {
-			e.printStackTrace();
-			Assert.fail(e.getMessage());
-		}
-	}
-
-	
-	@org.junit.Test
-	public void test_pings() {
-		test("src/test/scripts/ping.cor", xmlio);
-	}
-
-	@org.junit.Test
-	public void test_presences2() {
-		test("src/test/scripts/processPresence2.cor", xmlio);
-	}
-
-	@org.junit.Test
 	public void test_presences2_non_anonymous() {
-		test("src/test/scripts/processPresence2-nonanonymous.cor", xmlio);
+		test("src/test/scripts/processPresence2-nonanonymous-multipresence.cor", xmlio);
 	}
 }

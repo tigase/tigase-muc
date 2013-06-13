@@ -87,6 +87,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 	public static final String MESSAGE_FILTER_ENABLED_KEY = "message-filter-enabled";
 	public static final String MUC_ALLOW_CHAT_STATES_KEY = "muc-allow-chat-states";
 	public static final String MUC_LOCK_NEW_ROOM_KEY = "muc-lock-new-room";
+	public static final String MUC_MULTI_ITEM_ALLOWED_KEY = "muc-multi-item-allowed";
 	protected static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
 	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
 	private static final String MUC_REPOSITORY_VAR = "mucRepository";
@@ -98,9 +99,9 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 	 */
 	@Deprecated
 	public static final String PING_EVERY_MINUTE_KEY = "ping-every-minute";
-	public static final String SEARCH_GHOSTS_EVERY_MINUTE_KEY = "search-ghosts-every-minute";
 	public static final String PRESENCE_FILTER_ENABLED_KEY = "presence-filter-enabled";
 	private static final String PRESENCE_MODULE_VAR = "presenceModule";
+	public static final String SEARCH_GHOSTS_EVERY_MINUTE_KEY = "search-ghosts-every-minute";
 
 	private MucDAO dao;
 
@@ -119,11 +120,11 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 
 	private RoomConfigurationModule ownerModule;
 
-	private boolean searchGhostsEveryMinute = false;
-
 	private PresenceModule presenceModule;
 
 	private MucLogger roomLogger;
+
+	private boolean searchGhostsEveryMinute = false;
 
 	private ServiceEntity serviceEntity;
 
@@ -251,6 +252,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		props.put(LOG_DIR_KEY, new String("./logs/"));
 		props.put(MUC_ALLOW_CHAT_STATES_KEY, Boolean.FALSE);
 		props.put(MUC_LOCK_NEW_ROOM_KEY, Boolean.TRUE);
+		props.put(MUC_MULTI_ITEM_ALLOWED_KEY, Boolean.TRUE);
 
 		return props;
 	}
@@ -463,7 +465,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 				System.exit(1);
 			}
 		}
-
+		this.componentConfig.setProperties(props);
 		this.componentConfig.setPublicLoggingEnabled(this.roomLogger != null || this.historyProvider.isPersistent());
 		if (log.isLoggable(Level.CONFIG))
 			log.config("Public Logging Allowed: " + this.componentConfig.isPublicLoggingEnabled());

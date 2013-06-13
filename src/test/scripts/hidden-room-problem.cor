@@ -21,7 +21,7 @@ expect: {
     to='crone1@shakespeare.lit/desktop'>
   <x xmlns='http://jabber.org/protocol/muc#user'>
     <item affiliation='owner'
-          jid="crone1@shakespeare.lit" 
+          jid="crone1@shakespeare.lit/desktop" 
           nick="firstwitch"
           role='moderator'/>
     <status code='201'/>
@@ -123,7 +123,7 @@ expect: {
     to='crone1@shakespeare.lit/desktop'>
   <x xmlns='http://jabber.org/protocol/muc#user'>
     <item affiliation='owner'
-          jid="crone1@shakespeare.lit" 
+          jid="crone1@shakespeare.lit/desktop" 
           nick="firstwitch"
           role='moderator'/>
     <status code='201'/>
@@ -229,7 +229,7 @@ expect: {
     to='crone1@shakespeare.lit/desktop'>
   <x xmlns='http://jabber.org/protocol/muc#user'>
     <item affiliation='owner'
-          jid="crone1@shakespeare.lit" 
+          jid="crone1@shakespeare.lit/desktop" 
           nick="firstwitch"
           role='moderator'/>
     <status code='201'/>

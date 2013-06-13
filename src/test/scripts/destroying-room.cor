@@ -15,7 +15,7 @@ expect: {
     to='crone1@shakespeare.lit/desktop'>
   <x xmlns='http://jabber.org/protocol/muc#user'>
     <item affiliation='owner'
-          jid="crone1@shakespeare.lit" 
+          jid="crone1@shakespeare.lit/desktop" 
           nick="firstwitch"
           role='moderator'/>
     <status code='201'/>
@@ -150,7 +150,7 @@ expect all: {
 </presence>
 <presence type="unavailable" to="crone1@shakespeare.lit/desktop" from="darkcave@macbeth.shakespeare.lit/firstwitch">
 	<x xmlns="http://jabber.org/protocol/muc#user">
-		<item nick="firstwitch" role="none" jid="crone1@shakespeare.lit" affiliation="none"/>	
+		<item nick="firstwitch" role="none" jid="crone1@shakespeare.lit/desktop" affiliation="none"/>	
 		<destroy jid="coven@chat.shakespeare.lit">
 			<reason>Macbeth doth come.</reason>
 		</destroy>
