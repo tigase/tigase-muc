@@ -25,13 +25,11 @@ import java.util.Date;
 import java.util.logging.Logger;
 
 import tigase.muc.DateUtil;
-import tigase.server.Message;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
-import tigase.xmpp.StanzaType;
 
 /**
  * @author bmalkow
@@ -44,8 +42,9 @@ public abstract class AbstractHistoryProvider implements HistoryProvider {
 	protected Packet createMessage(BareJID roomJID, JID senderJID, String msgSenderNickname, String msg, String msgSenderJid,
 			boolean addRealJids, Date msgTimestamp) throws TigaseStringprepException {
 
-		Packet message = Message.getMessage(JID.jidInstance(roomJID, msgSenderNickname), senderJID, StanzaType.groupchat, msg,
-				null, null, null);
+		Packet message = Packet.packetInstance(new Element("message", new String[] { "type", "from", "to" }, new String[] {
+				"groupchat", JID.jidInstance(roomJID, msgSenderNickname).toString(), senderJID.toString() }));
+		message.setXMLNS(Packet.CLIENT_XMLNS);
 
 		message.getElement().addChild(new Element("body", msg));
 		String from = addRealJids ? msgSenderJid : roomJID + "/" + msgSenderNickname;

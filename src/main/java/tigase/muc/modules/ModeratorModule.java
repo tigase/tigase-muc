@@ -41,7 +41,6 @@ import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
-import tigase.server.Message;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
@@ -478,10 +477,12 @@ public class ModeratorModule extends AbstractModule {
 	/**
 	 * @param room
 	 * @param occupantBareJid
+	 * @throws TigaseStringprepException
 	 */
-	private void sendInvitation(Room room, BareJID occupantBareJid, String actor) {
-		final Packet message = Message.getMessage(JID.jidInstance(room.getRoomJID()), JID.jidInstance(occupantBareJid),
-				StanzaType.normal, null, null, null, null);
+	private void sendInvitation(Room room, BareJID occupantBareJid, String actor) throws TigaseStringprepException {
+		Packet message = Packet.packetInstance(new Element("message", new String[] { Packet.FROM_ATT, Packet.TO_ATT },
+				new String[] { room.getRoomJID().toString(), occupantBareJid.toString() }));
+		message.setXMLNS(Packet.CLIENT_XMLNS);
 
 		final Element x = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
 

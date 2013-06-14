@@ -34,14 +34,12 @@ import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
-import tigase.server.Message;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
-import tigase.xmpp.StanzaType;
 
 /**
  * @author bmalkow
@@ -74,8 +72,9 @@ public class MediatedInvitationModule extends AbstractModule {
 		final Element reason = decline.getChild("reason");
 		final JID recipient = JID.jidInstance(decline.getAttributeStaticStr(Packet.TO_ATT));
 
-		final Packet resultMessage = Message.getMessage(JID.jidInstance(roomJID), recipient, StanzaType.normal, null, null,
-				null, null);
+		Packet resultMessage = Packet.packetInstance(new Element("message", new String[] { Packet.FROM_ATT, Packet.TO_ATT },
+				new String[] { roomJID.toString(), recipient.toString() }));
+		resultMessage.setXMLNS(Packet.CLIENT_XMLNS);
 
 		final Element resultX = new Element("x", new String[] { Packet.XMLNS_ATT },
 				new String[] { "http://jabber.org/protocol/muc#user" });
@@ -104,8 +103,9 @@ public class MediatedInvitationModule extends AbstractModule {
 		final Element cont = invite.getChild("continue");
 		final JID recipient = JID.jidInstance(invite.getAttributeStaticStr(Packet.TO_ATT));
 
-		final Packet resultMessage = Message.getMessage(JID.jidInstance(roomJID), recipient, StanzaType.normal, null, null,
-				null, null);
+		Packet resultMessage = Packet.packetInstance(new Element("message", new String[] { Packet.FROM_ATT, Packet.TO_ATT },
+				new String[] { roomJID.toString(), recipient.toString() }));
+		resultMessage.setXMLNS(Packet.CLIENT_XMLNS);
 
 		final Element resultX = new Element("x", new String[] { Packet.XMLNS_ATT },
 				new String[] { "http://jabber.org/protocol/muc#user" });

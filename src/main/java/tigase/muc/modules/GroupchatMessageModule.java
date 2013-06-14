@@ -44,14 +44,12 @@ import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.logger.MucLogger;
 import tigase.muc.repository.IMucRepository;
-import tigase.server.Message;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
-import tigase.xmpp.StanzaType;
 
 //~--- JDK imports ------------------------------------------------------------
 
@@ -295,7 +293,13 @@ public class GroupchatMessageModule extends AbstractModule {
 			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
 
 			for (JID jid : occupantJids) {
-				Packet message = Message.getMessage(fromJID, jid, StanzaType.groupchat, null, null, null, null);
+
+				Packet message = Packet.packetInstance(new Element("message", new String[] { "type", "from", "to" },
+						new String[] { "groupchat", fromJID.toString(), jid.toString() }));
+				message.setXMLNS(Packet.CLIENT_XMLNS);
+
+				// Packet message = Message.getMessage(fromJID, jid,
+				// StanzaType.groupchat, null, null, null, null);
 
 				if (content != null) {
 					for (Element sub : content) {
