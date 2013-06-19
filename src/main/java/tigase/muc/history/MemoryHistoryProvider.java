@@ -32,6 +32,7 @@ import tigase.muc.Affiliation;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
 import tigase.server.Packet;
+import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
@@ -42,7 +43,11 @@ import tigase.xmpp.JID;
 public class MemoryHistoryProvider extends AbstractHistoryProvider {
 
 	private static class HItem {
-		String message;
+		String body;
+		/**
+		 * whole stanza
+		 */
+		String msg;
 		JID senderJid;
 		String senderNickname;
 		Date timestamp;
@@ -67,7 +72,7 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 	}
 
 	@Override
-	public void addMessage(Room room, String message, JID senderJid, String senderNickname, Date time) {
+	public void addMessage(Room room, Element message, String body, JID senderJid, String senderNickname, Date time) {
 		LinkedList<HItem> stanzas = this.history.get(room.getRoomJID());
 		if (stanzas == null) {
 			stanzas = new LinkedList<HItem>();
@@ -79,16 +84,17 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 		}
 
 		HItem item = new HItem();
-		item.message = message;
+		item.body = body;
 		item.senderJid = senderJid;
 		item.senderNickname = senderNickname;
 		item.timestamp = time;
+		item.msg = message.toString();
 
 		stanzas.add(item);
 	}
 
 	@Override
-	public void addSubjectChange(Room room, String message, JID senderJid, String senderNickname, Date time) {
+	public void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname, Date time) {
 	}
 
 	@Override
@@ -124,7 +130,7 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 					&& (recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
 
 			try {
-				Packet message = createMessage(room.getRoomJID(), senderJID, item.senderNickname, item.message,
+				Packet message = createMessage(room.getRoomJID(), senderJID, item.senderNickname, item.msg, item.body,
 						item.senderJid.toString(), addRealJids, item.timestamp);
 
 				writer.write(message);

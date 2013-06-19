@@ -37,6 +37,7 @@ import tigase.muc.Affiliation;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
 import tigase.server.Packet;
+import tigase.xml.Element;
 import tigase.xmpp.JID;
 
 /**
@@ -45,17 +46,17 @@ import tigase.xmpp.JID;
  */
 public class DerbySqlHistoryProvider extends AbstractHistoryProvider {
 
-	public static final String ADD_MESSAGE_QUERY = "insert into muc_history (room_name, event_type, timestamp, sender_jid, sender_nickname, body) values (?, 1, ?, ?, ?, ?)";
+	public static final String ADD_MESSAGE_QUERY = "insert into muc_history (room_name, event_type, timestamp, sender_jid, sender_nickname, body,msg) values (?, 1, ?, ?, ?, ?, ?)";
 
 	public static final String DELETE_MESSAGES_QUERY = "delete from muc_history where room_name=?";
 
-	public static final String GET_MESSAGES_MAXSTANZAS_QUERY = "select room_name, event_type, timestamp, sender_jid, sender_nickname, body from muc_history where room_name=? order by timestamp desc";
+	public static final String GET_MESSAGES_MAXSTANZAS_QUERY = "select room_name, event_type, timestamp, sender_jid, sender_nickname, body, msg from muc_history where room_name=? order by timestamp desc";
 
-	public static final String GET_MESSAGES_SINCE_QUERY = "select room_name, event_type, timestamp, sender_jid, sender_nickname, body from muc_history where room_name=? and timestamp >= ? order by timestamp desc";
+	public static final String GET_MESSAGES_SINCE_QUERY = "select room_name, event_type, timestamp, sender_jid, sender_nickname, body, msg from muc_history where room_name=? and timestamp >= ? order by timestamp desc";
 
 	private final String createMucHistoryTable = "create table muc_history (" + "room_name char(128) NOT NULL,\n"
 			+ "event_type int, \n" + "timestamp TIMESTAMP,\n" + "sender_jid varchar(2049),\n" + "sender_nickname char(128),\n"
-			+ "body varchar(4096) " + ")";
+			+ "body varchar(4096),\n " + "msg varchar(32672) " + ")";
 
 	private final DataRepository dataRepository;
 
@@ -82,7 +83,7 @@ public class DerbySqlHistoryProvider extends AbstractHistoryProvider {
 
 	/** {@inheritDoc} */
 	@Override
-	public void addMessage(Room room, String message, JID senderJid, String senderNickname, Date time) {
+	public void addMessage(Room room, Element message, String body, JID senderJid, String senderNickname, Date time) {
 		try {
 			PreparedStatement st = this.dataRepository.getPreparedStatement(null, ADD_MESSAGE_QUERY);
 
@@ -91,7 +92,8 @@ public class DerbySqlHistoryProvider extends AbstractHistoryProvider {
 				st.setTimestamp(2, time == null ? null : new Timestamp(time.getTime()));
 				st.setString(3, senderJid.toString());
 				st.setString(4, senderNickname);
-				st.setString(5, message);
+				st.setString(5, body);
+				st.setString(6, message.toString());
 
 				st.executeUpdate();
 			}
@@ -104,7 +106,7 @@ public class DerbySqlHistoryProvider extends AbstractHistoryProvider {
 
 	/** {@inheritDoc} */
 	@Override
-	public void addSubjectChange(Room room, String message, JID senderJid, String senderNickname, Date time) {
+	public void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname, Date time) {
 		// TODO Auto-generated method stub
 
 	}
@@ -148,9 +150,10 @@ public class DerbySqlHistoryProvider extends AbstractHistoryProvider {
 				String msgSenderNickname = rs.getString("sender_nickname");
 				Timestamp msgTimestamp = rs.getTimestamp("timestamp");
 				String msgSenderJid = rs.getString("sender_jid");
-				String msg = rs.getString("body");
+				String body = rs.getString("body");
+				String msg = rs.getString("msg");
 
-				Packet m = createMessage(room.getRoomJID(), senderJID, msgSenderNickname, msg, msgSenderJid, addRealJids,
+				Packet m = createMessage(room.getRoomJID(), senderJID, msgSenderNickname, msg, body, msgSenderJid, addRealJids,
 						msgTimestamp);
 				result.add(0, m);
 			}

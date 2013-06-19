@@ -26,6 +26,7 @@ import java.util.Map;
 
 import tigase.component.ElementWriter;
 import tigase.muc.Room;
+import tigase.xml.Element;
 import tigase.xmpp.JID;
 
 /**
@@ -55,22 +56,26 @@ public interface HistoryProvider {
 	/**
 	 * @param room
 	 * @param message
+	 *            TODO
+	 * @param body
 	 * @param senderJid
 	 * @param senderNickname
 	 * @param time
 	 */
-	void addMessage(Room room, String message, JID senderJid, String senderNickname, Date time);
+	void addMessage(Room room, Element message, String body, JID senderJid, String senderNickname, Date time);
 
 	/**
 	 * Adds subject changes to log/history.
 	 * 
 	 * @param room
 	 * @param message
+	 *            TODO
+	 * @param subject
 	 * @param senderJid
 	 * @param senderNickname
 	 * @param time
 	 */
-	void addSubjectChange(Room room, String message, JID senderJid, String senderNickname, Date time);
+	void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname, Date time);
 
 	/**
 	 * @param room

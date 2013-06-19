@@ -103,12 +103,13 @@ public class GroupchatMessageModule extends AbstractModule {
 	 * @param nickName
 	 * @param sendDate
 	 */
-	private void addMessageToHistory(Room room, final String message, JID senderJid, String senderNickname, Date time) {
+	private void addMessageToHistory(Room room, final Element message, String body, JID senderJid, String senderNickname,
+			Date time) {
 		if (historyProvider != null) {
-			historyProvider.addMessage(room, message, senderJid, senderNickname, time);
+			historyProvider.addMessage(room, message, body, senderJid, senderNickname, time);
 		}
 		if ((mucLogger != null) && room.getConfig().isLoggingEnabled()) {
-			mucLogger.addMessage(room, message, senderJid, senderNickname, time);
+			mucLogger.addMessage(room, body, senderJid, senderNickname, time);
 		}
 	}
 
@@ -119,9 +120,10 @@ public class GroupchatMessageModule extends AbstractModule {
 	 * @param nickName
 	 * @param sendDate
 	 */
-	private void addSubjectChangeToHistory(Room room, final String subject, JID senderJid, String senderNickname, Date time) {
+	private void addSubjectChangeToHistory(Room room, Element message, final String subject, JID senderJid,
+			String senderNickname, Date time) {
 		if (historyProvider != null) {
-			historyProvider.addSubjectChange(room, subject, senderJid, senderNickname, time);
+			historyProvider.addSubjectChange(room, message, subject, senderJid, senderNickname, time);
 		}
 		if ((mucLogger != null) && room.getConfig().isLoggingEnabled()) {
 			mucLogger.addSubjectChange(room, subject, senderJid, senderNickname, time);
@@ -254,10 +256,10 @@ public class GroupchatMessageModule extends AbstractModule {
 				sendDate = new Date();
 			}
 			if (body != null) {
-				addMessageToHistory(room, body.getCData(), senderJID, nickName, sendDate);
+				addMessageToHistory(room, packet.getElement(), body.getCData(), senderJID, nickName, sendDate);
 			}
 			if (subject != null) {
-				addSubjectChangeToHistory(room, subject.getCData(), senderJID, nickName, sendDate);
+				addSubjectChangeToHistory(room, packet.getElement(), subject.getCData(), senderJID, nickName, sendDate);
 			}
 			sendMessagesToAllOccupants(room, senderRoomJID, content.toArray(new Element[] {}));
 		} catch (MUCException e1) {

@@ -22,12 +22,16 @@
 package tigase.muc.history;
 
 import java.util.Date;
+import java.util.Queue;
 import java.util.logging.Logger;
 
 import tigase.muc.DateUtil;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
+import tigase.xml.DomBuilderHandler;
 import tigase.xml.Element;
+import tigase.xml.SimpleParser;
+import tigase.xml.SingletonFactory;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
@@ -37,16 +41,37 @@ import tigase.xmpp.JID;
  */
 public abstract class AbstractHistoryProvider implements HistoryProvider {
 
+	protected static final SimpleParser parser = SingletonFactory.getParserInstance();
+
 	protected final Logger log = Logger.getLogger(this.getClass().getName());
 
-	protected Packet createMessage(BareJID roomJID, JID senderJID, String msgSenderNickname, String msg, String msgSenderJid,
-			boolean addRealJids, Date msgTimestamp) throws TigaseStringprepException {
+	protected Packet createMessage(BareJID roomJID, JID senderJID, String msgSenderNickname, String originalMessage,
+			String body, String msgSenderJid, boolean addRealJids, Date msgTimestamp) throws TigaseStringprepException {
 
-		Packet message = Packet.packetInstance(new Element("message", new String[] { "type", "from", "to" }, new String[] {
-				"groupchat", JID.jidInstance(roomJID, msgSenderNickname).toString(), senderJID.toString() }));
-		message.setXMLNS(Packet.CLIENT_XMLNS);
+		Packet message = null;
 
-		message.getElement().addChild(new Element("body", msg));
+		if (originalMessage != null) {
+			DomBuilderHandler domHandler = new DomBuilderHandler();
+			parser.parse(domHandler, originalMessage.toCharArray(), 0, originalMessage.length());
+			Queue<Element> queue = domHandler.getParsedElements();
+
+			Element m = queue.poll();
+			if (m != null) {
+				message = Packet.packetInstance(m);
+				message.setXMLNS(Packet.CLIENT_XMLNS);
+				message.getElement().setAttribute("type", "groupchat");
+				message.getElement().setAttribute("from", JID.jidInstance(roomJID, msgSenderNickname).toString());
+				message.getElement().setAttribute("to", senderJID.toString());
+			}
+		}
+
+		if (message == null) {
+			message = Packet.packetInstance(new Element("message", new String[] { "type", "from", "to" }, new String[] {
+					"groupchat", JID.jidInstance(roomJID, msgSenderNickname).toString(), senderJID.toString() }));
+			message.setXMLNS(Packet.CLIENT_XMLNS);
+			message.getElement().addChild(new Element("body", body));
+		}
+
 		String from = addRealJids ? msgSenderJid : roomJID + "/" + msgSenderNickname;
 		Element delay = new Element("delay", new String[] { "xmlns", "from", "stamp" }, new String[] { "urn:xmpp:delay", from,
 				DateUtil.formatDatetime(msgTimestamp) });
