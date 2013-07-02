@@ -106,7 +106,7 @@ public class GroupchatMessageModule extends AbstractModule {
 	private void addMessageToHistory(Room room, final Element message, String body, JID senderJid, String senderNickname,
 			Date time) {
 		if (historyProvider != null) {
-			historyProvider.addMessage(room, message, body, senderJid, senderNickname, time);
+			historyProvider.addMessage(room, filterEnabled ? null : message, body, senderJid, senderNickname, time);
 		}
 		if ((mucLogger != null) && room.getConfig().isLoggingEnabled()) {
 			mucLogger.addMessage(room, body, senderJid, senderNickname, time);
@@ -123,7 +123,7 @@ public class GroupchatMessageModule extends AbstractModule {
 	private void addSubjectChangeToHistory(Room room, Element message, final String subject, JID senderJid,
 			String senderNickname, Date time) {
 		if (historyProvider != null) {
-			historyProvider.addSubjectChange(room, message, subject, senderJid, senderNickname, time);
+			historyProvider.addSubjectChange(room, filterEnabled ? null : message, subject, senderJid, senderNickname, time);
 		}
 		if ((mucLogger != null) && room.getConfig().isLoggingEnabled()) {
 			mucLogger.addSubjectChange(room, subject, senderJid, senderNickname, time);
