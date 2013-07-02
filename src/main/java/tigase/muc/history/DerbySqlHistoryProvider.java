@@ -115,29 +115,40 @@ public class DerbySqlHistoryProvider extends AbstractHistoryProvider {
 	@Override
 	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
 			ElementWriter writer) {
-		PreparedStatement st = null;
 		ResultSet rs = null;
+		final String roomJID = room.getRoomJID().toString();
 		try {
 			Integer maxStanzas = null;
 			if (since != null) {
-				st = dataRepository.getPreparedStatement(null, GET_MESSAGES_SINCE_QUERY);
-				st.setTimestamp(2, new java.sql.Timestamp(since.getTime()));
+				PreparedStatement st = dataRepository.getPreparedStatement(null, GET_MESSAGES_SINCE_QUERY);
+				synchronized (st) {
+					st.setString(1, roomJID);
+					st.setTimestamp(2, new java.sql.Timestamp(since.getTime()));
+					rs = st.executeQuery();
+				}
 			} else if (maxstanzas != null) {
-				st = dataRepository.getPreparedStatement(null, GET_MESSAGES_MAXSTANZAS_QUERY);
-				maxStanzas = maxstanzas;
+				PreparedStatement st = dataRepository.getPreparedStatement(null, GET_MESSAGES_MAXSTANZAS_QUERY);
+				synchronized (st) {
+					st.setString(1, roomJID);
+					maxStanzas = maxstanzas;
+					rs = st.executeQuery();
+				}
 			} else if (seconds != null) {
-				st = dataRepository.getPreparedStatement(null, GET_MESSAGES_SINCE_QUERY);
-				st.setTimestamp(2, new java.sql.Timestamp(new Date().getTime() - seconds * 1000));
+				PreparedStatement st = dataRepository.getPreparedStatement(null, GET_MESSAGES_SINCE_QUERY);
+				synchronized (st) {
+					st.setString(1, roomJID);
+					st.setTimestamp(2, new java.sql.Timestamp(new Date().getTime() - seconds * 1000));
+					rs = st.executeQuery();
+				}
 			} else {
-				st = dataRepository.getPreparedStatement(null, GET_MESSAGES_MAXSTANZAS_QUERY);
-				maxStanzas = 20;
+				PreparedStatement st = dataRepository.getPreparedStatement(null, GET_MESSAGES_MAXSTANZAS_QUERY);
+				synchronized (st) {
+					st.setString(1, roomJID);
+					maxStanzas = 20;
+					rs = st.executeQuery();
+				}
 			}
 
-			final String roomJID = room.getRoomJID().toString();
-
-			st.setString(1, roomJID);
-
-			rs = st.executeQuery();
 			int i = 0;
 
 			Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID());

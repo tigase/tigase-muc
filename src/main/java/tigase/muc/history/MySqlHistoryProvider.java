@@ -116,7 +116,6 @@ public class MySqlHistoryProvider extends AbstractHistoryProvider {
 	@Override
 	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
 			ElementWriter writer) {
-		PreparedStatement st = null;
 		ResultSet rs = null;
 		final String roomJID = room.getRoomJID().toString();
 
@@ -126,39 +125,51 @@ public class MySqlHistoryProvider extends AbstractHistoryProvider {
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest("Using SINCE selector: roomJID=" + roomJID + ", since=" + since.getTime() + " (" + since + ")");
 				}
-				st = dataRepository.getPreparedStatement(null, GET_MESSAGES_SINCE_QUERY);
-				st.setString(1, roomJID);
-				st.setLong(2, since.getTime());
-				st.setInt(3, maxMessages);
+				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(), GET_MESSAGES_SINCE_QUERY);
+				synchronized (st) {
+					st.setString(1, roomJID);
+					st.setLong(2, since.getTime());
+					st.setInt(3, maxMessages);
+					rs = st.executeQuery();
+				}
 			} else if (maxstanzas != null) {
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest("Using MAXSTANZAS selector: roomJID=" + roomJID + ", maxstanzas=" + maxstanzas);
 				}
-				st = dataRepository.getPreparedStatement(null, GET_MESSAGES_MAXSTANZAS_QUERY);
-				st.setString(1, roomJID);
-				st.setInt(2, Math.min(maxstanzas, maxMessages));
+				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
+						GET_MESSAGES_MAXSTANZAS_QUERY);
+				synchronized (st) {
+					st.setString(1, roomJID);
+					st.setInt(2, Math.min(maxstanzas, maxMessages));
+					rs = st.executeQuery();
+				}
 			} else if (seconds != null) {
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest("Using SECONDS selector: roomJID=" + roomJID + ", seconds=" + seconds);
 				}
-				st = dataRepository.getPreparedStatement(null, GET_MESSAGES_SINCE_QUERY);
-				st.setString(1, roomJID);
-				st.setLong(2, new Date().getTime() - seconds * 1000);
-				st.setInt(3, maxMessages);
+				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(), GET_MESSAGES_SINCE_QUERY);
+				synchronized (st) {
+					st.setString(1, roomJID);
+					st.setLong(2, new Date().getTime() - seconds * 1000);
+					st.setInt(3, maxMessages);
+					rs = st.executeQuery();
+				}
 			} else {
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest("Using DEFAULT selector: roomJID=" + roomJID);
 				}
-				st = dataRepository.getPreparedStatement(null, GET_MESSAGES_MAXSTANZAS_QUERY);
-				st.setString(1, roomJID);
-				st.setInt(2, maxMessages);
+				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
+						GET_MESSAGES_MAXSTANZAS_QUERY);
+				synchronized (st) {
+					st.setString(1, roomJID);
+					st.setInt(2, maxMessages);
+					rs = st.executeQuery();
+				}
 			}
 
 			if (log.isLoggable(Level.FINEST)) {
-				log.finest("Select messages for " + senderJID + " from room " + roomJID + ": " + st);
+				log.finest("Select messages for " + senderJID + " from room " + roomJID);
 			}
-
-			rs = st.executeQuery();
 
 			Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID());
 			boolean addRealJids = room.getConfig().getRoomAnonymity() == Anonymity.nonanonymous
