@@ -66,6 +66,7 @@ import tigase.server.DisableDisco;
 import tigase.server.Packet;
 import tigase.server.ReceiverTimeoutHandler;
 import tigase.util.DNSResolver;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
 
@@ -402,6 +403,22 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 	 */
 	public void setMucRepository(IMucRepository mucRepository) {
 		this.mucRepository = mucRepository;
+	}
+
+	@Override
+	public void stop() {
+		try {
+			for (Room room : mucRepository.getActiveRooms().values()) {
+				for (JID jid : room.getAllOccupantsJID())
+					try {
+						presenceModule.doQuit(room, jid);
+					} catch (TigaseStringprepException e) {
+						e.printStackTrace();
+					}
+			}
+		} finally {
+			super.stop();
+		}
 	}
 
 	/**

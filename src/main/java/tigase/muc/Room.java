@@ -418,4 +418,11 @@ public class Room {
 			this.presences.update(cp);
 	}
 
+	/**
+	 * 
+	 */
+	public Collection<JID> getAllOccupantsJID() {
+		return presences.getAllKnownJIDs();
+	}
+
 }

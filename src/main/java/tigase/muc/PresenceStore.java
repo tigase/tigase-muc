@@ -27,19 +27,19 @@ package tigase.muc;
 //~--- non-JDK imports --------------------------------------------------------
 
 import tigase.server.Packet;
-
 import tigase.util.TigaseStringprepException;
-
 import tigase.xml.Element;
-
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
 //~--- JDK imports ------------------------------------------------------------
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Class description
@@ -70,6 +70,18 @@ public class PresenceStore {
 
 	//~--- get methods ----------------------------------------------------------
 
+	public Collection<JID> getAllKnownJIDs() {
+		ArrayList<JID> result = new ArrayList<JID>();
+
+		for (Entry<JID, Presence> entry : this.presenceByJid.entrySet()) {
+			if (entry.getValue().type == null)
+				result.add(entry.getKey());
+		}
+
+		return result;
+
+	}
+	
 	/**
 	 * Method description
 	 *
