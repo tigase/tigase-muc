@@ -57,11 +57,12 @@ public abstract class AbstractHistoryProvider implements HistoryProvider {
 
 			Element m = queue.poll();
 			if (m != null) {
+				m.setAttribute("type", "groupchat");
+				m.setAttribute("from", JID.jidInstance(roomJID, msgSenderNickname).toString());
+				m.setAttribute("to", senderJID.toString());
+
 				message = Packet.packetInstance(m);
 				message.setXMLNS(Packet.CLIENT_XMLNS);
-				message.getElement().setAttribute("type", "groupchat");
-				message.getElement().setAttribute("from", JID.jidInstance(roomJID, msgSenderNickname).toString());
-				message.getElement().setAttribute("to", senderJID.toString());
 			}
 		}
 
