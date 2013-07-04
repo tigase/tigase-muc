@@ -88,7 +88,7 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 		item.senderJid = senderJid;
 		item.senderNickname = senderNickname;
 		item.timestamp = time;
-		item.msg = message.toString();
+		item.msg = message == null ? null : message.toString();
 
 		stanzas.add(item);
 	}

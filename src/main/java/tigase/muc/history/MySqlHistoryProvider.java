@@ -95,7 +95,7 @@ public class MySqlHistoryProvider extends AbstractHistoryProvider {
 				st.setString(4, senderNickname);
 				st.setString(5, body);
 				st.setBoolean(6, room.getConfig().isLoggingEnabled());
-				st.setString(7, message.toString());
+				st.setString(7, message == null ? null : message.toString());
 
 				st.executeUpdate();
 			}

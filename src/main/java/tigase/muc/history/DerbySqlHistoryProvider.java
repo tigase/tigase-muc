@@ -93,7 +93,7 @@ public class DerbySqlHistoryProvider extends AbstractHistoryProvider {
 				st.setString(3, senderJid.toString());
 				st.setString(4, senderNickname);
 				st.setString(5, body);
-				st.setString(6, message.toString());
+				st.setString(6, message == null ? null : message.toString());
 
 				st.executeUpdate();
 			}
