@@ -20,94 +20,81 @@
  *
  */
 
-
-
 package tigase.muc.modules;
 
 //~--- non-JDK imports --------------------------------------------------------
 
+//~--- JDK imports ------------------------------------------------------------
+import java.util.logging.Level;
+
 import tigase.component.ElementWriter;
 import tigase.component.exceptions.RepositoryException;
-
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
-
 import tigase.form.Form;
-
 import tigase.muc.Affiliation;
-import tigase.muc.exceptions.MUCException;
-import tigase.muc.history.HistoryProvider;
-import tigase.muc.modules.PresenceModule.PresenceWrapper;
 import tigase.muc.MucConfig;
-import tigase.muc.repository.IMucRepository;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
-
+import tigase.muc.exceptions.MUCException;
+import tigase.muc.history.HistoryProvider;
+import tigase.muc.modules.PresenceModule.PresenceWrapper;
+import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
-
 import tigase.util.TigaseStringprepException;
-
 import tigase.xml.Element;
-
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
 
-//~--- JDK imports ------------------------------------------------------------
-
-import java.util.logging.Level;
-
 /**
  * @author bmalkow
- *
+ * 
  */
-public class RoomConfigurationModule
-				extends AbstractModule {
-	private static final Criteria CRIT =
-		ElementCriteria.name("iq").add(ElementCriteria.name("query",
-			"http://jabber.org/protocol/muc#owner"));
+public class RoomConfigurationModule extends AbstractModule {
+	private static final Criteria CRIT = ElementCriteria.name("iq").add(
+			ElementCriteria.name("query", "http://jabber.org/protocol/muc#owner"));
 
-	//~--- fields ---------------------------------------------------------------
+	// ~--- fields
+	// ---------------------------------------------------------------
 
 	private final HistoryProvider historyProvider;
 	private final GroupchatMessageModule messageModule;
 
-	//~--- constructors ---------------------------------------------------------
+	// ~--- constructors
+	// ---------------------------------------------------------
 
 	/**
 	 * Constructs ...
-	 *
-	 *
+	 * 
+	 * 
 	 * @param config
 	 * @param writer
 	 * @param mucRepository
 	 * @param historyProvider
 	 * @param messageModule
 	 */
-	public RoomConfigurationModule(MucConfig config, ElementWriter writer,
-																 IMucRepository mucRepository,
-																 HistoryProvider historyProvider,
-																 GroupchatMessageModule messageModule) {
+	public RoomConfigurationModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository,
+			HistoryProvider historyProvider, GroupchatMessageModule messageModule) {
 		super(config, writer, mucRepository);
-		this.messageModule   = messageModule;
+		this.messageModule = messageModule;
 		this.historyProvider = historyProvider;
 	}
 
-	//~--- methods --------------------------------------------------------------
+	// ~--- methods
+	// --------------------------------------------------------------
 
-	private void destroy(Room room, Element destroyElement)
-					throws TigaseStringprepException, RepositoryException {
+	private void destroy(Room room, Element destroyElement) throws TigaseStringprepException, RepositoryException {
 		for (String occupantNickname : room.getOccupantsNicknames()) {
 			for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
 				final Element p = new Element("presence");
 
 				p.addAttribute("type", "unavailable");
 
-				PresenceWrapper presence = PresenceModule.preparePresenceW(room, occupantJid, p,
-																		 occupantJid.getBareJID(), occupantNickname,
-																		 Affiliation.none, Role.none);
+				PresenceWrapper presence = PresenceModule.preparePresenceW(room, occupantJid, p, occupantJid.getBareJID(),
+						occupantNickname, Affiliation.none, Role.none);
 
 				presence.x.addChild(destroyElement);
 				writer.write(presence.packet);
@@ -125,17 +112,16 @@ public class RoomConfigurationModule
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param room
 	 * @param jid
 	 * @param reason
-	 *
+	 * 
 	 * @throws RepositoryException
 	 * @throws TigaseStringprepException
 	 */
-	public void destroy(Room room, String jid, String reason)
-					throws TigaseStringprepException, RepositoryException {
+	public void destroy(Room room, String jid, String reason) throws TigaseStringprepException, RepositoryException {
 		Element destroy = new Element("destroy");
 
 		if (jid != null) {
@@ -147,12 +133,13 @@ public class RoomConfigurationModule
 		destroy(room, destroy);
 	}
 
-	//~--- get methods ----------------------------------------------------------
+	// ~--- get methods
+	// ----------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @return
 	 */
 	@Override
@@ -162,8 +149,8 @@ public class RoomConfigurationModule
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @return
 	 */
 	@Override
@@ -171,12 +158,12 @@ public class RoomConfigurationModule
 		return CRIT;
 	}
 
-	//~--- methods --------------------------------------------------------------
+	// ~--- methods
+	// --------------------------------------------------------------
 
 	private Element makeConfigFormIq(final Element request, final RoomConfig roomConfig) {
 		final Element response = createResultIQ(request);
-		Element query          = new Element("query", new String[] { "xmlns" },
-															 new String[] { "http://jabber.org/protocol/muc#owner" });
+		Element query = new Element("query", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#owner" });
 
 		response.addChild(query);
 		query.addChild(roomConfig.getConfigForm().getElement());
@@ -186,10 +173,10 @@ public class RoomConfigurationModule
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param element
-	 *
+	 * 
 	 * @throws MUCException
 	 */
 	@Override
@@ -218,14 +205,12 @@ public class RoomConfigurationModule
 
 	private void processGet(final Packet element) throws RepositoryException, MUCException {
 		try {
-			final BareJID roomJID =
-				BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
+			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
 			JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
-			Room room     = repository.getRoom(roomJID);
+			Room room = repository.getRoom(roomJID);
 
 			if (room == null) {
-				writer.write(Packet.packetInstance(makeConfigFormIq(element.getElement(),
-								repository.getDefaultRoomConfig())));
+				writer.write(Packet.packetInstance(makeConfigFormIq(element.getElement(), repository.getDefaultRoomConfig())));
 			}
 			if (room.getAffiliation(senderJID.getBareJID()) != Affiliation.owner) {
 				throw new MUCException(Authorization.FORBIDDEN);
@@ -241,11 +226,9 @@ public class RoomConfigurationModule
 
 	private void processSet(final Packet element) throws RepositoryException, MUCException {
 		try {
-			final JID roomJID   = JID.jidInstance(element.getAttributeStaticStr(Packet.TO_ATT));
-			JID senderJID       =
-				JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
-			final Element query = element.getElement().getChild("query",
-															"http://jabber.org/protocol/muc#owner");
+			final JID roomJID = JID.jidInstance(element.getAttributeStaticStr(Packet.TO_ATT));
+			JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
+			final Element query = element.getElement().getChild("query", "http://jabber.org/protocol/muc#owner");
 			Room room = repository.getRoom(roomJID.getBareJID());
 
 			if (room == null) {
@@ -258,7 +241,7 @@ public class RoomConfigurationModule
 				throw new MUCException(Authorization.FORBIDDEN);
 			}
 
-			final Element x       = query.getChild("x", "jabber:x:data");
+			final Element x = query.getChild("x", "jabber:x:data");
 			final Element destroy = query.getChild("destroy");
 
 			if (destroy != null) {
@@ -273,10 +256,9 @@ public class RoomConfigurationModule
 				if ("submit".equals(form.getType())) {
 					String ps = form.getAsString(RoomConfig.MUC_ROOMCONFIG_ROOMSECRET_KEY);
 
-					if ((form.getAsBoolean(RoomConfig.MUC_ROOMCONFIG_PASSWORDPROTECTEDROOM_KEY) ==
-							 Boolean.TRUE) && ((ps == null) || (ps.length() == 0))) {
-						throw new MUCException(Authorization.NOT_ACCEPTABLE,
-																	 "Passwords cannot be empty");
+					if ((form.getAsBoolean(RoomConfig.MUC_ROOMCONFIG_PASSWORDPROTECTEDROOM_KEY) == Boolean.TRUE)
+							&& ((ps == null) || (ps.length() == 0))) {
+						throw new MUCException(Authorization.NOT_ACCEPTABLE, "Passwords cannot be empty");
 					}
 					writer.write(element.okResult((Element) null, 0));
 
@@ -287,8 +269,7 @@ public class RoomConfigurationModule
 						if (log.isLoggable(Level.FINE)) {
 							log.fine("Room " + room.getRoomJID() + " is now unlocked");
 						}
-						sendMucMessage(room, room.getOccupantsNickname(senderJID),
-													 "Room is now unlocked");
+						sendMucMessage(room, room.getOccupantsNickname(senderJID), "Room is now unlocked");
 					}
 					room.getConfig().copyFrom(form);
 					room.addAffiliationByJid(senderJID.getBareJID(), Affiliation.owner);
@@ -297,12 +278,10 @@ public class RoomConfigurationModule
 
 					if (compareResult != null) {
 						Element z = new Element("x", new String[] { "xmlns" },
-																		new String[] {
-																			"http://jabber.org/protocol/muc#user" });
+								new String[] { "http://jabber.org/protocol/muc#user" });
 
 						for (String code : compareResult) {
-							z.addChild(new Element("status", new String[] { "code" },
-																		 new String[] { code }));
+							z.addChild(new Element("status", new String[] { "code" }, new String[] { code }));
 						}
 						this.messageModule.sendMessagesToAllOccupants(room, roomJID, z);
 					}
@@ -314,7 +293,7 @@ public class RoomConfigurationModule
 			throw new MUCException(Authorization.BAD_REQUEST);
 		}
 	}
+
 }
 
-
-//~ Formatted in Tigase Code Convention on 13/02/20
+// ~ Formatted in Tigase Code Convention on 13/02/20

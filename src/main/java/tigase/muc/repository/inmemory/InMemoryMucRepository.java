@@ -178,6 +178,12 @@ public class InMemoryMucRepository implements IMucRepository {
 	public RoomConfig getDefaultRoomConfig() throws RepositoryException {
 		if (defaultConfig == null) {
 			defaultConfig = new RoomConfig(null, this.mucConfig.isPublicLoggingEnabled());
+			try {
+				defaultConfig.read(dao.getRepository(), mucConfig, MucDAO.ROOMS_KEY + null + "/config");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			// dao.updateRoomConfig(defaultConfig);
 		}
 		return defaultConfig;
 	}
@@ -247,5 +253,12 @@ public class InMemoryMucRepository implements IMucRepository {
 		if (!room.getConfig().isPersistentRoom()) {
 			this.allRooms.remove(roomJID);
 		}
+	}
+
+	@Override
+	public void updateDefaultRoomConfig(RoomConfig config) throws RepositoryException {
+		RoomConfig org = getDefaultRoomConfig();
+		org.copyFrom(config);
+		dao.updateRoomConfig(defaultConfig);
 	}
 }

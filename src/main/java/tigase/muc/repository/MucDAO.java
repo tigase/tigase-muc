@@ -53,7 +53,7 @@ public class MucDAO {
 
 	private static final String LAST_ACCESS_DATE_KEY = "last-access-date";
 
-	private static final String ROOMS_KEY = "rooms/";
+	public static final String ROOMS_KEY = "rooms/";
 
 	private static final String SUBJECT_CREATOR_NICK_KEY = "creator";
 
@@ -137,6 +137,10 @@ public class MucDAO {
 			throw new RepositoryException("Creation Date reading error", e);
 		}
 
+	}
+
+	public UserRepository getRepository() {
+		return repository;
 	}
 
 	/**

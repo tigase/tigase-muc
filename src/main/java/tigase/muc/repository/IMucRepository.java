@@ -63,4 +63,6 @@ public interface IMucRepository {
 
 	void leaveRoom(Room room);
 
+	void updateDefaultRoomConfig(RoomConfig config) throws RepositoryException;
+
 }

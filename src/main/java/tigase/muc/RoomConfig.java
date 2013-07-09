@@ -246,6 +246,10 @@ public class RoomConfig {
 		return form;
 	}
 
+	public Form getForm() {
+		return form;
+	}
+
 	public LogFormat getLoggingFormat() {
 		try {
 			String tmp = form.getAsString(LOGGING_FORMAT_KEY);

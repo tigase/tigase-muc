@@ -202,4 +202,15 @@ public class MockMucRepository implements IMucRepository {
 		}
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * tigase.muc.repository.IMucRepository#updateDefaultRoomConfig(tigase.muc
+	 * .RoomConfig)
+	 */
+	@Override
+	public void updateDefaultRoomConfig(RoomConfig config) throws RepositoryException {
+		throw new RuntimeException("NOT IMPLEMENTED");
+	}
 }
