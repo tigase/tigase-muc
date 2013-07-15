@@ -377,7 +377,7 @@ public class RoomConfig {
 			if (f.getType() == FieldType.bool && !"0".equals(str) && !"1".equals(str) && !"true".equalsIgnoreCase(str)
 					&& !"false".equalsIgnoreCase(str))
 				throw new RuntimeException("Boolean fields allows only '1', 'true', '0', 'false' values");
-			f.setValues(new String[] { str.toLowerCase() });
+			f.setValues(new String[] { str });
 		} else if (data instanceof Boolean && f.getType() == FieldType.bool) {
 			boolean b = ((Boolean) data).booleanValue();
 			f.setValues(new String[] { b ? "1" : "0" });

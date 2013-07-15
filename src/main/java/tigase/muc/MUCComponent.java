@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
@@ -43,6 +44,7 @@ import tigase.db.UserRepository;
 import tigase.disco.ServiceEntity;
 import tigase.disco.ServiceIdentity;
 import tigase.disco.XMPPService;
+import tigase.form.Field;
 import tigase.muc.history.HistoryManagerFactory;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.history.MemoryHistoryProvider;
@@ -84,6 +86,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 
 	/** Field description */
 	public static final String ADMINS_KEY = "admins";
+	public static final String DEFAULT_ROOM_CONFIG_PREFIX_KEY = "default_room_config/";
 	public static final String LOG_DIR_KEY = "room-log-directory";
 	public static final String MESSAGE_FILTER_ENABLED_KEY = "message-filter-enabled";
 	public static final String MUC_ALLOW_CHAT_STATES_KEY = "muc-allow-chat-states";
@@ -92,8 +95,8 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 	protected static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
 	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
 	private static final String MUC_REPOSITORY_VAR = "mucRepository";
-	private static final String OWNER_MODULE_VAR = "ownerModule";
 
+	private static final String OWNER_MODULE_VAR = "ownerModule";
 	/**
 	 * @deprecated Use {@linkplain MUCComponent#SEARCH_GHOSTS_EVERY_MINUTE_KEY
 	 *             SEARCH_GHOSTS_MINUTE_KEY} instead.
@@ -405,22 +408,6 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		this.mucRepository = mucRepository;
 	}
 
-	@Override
-	public void stop() {
-		try {
-			for (Room room : mucRepository.getActiveRooms().values()) {
-				for (JID jid : room.getAllOccupantsJID())
-					try {
-						presenceModule.doQuit(room, jid);
-					} catch (TigaseStringprepException e) {
-						e.printStackTrace();
-					}
-			}
-		} finally {
-			super.stop();
-		}
-	}
-
 	/**
 	 * Method description
 	 * 
@@ -510,12 +497,53 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 			}
 
 			init();
+
+			try {
+				final RoomConfig defaultRoomConfig = mucRepository.getDefaultRoomConfig();
+				boolean changed = false;
+				for (Entry<String, Object> x : props.entrySet()) {
+					if (x.getKey().startsWith(DEFAULT_ROOM_CONFIG_PREFIX_KEY)) {
+						String var = x.getKey().substring(DEFAULT_ROOM_CONFIG_PREFIX_KEY.length());
+
+						Field field = defaultRoomConfig.getForm().get(var);
+						if (field != null) {
+							changed = true;
+							field.setValues(new String[] { (String) x.getValue() });
+						} else if (log.isLoggable(Level.WARNING)) {
+							log.warning("Default config room doesn't contains variable '" + var + "'!");
+						}
+					}
+				}
+				if (changed) {
+					if (log.isLoggable(Level.CONFIG))
+						log.config("Default room configuration is udpated");
+					mucRepository.updateDefaultRoomConfig(defaultRoomConfig);
+				}
+			} catch (Exception e) {
+				log.log(Level.WARNING, "Can't set default room ronfiguration", e);
+			}
 		}
 
 		this.messageModule.setChatStateAllowed((Boolean) props.get(MUC_ALLOW_CHAT_STATES_KEY));
 		this.presenceModule.setLockNewRoom((Boolean) props.get(MUC_LOCK_NEW_ROOM_KEY));
 		if (log.isLoggable(Level.INFO))
 			log.info("Tigase MUC Component ver. " + MucVersion.getVersion() + " started.");
+	}
+
+	@Override
+	public void stop() {
+		try {
+			for (Room room : mucRepository.getActiveRooms().values()) {
+				for (JID jid : room.getAllOccupantsJID())
+					try {
+						presenceModule.doQuit(room, jid);
+					} catch (TigaseStringprepException e) {
+						e.printStackTrace();
+					}
+			}
+		} finally {
+			super.stop();
+		}
 	}
 
 }
