@@ -120,6 +120,8 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 
 	private GroupchatMessageModule messageModule;
 
+	private ModeratorModule moderatorModule;
+
 	private IMucRepository mucRepository;
 
 	private RoomConfigurationModule ownerModule;
@@ -131,7 +133,6 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 	private boolean searchGhostsEveryMinute = false;
 
 	private ServiceEntity serviceEntity;
-
 	private UserRepository userRepository;
 
 	/**
@@ -336,7 +337,8 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		this.modulesManager.register(presenceModule);
 		ownerModule = this.modulesManager.register(new RoomConfigurationModule(this.componentConfig, writer,
 				this.mucRepository, this.historyProvider, messageModule));
-		this.modulesManager.register(new ModeratorModule(this.componentConfig, writer, this.mucRepository));
+		this.moderatorModule = this.modulesManager.register(new ModeratorModule(this.componentConfig, writer,
+				this.mucRepository));
 		this.modulesManager.register(new SoftwareVersionModule(writer));
 		this.modulesManager.register(new XmppPingModule(writer));
 		this.modulesManager.register(new DiscoItemsModule(this.componentConfig, writer, this.mucRepository, scriptCommands,
@@ -534,9 +536,9 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 	public void stop() {
 		try {
 			for (Room room : mucRepository.getActiveRooms().values()) {
-				for (JID jid : room.getAllOccupantsJID())
+				for (String nickname : room.getOccupantsNicknames())
 					try {
-						presenceModule.doQuit(room, jid);
+						moderatorModule.kick(room, nickname, "MUC component is going down.", null);
 					} catch (TigaseStringprepException e) {
 						log.log(Level.WARNING, "Can't throw out occupant from room", e);
 					}

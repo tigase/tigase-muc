@@ -191,6 +191,10 @@ public class ModeratorModule extends AbstractModule {
 	// ~--- methods
 	// --------------------------------------------------------------
 
+	public void kick(Room room, String occupantNick, String reason, String actor) throws TigaseStringprepException {
+		processSetRole(room, occupantNick, Role.none, reason, actor);
+	}
+
 	private Element makePresence(final JID destinationJid, final BareJID roomJID, final Room room, final BareJID occupantJid,
 			boolean unavailable, Affiliation affiliation, Role role, String nick, String reason, String actor, String... codes) {
 		Element presence = unavailable ? new Element("presence", new String[] { "type" }, new String[] { "unavailable" })
@@ -378,7 +382,8 @@ public class ModeratorModule extends AbstractModule {
 					processSetAffiliation(room, item, newAffiliation, newRole, reason, actor);
 				}
 				if (newRole != null) {
-					processSetRole(room, item, newRole, reason, actor);
+					String occupantNick = item.getAttributeStaticStr("nick");
+					processSetRole(room, occupantNick, newRole, reason, actor);
 				}
 			}
 		} catch (MUCException e1) {
@@ -436,9 +441,8 @@ public class ModeratorModule extends AbstractModule {
 		}
 	}
 
-	private void processSetRole(Room room, Element item, Role newRole, String reason, String actor)
+	private void processSetRole(Room room, String occupantNick, Role newRole, String reason, String actor)
 			throws TigaseStringprepException {
-		final String occupantNick = item.getAttributeStaticStr("nick");
 		final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNick);
 		final Affiliation occupantAffiliation = room.getAffiliation(occupantJid);
 		boolean isUnavailable = false;
