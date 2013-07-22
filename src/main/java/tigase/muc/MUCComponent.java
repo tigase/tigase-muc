@@ -538,7 +538,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 					try {
 						presenceModule.doQuit(room, jid);
 					} catch (TigaseStringprepException e) {
-						e.printStackTrace();
+						log.log(Level.WARNING, "Can't throw out occupant from room", e);
 					}
 			}
 		} finally {
