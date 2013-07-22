@@ -541,6 +541,8 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 						log.log(Level.WARNING, "Can't throw out occupant from room", e);
 					}
 			}
+		} catch (Exception e) {
+			log.log(Level.WARNING, "Problem on throwing out occupants", e);
 		} finally {
 			super.stop();
 		}
