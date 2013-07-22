@@ -538,7 +538,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 			for (Room room : mucRepository.getActiveRooms().values()) {
 				for (String nickname : room.getOccupantsNicknames())
 					try {
-						moderatorModule.kick(room, nickname, "MUC component is going down.", null);
+						moderatorModule.kickWithoutBroadcast(room, nickname, "MUC component is going down.", null);
 					} catch (TigaseStringprepException e) {
 						log.log(Level.WARNING, "Can't throw out occupant from room", e);
 					}

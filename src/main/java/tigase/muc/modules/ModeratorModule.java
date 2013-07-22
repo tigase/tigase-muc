@@ -22,8 +22,6 @@
 
 package tigase.muc.modules;
 
-//~--- non-JDK imports --------------------------------------------------------
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -49,8 +47,6 @@ import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
 
-//~--- JDK imports ------------------------------------------------------------
-
 /**
  * @author bmalkow
  * 
@@ -58,9 +54,6 @@ import tigase.xmpp.StanzaType;
 public class ModeratorModule extends AbstractModule {
 	private static final Criteria CRIT = ElementCriteria.name("iq").add(
 			ElementCriteria.name("query", "http://jabber.org/protocol/muc#admin"));
-
-	// ~--- constructors
-	// ---------------------------------------------------------
 
 	private static Affiliation getAffiliation(Element item) throws MUCException {
 		String tmp = item.getAttributeStaticStr("affiliation");
@@ -71,9 +64,6 @@ public class ModeratorModule extends AbstractModule {
 			throw new MUCException(Authorization.BAD_REQUEST, "Unknown affiliation value: " + tmp);
 		}
 	}
-
-	// ~--- get methods
-	// ----------------------------------------------------------
 
 	private static String getReason(Element item) {
 		Element r = item.getChild("reason");
@@ -98,9 +88,6 @@ public class ModeratorModule extends AbstractModule {
 	public ModeratorModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository) {
 		super(config, writer, mucRepository);
 	}
-
-	// ~--- methods
-	// --------------------------------------------------------------
 
 	private void checkItem(final Room room, final Element item, final Affiliation senderaAffiliation, final Role senderRole)
 			throws MUCException, TigaseStringprepException {
@@ -163,9 +150,6 @@ public class ModeratorModule extends AbstractModule {
 		}
 	}
 
-	// ~--- get methods
-	// ----------------------------------------------------------
-
 	/**
 	 * Method description
 	 * 
@@ -188,11 +172,28 @@ public class ModeratorModule extends AbstractModule {
 		return CRIT;
 	}
 
-	// ~--- methods
-	// --------------------------------------------------------------
+	/**
+	 * Kicking user without sending presence to all other occupant. Used only to
+	 * inform occupants that component is stopping.
+	 */
+	public void kickWithoutBroadcast(Room room, String occupantNick, String reason, String actor)
+			throws TigaseStringprepException {
+		List<String> codes = new ArrayList<String>();
+		final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNick);
+		final Affiliation occupantAffiliation = room.getAffiliation(occupantJid);
 
-	public void kick(Room room, String occupantNick, String reason, String actor) throws TigaseStringprepException {
-		processSetRole(room, occupantNick, Role.none, reason, actor);
+		codes.add("307");
+		boolean isUnavailable = true;
+
+		final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(occupantNick);
+
+		for (JID jid : occupantJids) {
+			Element occupantKickPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
+					occupantAffiliation, Role.none, occupantNick, reason, actor, codes.toArray(new String[] {}));
+
+			writer.write(Packet.packetInstance(occupantKickPresence));
+		}
+		room.removeOccupant(occupantNick);
 	}
 
 	private Element makePresence(final JID destinationJid, final BareJID roomJID, final Room room, final BareJID occupantJid,
@@ -226,10 +227,10 @@ public class ModeratorModule extends AbstractModule {
 
 		// TODO jid
 		if (actor != null) {
-			x.addChild(new Element("actor", new String[] { "jid" }, new String[] { actor }));
+			item.addChild(new Element("actor", new String[] { "jid" }, new String[] { actor }));
 		}
 		if (reason != null) {
-			x.addChild(new Element("reason", reason));
+			item.addChild(new Element("reason", reason));
 		}
 		if (codes != null) {
 			for (String code : codes) {
@@ -501,5 +502,3 @@ public class ModeratorModule extends AbstractModule {
 		writer.write(message);
 	}
 }
-
-// ~ Formatted in Tigase Code Convention on 13/02/20
