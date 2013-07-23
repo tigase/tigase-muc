@@ -29,8 +29,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import tigase.collections.TwoHashBidiMap;
@@ -50,7 +52,7 @@ public class Room {
 
 		public BareJID jid;
 
-		private final Set<JID> jids = new HashSet<JID>();
+		private final ConcurrentSkipListSet<JID> jids = new ConcurrentSkipListSet<JID>();
 
 		private Role role = Role.none;
 
@@ -188,6 +190,13 @@ public class Room {
 		return this.affiliations.keySet();
 	}
 
+	/**
+	 * 
+	 */
+	public Collection<JID> getAllOccupantsJID() {
+		return presences.getAllKnownJIDs();
+	}
+
 	private OccupantEntry getBySenderJid(JID sender) {
 		for (Entry<String, OccupantEntry> e : occupants.entrySet()) {
 			if (e.getValue().jids.contains(sender)) {
@@ -237,11 +246,11 @@ public class Room {
 		if (entry == null)
 			return null;
 
-		if (!entry.jids.isEmpty()) {
-			return entry.jids.iterator().next().getBareJID();
+		try {
+			return entry.jids.first().getBareJID();
+		} catch (NoSuchElementException e) {
+			return null;
 		}
-
-		return null;
 	}
 
 	/**
@@ -416,13 +425,6 @@ public class Room {
 			this.presences.remove(jid);
 		else
 			this.presences.update(cp);
-	}
-
-	/**
-	 * 
-	 */
-	public Collection<JID> getAllOccupantsJID() {
-		return presences.getAllKnownJIDs();
 	}
 
 }
