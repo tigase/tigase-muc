@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 	</properties>
@@ -48,10 +49,10 @@
 			<plugin>
 				<groupId>org.codehaus.mojo</groupId>
 				<artifactId>buildnumber-maven-plugin</artifactId>
-				<version>1.1</version>
+				<version>1.2</version>
 				<configuration>
 					<timestampFormat>{0,date} {0,time}</timestampFormat>
-					 <shortRevisionLength>8</shortRevisionLength>
+					<shortRevisionLength>8</shortRevisionLength>
 				</configuration>
 				<executions>
 					<execution>
@@ -72,34 +73,22 @@
 					<showDeprecation>false</showDeprecation>
 				</configuration>
 			</plugin>
+
 			<plugin>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>2.1</version>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<version>2.4.0</version>
+				<extensions>true</extensions>
 				<configuration>
-					<archive>
-						<manifest>
-							<packageName>tigase.muc</packageName>
-							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
-						</manifest>
-						<manifestFile>src/main/resources/META-INF/MANIFEST.MF</manifestFile>
-						<manifestEntries>
-							<Implementation-Version>${project.version}</Implementation-Version>
-							<Implementation-Build>${buildNumber} (${timestamp})</Implementation-Build>
-						</manifestEntries>
-					</archive>
+					<instructions combine.inherited="append">
+						<manifestLocation>src/main/resources/META-INF/MANIFEST.MF</manifestLocation>
+						<Implementation-Version>${project.version}</Implementation-Version>
+						<Implementation-Build>${buildNumber} (${timestamp})</Implementation-Build>
+						<Bundle-Activator>tigase.muc.Activator</Bundle-Activator>
+					</instructions>
 				</configuration>
 			</plugin>
-                        <plugin>
-                                <groupId>org.apache.felix</groupId>
-                                <artifactId>maven-bundle-plugin</artifactId>
-                                <extensions>true</extensions>
-                                <configuration>
-                                        <instructions>
-                                                <Bundle-Activator>tigase.muc.Activator</Bundle-Activator>
-                                        </instructions>
-                                </configuration>
-                        </plugin>
-                        
+
 		</plugins>
 		<extensions>
 			<extension>
@@ -127,13 +116,13 @@
 			<version>5.2.0-SNAPSHOT</version>
 			<scope>compile</scope>
 		</dependency>
-                <dependency>
-                        <groupId>org.apache.felix</groupId>
-                        <artifactId>org.osgi.core</artifactId>
-                        <version>1.4.0</version>
-                        <scope>provided</scope>
-                        <type>bundle</type>
-                </dependency>                
+		<dependency>
+			<groupId>org.apache.felix</groupId>
+			<artifactId>org.osgi.core</artifactId>
+			<version>1.4.0</version>
+			<scope>provided</scope>
+			<type>bundle</type>
+		</dependency>
 	</dependencies>
 	<repositories>
 		<repository>
