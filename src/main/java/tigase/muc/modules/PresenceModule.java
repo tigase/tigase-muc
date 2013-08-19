@@ -640,6 +640,7 @@ public class PresenceModule extends AbstractModule {
 				room.setRoomLocked(this.lockNewRoom);
 				roomCreated = true;
 				knownNickname = null;
+				room.getConfig().notifyConfigUpdate();
 			} else {
 				roomCreated = false;
 				knownNickname = room.getOccupantsNickname(senderJID);

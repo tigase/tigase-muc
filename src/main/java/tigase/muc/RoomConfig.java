@@ -246,10 +246,6 @@ public class RoomConfig {
 		return form;
 	}
 
-	public Form getForm() {
-		return form;
-	}
-
 	public LogFormat getLoggingFormat() {
 		try {
 			String tmp = form.getAsString(LOGGING_FORMAT_KEY);
@@ -349,6 +345,17 @@ public class RoomConfig {
 
 	public boolean isRoomModerated() {
 		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_MODERATEDROOM_KEY), false);
+	}
+
+	/**
+	 * 
+	 */
+	public void notifyConfigUpdate() {
+		HashSet<String> vars = new HashSet<String>();
+		for (Field f : form.getAllFields()) {
+			vars.add(f.getVar());
+		}
+		fireConfigChanged(vars);
 	}
 
 	public void read(final UserRepository repository, final MucConfig config, final String subnode)

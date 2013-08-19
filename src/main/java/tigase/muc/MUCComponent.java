@@ -507,7 +507,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 					if (x.getKey().startsWith(DEFAULT_ROOM_CONFIG_PREFIX_KEY)) {
 						String var = x.getKey().substring(DEFAULT_ROOM_CONFIG_PREFIX_KEY.length());
 
-						Field field = defaultRoomConfig.getForm().get(var);
+						Field field = defaultRoomConfig.getConfigForm().get(var);
 						if (field != null) {
 							changed = true;
 							field.setValues(new String[] { (String) x.getValue() });
