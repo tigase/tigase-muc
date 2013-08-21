@@ -33,6 +33,7 @@ import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.Affiliation;
+import tigase.muc.Ghostbuster2;
 import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
@@ -77,6 +78,8 @@ public class ModeratorModule extends AbstractModule {
 		return (tmp == null) ? null : Role.valueOf(tmp);
 	}
 
+	private Ghostbuster2 ghostbuster;
+
 	/**
 	 * Constructs ...
 	 * 
@@ -85,8 +88,9 @@ public class ModeratorModule extends AbstractModule {
 	 * @param writer
 	 * @param mucRepository
 	 */
-	public ModeratorModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository) {
+	public ModeratorModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository, Ghostbuster2 ghostbuster) {
 		super(config, writer, mucRepository);
+		this.ghostbuster = ghostbuster;
 	}
 
 	private void checkItem(final Room room, final Element item, final Affiliation senderaAffiliation, final Role senderRole)
@@ -425,6 +429,8 @@ public class ModeratorModule extends AbstractModule {
 					writer.write(Packet.packetInstance(occupantKickPresence));
 				}
 				room.removeOccupant(occupantNick);
+				ghostbuster.remove(occupantJids, room);
+
 			}
 		}
 		for (String nickname : room.getOccupantsNicknames()) {
@@ -462,6 +468,7 @@ public class ModeratorModule extends AbstractModule {
 				writer.write(Packet.packetInstance(occupantKickPresence));
 			}
 			room.removeOccupant(occupantNick);
+			ghostbuster.remove(occupantJids, room);
 		} else {
 			room.setNewRole(occupantNick, newRole);
 		}
