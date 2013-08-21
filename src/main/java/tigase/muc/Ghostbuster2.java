@@ -118,22 +118,27 @@ public class Ghostbuster2 {
 	}
 
 	public void add(JID occupantJid, Room room) {
-		MonitoredObject o = monitoredObjects.get(occupantJid);
+		try {
+			MonitoredObject o = monitoredObjects.get(occupantJid);
 
-		if (log.isLoggable(Level.FINE))
-			log.fine(occupantJid + " registered in room " + room.getRoomJID());
-
-		if (o == null) {
 			if (log.isLoggable(Level.FINE))
-				log.fine("Start observing " + occupantJid);
+				log.fine(occupantJid + " registered in room " + room.getRoomJID());
 
-			o = new MonitoredObject(occupantJid);
-			o.lastActivity = System.currentTimeMillis();
-			monitoredObjects.put(occupantJid, o);
+			if (o == null) {
+				if (log.isLoggable(Level.FINE))
+					log.fine("Start observing " + occupantJid);
+
+				o = new MonitoredObject(occupantJid);
+				o.lastActivity = System.currentTimeMillis();
+				monitoredObjects.put(occupantJid, o);
+			}
+			synchronized (o.rooms) {
+				o.rooms.add(room.getRoomJID());
+			}
+		} catch (Exception e) {
+			log.log(Level.WARNING, "Problem on registering occupant", e);
 		}
-		synchronized (o.rooms) {
-			o.rooms.add(room.getRoomJID());
-		}
+
 	}
 
 	private String checkError(final Packet packet) {
@@ -261,23 +266,27 @@ public class Ghostbuster2 {
 	}
 
 	public void remove(JID occupantJid, Room room) {
-		MonitoredObject o = monitoredObjects.get(occupantJid);
-		if (o == null)
-			return;
+		try {
+			MonitoredObject o = monitoredObjects.get(occupantJid);
+			if (o == null)
+				return;
 
-		if (log.isLoggable(Level.FINE))
-			log.fine(occupantJid + " unregisterd from room " + room.getRoomJID());
+			if (log.isLoggable(Level.FINE))
+				log.fine(occupantJid + " unregisterd from room " + room.getRoomJID());
 
-		synchronized (o.rooms) {
-			o.rooms.remove(room.getRoomJID());
+			synchronized (o.rooms) {
+				o.rooms.remove(room.getRoomJID());
 
-			if (o.rooms.isEmpty()) {
-				if (log.isLoggable(Level.FINE))
-					log.fine("Stop observing " + occupantJid);
+				if (o.rooms.isEmpty()) {
+					if (log.isLoggable(Level.FINE))
+						log.fine("Stop observing " + occupantJid);
 
-				monitoredObjects.remove(o);
+					monitoredObjects.remove(o);
 
+				}
 			}
+		} catch (Exception e) {
+			log.log(Level.WARNING, "Problem on unregistering occupant", e);
 		}
 	}
 
