@@ -109,7 +109,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 
 	private MucDAO dao;
 
-	private final Ghostbuster ghostbuster;
+	private final Ghostbuster2 ghostbuster;
 
 	private HistoryProvider historyProvider;
 
@@ -140,12 +140,12 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 	 */
 	public MUCComponent() {
 		super();
-		this.ghostbuster = new Ghostbuster(this);
+		this.ghostbuster = new Ghostbuster2(this);
 	}
 
 	public MUCComponent(ElementWriter writer) {
 		super(writer);
-		this.ghostbuster = new Ghostbuster(this);
+		this.ghostbuster = new Ghostbuster2(this);
 	}
 
 	boolean addOutPacket(Packet packet, ReceiverTimeoutHandler handler, long delay, TimeUnit unit) {
@@ -327,7 +327,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		final ElementWriter writer = getWriter();
 
 		presenceModule = new PresenceModule(this.componentConfig, writer, this.mucRepository, this.historyProvider, this,
-				roomLogger);
+				roomLogger, ghostbuster);
 
 		ghostbuster.setPresenceModule(presenceModule);
 
@@ -338,7 +338,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		ownerModule = this.modulesManager.register(new RoomConfigurationModule(this.componentConfig, writer,
 				this.mucRepository, this.historyProvider, messageModule));
 		this.moderatorModule = this.modulesManager.register(new ModeratorModule(this.componentConfig, writer,
-				this.mucRepository));
+				this.mucRepository, ghostbuster));
 		this.modulesManager.register(new SoftwareVersionModule(writer));
 		this.modulesManager.register(new XmppPingModule(writer));
 		this.modulesManager.register(new DiscoItemsModule(this.componentConfig, writer, this.mucRepository, scriptCommands,

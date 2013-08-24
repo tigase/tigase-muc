@@ -38,6 +38,7 @@ import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.Affiliation;
 import tigase.muc.DateUtil;
+import tigase.muc.Ghostbuster2;
 import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
@@ -371,6 +372,8 @@ public class PresenceModule extends AbstractModule {
 
 	private boolean filterEnabled = true;
 
+	private Ghostbuster2 ghostbuster;
+
 	private final HistoryProvider historyProvider;
 
 	private boolean lockNewRoom = true;
@@ -389,11 +392,12 @@ public class PresenceModule extends AbstractModule {
 	 * @param mucLogger
 	 */
 	public PresenceModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository,
-			HistoryProvider historyProvider, DelDeliverySend sender, MucLogger mucLogger) {
+			HistoryProvider historyProvider, DelDeliverySend sender, MucLogger mucLogger, Ghostbuster2 ghostbuster) {
 		super(config, writer, mucRepository);
 		this.historyProvider = historyProvider;
 		this.mucLogger = mucLogger;
 		this.filterEnabled = config.isPresenceFilterEnabled();
+		this.ghostbuster = ghostbuster;
 		allowedElements.add(ElementCriteria.name("show"));
 		allowedElements.add(ElementCriteria.name("status"));
 		allowedElements.add(ElementCriteria.name("priority"));
@@ -488,6 +492,7 @@ public class PresenceModule extends AbstractModule {
 
 		Collection<JID> occupantJIDs = new ArrayList<JID>(room.getOccupantsJidsByNickname(leavingNickname));
 		boolean nicknameGone = room.removeOccupant(senderJID);
+		ghostbuster.remove(senderJID, room);
 
 		room.updatePresenceByJid(senderJID, null);
 
@@ -523,6 +528,7 @@ public class PresenceModule extends AbstractModule {
 			}
 		} else {
 			occupantJIDs = new ArrayList<JID>(room.getOccupantsJidsByNickname(leavingNickname));
+
 			Element pe = room.getLastPresenceCopyByJid(senderJID.getBareJID());
 			for (String occupantNickname : room.getOccupantsNicknames()) {
 				for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
@@ -818,6 +824,7 @@ public class PresenceModule extends AbstractModule {
 					+ " as role=" + newRole.name() + ", affiliation=" + affiliation.name());
 		}
 		room.addOccupantByJid(senderJID, nickname, newRole);
+		ghostbuster.add(senderJID, room);
 
 		Element pe = clonePresence(element);
 
