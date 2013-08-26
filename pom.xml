@@ -123,6 +123,17 @@
 			</plugin>
 
 		</plugins>
+
+
+		<resources>
+			<resource>
+				<directory>src/main/groovy/muc</directory>
+        <includes>
+          <include>**/*.groovy</include>
+        </includes>
+			</resource>
+		</resources>
+
 		<extensions>
 			<extension>
 				<groupId>org.apache.maven.wagon</groupId>
