@@ -8,7 +8,7 @@
 	<groupId>tigase</groupId>
 	<artifactId>tigase-muc</artifactId>
 	<name>Tigase MUC</name>
-	<version>2.2.0-tigase-5.2.0-beta3</version>
+	<version>2.2.0-SNAPSHOT</version>
 	<packaging>bundle</packaging>
 	<description>Multi User Chat component for Tigase</description>
 	<url>https://projects.tigase.org/projects/tigase-muc</url>
