@@ -105,11 +105,21 @@ public class GroupchatMessageModule extends AbstractModule {
 	 */
 	private void addMessageToHistory(Room room, final Element message, String body, JID senderJid, String senderNickname,
 			Date time) {
-		if (historyProvider != null) {
-			historyProvider.addMessage(room, filterEnabled ? null : message, body, senderJid, senderNickname, time);
+		try {
+			if (historyProvider != null) {
+				historyProvider.addMessage(room, filterEnabled ? null : message, body, senderJid, senderNickname, time);
+			}
+		} catch (Exception e) {
+			if (log.isLoggable(Level.WARNING))
+				log.log(Level.WARNING, "Can't add message to history!", e);
 		}
-		if ((mucLogger != null) && room.getConfig().isLoggingEnabled()) {
-			mucLogger.addMessage(room, body, senderJid, senderNickname, time);
+		try {
+			if ((mucLogger != null) && room.getConfig().isLoggingEnabled()) {
+				mucLogger.addMessage(room, body, senderJid, senderNickname, time);
+			}
+		} catch (Exception e) {
+			if (log.isLoggable(Level.WARNING))
+				log.log(Level.WARNING, "Can't add message to log!", e);
 		}
 	}
 
@@ -122,12 +132,24 @@ public class GroupchatMessageModule extends AbstractModule {
 	 */
 	private void addSubjectChangeToHistory(Room room, Element message, final String subject, JID senderJid,
 			String senderNickname, Date time) {
-		if (historyProvider != null) {
-			historyProvider.addSubjectChange(room, filterEnabled ? null : message, subject, senderJid, senderNickname, time);
+		try {
+			if (historyProvider != null) {
+				historyProvider.addSubjectChange(room, filterEnabled ? null : message, subject, senderJid, senderNickname, time);
+			}
+		} catch (Exception e) {
+			if (log.isLoggable(Level.WARNING))
+				log.log(Level.WARNING, "Can't add subject change to history!", e);
 		}
-		if ((mucLogger != null) && room.getConfig().isLoggingEnabled()) {
-			mucLogger.addSubjectChange(room, subject, senderJid, senderNickname, time);
+
+		try {
+			if ((mucLogger != null) && room.getConfig().isLoggingEnabled()) {
+				mucLogger.addSubjectChange(room, subject, senderJid, senderNickname, time);
+			}
+		} catch (Exception e) {
+			if (log.isLoggable(Level.WARNING))
+				log.log(Level.WARNING, "Can't add subject change to log!", e);
 		}
+
 	}
 
 	// ~--- get methods
