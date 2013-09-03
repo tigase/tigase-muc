@@ -57,6 +57,9 @@ public class HistoryManagerFactory {
 			} else if (cl.contains("pgsql")) {
 				DataRepository dataRepository = RepositoryFactory.getDataRepository(null, uri, null);
 				return new PostgreSqlHistoryProvider(dataRepository);
+			} else if (cl.contains("sqlserver")) {
+				DataRepository dataRepository = RepositoryFactory.getDataRepository(null, uri, null);
+				return new SqlserverSqlHistoryProvider(dataRepository);
 			}
 
 			else
