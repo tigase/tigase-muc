@@ -213,6 +213,9 @@ public abstract class AbstractComponent<T extends ComponentConfig>
 	 */
 	@Override
 	public void processPacket(Packet packet) {
+		if (log.isLoggable(Level.FINER)) {
+			log.finer("Received: " + packet.getElement());
+		}
 		if (packet.isCommand()) {
 			processCommandPacket(packet);
 		} else {
