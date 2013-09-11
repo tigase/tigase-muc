@@ -33,7 +33,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.muc.modules.PresenceModule;
-import tigase.server.Iq;
 import tigase.server.Packet;
 import tigase.server.ReceiverTimeoutHandler;
 import tigase.util.TigaseStringprepException;
@@ -64,6 +63,8 @@ public class Ghostbuster2 {
 
 	}
 
+	private static long idCounter;
+
 	private static final Set<String> intReasons = new HashSet<String>() {
 		private static final long serialVersionUID = 1L;
 		{
@@ -77,7 +78,6 @@ public class Ghostbuster2 {
 	};
 
 	public static final Set<String> R = Collections.unmodifiableSet(intReasons);
-	private long idCounter;
 
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 
