@@ -33,6 +33,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.muc.modules.PresenceModule;
+import tigase.server.Iq;
 import tigase.server.Packet;
 import tigase.server.ReceiverTimeoutHandler;
 import tigase.util.TigaseStringprepException;
@@ -226,6 +227,7 @@ public class Ghostbuster2 {
 		ping.addChild(new Element("ping", new String[] { "xmlns" }, new String[] { "urn:xmpp:ping" }));
 
 		Packet packet = Packet.packetInstance(ping);
+		packet.setXMLNS(Packet.CLIENT_XMLNS);
 
 		mucComponent.addOutPacket(packet, pingHandler, 1, TimeUnit.MINUTES);
 
