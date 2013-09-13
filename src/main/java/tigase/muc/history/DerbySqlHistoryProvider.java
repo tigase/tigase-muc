@@ -47,7 +47,7 @@ import tigase.xmpp.JID;
  */
 public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 
-	public static final String ADD_MESSAGE_QUERY_VAL = "insert into muc_history (room_name, event_type, timestamp, sender_jid, sender_nickname, body, public_event, msg) values (?, 1, ?, ?, ?, ?, ?)";
+	public static final String ADD_MESSAGE_QUERY_VAL = "insert into muc_history (room_name, event_type, timestamp, sender_jid, sender_nickname, body, public_event, msg) values (?, 1, ?, ?, ?, ?, ?, ?)";
 
 	private static final String CREATE_MUC_HISTORY_TABLE_VAL = "create table muc_history (" + "room_name char(128) NOT NULL,\n"
 			+ "event_type int, \n" + "timestamp TIMESTAMP,\n" + "sender_jid varchar(2049),\n" + "sender_nickname char(128),\n"
