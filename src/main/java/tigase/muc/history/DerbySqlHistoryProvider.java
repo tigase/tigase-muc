@@ -25,7 +25,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Map;
@@ -99,7 +98,7 @@ public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(), GET_MESSAGES_SINCE_QUERY_KEY);
 				synchronized (st) {
 					st.setString(1, roomJID);
-					st.setTimestamp(2, new java.sql.Timestamp(since.getTime()));
+					st.setLong(2, since.getTime());
 					rs = st.executeQuery();
 					processResultSet(room, senderJID, writer, maxStanzas, rs);
 				}
@@ -116,7 +115,7 @@ public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(), GET_MESSAGES_SINCE_QUERY_KEY);
 				synchronized (st) {
 					st.setString(1, roomJID);
-					st.setTimestamp(2, new java.sql.Timestamp(new Date().getTime() - seconds * 1000));
+					st.setLong(2, new Date().getTime() - seconds * 1000);
 					rs = st.executeQuery();
 					processResultSet(room, senderJID, writer, maxStanzas, rs);
 				}
@@ -184,7 +183,7 @@ public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 		ArrayList<Packet> result = new ArrayList<Packet>();
 		for (; rs.next() && (maxStanzas == null || maxStanzas > i); i++) {
 			String msgSenderNickname = rs.getString("sender_nickname");
-			Timestamp msgTimestamp = rs.getTimestamp("timestamp");
+			Date msgTimestamp = new Date(rs.getLong("timestamp"));
 			String msgSenderJid = rs.getString("sender_jid");
 			String body = rs.getString("body");
 			String msg = rs.getString("msg");

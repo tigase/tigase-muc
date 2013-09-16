@@ -102,7 +102,6 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 					st.setInt(1, maxMessages);
 					st.setString(2, roomJID);
 					st.setLong(3, since.getTime());
-					System.out.println( "getHistoryMessages: " + st + " || \t " + GET_MESSAGES_SINCE_QUERY_KEY );
 					rs = st.executeQuery();
 					processResultSet(room, senderJID, writer, rs);
 				}
@@ -129,7 +128,6 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 					st.setString(2, roomJID);
 					st.setLong(3, new Date().getTime() - seconds * 1000);
 					rs = st.executeQuery();
-					System.out.println( "getHistoryMessages: " + st + " || \t " + GET_MESSAGES_SINCE_QUERY_KEY );
 					processResultSet(room, senderJID, writer, rs);
 				}
 			} else {
