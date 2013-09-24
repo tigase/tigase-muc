@@ -115,6 +115,7 @@
 				<configuration>
 					<instructions combine.inherited="append">
 						<manifestLocation>src/main/resources/META-INF/MANIFEST.MF</manifestLocation>
+						<Implementation-Title>${project.name}</Implementation-Title>
 						<Implementation-Version>${project.version}-b${gitVersion}/${buildNumber}</Implementation-Version>
 						<Implementation-Build>${gitVersion}/${buildNumber} (${maven.build.timestamp})</Implementation-Build>
 						<Bundle-Activator>tigase.muc.Activator</Bundle-Activator>
