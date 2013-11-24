@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<maven.build.timestamp.format>yyyy-MM-dd/HH:mm:ss</maven.build.timestamp.format>
+	</properties>
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>tigase</groupId>
+	<artifactId>tigase-acs-muc</artifactId>
+	<name>Tigase ACS - MUC Component</name>
+	<version>1.0.0-SNAPSHOT</version>
+	<description>Tigase Advanced Clustering Strategy - MUC Component</description>
+	<url>https://projects.tigase.org/projects/tigase-acs-muc</url>
+	<issueManagement>
+		<system>Redmine</system>
+		<url>https://projects.tigase.org/projects/tigase-acs-muc</url>
+	</issueManagement>
+	<developers>
+		<developer>
+			<name>Artur Hefczyc</name>
+			<roles>
+				<role>architect</role>
+				<role>developer</role>
+			</roles>
+		</developer>
+	</developers>
+	<licenses>
+		<license>
+			<name>Tigase ACS</name>
+			<url>https://projects.tigase.org/projects/tigase-acs-muc/repository/revisions/master/entry/COPYING</url>
+		</license>
+	</licenses>
+	<scm>
+		<connection>scm:git:https://svn.tigase.org/git/tigase-acs-muc.git</connection>
+		<developerConnection>scm:git:https://svn.tigase.org/git/tigase-acs-muc.git</developerConnection>
+		<url>https://projects.tigase.org/projects/tigase-acs-muc/repository</url>
+	</scm>
+	<organization>
+		<name>Tigase</name>
+		<url>http://www.tigase.com</url>
+	</organization>
+	<build>
+		<finalName>${project.artifactId}-${project.version}</finalName>
+		<plugins>
+			<plugin>
+				<groupId>org.codehaus.mojo</groupId>
+				<artifactId>buildnumber-maven-plugin</artifactId>
+				<version>1.2</version>
+				<configuration>
+					<timestampFormat>{0,date} {0,time}</timestampFormat>
+					<doCheck>false</doCheck>
+					<doUpdate>false</doUpdate>
+					 <shortRevisionLength>8</shortRevisionLength>
+				</configuration>
+				<executions>
+					<execution>
+						<phase>validate</phase>
+						<goals>
+							<goal>create</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.codehaus.gmaven</groupId>
+				<artifactId>gmaven-plugin</artifactId>
+				<version>1.5</version>
+				<executions>
+					<execution>
+						<id>gitver</id>
+						<phase>validate</phase>
+						<goals>
+							<goal>execute</goal>
+						</goals>
+						<configuration>
+							<providerSelection>2.0</providerSelection>
+							<properties>
+								<script>git rev-list master --count</script>
+							</properties>
+							<source>
+								def command = project.properties.script
+								def process = command.execute()
+								process.waitFor()
+
+								def describe = process.in.text.trim()
+								println "setting revision to: " + describe
+
+								project.properties.setProperty('gitVersion',describe)
+							</source>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<version>2.5.1</version>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.7</source>
+					<target>1.7</target>
+					<encoding>UTF-8</encoding>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-jar-plugin</artifactId>
+				<version>2.1</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<packageName>tigase.muc.cluster</packageName>
+							<addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+						</manifest>
+						<manifestEntries>
+							<Implementation-Title>${project.description}</Implementation-Title>
+							<Implementation-Version>${project.version}-b${gitVersion}/${buildNumber}</Implementation-Version>
+							<Implementation-Build>${gitVersion}/${buildNumber} (${maven.build.timestamp})</Implementation-Build>
+						</manifestEntries>
+					</archive>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.3</version>
+				<configuration>
+					<descriptors>
+						<descriptor>src/main/assembly/dist.xml</descriptor>
+					</descriptors>
+					<finalName>${project.artifactId}</finalName>
+					<appendAssemblyId>false</appendAssemblyId>
+				</configuration>
+			</plugin>
+		</plugins>
+		<extensions>
+			<extension>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ssh-external</artifactId>
+				<version>2.2</version>
+			</extension>
+			<extension>
+				<groupId>org.apache.maven.wagon</groupId>
+				<artifactId>wagon-ssh</artifactId>
+				<version>2.2</version>
+			</extension>
+		</extensions>
+	</build>
+	<dependencies>
+		<dependency>
+			<groupId>junit</groupId>
+			<artifactId>junit</artifactId>
+			<version>4.10</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>tigase</groupId>
+			<artifactId>tigase-server</artifactId>
+			<version>5.2.0-SNAPSHOT</version>
+			<scope>compile</scope>
+		</dependency>
+		<!-- <dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>licence-lib</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+			<scope>compile</scope>
+		</dependency>
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>tigase-stats-collector-provider</artifactId>
+			<version>1.0.0-SNAPSHOT</version>
+			<scope>compile</scope>
+		</dependency> -->
+		<dependency>
+			<groupId>${project.groupId}</groupId>
+			<artifactId>tigase-muc</artifactId>
+			<version>2.2.0-SNAPSHOT</version>
+			<scope>compile</scope>
+		</dependency>
+	</dependencies>
+        <repositories>
+                <repository>
+                        <id>tigase</id>
+                        <name>Tigase repository</name>
+                        <url>http://maven.tigase.org</url>
+                </repository>
+                <repository>
+                        <id>tigase-snapshot</id>
+                        <name>Tigase repository</name>
+                        <url>http://build.xmpp-test.net/maven/</url>
+                        <snapshots>
+                                <enabled>true</enabled>
+                        </snapshots>
+                </repository>
+        </repositories>
+</project>
