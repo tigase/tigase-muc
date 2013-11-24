@@ -38,6 +38,7 @@ import javax.script.Bindings;
 
 import tigase.component.AbstractComponent;
 import tigase.component.ElementWriter;
+import tigase.component.exceptions.RepositoryException;
 import tigase.conf.Configurable;
 import tigase.db.RepositoryFactory;
 import tigase.db.UserRepository;
@@ -164,6 +165,9 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		return new MucConfig(abstractComponent);
 	}
 
+	protected IMucRepository createMucRepository(MucConfig componentConfig, MucDAO dao) throws RepositoryException {
+		return new InMemoryMucRepository(componentConfig, dao);	
+	}
 	@Override
 	public synchronized void everyHour() {
 		super.everyHour();
@@ -489,7 +493,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 				}
 
 				dao = new MucDAO(this.componentConfig, this.userRepository);
-				mucRepository = new InMemoryMucRepository(this.componentConfig, dao);
+				mucRepository = createMucRepository(this.componentConfig, dao);
 			} catch (Exception e) {
 				if (log.isLoggable(Level.SEVERE))
 					log.severe("Can't initialize MUC repository: " + e);

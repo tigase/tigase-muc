@@ -61,6 +61,12 @@ public class Room {
 
 		void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation);
 	}
+	
+	public static interface RoomOccupantListener {
+		void onOccupantAdded(Room room, JID occupantJid);
+		
+		void onOccupantRemoved(Room room, JID occupantJid);
+	}
 
 	/**
 	 * <bareJID, Affiliation>
@@ -79,6 +85,8 @@ public class Room {
 	 * < nickname,real JID>
 	 */
 	private final TwoHashBidiMap<String, OccupantEntry> occupants = new TwoHashBidiMap<String, OccupantEntry>();
+	
+	private final List<RoomOccupantListener> occupantListeners = new CopyOnWriteArrayList<RoomOccupantListener>();
 
 	private final PresenceStore presences = new PresenceStore();
 
@@ -119,6 +127,10 @@ public class Room {
 		this.listeners.add(listener);
 	}
 
+	public void addOccupantListener(RoomOccupantListener listener) {
+		this.occupantListeners.add(listener);
+	}
+	
 	/**
 	 * @param senderJid
 	 * @param nickName
@@ -132,9 +144,12 @@ public class Room {
 		}
 
 		entry.role = role;
+		boolean added = false;
 		synchronized (entry.jids) {
-			entry.jids.add(senderJid);
+			added = entry.jids.add(senderJid);
 		}
+		if (added)
+			fireOnOccupantAdded(senderJid);
 	}
 
 	/**
@@ -149,6 +164,18 @@ public class Room {
 		this.occupants.put(nickName, occ);
 	}
 
+	private void fireOnOccupantAdded(JID occupantJid) {
+		for (RoomOccupantListener listener : this.occupantListeners) {
+			listener.onOccupantAdded(this, occupantJid);
+		}
+	}
+	
+	private void fireOnOccupantRemoved(JID occupantJid) {
+		for (RoomOccupantListener listener : this.occupantListeners) {
+			listener.onOccupantRemoved(this, occupantJid);
+		}		
+	}
+	
 	private void fireOnSetAffiliation(BareJID jid, Affiliation affiliation) {
 		for (RoomListener listener : this.listeners) {
 			listener.onSetAffiliation(this, jid, affiliation);
@@ -370,6 +397,7 @@ public class Room {
 					return true;
 				}
 			}
+			fireOnOccupantRemoved(jid);
 		}
 		return false;
 	}
@@ -378,7 +406,12 @@ public class Room {
 	 * @param occupantNick
 	 */
 	public void removeOccupant(String occupantNick) {
-		this.occupants.remove(occupantNick);
+		OccupantEntry e = this.occupants.remove(occupantNick);
+		if (e != null) {
+			for (JID jid : e.jids) {
+				fireOnOccupantRemoved(jid);
+			}
+		}
 	}
 
 	/**
