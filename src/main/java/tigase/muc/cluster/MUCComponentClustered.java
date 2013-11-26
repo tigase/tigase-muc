@@ -49,6 +49,11 @@ public class MUCComponentClustered extends MUCComponent
 	private StrategyIfc strategy;
 
 	@Override
+	public boolean addOutPacket(Packet packet) {
+		return super.addOutPacket(packet);
+	}
+	
+	@Override
 	protected IMucRepository createMucRepository(MucConfig componentConfig, MucDAO dao) throws RepositoryException {
 		InMemoryMucRepositoryClustered repo = new InMemoryMucRepositoryClustered(componentConfig, dao);
 		strategy.setMucRepository(repo);

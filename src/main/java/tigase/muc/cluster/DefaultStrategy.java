@@ -42,10 +42,12 @@ import tigase.cluster.api.CommandListenerAbstract;
 import tigase.muc.MUCComponent;
 import tigase.muc.Room;
 import tigase.server.Packet;
+import tigase.server.Presence;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+import tigase.xmpp.XMPPImplIfc;
 
 /**
  *
@@ -67,9 +69,10 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 	private CopyOnWriteArrayList<JID> connectedNodes = new CopyOnWriteArrayList<JID>();
 	private ClusterControllerIfc cl_controller;
 	private JID localNodeJid;
-	private MUCComponent muc;
+	private MUCComponentClustered muc;
 	private OccupantAddedCmd occupantAddedCmd = new OccupantAddedCmd();
 	private OccupantRemovedCmd occupantRemovedCmd = new OccupantRemovedCmd();
+	private NodeShutdownCmd nodeShutdownCmd = new NodeShutdownCmd();
 	private PacketForwardCmd packetForwardCmd = new PacketForwardCmd();
 	private RequestSyncCmd requestSyncCmd = new RequestSyncCmd();
 	private ResponseSyncCmd responseSyncCmd = new ResponseSyncCmd();
@@ -142,19 +145,43 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 			connectedNodes.remove(nodeJid);
 		}
 		
+		int localNodeIdx = connectedNodes.indexOf(localNodeJid);
 		// we need to properly handle disconnect!
+		Iterator<Map.Entry<BareJID,JID>> iter = roomsPerNode.entrySet().iterator();
+		while (iter.hasNext()) {
+			Map.Entry<BareJID,JID> entry = iter.next();
+			if (!nodeJid.equals(entry.getValue()))
+				continue;
+				
+			iter.remove();
+			BareJID roomJid = entry.getKey();			
+			Set<JID> occupants = occupantsPerRoom.remove(roomJid);
+			
+			// spliting between nodes - we send kicks for room if only if we should
+			if ((roomJid.hashCode() % connectedNodes.size()) != localNodeIdx)
+				continue;			
+			
+			if (occupants != null) {
+				synchronized(occupants) {
+					for (JID occupant : occupants) {
+						sendKickOnNodeDisconnect(roomJid, occupant);
+					}
+				}
+			}
+		}
 	}
 
 	@Override
 	public void setClusterController(ClusterControllerIfc cl_controller) {
 		if (this.cl_controller != null) {
-			cl_controller.removeCommandListener(roomCreatedCmd);
-			cl_controller.removeCommandListener(roomDestroyedCmd);
-			cl_controller.removeCommandListener(occupantAddedCmd);
-			cl_controller.removeCommandListener(occupantRemovedCmd);
-			cl_controller.removeCommandListener(packetForwardCmd);
-			cl_controller.removeCommandListener(requestSyncCmd);
-			cl_controller.removeCommandListener(responseSyncCmd);
+			this.cl_controller.removeCommandListener(roomCreatedCmd);
+			this.cl_controller.removeCommandListener(roomDestroyedCmd);
+			this.cl_controller.removeCommandListener(occupantAddedCmd);
+			this.cl_controller.removeCommandListener(occupantRemovedCmd);
+			this.cl_controller.removeCommandListener(packetForwardCmd);
+			this.cl_controller.removeCommandListener(requestSyncCmd);
+			this.cl_controller.removeCommandListener(responseSyncCmd);
+			this.cl_controller.removeCommandListener(nodeShutdownCmd);
 		}
 		this.cl_controller = cl_controller;
 		this.cl_controller.setCommandListener(roomCreatedCmd);
@@ -164,6 +191,7 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 		this.cl_controller.setCommandListener(packetForwardCmd);
 		this.cl_controller.setCommandListener(requestSyncCmd);
 		this.cl_controller.setCommandListener(responseSyncCmd);
+		this.cl_controller.setCommandListener(nodeShutdownCmd);
 	}
 
 	@Override
@@ -221,6 +249,22 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 		nodeConnected(localNodeJid);
 	}
 
+	private void sendKickOnNodeDisconnect(BareJID roomJid, JID occupant) {
+		try {
+			Element presenceEl = new Element("presence", new String[]{"xmlns", "from", "to", "type"},
+					new String[]{Presence.CLIENT_XMLNS, roomJid.toString(), occupant.toString(), "unavailable"});
+			Element x = new Element("x", new String[]{"xmlns"}, new String[]{"http://jabber.org/protocol/muc#user"});
+			presenceEl.addChild(x);
+			Element item = new Element("item", new String[]{"role"}, new String[]{"none"});
+			x.addChild(item);
+			item.addChild(new Element("reason", "MUC component is disconnected."));
+			x.addChild(new Element("status", new String[]{"code"}, new String[]{"307"}));
+			muc.addOutPacket(Packet.packetInstance(presenceEl));
+		} catch (TigaseStringprepException ex) {
+			log.log(Level.FINE, "Problem on throwing out occupant {0} on node disconnection", new Object[]{occupant});
+		}	
+	}
+	
 	private void sort(List<JID> list) {
 		JID[] array = list.toArray(new JID[list.size()]);
 
@@ -228,7 +272,7 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 		list.clear();
 		list.addAll(Arrays.asList(array));
 	}
-
+	
 	@Override
 	public void onRoomCreated(Room room) {
 		roomsPerNode.put(room.getRoomJID(), localNodeJid);
