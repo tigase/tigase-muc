@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,7 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 		InMemoryMucRepositoryClustered.RoomListener {
 
 	private static final Logger log = Logger.getLogger(DefaultStrategy.class.getCanonicalName());
+	private static final String NODE_SHUTDOWN_CMD = "muc-node-shutdown-cmd";
 	private static final String OCCUPANT_ADDED_CMD = "muc-occupant-added-cmd";
 	private static final String OCCUPANT_REMOVED_CMD = "muc-occupant-removed-cmd";
 	private static final String PACKET_FORWARD_CMD = "muc-packet-forward-cmd";
@@ -139,6 +141,8 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 		synchronized (connectedNodes) {
 			connectedNodes.remove(nodeJid);
 		}
+		
+		// we need to properly handle disconnect!
 	}
 
 	@Override
@@ -197,6 +201,21 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 		this.mucRepository = mucRepository;
 	}
 
+	@Override
+	public void start() {
+		
+	}
+	
+	@Override
+	public void stop() {
+		// if we are stopping this node, we need to notify other nodes that we 
+		// will send informations about destroying/going offline of rooms 
+		// hosted by this node
+		List<JID> toNodes = getAllNodes();
+		toNodes.remove(localNodeJid);		
+		cl_controller.sendToNodes(NODE_SHUTDOWN_CMD, localNodeJid, toNodes.toArray(new JID[toNodes.size()]));
+	}
+	
 	protected void setLocalNodeJid(JID jid) {
 		this.localNodeJid = jid;
 		nodeConnected(localNodeJid);
@@ -303,6 +322,28 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 			roomsPerNode.remove(roomJid, fromNode);
 			occupantsPerRoom.remove(roomJid);
 		}
+	}
+	
+	private class NodeShutdownCmd extends CommandListenerAbstract {
+
+		public NodeShutdownCmd() {
+			super(NODE_SHUTDOWN_CMD);
+		}
+		
+		@Override
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes, 
+				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
+			Iterator<Map.Entry<BareJID,JID>> iter = roomsPerNode.entrySet().iterator();
+			while (iter.hasNext()) {
+				Map.Entry<BareJID,JID> entry = iter.next();
+				if (!fromNode.equals(entry.getValue()))
+					continue;
+				
+				iter.remove();
+				occupantsPerRoom.remove(entry.getKey());
+			}
+		}
+		
 	}
 
 	private class OccupantAddedCmd extends CommandListenerAbstract {

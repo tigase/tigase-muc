@@ -100,4 +100,16 @@ public class MUCComponentClustered extends MUCComponent
 		}
 		super.setProperties(props);
 	}
+	
+	@Override
+	public void start() {
+		super.start();
+		strategy.start();
+	}
+	
+	@Override
+	public void stop() {
+		strategy.stop();
+		super.stop();
+	}
 }
