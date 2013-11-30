@@ -95,7 +95,7 @@ public class MUCComponentClustered extends MUCComponent
 	@Override
 	public void start() {
 		super.start();
-		strategy.start();
+		//strategy.start();
 	}
 	
 	@Override
