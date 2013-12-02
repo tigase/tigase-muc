@@ -17,6 +17,7 @@ import tigase.muc.MUCComponent;
 import tigase.muc.MucConfig;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.MucDAO;
+import tigase.server.ComponentInfo;
 import tigase.server.Packet;
 import tigase.xmpp.JID;
 
@@ -33,6 +34,8 @@ public class MUCComponentClustered extends MUCComponent
 	private static final String DEF_STRATEGY_CLASS_VAL = DefaultStrategy.class.getCanonicalName();
 	private static final String STRATEGY_CLASS_KEY = "muc-strategy-class";
 	private StrategyIfc strategy;
+
+	private ComponentInfo         cmpInfo           = null;
 
 	@Override
 	public boolean addOutPacket(Packet packet) {
@@ -103,4 +106,20 @@ public class MUCComponentClustered extends MUCComponent
 		strategy.stop();
 		super.stop();
 	}
+
+	/**
+	 * Allows to obtain various informations about components
+	 *
+	 * @return information about particular component
+	 */
+	@Override
+	public ComponentInfo getComponentInfo() {
+		cmpInfo = super.getComponentInfo();
+		cmpInfo.getComponentData().put("MUC ClusteringStrategy", (strategy != null)
+				? strategy.getClass()
+				: null);
+
+		return cmpInfo;
+	}
+	
 }
