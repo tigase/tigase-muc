@@ -96,7 +96,7 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 	}
 
 	public List<JID> getAllNodes() {
-		return new ArrayList(connectedNodes);
+		return connectedNodes;
 	}
 
 	/**

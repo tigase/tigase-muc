@@ -8,21 +8,17 @@
 package tigase.muc.cluster;
 
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import tigase.cluster.api.ClusterControllerIfc;
-import tigase.cluster.api.ClusteredComponentIfc;
+import java.util.logging.*;
+import tigase.cluster.api.*;
 import tigase.component.exceptions.RepositoryException;
-import tigase.muc.MUCComponent;
-import tigase.muc.MucConfig;
-import tigase.muc.repository.IMucRepository;
-import tigase.muc.repository.MucDAO;
-import tigase.server.ComponentInfo;
-import tigase.server.Packet;
+import tigase.licence.*;
+import tigase.muc.*;
+import tigase.muc.repository.*;
+import tigase.server.*;
 import tigase.xmpp.JID;
 
 /**
- * MUCComponent is class implementing clusering support for MUCComponent.
+ * MUCComponent is class implementing clustering support for MUCComponent.
  *
  * @author andrzej
  */
@@ -35,7 +31,13 @@ public class MUCComponentClustered extends MUCComponent
 	private static final String STRATEGY_CLASS_KEY = "muc-strategy-class";
 	private StrategyIfc strategy;
 
+	protected LicenceChecker licenceChecker;
+
 	private ComponentInfo         cmpInfo           = null;
+
+	public MUCComponentClustered() {
+		licenceChecker = LicenceChecker.getLicenceChecker( "acs-muc" );
+	}
 
 	@Override
 	public boolean addOutPacket(Packet packet) {
@@ -115,7 +117,7 @@ public class MUCComponentClustered extends MUCComponent
 	@Override
 	public ComponentInfo getComponentInfo() {
 		cmpInfo = super.getComponentInfo();
-		cmpInfo.getComponentData().put("MUC ClusteringStrategy", (strategy != null)
+		cmpInfo.getComponentData().put("MUCClusteringStrategy", (strategy != null)
 				? strategy.getClass()
 				: null);
 

@@ -7,10 +7,10 @@
  */
 package tigase.muc.cluster;
 
+import java.util.List;
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.server.Packet;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
+import tigase.xmpp.*;
 
 /**
  *
@@ -54,7 +54,14 @@ public interface StrategyIfc {
 	 * @return true if packet was fully processed
 	 */
 	boolean processPacket(Packet packet);
-	
+
+	/**
+	 * The method returns all cluster nodes currently connected to the cluster.
+	 *
+	 * @return List of all cluster nodes currently connected to the cluster.
+	 */
+	List<JID> getAllNodes();
+
 	/**
 	 * Retrieve JID of node which is hosting this room
 	 * 
@@ -64,7 +71,7 @@ public interface StrategyIfc {
 	JID getNodeForRoom(BareJID roomJid);
 	
 	/**
-	 * Setter to pass instnace of InMemoryMucRepositoryClustered
+	 * Setter to pass instance of InMemoryMucRepositoryClustered
 	 * 
 	 * @param mucRepository 
 	 */
