@@ -113,9 +113,24 @@
 				</executions>
 				<configuration>
 					<options>
+						<option>-printseeds</option>
+						<option>-verbose</option>
+
 						<option>-allowaccessmodification</option>
+
+						<!--<option>-dontwarn</option>-->
+						<option>-dontshrink</option>
+						<option>-dontoptimize</option>
+
+						<option>-renamesourcefileattribute SourceFile</option>
+
+						<option>-keeppackagenames</option>
+						<option>-keepparameternames</option>
+
 						<option>-keep public class * {public protected *;}</option>
-						<option>-keep class tigase.muc.cluster.StrategyIfc</option>
+
+						<option>-keepattributes Exceptions,InnerClasses,Signature,
+							Deprecated,SourceFile,LineNumberTable,*Annotation*,EnclosingMethod</option>
 					</options>
 					<libs>
 						<lib>${java.home}/lib/rt.jar</lib>
