@@ -231,4 +231,16 @@
 			</snapshots>
 		</repository>
 	</repositories>
+	<distributionManagement>
+		<repository>
+			<id>tigase</id>
+			<name>Tigase repository</name>
+			<url>scp://maven.tigase.org:/home/webapp/maven-repository</url>
+		</repository>
+		<snapshotRepository>
+			<id>tigase-snapshot</id>
+			<name>Tigase snapshot repository</name>
+			<url>scp://build.xmpp-test.net:/home/maven/repository</url>
+		</snapshotRepository>
+	</distributionManagement>
 </project>
