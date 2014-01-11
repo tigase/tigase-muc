@@ -7,7 +7,6 @@
  */
 package tigase.muc.cluster;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,7 +24,6 @@ import java.util.logging.Logger;
 import tigase.cluster.api.ClusterCommandException;
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
-import tigase.muc.MUCComponent;
 import tigase.muc.Room;
 import tigase.server.Packet;
 import tigase.server.Presence;
@@ -33,7 +31,6 @@ import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
-import tigase.xmpp.XMPPImplIfc;
 
 /**
  *
@@ -95,6 +92,7 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 		}
 	}
 
+	@Override
 	public List<JID> getAllNodes() {
 		return connectedNodes;
 	}
@@ -195,6 +193,10 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 			return false;
 		}
 
+		if (log.isLoggable(Level.FINER)) {
+			log.log(Level.FINER, "room = {0}, forwarding packet to node = {1}", new Object[] {
+				roomJid, nodeJid });
+		}
 		cl_controller.sendToNodes(PACKET_FORWARD_CMD, packet.getElement(), 
 				localNodeJid, null, nodeJid);
 		return true;
@@ -204,8 +206,15 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 	public JID getNodeForRoom(BareJID roomJid) {
 		JID nodeJid = roomsPerNode.get(roomJid);
 		if (nodeJid == null) {
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "room = {0}, not created on any node", roomJid);
+			}
 			int hash = roomJid.hashCode();
 			nodeJid = connectedNodes.get(Math.abs(hash) % connectedNodes.size());
+		}
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST, "room = {0}, selected node = {1} to handle this room", 
+					new Object[] { roomJid, nodeJid });
 		}
 		return nodeJid;
 	}
@@ -269,6 +278,19 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
+		
+		if (log.isLoggable(Level.FINEST)) {
+			StringBuilder buf = new StringBuilder(100);
+			for (JID node : toNodes) {
+				if (buf.length() > 0) {
+					buf.append(",");
+				}
+				buf.append(node.toString());
+			}
+			log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] that room is created",
+					new Object[] { room.getRoomJID(), buf });
+		}
+		
 		cl_controller.sendToNodes(ROOM_CREATED_CMD, data, localNodeJid,
 				toNodes.toArray(new JID[toNodes.size()]));
 	}
@@ -287,6 +309,19 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
+		
+		if (log.isLoggable(Level.FINEST)) {
+			StringBuilder buf = new StringBuilder(100);
+			for (JID node : toNodes) {
+				if (buf.length() > 0) {
+					buf.append(",");
+				}
+				buf.append(node.toString());
+			}
+			log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] that room is destroyed",
+					new Object[] { room.getRoomJID(), buf });
+		}		
+		
 		cl_controller.sendToNodes(ROOM_DESTROYED_CMD, data, localNodeJid,
 				toNodes.toArray(new JID[toNodes.size()]));
 	}
@@ -301,6 +336,19 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 			Map<String, String> data = new HashMap<String, String>();
 			data.put("room", room.getRoomJID().toString());
 			data.put("occupant-jid", occupantJid.toString());
+			
+			if (log.isLoggable(Level.FINEST)) {
+				StringBuilder buf = new StringBuilder(100);
+				for (JID node : toNodes) {
+					if (buf.length() > 0) {
+						buf.append(",");
+					}
+					buf.append(node.toString());
+				}
+				log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] that occupant {2} joined room {3}",
+						new Object[]{room.getRoomJID(), buf, occupantJid, room.getRoomJID()});
+			}
+		
 			cl_controller.sendToNodes(OCCUPANT_ADDED_CMD, data, localNodeJid,
 					toNodes.toArray(new JID[toNodes.size()]));
 		}
@@ -316,6 +364,19 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 			Map<String, String> data = new HashMap<String, String>();
 			data.put("room", room.getRoomJID().toString());
 			data.put("occupant-jid", occupantJid.toString());
+			
+			if (log.isLoggable(Level.FINEST)) {
+				StringBuilder buf = new StringBuilder(100);
+				for (JID node : toNodes) {
+					if (buf.length() > 0) {
+						buf.append(",");
+					}
+					buf.append(node.toString());
+				}
+				log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] that occupant {2} left room {3}",
+						new Object[]{room.getRoomJID(), buf, occupantJid, room.getRoomJID()});
+			}
+			
 			cl_controller.sendToNodes(OCCUPANT_REMOVED_CMD, data, localNodeJid,
 					toNodes.toArray(new JID[toNodes.size()]));
 		}
@@ -336,6 +397,10 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			roomsPerNode.put(roomJid, fromNode);
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "room = {0}, received notification that room {1} was created at node {2}", 
+						new Object[]{ roomJid, roomJid, fromNode});
+			}
 		}
 	}
 
@@ -351,6 +416,10 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			roomsPerNode.remove(roomJid, fromNode);
 			occupantsPerRoom.remove(roomJid);
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "room = {0}, received notification that room {1} was destroyed at node {2}", 
+						new Object[]{ roomJid, roomJid, fromNode});
+			}
 		}
 	}
 	
@@ -388,6 +457,10 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			JID occupantJid = JID.jidInstanceNS(data.get("occupant-jid"));
 			addOccupant(roomJid, occupantJid);
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "room = {0}, received notification that occupant {1} joined room {2} at node {3}", 
+						new Object[]{ roomJid, occupantJid, roomJid, fromNode});
+			}
 		}
 	}
 
@@ -403,6 +476,10 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			JID occupantJid = JID.jidInstanceNS(data.get("occupant-jid"));
 			removeOccupant(roomJid, occupantJid);
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "room = {0}, received notification that occupant {1} left room {2} at node {3}", 
+						new Object[]{ roomJid, occupantJid, roomJid, fromNode});
+			}
 		}
 	}
 
@@ -420,6 +497,10 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 					try {
 						Packet packet = Packet.packetInstance(elem);
 						muc.processPacket(packet);
+						if (log.isLoggable(Level.FINEST)) {
+							log.log(Level.FINEST, "received packet {0} forwarded from node {1}",
+									new Object[]{ packet, fromNode });
+						}
 					} catch (TigaseStringprepException ex) {
 						log.warning("Addressing problem, stringprep failed for packet: " + elem);
 					}
