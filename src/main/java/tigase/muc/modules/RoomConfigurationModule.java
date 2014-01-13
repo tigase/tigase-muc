@@ -211,14 +211,15 @@ public class RoomConfigurationModule extends AbstractModule {
 
 			if (room == null) {
 				writer.write(Packet.packetInstance(makeConfigFormIq(element.getElement(), repository.getDefaultRoomConfig())));
-			}
-			if (room.getAffiliation(senderJID.getBareJID()) != Affiliation.owner) {
-				throw new MUCException(Authorization.FORBIDDEN);
-			}
+			} else {
+				if (room.getAffiliation(senderJID.getBareJID()) != Affiliation.owner) {
+					throw new MUCException(Authorization.FORBIDDEN);
+				}
 
-			final Element response = makeConfigFormIq(element.getElement(), room.getConfig());
+				final Element response = makeConfigFormIq(element.getElement(), room.getConfig());
 
-			writer.write(Packet.packetInstance(response));
+				writer.write(Packet.packetInstance(response));
+			}
 		} catch (TigaseStringprepException e) {
 			throw new MUCException(Authorization.BAD_REQUEST);
 		}
