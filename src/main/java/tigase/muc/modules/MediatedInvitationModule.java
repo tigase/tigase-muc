@@ -40,6 +40,7 @@ import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+import tigase.xmpp.StanzaType;
 
 /**
  * @author bmalkow
@@ -93,12 +94,24 @@ public class MediatedInvitationModule extends AbstractModule {
 	 * @param roomJID
 	 * @param room
 	 * @param invite
+	 * @param senderRole
 	 * @throws TigaseStringprepException
 	 * @throws RepositoryException
+	 * @throws MUCException
 	 * 
 	 */
-	private void doInvite(Element invite, Room room, BareJID roomJID, JID senderJID, Affiliation senderAffiliation)
-			throws RepositoryException, TigaseStringprepException {
+	private void doInvite(Element invite, Room room, BareJID roomJID, JID senderJID, Role senderRole,
+			Affiliation senderAffiliation) throws RepositoryException, TigaseStringprepException, MUCException {
+
+		if (room == null)
+			throw new MUCException(Authorization.ITEM_NOT_FOUND);
+
+		if (!senderRole.isInviteOtherUsers())
+			throw new MUCException(Authorization.NOT_ALLOWED);
+
+		if (room.getConfig().isRoomMembersOnly() && !senderAffiliation.isEditMemberList())
+			throw new MUCException(Authorization.FORBIDDEN);
+
 		final Element reason = invite.getChild("reason");
 		final Element cont = invite.getChild("continue");
 		final JID recipient = JID.jidInstance(invite.getAttributeStaticStr(Packet.TO_ATT));
@@ -172,33 +185,21 @@ public class MediatedInvitationModule extends AbstractModule {
 
 			final Room room = repository.getRoom(roomJID);
 
-			if (room == null) {
-				throw new MUCException(Authorization.ITEM_NOT_FOUND);
-			}
-
 			final String nickName = room.getOccupantsNickname(senderJID);
 			final Role senderRole = room.getRole(nickName);
-
-			if (!senderRole.isInviteOtherUsers()) {
-				throw new MUCException(Authorization.NOT_ALLOWED);
-			}
-
 			final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID());
 
-			if (room.getConfig().isRoomMembersOnly() && !senderAffiliation.isEditMemberList()) {
-				throw new MUCException(Authorization.FORBIDDEN);
-			}
-
 			final Element x = element.getElement().getChild("x", "http://jabber.org/protocol/muc#user");
-			List<Element> ch = x.getChildren();
 
+			List<Element> ch = x.getChildren();
 			for (Element child : ch) {
-				if ("invite".equals(child.getName())) {
-					doInvite(child, room, roomJID, senderJID, senderAffiliation);
-				} else if ("decline".equals(child.getName())) {
+				if (element.getType() == StanzaType.error && "invite".equals(child.getName())) {
+					processInvitationErrorResponse(child, element.getErrorCondition(), roomJID, senderJID);
+				} else if ("invite".equals(child.getName()) && element.getType() != StanzaType.error) {
+					doInvite(child, room, roomJID, senderJID, senderRole, senderAffiliation);
+				} else if ("decline".equals(child.getName()) && element.getType() != StanzaType.error) {
 					doDecline(child, roomJID, senderJID);
 				}
-
 			}
 		} catch (MUCException e1) {
 			throw e1;
@@ -207,5 +208,26 @@ public class MediatedInvitationModule extends AbstractModule {
 
 			throw new RuntimeException(e);
 		}
+	}
+
+	private void processInvitationErrorResponse(Element invite, String errorCondition, BareJID roomJID, JID senderJID)
+			throws TigaseStringprepException {
+		final JID recipient = JID.jidInstance(invite.getAttributeStaticStr(Packet.FROM_ATT));
+
+		Packet resultMessage = Packet.packetInstance(new Element("message", new String[] { Packet.FROM_ATT, Packet.TO_ATT },
+				new String[] { roomJID.toString(), recipient.toString() }));
+		resultMessage.setXMLNS(Packet.CLIENT_XMLNS);
+
+		final Element resultX = new Element("x", new String[] { Packet.XMLNS_ATT },
+				new String[] { "http://jabber.org/protocol/muc#user" });
+		resultMessage.getElement().addChild(resultX);
+		final Element resultDecline = new Element("decline", new String[] { "from" }, new String[] { senderJID.toString() });
+		resultX.addChild(resultDecline);
+
+		Element reason = new Element("reason", "Your invitation is returned with error"
+				+ (errorCondition == null ? "." : (": " + errorCondition)));
+
+		resultDecline.addChild(reason);
+		writer.write(resultMessage);
 	}
 }
