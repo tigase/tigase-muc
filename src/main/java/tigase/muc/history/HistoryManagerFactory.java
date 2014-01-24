@@ -46,7 +46,9 @@ public class HistoryManagerFactory {
 			String cl = (String) params.get(DB_CLASS_KEY);
 			if (log.isLoggable(Level.CONFIG))
 				log.config("Used History Provider: " + cl);
-			if (cl.contains("memory")) {
+			if (cl.trim().equals("none")) {
+				return new NoneHistoryProvider();
+			} else if (cl.trim().equals("memory")) {
 				return new MemoryHistoryProvider();
 			} else if (cl.contains("mysql")) {
 				DataRepository dataRepository = RepositoryFactory.getDataRepository(null, uri, null);
