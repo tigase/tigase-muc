@@ -166,8 +166,9 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 	}
 
 	protected IMucRepository createMucRepository(MucConfig componentConfig, MucDAO dao) throws RepositoryException {
-		return new InMemoryMucRepository(componentConfig, dao);	
+		return new InMemoryMucRepository(componentConfig, dao);
 	}
+
 	@Override
 	public synchronized void everyHour() {
 		super.everyHour();
@@ -242,9 +243,6 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		String repo_class = (params.get(GEN_USER_DB) != null) ? (String) params.get(GEN_USER_DB) : DERBY_REPO_CLASS_PROP_VAL;
 		String repo_uri = (params.get(GEN_USER_DB_URI) != null) ? (String) params.get(GEN_USER_DB_URI)
 				: DERBY_REPO_URL_PROP_VAL;
-
-		props.put(MUC_REPO_CLASS_PROP_KEY, repo_class);
-		props.put(MUC_REPO_URL_PROP_KEY, repo_uri);
 
 		props.put(HistoryManagerFactory.DB_CLASS_KEY, repo_class);
 		props.put(HistoryManagerFactory.DB_URI_KEY, repo_uri);
@@ -481,17 +479,15 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 			log.config("Public Logging Allowed: " + this.componentConfig.isPublicLoggingEnabled());
 
 		if (userRepository == null) {
-			userRepository = (UserRepository) props.get(SHARED_USER_REPO_PROP_KEY);
-
 			try {
-				if (userRepository == null) {
-					String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
+				final String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
+				if (cls_name != null) {
 					String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
-
 					this.userRepository = RepositoryFactory.getUserRepository(cls_name, res_uri, null);
 					userRepository.initRepository(res_uri, null);
+				} else {
+					userRepository = (UserRepository) props.get(SHARED_USER_REPO_PROP_KEY);
 				}
-
 				dao = new MucDAO(this.componentConfig, this.userRepository);
 				mucRepository = createMucRepository(this.componentConfig, dao);
 			} catch (Exception e) {
