@@ -230,7 +230,12 @@ public class InMemoryMucRepository implements IMucRepository {
 	 */
 	@Override
 	public String getRoomName(String jid) throws RepositoryException {
-		return dao.getRoomName(jid);
+		Room r = rooms.get(BareJID.bareJIDInstanceNS(jid));
+		if (r != null) {
+			return r.getConfig().getRoomName();
+		} else {
+			return dao.getRoomName(jid);
+		}
 	}
 
 	/*
