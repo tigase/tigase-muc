@@ -31,8 +31,8 @@
 		</license>
 	</licenses>
 	<scm>
-		<connection>scm:git:https://svn.tigase.org/git/tigase-acs-muc.git</connection>
-		<developerConnection>scm:git:https://svn.tigase.org/git/tigase-acs-muc.git</developerConnection>
+		<connection>scm:git:https://repository.tigase.org/git/tigase-acs-muc.git</connection>
+		<developerConnection>scm:git:https://repository.tigase.org/git/tigase-acs-muc.git</developerConnection>
 		<url>https://projects.tigase.org/projects/tigase-acs-muc/repository</url>
 	</scm>
 	<organization>
