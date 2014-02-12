@@ -192,16 +192,17 @@ public class ModeratorModule extends AbstractModule {
 		final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(occupantNick);
 
 		for (JID jid : occupantJids) {
-			Element occupantKickPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
+			Packet occupantKickPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
 					occupantAffiliation, Role.none, occupantNick, reason, actor, codes.toArray(new String[] {}));
 
-			writer.write(Packet.packetInstance(occupantKickPresence));
+			writer.write(occupantKickPresence);
 		}
 		room.removeOccupant(occupantNick);
 	}
 
-	private Element makePresence(final JID destinationJid, final BareJID roomJID, final Room room, final BareJID occupantJid,
-			boolean unavailable, Affiliation affiliation, Role role, String nick, String reason, String actor, String... codes) {
+	private Packet makePresence(final JID destinationJid, final BareJID roomJID, final Room room, final BareJID occupantJid,
+			boolean unavailable, Affiliation affiliation, Role role, String nick, String reason, String actor, String... codes)
+			throws TigaseStringprepException {
 		Element presence = unavailable ? new Element("presence", new String[] { "type" }, new String[] { "unavailable" })
 				: room.getLastPresenceCopyByJid(occupantJid);
 
@@ -244,7 +245,10 @@ public class ModeratorModule extends AbstractModule {
 			}
 		}
 
-		return presence;
+		Packet result = Packet.packetInstance(presence);
+		result.setXMLNS(Packet.CLIENT_XMLNS);
+
+		return result;
 	}
 
 	/**
@@ -423,10 +427,10 @@ public class ModeratorModule extends AbstractModule {
 				final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(occupantNick);
 
 				for (JID jid : occupantJids) {
-					Element occupantKickPresence = makePresence(jid, room.getRoomJID(), room, occupantBareJid, isUnavailable,
+					Packet occupantKickPresence = makePresence(jid, room.getRoomJID(), room, occupantBareJid, isUnavailable,
 							newAffiliation, newRole, occupantNick, reason, actor, codes.toArray(new String[] {}));
 
-					writer.write(Packet.packetInstance(occupantKickPresence));
+					writer.write(occupantKickPresence);
 				}
 				room.removeOccupant(occupantNick);
 				ghostbuster.remove(occupantJids, room);
@@ -439,10 +443,10 @@ public class ModeratorModule extends AbstractModule {
 			for (JID jid : occupantJids) {
 				for (String removed : occupantsNicknames) {
 					final Role currentRole = room.getRole(removed);
-					Element occupantPresence = makePresence(jid, room.getRoomJID(), room, occupantBareJid, isUnavailable,
+					Packet occupantPresence = makePresence(jid, room.getRoomJID(), room, occupantBareJid, isUnavailable,
 							newAffiliation, currentRole, removed, reason, null, codes.toArray(new String[] {}));
 
-					writer.write(Packet.packetInstance(occupantPresence));
+					writer.write(occupantPresence);
 				}
 			}
 		}
@@ -462,10 +466,10 @@ public class ModeratorModule extends AbstractModule {
 			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(occupantNick);
 
 			for (JID jid : occupantJids) {
-				Element occupantKickPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
+				Packet occupantKickPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
 						occupantAffiliation, newRole, occupantNick, reason, actor, codes.toArray(new String[] {}));
 
-				writer.write(Packet.packetInstance(occupantKickPresence));
+				writer.write(occupantKickPresence);
 			}
 			room.removeOccupant(occupantNick);
 			ghostbuster.remove(occupantJids, room);
@@ -478,10 +482,10 @@ public class ModeratorModule extends AbstractModule {
 			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
 
 			for (JID jid : occupantJids) {
-				Element occupantPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
+				Packet occupantPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
 						occupantAffiliation, newRole, occupantNick, reason, null, codes.toArray(new String[] {}));
 
-				writer.write(Packet.packetInstance(occupantPresence));
+				writer.write(occupantPresence);
 			}
 		}
 	}
