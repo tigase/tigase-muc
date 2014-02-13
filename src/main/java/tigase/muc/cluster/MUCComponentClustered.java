@@ -36,7 +36,7 @@ public class MUCComponentClustered extends MUCComponent
 	private ComponentInfo         cmpInfo           = null;
 
 	public MUCComponentClustered() {
-		licenceChecker = LicenceChecker.getLicenceChecker( "acs-muc" );
+		licenceChecker = LicenceChecker.getLicenceChecker( "acs" );
 	}
 
 	@Override
