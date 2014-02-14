@@ -137,7 +137,9 @@ public class PresenceModule extends AbstractModule {
 						if (toSend != null) {
 							for (Element element : toSend) {
 								try {
-									sender.sendDelayedPacket(Packet.packetInstance(element));
+									Packet p = Packet.packetInstance(element);
+									p.setXMLNS(Packet.CLIENT_XMLNS);
+									sender.sendDelayedPacket(p);
 								} catch (TigaseStringprepException ex) {
 									if (log.isLoggable(Level.INFO)) {
 										log.info("Packet addressing problem, stringprep failed: " + element);
@@ -291,6 +293,7 @@ public class PresenceModule extends AbstractModule {
 		presence.addChild(x);
 
 		Packet packet = Packet.packetInstance(presence);
+		packet.setXMLNS(Packet.CLIENT_XMLNS);
 		PresenceWrapper wrapper = new PresenceWrapper(packet, x, items.toArray(new Element[] {}));
 
 		if (occupantBareJID != null && occupantBareJID.equals(destinationJID.getBareJID())) {

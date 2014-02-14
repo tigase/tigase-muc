@@ -124,6 +124,7 @@ public class RoomTest extends XMPPTestCase {
 				try {
 					writer.clear();
 					Packet p = Packet.packetInstance(data);
+					p.setXMLNS(Packet.CLIENT_XMLNS);
 					pubsub.processPacket(p);
 					send(writer.elements);
 				} catch (TigaseStringprepException e) {
@@ -174,7 +175,6 @@ public class RoomTest extends XMPPTestCase {
 		}
 	}
 
-	
 	@org.junit.Test
 	public void test_pings() {
 		test("src/test/scripts/ping.cor", xmlio);

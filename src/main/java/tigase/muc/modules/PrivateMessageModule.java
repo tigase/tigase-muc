@@ -20,66 +20,56 @@
  *
  */
 
-
-
 package tigase.muc.modules;
 
 //~--- non-JDK imports --------------------------------------------------------
 
 import tigase.component.ElementWriter;
-
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
-
-import tigase.muc.exceptions.MUCException;
 import tigase.muc.MucConfig;
-import tigase.muc.repository.IMucRepository;
 import tigase.muc.Role;
 import tigase.muc.Room;
-
+import tigase.muc.exceptions.MUCException;
+import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
-
 import tigase.util.TigaseStringprepException;
-
 import tigase.xml.Element;
-
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
-
 //~--- JDK imports ------------------------------------------------------------
-
 import java.util.Collection;
 
 /**
  * @author bmalkow
- *
+ * 
  */
-public class PrivateMessageModule
-				extends AbstractModule {
+public class PrivateMessageModule extends AbstractModule {
 	private static final Criteria CRIT = ElementCriteria.nameType("message", "chat");
 
-	//~--- constructors ---------------------------------------------------------
+	// ~--- constructors
+	// ---------------------------------------------------------
 
 	/**
 	 * Constructs ...
-	 *
-	 *
+	 * 
+	 * 
 	 * @param config
 	 * @param writer
 	 * @param mucRepository
 	 */
-	public PrivateMessageModule(MucConfig config, ElementWriter writer,
-															IMucRepository mucRepository) {
+	public PrivateMessageModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository) {
 		super(config, writer, mucRepository);
 	}
 
-	//~--- get methods ----------------------------------------------------------
+	// ~--- get methods
+	// ----------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @return
 	 */
 	@Override
@@ -89,8 +79,8 @@ public class PrivateMessageModule
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @return
 	 */
 	@Override
@@ -98,25 +88,23 @@ public class PrivateMessageModule
 		return CRIT;
 	}
 
-	//~--- methods --------------------------------------------------------------
+	// ~--- methods
+	// --------------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param element
-	 *
+	 * 
 	 * @throws MUCException
 	 */
 	@Override
 	public void process(Packet element) throws MUCException {
 		try {
-			final JID senderJID =
-				JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
-			final BareJID roomJID =
-				BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
-			final String recipientNickname =
-				getNicknameFromJid(JID.jidInstance(element.getAttributeStaticStr(Packet.TO_ATT)));
+			final JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
+			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
+			final String recipientNickname = getNicknameFromJid(JID.jidInstance(element.getAttributeStaticStr(Packet.TO_ATT)));
 
 			if (recipientNickname == null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
@@ -129,14 +117,13 @@ public class PrivateMessageModule
 			}
 
 			final String senderNickname = room.getOccupantsNickname(senderJID);
-			final Role senderRole       = room.getRole(senderNickname);
+			final Role senderRole = room.getRole(senderNickname);
 
 			if (!senderRole.isSendPrivateMessages()) {
 				throw new MUCException(Authorization.NOT_ALLOWED);
 			}
 
-			final Collection<JID> recipientJids =
-				room.getOccupantsJidsByNickname(recipientNickname);
+			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);
 
 			if (recipientJids.isEmpty()) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
@@ -146,7 +133,9 @@ public class PrivateMessageModule
 
 				message.setAttribute("from", JID.jidInstance(roomJID, senderNickname).toString());
 				message.setAttribute("to", jid.toString());
-				writer.write(Packet.packetInstance(message));
+				Packet p = Packet.packetInstance(message);
+				p.setXMLNS(Packet.CLIENT_XMLNS);
+				writer.write(p);
 			}
 		} catch (MUCException e1) {
 			throw e1;
@@ -160,5 +149,4 @@ public class PrivateMessageModule
 	}
 }
 
-
-//~ Formatted in Tigase Code Convention on 13/02/20
+// ~ Formatted in Tigase Code Convention on 13/02/20

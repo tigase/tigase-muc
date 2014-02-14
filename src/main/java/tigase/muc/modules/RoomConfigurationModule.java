@@ -210,7 +210,9 @@ public class RoomConfigurationModule extends AbstractModule {
 			Room room = repository.getRoom(roomJID);
 
 			if (room == null) {
-				writer.write(Packet.packetInstance(makeConfigFormIq(element.getElement(), repository.getDefaultRoomConfig())));
+				Packet p = Packet.packetInstance(makeConfigFormIq(element.getElement(), repository.getDefaultRoomConfig()));
+				p.setXMLNS(Packet.CLIENT_XMLNS);
+				writer.write(p);
 			} else {
 				if (room.getAffiliation(senderJID.getBareJID()) != Affiliation.owner) {
 					throw new MUCException(Authorization.FORBIDDEN);
@@ -218,7 +220,9 @@ public class RoomConfigurationModule extends AbstractModule {
 
 				final Element response = makeConfigFormIq(element.getElement(), room.getConfig());
 
-				writer.write(Packet.packetInstance(response));
+				Packet p = Packet.packetInstance(response);
+				p.setXMLNS(Packet.CLIENT_XMLNS);
+				writer.write(p);
 			}
 		} catch (TigaseStringprepException e) {
 			throw new MUCException(Authorization.BAD_REQUEST);

@@ -124,6 +124,7 @@ public class PresenceTestNAMultiPresenceTest extends XMPPTestCase {
 				try {
 					writer.clear();
 					Packet p = Packet.packetInstance(data);
+					p.setXMLNS(Packet.CLIENT_XMLNS);
 					pubsub.processPacket(p);
 					send(writer.elements);
 				} catch (TigaseStringprepException e) {
