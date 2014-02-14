@@ -20,49 +20,39 @@
  *
  */
 
-
-
 package tigase.component;
 
 //~--- non-JDK imports --------------------------------------------------------
 
+import java.util.Collection;
+import java.util.Map;
+import java.util.Queue;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import tigase.component.exceptions.ComponentException;
 import tigase.component.modules.ModulesManager;
-
 import tigase.disco.XMPPService;
-
 import tigase.server.AbstractMessageReceiver;
 import tigase.server.Packet;
-
 import tigase.util.TigaseStringprepException;
-
 import tigase.xml.Element;
-
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.StanzaType;
-
 //~--- JDK imports ------------------------------------------------------------
-
 import java.util.ArrayDeque;
-import java.util.Collection;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.Map;
-import java.util.Queue;
 
 /**
  * Class description
- *
- *
+ * 
+ * 
  * @param <T>
- *
- * @version        Enter version here..., 13/02/20
- * @author         Enter your name here...
+ * 
+ * @version Enter version here..., 13/02/20
+ * @author Enter your name here...
  */
-public abstract class AbstractComponent<T extends ComponentConfig>
-				extends AbstractMessageReceiver
-				implements XMPPService {
+public abstract class AbstractComponent<T extends ComponentConfig> extends AbstractMessageReceiver implements XMPPService {
 	/** Field description */
 	protected final T componentConfig;
 	private final ElementWriter DEFAULT_WRITER = new ElementWriter() {
@@ -76,6 +66,7 @@ public abstract class AbstractComponent<T extends ComponentConfig>
 				}
 			}
 		}
+
 		@Override
 		public void write(Packet packet) {
 			if (log.isLoggable(Level.FINER)) {
@@ -83,6 +74,7 @@ public abstract class AbstractComponent<T extends ComponentConfig>
 			}
 			addOutPacket(packet);
 		}
+
 		@Override
 		public void writeElement(Collection<Element> elements) {
 			if (elements != null) {
@@ -93,6 +85,7 @@ public abstract class AbstractComponent<T extends ComponentConfig>
 				}
 			}
 		}
+
 		@Override
 		public void writeElement(final Element element) {
 			if (element != null) {
@@ -100,24 +93,28 @@ public abstract class AbstractComponent<T extends ComponentConfig>
 					if (log.isLoggable(Level.FINER)) {
 						log.finer("Sent: " + element);
 					}
-					addOutPacket(Packet.packetInstance(element));
-				} catch (TigaseStringprepException e) {}
+					Packet p = Packet.packetInstance(element);
+					p.setXMLNS(Packet.CLIENT_XMLNS);
+					addOutPacket(p);
+				} catch (TigaseStringprepException e) {
+				}
 			}
 		}
 	};
 
 	/** Field description */
-	protected final ModulesManager modulesManager = new ModulesManager();
+	protected final Logger log = Logger.getLogger(this.getClass().getName());
 
 	/** Field description */
-	protected final Logger log = Logger.getLogger(this.getClass().getName());
+	protected final ModulesManager modulesManager = new ModulesManager();
 	private final ElementWriter writer;
 
-	//~--- constructors ---------------------------------------------------------
+	// ~--- constructors
+	// ---------------------------------------------------------
 
 	/**
 	 * Constructs ...
-	 *
+	 * 
 	 */
 	public AbstractComponent() {
 		this(null);
@@ -125,44 +122,43 @@ public abstract class AbstractComponent<T extends ComponentConfig>
 
 	/**
 	 * Constructs ...
-	 *
-	 *
+	 * 
+	 * 
 	 * @param writer
 	 */
 	public AbstractComponent(ElementWriter writer) {
-		this.writer          = (writer != null)
-													 ? writer
-													 : DEFAULT_WRITER;
+		this.writer = (writer != null) ? writer : DEFAULT_WRITER;
 		this.componentConfig = createComponentConfigInstance(this);
 	}
 
-	//~--- methods --------------------------------------------------------------
+	// ~--- methods
+	// --------------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param abstractComponent
-	 *
+	 * 
 	 * @return
 	 */
-	protected abstract T createComponentConfigInstance(
-					AbstractComponent<?> abstractComponent);
+	protected abstract T createComponentConfigInstance(AbstractComponent<?> abstractComponent);
 
-	//~--- get methods ----------------------------------------------------------
+	// ~--- get methods
+	// ----------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param params
-	 *
+	 * 
 	 * @return
 	 */
 	@Override
 	public Map<String, Object> getDefaults(Map<String, Object> params) {
 		final Map<String, Object> props = super.getDefaults(params);
-		Map<String, Object> x           = componentConfig.getDefaults(props);
+		Map<String, Object> x = componentConfig.getDefaults(props);
 
 		if (x != null) {
 			props.putAll(x);
@@ -173,19 +169,21 @@ public abstract class AbstractComponent<T extends ComponentConfig>
 
 	;
 
-	//~--- get methods ----------------------------------------------------------
+	// ~--- get methods
+	// ----------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @return
 	 */
 	protected ElementWriter getWriter() {
 		return writer;
 	}
 
-	//~--- methods --------------------------------------------------------------
+	// ~--- methods
+	// --------------------------------------------------------------
 
 	/**
 	 * @param packet
@@ -201,14 +199,14 @@ public abstract class AbstractComponent<T extends ComponentConfig>
 				addOutPacketNB(res);
 
 				// processPacket(res);
-			}    // end of for ()
+			} // end of for ()
 		}
 	}
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param packet
 	 */
 	@Override
@@ -225,8 +223,8 @@ public abstract class AbstractComponent<T extends ComponentConfig>
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param packet
 	 */
 	protected void processStanzaPacket(final Packet packet) {
@@ -234,11 +232,8 @@ public abstract class AbstractComponent<T extends ComponentConfig>
 			boolean handled = this.modulesManager.process(packet, getWriter());
 
 			if (!handled) {
-				final String t        =
-					packet.getElement().getAttributeStaticStr(Packet.TYPE_ATT);
-				final StanzaType type = (t == null)
-																? null
-																: StanzaType.valueof(t);
+				final String t = packet.getElement().getAttributeStaticStr(Packet.TYPE_ATT);
+				final StanzaType type = (t == null) ? null : StanzaType.valueof(t);
 
 				if (type != StanzaType.error) {
 					throw new ComponentException(Authorization.FEATURE_NOT_IMPLEMENTED);
@@ -255,8 +250,7 @@ public abstract class AbstractComponent<T extends ComponentConfig>
 			sendException(packet, new ComponentException(Authorization.JID_MALFORMED));
 		} catch (ComponentException e) {
 			if (log.isLoggable(Level.FINEST)) {
-				log.log(Level.FINEST,
-								e.getMessageWithPosition() + " when processing " + packet.toString());
+				log.log(Level.FINEST, e.getMessageWithPosition() + " when processing " + packet.toString());
 			}
 			sendException(packet, e);
 		}
@@ -264,8 +258,8 @@ public abstract class AbstractComponent<T extends ComponentConfig>
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param packet
 	 * @param e
 	 */
@@ -282,11 +276,9 @@ public abstract class AbstractComponent<T extends ComponentConfig>
 			}
 
 			Packet result = e.makeElement(packet, true);
-			Element el    = result.getElement();
+			Element el = result.getElement();
 
-			el.setAttribute(
-					"from",
-					BareJID.bareJIDInstance(el.getAttributeStaticStr(Packet.FROM_ATT)).toString());
+			el.setAttribute("from", BareJID.bareJIDInstance(el.getAttributeStaticStr(Packet.FROM_ATT)).toString());
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST, "Sending back: " + result.toString());
 			}
@@ -298,12 +290,13 @@ public abstract class AbstractComponent<T extends ComponentConfig>
 		}
 	}
 
-	//~--- set methods ----------------------------------------------------------
+	// ~--- set methods
+	// ----------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param props
 	 */
 	@Override
@@ -313,5 +306,4 @@ public abstract class AbstractComponent<T extends ComponentConfig>
 	}
 }
 
-
-//~ Formatted in Tigase Code Convention on 13/02/20
+// ~ Formatted in Tigase Code Convention on 13/02/20

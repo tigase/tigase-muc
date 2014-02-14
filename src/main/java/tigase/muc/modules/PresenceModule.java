@@ -868,7 +868,11 @@ public class PresenceModule extends AbstractModule {
 
 			message.addChild(delay);
 			message.addChild(x);
-			writer.writeElement(message);
+
+			Packet p = Packet.packetInstance(message);
+			p.setXMLNS(Packet.CLIENT_XMLNS);
+
+			writer.write(p);
 		}
 		if (room.isRoomLocked()) {
 			sendMucMessage(room, room.getOccupantsNickname(senderJID), "Room is locked. Please configure.");
