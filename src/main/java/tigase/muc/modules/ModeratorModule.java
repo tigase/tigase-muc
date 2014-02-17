@@ -294,15 +294,22 @@ public class ModeratorModule extends AbstractModule {
 
 			final Element query = element.getElement().getChild("query");
 			final Element item = query.getChild("item");
-			JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
+			final JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
+			final String senderNickname = room.getOccupantsNickname(senderJID);
 			final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID());
-
-			if ((senderAffiliation != Affiliation.admin) && (senderAffiliation != Affiliation.owner)) {
-				throw new MUCException(Authorization.FORBIDDEN);
-			}
+			final Role senderRole = room.getRole(senderNickname);
 
 			final Role filterRole = getRole(item);
 			final Affiliation filterAffiliation = getAffiliation(item);
+
+			boolean allowed = false;
+			allowed = allowed || senderAffiliation == Affiliation.admin;
+			allowed = allowed || senderAffiliation == Affiliation.owner;
+			allowed = allowed
+					|| (room.getConfig().getRoomAnonymity() == Anonymity.nonanonymous && senderRole.isPresentInRoom());
+
+			if (!allowed)
+				throw new MUCException(Authorization.FORBIDDEN);
 
 			if ((filterAffiliation != null) && (filterRole == null)) {
 				processGetAffiliations(element, room, filterAffiliation);
@@ -373,6 +380,7 @@ public class ModeratorModule extends AbstractModule {
 			JID senderJid = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
 			final String nickName = room.getOccupantsNickname(senderJid);
 			final Affiliation senderAffiliation = room.getAffiliation(senderJid.getBareJID());
+
 			final Role senderRole = room.getRole(nickName);
 			final Element query = element.getElement().getChild("query");
 			final List<Element> items = query.getChildren();
