@@ -53,6 +53,7 @@ import tigase.muc.logger.MucLogger;
 import tigase.muc.modules.DiscoInfoModule;
 import tigase.muc.modules.DiscoItemsModule;
 import tigase.muc.modules.GroupchatMessageModule;
+import tigase.muc.modules.IqStanzaForwarderModule;
 import tigase.muc.modules.MediatedInvitationModule;
 import tigase.muc.modules.ModeratorModule;
 import tigase.muc.modules.PresenceModule;
@@ -348,6 +349,7 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		this.modulesManager.register(new DiscoInfoModule(this.componentConfig, writer, this.mucRepository, this));
 		this.modulesManager.register(new MediatedInvitationModule(this.componentConfig, writer, this.mucRepository));
 		this.modulesManager.register(new UniqueRoomNameModule(this.componentConfig, writer, this.mucRepository));
+		this.modulesManager.register(new IqStanzaForwarderModule(this.componentConfig, writer, this.mucRepository));
 	}
 
 	/*
