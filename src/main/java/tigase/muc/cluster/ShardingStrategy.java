@@ -33,69 +33,32 @@ import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
 /**
- *
+ * ShardingStrategy implements clustering strategy in which each room has assigned
+ * cluster node which is responsible for particular room.
+ * 
+ * Limitations: not known
+ * 
  * @author andrzej
  */
-public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
+public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, Room.RoomOccupantListener,
 		InMemoryMucRepositoryClustered.RoomListener {
 
-	private static final Logger log = Logger.getLogger(DefaultStrategy.class.getCanonicalName());
+	private static final Logger log = Logger.getLogger(ShardingStrategy.class.getCanonicalName());
 	private static final String NODE_SHUTDOWN_CMD = "muc-node-shutdown-cmd";
-	private static final String OCCUPANT_ADDED_CMD = "muc-occupant-added-cmd";
-	private static final String OCCUPANT_REMOVED_CMD = "muc-occupant-removed-cmd";
 	private static final String PACKET_FORWARD_CMD = "muc-packet-forward-cmd";
 	private static final String REQUEST_SYNC_CMD = "muc-sync-request";
 	private static final String RESPONSE_SYNC_CMD = "muc-sync-response";
 	private static final String ROOM_CREATED_CMD = "muc-room-created-cmd";
 	private static final String ROOM_DESTROYED_CMD = "muc-room-destroyed-cmd";
 	private static final int SYNC_MAX_BATCH_SIZE = 1000;
-	private CopyOnWriteArrayList<JID> connectedNodes = new CopyOnWriteArrayList<JID>();
-	private ClusterControllerIfc cl_controller;
-	private JID localNodeJid;
-	private MUCComponentClustered muc;
-	private OccupantAddedCmd occupantAddedCmd = new OccupantAddedCmd();
-	private OccupantRemovedCmd occupantRemovedCmd = new OccupantRemovedCmd();
-	private NodeShutdownCmd nodeShutdownCmd = new NodeShutdownCmd();
-	private PacketForwardCmd packetForwardCmd = new PacketForwardCmd();
-	private RequestSyncCmd requestSyncCmd = new RequestSyncCmd();
-	private ResponseSyncCmd responseSyncCmd = new ResponseSyncCmd();
-	private RoomCreatedCmd roomCreatedCmd = new RoomCreatedCmd();
-	private RoomDestroyedCmd roomDestroyedCmd = new RoomDestroyedCmd();
-	private ConcurrentMap<BareJID, JID> roomsPerNode =
+	private final NodeShutdownCmd nodeShutdownCmd = new NodeShutdownCmd();
+	private final PacketForwardCmd packetForwardCmd = new PacketForwardCmd();
+	private final RequestSyncCmd requestSyncCmd = new RequestSyncCmd();
+	private final ResponseSyncCmd responseSyncCmd = new ResponseSyncCmd();
+	private final RoomCreatedCmd roomCreatedCmd = new RoomCreatedCmd();
+	private final RoomDestroyedCmd roomDestroyedCmd = new RoomDestroyedCmd();
+	private final ConcurrentMap<BareJID, JID> roomsPerNode =
 			new ConcurrentHashMap<BareJID, JID>();
-	private ConcurrentMap<BareJID, Set<JID>> occupantsPerRoom =
-			new ConcurrentHashMap<BareJID, Set<JID>>();
-	private InMemoryMucRepositoryClustered mucRepository = null;
-
-	private boolean addOccupant(BareJID roomJid, JID occupantJid) {
-		Set<JID> occupants = this.occupantsPerRoom.get(roomJid);
-		if (occupants == null) {
-			occupants = new HashSet<JID>();
-			Set<JID> oldList = this.occupantsPerRoom.putIfAbsent(roomJid, occupants);
-			if (oldList != null) {
-				occupants = oldList;
-			}
-		}
-		synchronized (occupants) {
-			return occupants.add(occupantJid);
-		}
-	}
-
-	private boolean removeOccupant(BareJID roomJid, JID occupantJid) {
-		Set<JID> occupants = this.occupantsPerRoom.get(roomJid);
-		if (occupants == null) {
-			return false;
-		}
-
-		synchronized (occupants) {
-			return occupants.remove(occupantJid);
-		}
-	}
-
-	@Override
-	public List<JID> getAllNodes() {
-		return connectedNodes;
-	}
 
 	/**
 	 * Method description
@@ -104,19 +67,14 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 	 * @param nodeJid is a <code>JID</code>
 	 */
 	@Override
-	public void nodeConnected(JID nodeJid) {
-		boolean added = false;
-		synchronized (connectedNodes) {
-			if (connectedNodes.addIfAbsent(nodeJid)) {
-				added = true;
-				sort(connectedNodes);
-			}
-		}
+	public boolean nodeConnected(JID nodeJid) {
+		boolean added = super.nodeConnected(nodeJid);
 		if (added && !localNodeJid.equals(nodeJid)) {
 			requestSync(nodeJid);
 		}
+		return added;
 	}
-
+	
 	/**
 	 * Method description
 	 *
@@ -125,9 +83,7 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 	 */
 	@Override
 	public void nodeDisconnected(JID nodeJid) {
-		synchronized (connectedNodes) {
-			connectedNodes.remove(nodeJid);
-		}
+		super.nodeDisconnected(nodeJid);
 		
 		int localNodeIdx = connectedNodes.indexOf(localNodeJid);
 		// we need to properly handle disconnect!
@@ -160,30 +116,20 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 		if (this.cl_controller != null) {
 			this.cl_controller.removeCommandListener(roomCreatedCmd);
 			this.cl_controller.removeCommandListener(roomDestroyedCmd);
-			this.cl_controller.removeCommandListener(occupantAddedCmd);
-			this.cl_controller.removeCommandListener(occupantRemovedCmd);
 			this.cl_controller.removeCommandListener(packetForwardCmd);
 			this.cl_controller.removeCommandListener(requestSyncCmd);
 			this.cl_controller.removeCommandListener(responseSyncCmd);
 			this.cl_controller.removeCommandListener(nodeShutdownCmd);
 		}
-		this.cl_controller = cl_controller;
+		super.setClusterController(cl_controller);
 		this.cl_controller.setCommandListener(roomCreatedCmd);
 		this.cl_controller.setCommandListener(roomDestroyedCmd);
-		this.cl_controller.setCommandListener(occupantAddedCmd);
-		this.cl_controller.setCommandListener(occupantRemovedCmd);
 		this.cl_controller.setCommandListener(packetForwardCmd);
 		this.cl_controller.setCommandListener(requestSyncCmd);
 		this.cl_controller.setCommandListener(responseSyncCmd);
 		this.cl_controller.setCommandListener(nodeShutdownCmd);
-	}
-
-	@Override
-	public void setMucComponentClustered(MUCComponentClustered mucComponent) {
-		setLocalNodeJid(JID.jidInstance(mucComponent.getDefHostName()));
-		this.muc = mucComponent;
-	}
-
+	}	
+	
 	@Override
 	public boolean processPacket(Packet packet) {
 		BareJID roomJid = packet.getStanzaTo().getBareJID();
@@ -202,8 +148,7 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 		return true;
 	}
 
-	@Override
-	public JID getNodeForRoom(BareJID roomJid) {
+	protected JID getNodeForRoom(BareJID roomJid) {
 		JID nodeJid = roomsPerNode.get(roomJid);
 		if (nodeJid == null) {
 			if (log.isLoggable(Level.FINEST)) {
@@ -211,6 +156,17 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 			}
 			int hash = roomJid.hashCode();
 			nodeJid = connectedNodes.get(Math.abs(hash) % connectedNodes.size());
+			if (log.isLoggable(Level.FINEST)) {
+				StringBuilder nodes = new StringBuilder(100);
+				for (JID node : connectedNodes) {
+					if (nodes.length() > 0) {
+						nodes.append(",");
+					}
+					nodes.append(node.toString());
+				}				
+				log.log(Level.FINEST, "room = {0}, selected node = {1} to handle this room by hash = {2} from {3}", 
+						new Object[] { roomJid, nodeJid, hash, nodes });
+			}
 		}
 		if (log.isLoggable(Level.FINEST)) {
 			log.log(Level.FINEST, "room = {0}, selected node = {1} to handle this room", 
@@ -218,12 +174,14 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 		}
 		return nodeJid;
 	}
-
+	
 	@Override
 	public void setMucRepository(InMemoryMucRepositoryClustered mucRepository) {
-		this.mucRepository = mucRepository;
-	}
-
+		super.setMucRepository(mucRepository);
+		mucRepository.setRoomListener(this);
+		mucRepository.setRoomOccupantListener(this);
+	}	
+	
 	@Override
 	public void start() {
 		
@@ -237,11 +195,6 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 		List<JID> toNodes = getAllNodes();
 		toNodes.remove(localNodeJid);		
 		cl_controller.sendToNodes(NODE_SHUTDOWN_CMD, localNodeJid, toNodes.toArray(new JID[toNodes.size()]));
-	}
-	
-	protected void setLocalNodeJid(JID jid) {
-		this.localNodeJid = jid;
-		nodeConnected(localNodeJid);
 	}
 
 	private void sendKickOnNodeDisconnect(BareJID roomJid, JID occupant) {
@@ -296,7 +249,7 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 	}
 
 	@Override
-	public void onRoomDestroyed(Room room) {
+	public void onRoomDestroyed(Room room, Element destroyElement) {
 		roomsPerNode.remove(room.getRoomJID());
 		// now we should notify other nodes about that
 
@@ -325,62 +278,11 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 		cl_controller.sendToNodes(ROOM_DESTROYED_CMD, data, localNodeJid,
 				toNodes.toArray(new JID[toNodes.size()]));
 	}
-
+	
 	@Override
-	public void onOccupantAdded(Room room, JID occupantJid) {
-		if (addOccupant(room.getRoomJID(), occupantJid)) {
-			// we should notify other nodes about that
-			List<JID> toNodes = getAllNodes();
-			toNodes.remove(localNodeJid);
-
-			Map<String, String> data = new HashMap<String, String>();
-			data.put("room", room.getRoomJID().toString());
-			data.put("occupant-jid", occupantJid.toString());
-			
-			if (log.isLoggable(Level.FINEST)) {
-				StringBuilder buf = new StringBuilder(100);
-				for (JID node : toNodes) {
-					if (buf.length() > 0) {
-						buf.append(",");
-					}
-					buf.append(node.toString());
-				}
-				log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] that occupant {2} joined room {3}",
-						new Object[]{room.getRoomJID(), buf, occupantJid, room.getRoomJID()});
-			}
-		
-			cl_controller.sendToNodes(OCCUPANT_ADDED_CMD, data, localNodeJid,
-					toNodes.toArray(new JID[toNodes.size()]));
-		}
-	}
-
-	@Override
-	public void onOccupantRemoved(Room room, JID occupantJid) {
-		if (removeOccupant(room.getRoomJID(), occupantJid)) {
-			// we should notify other nodes about that
-			List<JID> toNodes = getAllNodes();
-			toNodes.remove(localNodeJid);
-
-			Map<String, String> data = new HashMap<String, String>();
-			data.put("room", room.getRoomJID().toString());
-			data.put("occupant-jid", occupantJid.toString());
-			
-			if (log.isLoggable(Level.FINEST)) {
-				StringBuilder buf = new StringBuilder(100);
-				for (JID node : toNodes) {
-					if (buf.length() > 0) {
-						buf.append(",");
-					}
-					buf.append(node.toString());
-				}
-				log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] that occupant {2} left room {3}",
-						new Object[]{room.getRoomJID(), buf, occupantJid, room.getRoomJID()});
-			}
-			
-			cl_controller.sendToNodes(OCCUPANT_REMOVED_CMD, data, localNodeJid,
-					toNodes.toArray(new JID[toNodes.size()]));
-		}
-	}
+	public void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence, boolean newOccupant) {		
+		// nothing to do here
+	}	
 	
 	private void requestSync(JID nodeJid) {
 		cl_controller.sendToNodes(REQUEST_SYNC_CMD, localNodeJid, nodeJid);
@@ -443,44 +345,6 @@ public class DefaultStrategy implements StrategyIfc, Room.RoomOccupantListener,
 			}
 		}
 		
-	}
-
-	private class OccupantAddedCmd extends CommandListenerAbstract {
-
-		public OccupantAddedCmd() {
-			super(OCCUPANT_ADDED_CMD);
-		}
-
-		@Override
-		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
-				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
-			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
-			JID occupantJid = JID.jidInstanceNS(data.get("occupant-jid"));
-			addOccupant(roomJid, occupantJid);
-			if (log.isLoggable(Level.FINEST)) {
-				log.log(Level.FINEST, "room = {0}, received notification that occupant {1} joined room {2} at node {3}", 
-						new Object[]{ roomJid, occupantJid, roomJid, fromNode});
-			}
-		}
-	}
-
-	private class OccupantRemovedCmd extends CommandListenerAbstract {
-
-		public OccupantRemovedCmd() {
-			super(OCCUPANT_REMOVED_CMD);
-		}
-
-		@Override
-		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
-				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
-			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
-			JID occupantJid = JID.jidInstanceNS(data.get("occupant-jid"));
-			removeOccupant(roomJid, occupantJid);
-			if (log.isLoggable(Level.FINEST)) {
-				log.log(Level.FINEST, "room = {0}, received notification that occupant {1} left room {2} at node {3}", 
-						new Object[]{ roomJid, occupantJid, roomJid, fromNode});
-			}
-		}
 	}
 
 	private class PacketForwardCmd extends CommandListenerAbstract {

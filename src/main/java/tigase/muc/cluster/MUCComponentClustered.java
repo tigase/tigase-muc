@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.logging.*;
 import tigase.cluster.api.*;
 import tigase.component.exceptions.RepositoryException;
+import tigase.component.modules.Module;
 import tigase.licence.*;
 import tigase.muc.*;
 import tigase.muc.repository.*;
@@ -27,13 +28,14 @@ public class MUCComponentClustered extends MUCComponent
 
 	private static final Logger log = Logger.getLogger(MUCComponentClustered.class.getCanonicalName());
 	
-	private static final String DEF_STRATEGY_CLASS_VAL = DefaultStrategy.class.getCanonicalName();
+	private static final String DEF_STRATEGY_CLASS_VAL = ShardingStrategy.class.getCanonicalName();
 	private static final String STRATEGY_CLASS_KEY = "muc-strategy-class";
 	private StrategyIfc strategy;
 
 	protected LicenceChecker licenceChecker;
 
 	private ComponentInfo         cmpInfo           = null;
+	private ClusterControllerIfc cl_controller;
 
 	public MUCComponentClustered() {
 		licenceChecker = LicenceChecker.getLicenceChecker( "acs" );
@@ -72,7 +74,10 @@ public class MUCComponentClustered extends MUCComponent
 
 	@Override
 	public void setClusterController(ClusterControllerIfc cl_controller) {
-		strategy.setClusterController(cl_controller);
+		this.cl_controller = cl_controller;
+		if (strategy != null) {
+			strategy.setClusterController(cl_controller);
+		}
 	}
 
 	@Override
@@ -89,6 +94,9 @@ public class MUCComponentClustered extends MUCComponent
 			try {
 				strategy = (StrategyIfc) Class.forName(strategy_class).newInstance();
 				strategy.setMucComponentClustered(this);
+				if (cl_controller != null) {
+					strategy.setClusterController(cl_controller);
+				}
 			} catch (Exception ex) {
 				log.log(Level.SEVERE, "Cannot instance clustering strategy class: "
 						+ strategy_class, ex);
@@ -122,6 +130,10 @@ public class MUCComponentClustered extends MUCComponent
 				: null);
 
 		return cmpInfo;
+	}
+
+	protected <T extends Module> T getModule(Class<T> x) {
+		return this.modulesManager.get(x);
 	}
 	
 }

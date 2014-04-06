@@ -22,8 +22,9 @@ public interface StrategyIfc {
 	 * Method called when new node connected
 	 * 
 	 * @param nodeJid 
+	 * @return true - if new node was added
 	 */
-	void nodeConnected(JID nodeJid);
+	boolean nodeConnected(JID nodeJid);
 	
 	/**
 	 * Method called when node was disconnected
@@ -62,14 +63,14 @@ public interface StrategyIfc {
 	 */
 	List<JID> getAllNodes();
 
-	/**
-	 * Retrieve JID of node which is hosting this room
-	 * 
-	 * @param roomJid
-	 * @return 
-	 */
-	JID getNodeForRoom(BareJID roomJid);
-	
+//	/**
+//	 * Retrieve JID of node which is hosting this room
+//	 * 
+//	 * @param roomJid
+//	 * @return 
+//	 */
+//	JID getNodeForRoom(BareJID roomJid);
+//	
 	/**
 	 * Setter to pass instance of InMemoryMucRepositoryClustered
 	 * 
