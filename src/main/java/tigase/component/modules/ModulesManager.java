@@ -70,6 +70,14 @@ public class ModulesManager {
 		return handled;
 	}
 
+	public <T extends Module> T get(final Class<T> cls) {
+		for (Module m : modules) {
+			if (m.getClass().equals(cls))
+				return (T) m;
+		}
+		return null;
+	}
+		
 	public <T extends Module> T register(final T module) {
 		if (log.isLoggable(Level.CONFIG))
 			log.config("Register Component module: " + module.getClass().getCanonicalName());

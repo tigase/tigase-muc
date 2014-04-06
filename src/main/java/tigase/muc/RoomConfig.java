@@ -372,7 +372,7 @@ public class RoomConfig {
 		this.listeners.remove(listener);
 	}
 
-	private void setValue(String var, Object data) {
+	public void setValue(String var, Object data) {
 		Field f = form.get(var);
 
 		if (f == null) {

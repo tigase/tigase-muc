@@ -31,7 +31,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import tigase.component.exceptions.RepositoryException;
 import tigase.muc.Affiliation;
 import tigase.muc.MucConfig;
@@ -43,6 +42,7 @@ import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.MucDAO;
 import tigase.util.TigaseStringprepException;
+import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
@@ -104,6 +104,11 @@ public class InMemoryMucRepository implements IMucRepository {
 					throw new RuntimeException(e);
 				}
 			}
+
+			@Override
+			public void onMessageToOccupants(Room room, JID from, Element[] contents) {
+				// nothing to do here
+			}
 		};
 
 		this.roomConfigListener = new RoomConfig.RoomConfigListener() {
@@ -160,7 +165,7 @@ public class InMemoryMucRepository implements IMucRepository {
 	}
 
 	@Override
-	public void destroyRoom(Room room) throws RepositoryException {
+	public void destroyRoom(Room room, Element destroyElement) throws RepositoryException {
 		final BareJID roomJID = room.getRoomJID();
 		if (log.isLoggable(Level.FINE))
 			log.fine("Destroying room '" + roomJID);

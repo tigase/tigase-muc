@@ -22,12 +22,12 @@
 package tigase.muc.repository;
 
 import java.util.Map;
-
 import tigase.component.exceptions.RepositoryException;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.util.TigaseStringprepException;
+import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
@@ -39,7 +39,7 @@ public interface IMucRepository {
 
 	Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException;
 
-	void destroyRoom(Room room) throws RepositoryException;
+	void destroyRoom(Room room, Element destroyElement) throws RepositoryException;
 
 	Map<BareJID, Room> getActiveRooms();
 

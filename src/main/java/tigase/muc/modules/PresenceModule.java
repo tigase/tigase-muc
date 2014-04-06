@@ -182,6 +182,14 @@ public class PresenceModule extends AbstractModule {
 		void addStatusCode(int code) {
 			x.addChild(new Element("status", new String[] { "code" }, new String[] { "" + code }));
 		}
+		
+		public Element getX() {
+			return x;
+		}
+		
+		public Packet getPacket() {
+			return packet;
+		}
 	}
 
 	private static final Criteria CRIT = ElementCriteria.name("presence");
@@ -189,7 +197,7 @@ public class PresenceModule extends AbstractModule {
 	/** Field description */
 	protected static final Logger log = Logger.getLogger(PresenceModule.class.getName());
 
-	protected static void addCodes(PresenceWrapper wrapper, boolean newRoomCreated, String newNickName) {
+	public static void addCodes(PresenceWrapper wrapper, boolean newRoomCreated, String newNickName) {
 		if (newRoomCreated) {
 			wrapper.addStatusCode(201);
 		}
@@ -260,7 +268,7 @@ public class PresenceModule extends AbstractModule {
 	 * 
 	 * @throws TigaseStringprepException
 	 */
-	static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, BareJID occupantBareJID,
+	public static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, BareJID occupantBareJID,
 			Collection<JID> occupantJIDs, String occupantNickname, Affiliation occupantAffiliation, Role occupantRole)
 			throws TigaseStringprepException {
 		Anonymity anonymity = room.getConfig().getRoomAnonymity();
@@ -497,7 +505,7 @@ public class PresenceModule extends AbstractModule {
 		boolean nicknameGone = room.removeOccupant(senderJID);
 		ghostbuster.remove(senderJID, room);
 
-		room.updatePresenceByJid(senderJID, null);
+		room.updatePresenceByJid(senderJID, leavingNickname, null, false);
 
 		if (config.isMultiItemMode()) {
 			final PresenceWrapper selfPresence = preparePresenceW(room, senderJID, presenceElement, senderJID.getBareJID(),
@@ -689,7 +697,7 @@ public class PresenceModule extends AbstractModule {
 		if (log.isLoggable(Level.FINEST)) {
 			log.finest("Processing stanza " + presenceElement.toString());
 		}
-		room.updatePresenceByJid(null, clonePresence(presenceElement));
+		room.updatePresenceByJid(null, nickname, clonePresence(presenceElement), false);
 
 		Element pe = room.getLastPresenceCopyByJid(senderJID.getBareJID());
 
@@ -793,33 +801,8 @@ public class PresenceModule extends AbstractModule {
 
 		// TODO Service Informs User that Room Occupant Limit Has Been Reached
 		// Service Sends Presence from Existing Occupants to New Occupant
-		for (String occupantNickname : room.getOccupantsNicknames()) {
-			final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNickname);
-			if (currentOccupantJid != null && currentOccupantJid.equals(occupantJid)) {
-				continue;
-			}
-			Element op = room.getLastPresenceCopyByJid(occupantJid);
-
-			final Collection<JID> occupantJIDs = room.getOccupantsJidsByNickname(occupantNickname);
-			final BareJID occupantBareJID = room.getOccupantsJidByNickname(occupantNickname);
-			final Affiliation occupantAffiliation = room.getAffiliation(occupantBareJID);
-			final Role occupantRole = room.getRole(occupantNickname);
-
-			if (config.isMultiItemMode()) {
-				PresenceWrapper l = preparePresenceW(room, senderJID, op.clone(), occupantBareJID, occupantJIDs,
-						occupantNickname, occupantAffiliation, occupantRole);
-				writer.write(l.packet);
-			} else {
-				for (JID jid : occupantJIDs) {
-					Collection<JID> z = new ArrayList<JID>(1);
-					z.add(jid);
-					PresenceWrapper l = preparePresenceW(room, senderJID, op.clone(), occupantBareJID, z, occupantNickname,
-							occupantAffiliation, occupantRole);
-					writer.write(l.packet);
-				}
-			}
-		}
-
+		sendPresencesToNewOccupant(room, senderJID);
+		
 		final Role newRole = getDefaultRole(room.getConfig(), affiliation);
 
 		if (log.isLoggable(Level.FINEST)) {
@@ -831,7 +814,7 @@ public class PresenceModule extends AbstractModule {
 
 		Element pe = clonePresence(element);
 
-		room.updatePresenceByJid(null, pe);
+		room.updatePresenceByJid(null, nickname, pe, true);
 		// if (currentOccupantJid == null) {
 
 		// Service Sends New Occupant's Presence to All Occupants
@@ -987,6 +970,37 @@ public class PresenceModule extends AbstractModule {
 		sendPresenceToAllOccupants(presence, room, senderJID, newRoomCreated, newNickName);
 	}
 
+	public void sendPresencesToNewOccupant(Room room, JID senderJID) throws TigaseStringprepException {
+		BareJID currentOccupantJid = senderJID.getBareJID();
+		for (String occupantNickname : room.getOccupantsNicknames()) {
+			final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNickname);
+			if (currentOccupantJid != null && currentOccupantJid.equals(occupantJid)) {
+				continue;
+			}
+			Element op = room.getLastPresenceCopyByJid(occupantJid);
+
+			final Collection<JID> occupantJIDs = room.getOccupantsJidsByNickname(occupantNickname);
+			final BareJID occupantBareJID = room.getOccupantsJidByNickname(occupantNickname);
+			final Affiliation occupantAffiliation = room.getAffiliation(occupantBareJID);
+			final Role occupantRole = room.getRole(occupantNickname);
+
+			if (config.isMultiItemMode()) {
+				PresenceWrapper l = preparePresenceW(room, senderJID, op.clone(), occupantBareJID, occupantJIDs,
+						occupantNickname, occupantAffiliation, occupantRole);
+				writer.write(l.packet);
+			} else {
+				for (JID jid : occupantJIDs) {
+					Collection<JID> z = new ArrayList<JID>(1);
+					z.add(jid);
+					PresenceWrapper l = preparePresenceW(room, senderJID, op.clone(), occupantBareJID, z, occupantNickname,
+							occupantAffiliation, occupantRole);
+					writer.write(l.packet);
+				}
+			}
+		}
+		
+	}
+	
 	/**
 	 * Method description
 	 * 

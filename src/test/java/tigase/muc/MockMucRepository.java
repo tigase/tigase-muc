@@ -30,10 +30,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.logging.Logger;
-
 import tigase.component.exceptions.RepositoryException;
 import tigase.muc.RoomConfig.RoomConfigListener;
 import tigase.muc.repository.IMucRepository;
+import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
@@ -122,7 +122,7 @@ public class MockMucRepository implements IMucRepository {
 	 * @see tigase.muc.repository.IMucRepository#destroyRoom(tigase.muc.Room)
 	 */
 	@Override
-	public void destroyRoom(Room room) throws RepositoryException {
+	public void destroyRoom(Room room, Element destroyElement) throws RepositoryException {
 		final BareJID roomJID = room.getRoomJID();
 		this.rooms.remove(roomJID);
 		this.allRooms.remove(roomJID);

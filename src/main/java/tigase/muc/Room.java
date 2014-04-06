@@ -60,12 +60,16 @@ public class Room {
 		void onChangeSubject(Room room, String nick, String newSubject, Date changeDate);
 
 		void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation);
+		
+		void onMessageToOccupants(Room room, JID from, Element[] contents);
 	}
 	
 	public static interface RoomOccupantListener {
 		void onOccupantAdded(Room room, JID occupantJid);
 		
 		void onOccupantRemoved(Room room, JID occupantJid);
+		
+		void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence, boolean newOccupant);
 	}
 
 	/**
@@ -164,6 +168,12 @@ public class Room {
 		this.occupants.put(nickName, occ);
 	}
 
+	public void fireOnMessageToOccupants(JID fromJID, Element[] content) {
+		for (RoomListener listener : this.listeners) {
+			listener.onMessageToOccupants(this, fromJID, content);
+		}
+	}
+	
 	private void fireOnOccupantAdded(JID occupantJid) {
 		for (RoomOccupantListener listener : this.occupantListeners) {
 			listener.onOccupantAdded(this, occupantJid);
@@ -174,6 +184,12 @@ public class Room {
 		for (RoomOccupantListener listener : this.occupantListeners) {
 			listener.onOccupantRemoved(this, occupantJid);
 		}		
+	}
+	
+	private void fireOnOccupantChangedPresence(JID occupantJid, String nickname, Element cp, boolean newOccupant) {
+		for  (RoomOccupantListener listener : this.occupantListeners) {
+			listener.onOccupantChangedPresence(this, occupantJid, nickname, cp, newOccupant);
+		}
 	}
 	
 	private void fireOnSetAffiliation(BareJID jid, Affiliation affiliation) {
@@ -458,11 +474,13 @@ public class Room {
 	 * @param element
 	 * @throws TigaseStringprepException
 	 */
-	public void updatePresenceByJid(JID jid, Element cp) throws TigaseStringprepException {
+	public void updatePresenceByJid(JID jid, String nickname, Element cp, boolean newOccupant) throws TigaseStringprepException {
 		if (cp == null)
 			this.presences.remove(jid);
 		else
 			this.presences.update(cp);
+		
+		fireOnOccupantChangedPresence(jid, nickname, cp, newOccupant);
 	}
 
 }

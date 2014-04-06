@@ -104,7 +104,7 @@ public class RoomConfigurationModule extends AbstractModule {
 		// XXX TODO
 		// throw new
 		// MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
-		repository.destroyRoom(room);
+		repository.destroyRoom(room, destroyElement);
 		if (historyProvider != null) {
 			historyProvider.removeHistory(room);
 		}
