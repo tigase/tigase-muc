@@ -23,6 +23,9 @@ import tigase.cluster.api.ClusterCommandException;
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
 import tigase.muc.Room;
+import tigase.server.Packet;
+import tigase.server.Presence;
+import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
@@ -35,19 +38,20 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 	
 	private static final Logger log = Logger.getLogger(AbstractStrategy.class.getCanonicalName());
 	
+	private static final String PACKET_FORWARD_CMD = "muc-packet-forward-cmd";	
 	private static final String OCCUPANT_ADDED_CMD = "muc-occupant-added-cmd";
 	private static final String OCCUPANT_REMOVED_CMD = "muc-occupant-removed-cmd";	
-	
+	protected static final String REQUEST_SYNC_CMD = "muc-sync-request";
+
 	protected final CopyOnWriteArrayList<JID> connectedNodes = new CopyOnWriteArrayList<JID>();
 	protected ClusterControllerIfc cl_controller;
 	protected JID localNodeJid;
 	protected MUCComponentClustered muc;
 	protected InMemoryMucRepositoryClustered mucRepository = null;	
-	protected final ConcurrentMap<BareJID, Set<JID>> occupantsPerRoom =
-			new ConcurrentHashMap<BareJID, Set<JID>>();
 
 	private final OccupantAddedCmd occupantAddedCmd = new OccupantAddedCmd();
 	private final OccupantRemovedCmd occupantRemovedCmd = new OccupantRemovedCmd();
+	private final PacketForwardCmd packetForwardCmd = new PacketForwardCmd();
 	
 	@Override
 	public List<JID> getAllNodes() {
@@ -72,6 +76,9 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 				log.log(Level.FINEST, "node {0} added to list of connected nodes", nodeJid);
 			}
 		}
+		if (added && !localNodeJid.equals(nodeJid)) {
+			requestSync(nodeJid);
+		}		
 		return added;
 	}
 	
@@ -87,7 +94,8 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 	
 	@Override
 	public void onOccupantAdded(Room room, JID occupantJid) {
-		if (addOccupant(room.getRoomJID(), occupantJid)) {
+		String nickname = room.getOccupantsNickname(occupantJid);
+		if (addOccupant(localNodeJid.getBareJID(), room.getRoomJID(), occupantJid, nickname)) {
 			// we should notify other nodes about that
 			List<JID> toNodes = getAllNodes();
 			toNodes.remove(localNodeJid);
@@ -95,6 +103,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 			Map<String, String> data = new HashMap<String, String>();
 			data.put("room", room.getRoomJID().toString());
 			data.put("occupant-jid", occupantJid.toString());
+			data.put("occupant-nickname", nickname);
 			
 			if (log.isLoggable(Level.FINEST)) {
 				StringBuilder buf = new StringBuilder(100);
@@ -115,7 +124,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 
 	@Override
 	public void onOccupantRemoved(Room room, JID occupantJid) {
-		if (removeOccupant(room.getRoomJID(), occupantJid)) {
+		if (removeOccupant(localNodeJid.getBareJID(), room.getRoomJID(), occupantJid)) {
 			// we should notify other nodes about that
 			List<JID> toNodes = getAllNodes();
 			toNodes.remove(localNodeJid);
@@ -141,16 +150,40 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		}
 	}	
 	
+	protected void sendRemovalFromRoomOnNodeDisconnect(BareJID roomJid, JID occupant) {
+		sendRemovalFromRoomOnNodeDisconnect(roomJid.toString(), occupant);
+	}
+	protected void sendRemovalFromRoomOnNodeDisconnect(JID roomJid, JID occupant) {
+		sendRemovalFromRoomOnNodeDisconnect(roomJid.toString(), occupant);
+	}
+	protected void sendRemovalFromRoomOnNodeDisconnect(String roomJid, JID occupant) {
+		try {
+			Element presenceEl = new Element("presence", new String[]{"xmlns", "from", "to", "type"},
+					new String[]{Presence.CLIENT_XMLNS, roomJid.toString(), occupant.toString(), "unavailable"});
+			Element x = new Element("x", new String[]{"xmlns"}, new String[]{"http://jabber.org/protocol/muc#user"});
+			presenceEl.addChild(x);
+			Element item = new Element("item", new String[]{"role"}, new String[]{"none"});
+			x.addChild(item);
+			item.addChild(new Element("reason", "MUC component is disconnected."));
+			x.addChild(new Element("status", new String[]{"code"}, new String[]{"332"}));
+			muc.addOutPacket(Packet.packetInstance(presenceEl));
+		} catch (TigaseStringprepException ex) {
+			log.log(Level.FINE, "Problem on throwing out occupant {0} on node disconnection", new Object[]{occupant});
+		}	
+	}
+	
 	@Override
 	public void setClusterController(ClusterControllerIfc cl_controller) {
 		if (this.cl_controller != null) {
 			this.cl_controller.removeCommandListener(occupantAddedCmd);
 			this.cl_controller.removeCommandListener(occupantRemovedCmd);			
+			this.cl_controller.removeCommandListener(packetForwardCmd);
 		}
 		this.cl_controller = cl_controller;
 		if (cl_controller != null) {
 			this.cl_controller.setCommandListener(occupantAddedCmd);
 			this.cl_controller.setCommandListener(occupantRemovedCmd);
+			this.cl_controller.setCommandListener(packetForwardCmd);
 		}
 	}
 
@@ -165,6 +198,11 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		this.mucRepository = mucRepository;
 	}	
 	
+	protected void forwardPacketToNode(JID nodeJid, Packet packet) {
+		cl_controller.sendToNodes(PACKET_FORWARD_CMD, packet.getElement(), 
+				localNodeJid, null, nodeJid);		
+	}
+	
 	protected void setLocalNodeJid(JID jid) {
 		this.localNodeJid = jid;
 		nodeConnected(localNodeJid);
@@ -178,29 +216,12 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		list.addAll(Arrays.asList(array));
 	}	
 	
-	protected boolean addOccupant(BareJID roomJid, JID occupantJid) {
-		Set<JID> occupants = this.occupantsPerRoom.get(roomJid);
-		if (occupants == null) {
-			occupants = new HashSet<JID>();
-			Set<JID> oldList = this.occupantsPerRoom.putIfAbsent(roomJid, occupants);
-			if (oldList != null) {
-				occupants = oldList;
-			}
-		}
-		synchronized (occupants) {
-			return occupants.add(occupantJid);
-		}
-	}
+	abstract protected boolean addOccupant(BareJID node, BareJID roomJid, JID occupantJid, String nickname);
 
-	protected boolean removeOccupant(BareJID roomJid, JID occupantJid) {
-		Set<JID> occupants = this.occupantsPerRoom.get(roomJid);
-		if (occupants == null) {
-			return false;
-		}
-
-		synchronized (occupants) {
-			return occupants.remove(occupantJid);
-		}
+	abstract protected boolean removeOccupant(BareJID node, BareJID roomJid, JID occupantJid);
+	
+	protected void requestSync(JID nodeJid) {
+		cl_controller.sendToNodes(REQUEST_SYNC_CMD, localNodeJid, nodeJid);
 	}
 	
 	private class OccupantAddedCmd extends CommandListenerAbstract {
@@ -214,7 +235,8 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			JID occupantJid = JID.jidInstanceNS(data.get("occupant-jid"));
-			addOccupant(roomJid, occupantJid);
+			String nickname = data.get("occupant-nickname");
+			addOccupant(fromNode.getBareJID(), roomJid, occupantJid, nickname);
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST, "room = {0}, received notification that occupant {1} joined room {2} at node {3}", 
 						new Object[]{ roomJid, occupantJid, roomJid, fromNode});
@@ -233,7 +255,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			JID occupantJid = JID.jidInstanceNS(data.get("occupant-jid"));
-			removeOccupant(roomJid, occupantJid);
+			removeOccupant(fromNode.getBareJID(), roomJid, occupantJid);
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST, "room = {0}, received notification that occupant {1} left room {2} at node {3}", 
 						new Object[]{ roomJid, occupantJid, roomJid, fromNode});
@@ -241,4 +263,30 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		}
 	}
 	
+	private class PacketForwardCmd extends CommandListenerAbstract {
+
+		public PacketForwardCmd() {
+			super(PACKET_FORWARD_CMD);
+		}
+
+		@Override
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
+				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
+			if (packets != null && !packets.isEmpty()) {
+				for (Element elem : packets) {
+					try {
+						Packet packet = Packet.packetInstance(elem);
+						muc.processPacket(packet);
+						if (log.isLoggable(Level.FINEST)) {
+							log.log(Level.FINEST, "received packet {0} forwarded from node {1}",
+									new Object[]{ packet, fromNode });
+						}
+					} catch (TigaseStringprepException ex) {
+						log.warning("Addressing problem, stringprep failed for packet: " + elem);
+					}
+				}
+			}
+		}
+	}
+		
 }

@@ -24,6 +24,7 @@ import java.util.logging.Logger;
 import tigase.cluster.api.ClusterCommandException;
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
+import tigase.component.exceptions.RepositoryException;
 import tigase.muc.Room;
 import tigase.server.Packet;
 import tigase.server.Presence;
@@ -45,35 +46,19 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 
 	private static final Logger log = Logger.getLogger(ShardingStrategy.class.getCanonicalName());
 	private static final String NODE_SHUTDOWN_CMD = "muc-node-shutdown-cmd";
-	private static final String PACKET_FORWARD_CMD = "muc-packet-forward-cmd";
-	private static final String REQUEST_SYNC_CMD = "muc-sync-request";
 	private static final String RESPONSE_SYNC_CMD = "muc-sync-response";
 	private static final String ROOM_CREATED_CMD = "muc-room-created-cmd";
 	private static final String ROOM_DESTROYED_CMD = "muc-room-destroyed-cmd";
 	private static final int SYNC_MAX_BATCH_SIZE = 1000;
 	private final NodeShutdownCmd nodeShutdownCmd = new NodeShutdownCmd();
-	private final PacketForwardCmd packetForwardCmd = new PacketForwardCmd();
 	private final RequestSyncCmd requestSyncCmd = new RequestSyncCmd();
 	private final ResponseSyncCmd responseSyncCmd = new ResponseSyncCmd();
 	private final RoomCreatedCmd roomCreatedCmd = new RoomCreatedCmd();
 	private final RoomDestroyedCmd roomDestroyedCmd = new RoomDestroyedCmd();
 	private final ConcurrentMap<BareJID, JID> roomsPerNode =
 			new ConcurrentHashMap<BareJID, JID>();
-
-	/**
-	 * Method description
-	 *
-	 *
-	 * @param nodeJid is a <code>JID</code>
-	 */
-	@Override
-	public boolean nodeConnected(JID nodeJid) {
-		boolean added = super.nodeConnected(nodeJid);
-		if (added && !localNodeJid.equals(nodeJid)) {
-			requestSync(nodeJid);
-		}
-		return added;
-	}
+	private final ConcurrentMap<BareJID, Set<JID>> occupantsPerRoom =
+			new ConcurrentHashMap<BareJID, Set<JID>>();
 	
 	/**
 	 * Method description
@@ -104,7 +89,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 			if (occupants != null) {
 				synchronized(occupants) {
 					for (JID occupant : occupants) {
-						sendKickOnNodeDisconnect(roomJid, occupant);
+						sendRemovalFromRoomOnNodeDisconnect(roomJid, occupant);
 					}
 				}
 			}
@@ -116,7 +101,6 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		if (this.cl_controller != null) {
 			this.cl_controller.removeCommandListener(roomCreatedCmd);
 			this.cl_controller.removeCommandListener(roomDestroyedCmd);
-			this.cl_controller.removeCommandListener(packetForwardCmd);
 			this.cl_controller.removeCommandListener(requestSyncCmd);
 			this.cl_controller.removeCommandListener(responseSyncCmd);
 			this.cl_controller.removeCommandListener(nodeShutdownCmd);
@@ -124,7 +108,6 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		super.setClusterController(cl_controller);
 		this.cl_controller.setCommandListener(roomCreatedCmd);
 		this.cl_controller.setCommandListener(roomDestroyedCmd);
-		this.cl_controller.setCommandListener(packetForwardCmd);
 		this.cl_controller.setCommandListener(requestSyncCmd);
 		this.cl_controller.setCommandListener(responseSyncCmd);
 		this.cl_controller.setCommandListener(nodeShutdownCmd);
@@ -143,8 +126,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 			log.log(Level.FINER, "room = {0}, forwarding packet to node = {1}", new Object[] {
 				roomJid, nodeJid });
 		}
-		cl_controller.sendToNodes(PACKET_FORWARD_CMD, packet.getElement(), 
-				localNodeJid, null, nodeJid);
+		forwardPacketToNode(nodeJid, packet);
 		return true;
 	}
 
@@ -195,22 +177,6 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		List<JID> toNodes = getAllNodes();
 		toNodes.remove(localNodeJid);		
 		cl_controller.sendToNodes(NODE_SHUTDOWN_CMD, localNodeJid, toNodes.toArray(new JID[toNodes.size()]));
-	}
-
-	private void sendKickOnNodeDisconnect(BareJID roomJid, JID occupant) {
-		try {
-			Element presenceEl = new Element("presence", new String[]{"xmlns", "from", "to", "type"},
-					new String[]{Presence.CLIENT_XMLNS, roomJid.toString(), occupant.toString(), "unavailable"});
-			Element x = new Element("x", new String[]{"xmlns"}, new String[]{"http://jabber.org/protocol/muc#user"});
-			presenceEl.addChild(x);
-			Element item = new Element("item", new String[]{"role"}, new String[]{"none"});
-			x.addChild(item);
-			item.addChild(new Element("reason", "MUC component is disconnected."));
-			x.addChild(new Element("status", new String[]{"code"}, new String[]{"307"}));
-			muc.addOutPacket(Packet.packetInstance(presenceEl));
-		} catch (TigaseStringprepException ex) {
-			log.log(Level.FINE, "Problem on throwing out occupant {0} on node disconnection", new Object[]{occupant});
-		}	
 	}
 	
 	private void sort(List<JID> list) {
@@ -284,10 +250,33 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		// nothing to do here
 	}	
 	
-	private void requestSync(JID nodeJid) {
-		cl_controller.sendToNodes(REQUEST_SYNC_CMD, localNodeJid, nodeJid);
+	@Override
+	protected boolean addOccupant(BareJID node, BareJID roomJid, JID occupantJid, String nickname) {
+		Set<JID> occupants = this.occupantsPerRoom.get(roomJid);
+		if (occupants == null) {
+			occupants = new HashSet<JID>();
+			Set<JID> oldList = this.occupantsPerRoom.putIfAbsent(roomJid, occupants);
+			if (oldList != null) {
+				occupants = oldList;
+			}
+		}
+		synchronized (occupants) {
+			return occupants.add(occupantJid);
+		}
 	}
+	
+	@Override
+	protected boolean removeOccupant(BareJID node, BareJID roomJid, JID occupantJid) {
+		Set<JID> occupants = this.occupantsPerRoom.get(roomJid);
+		if (occupants == null) {
+			return false;
+		}
 
+		synchronized (occupants) {
+			return occupants.remove(occupantJid);
+		}
+	}
+	
 	private class RoomCreatedCmd extends CommandListenerAbstract {
 
 		public RoomCreatedCmd() {
@@ -346,32 +335,6 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		}
 		
 	}
-
-	private class PacketForwardCmd extends CommandListenerAbstract {
-
-		public PacketForwardCmd() {
-			super(PACKET_FORWARD_CMD);
-		}
-
-		@Override
-		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
-				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
-			if (packets != null && !packets.isEmpty()) {
-				for (Element elem : packets) {
-					try {
-						Packet packet = Packet.packetInstance(elem);
-						muc.processPacket(packet);
-						if (log.isLoggable(Level.FINEST)) {
-							log.log(Level.FINEST, "received packet {0} forwarded from node {1}",
-									new Object[]{ packet, fromNode });
-						}
-					} catch (TigaseStringprepException ex) {
-						log.warning("Addressing problem, stringprep failed for packet: " + elem);
-					}
-				}
-			}
-		}
-	}
 	
 	private class RequestSyncCmd extends CommandListenerAbstract {
 		
@@ -388,28 +351,39 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 				if (!localNodeJid.equals(entry.getValue()))
 					continue;
 		
+				// for each room hosted locally we send
 				Element roomEl = new Element("room", new String[] { "jid" }, 
 						new String[] { entry.getKey().toString() });
 				
-				Set<JID> occupants = occupantsPerRoom.get(entry.getKey());
-				if (occupants != null && !occupants.isEmpty()) {
-					synchronized (occupants) {
-						for (JID occupant : occupants) {
-							roomEl.addChild(new Element("occupant", occupant.toString()));
+				try {
+					// all it's occupants
+					Room room = mucRepository.getRoom(entry.getKey());
+					Set<JID> occupants = occupantsPerRoom.get(entry.getKey());
+					if (occupants != null && !occupants.isEmpty()) {
+						synchronized (occupants) {
+							for (JID occupant : occupants) {
+								Element occupantEl = new Element("occupant", occupant.toString());
+								String nickname = room.getOccupantsNickname(occupant);
+								occupantEl.addAttribute("nickname", nickname);
+								roomEl.addChild(occupantEl);
+							}
 						}
 					}
+				}
+				catch (Exception ex) {
+					log.log(Level.SEVERE, "exception during cluster nodes synchronization", ex);
 				}
 				
 				localRooms.add(roomEl);
 				if (localRooms.size() > SYNC_MAX_BATCH_SIZE) {
-					cl_controller.sendToNodes(RESPONSE_SYNC_CMD, packets, 
+					cl_controller.sendToNodes(RESPONSE_SYNC_CMD, localRooms, 
 							localNodeJid, null, fromNode);
 					localRooms = new LinkedList<Element>();
 				}
 			}
 			
 			if (!localRooms.isEmpty()) {
-				cl_controller.sendToNodes(RESPONSE_SYNC_CMD, packets, 
+				cl_controller.sendToNodes(RESPONSE_SYNC_CMD, localRooms, 
 						localNodeJid, null, fromNode);
 			}
 		}
@@ -441,7 +415,8 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 						if (occupantsElList != null && !occupantsElList.isEmpty()) {
 							for (Element occupantEl : occupantsElList) {
 								JID occupantJid = JID.jidInstanceNS(occupantEl.getCData());
-								addOccupant(roomJid, occupantJid);
+								String nickname = occupantEl.getAttributeStaticStr("nickname");
+								addOccupant(fromNode.getBareJID(), roomJid, occupantJid, nickname);
 							}
 						}
 					}
