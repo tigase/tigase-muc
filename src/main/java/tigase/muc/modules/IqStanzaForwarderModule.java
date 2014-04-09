@@ -23,14 +23,11 @@ package tigase.muc.modules;
 
 import java.util.Collection;
 
-import tigase.component.ElementWriter;
 import tigase.component.exceptions.ComponentException;
 import tigase.criteria.Criteria;
-import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
-import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
@@ -42,7 +39,9 @@ import tigase.xmpp.JID;
  * @author bmalkow
  * 
  */
-public class IqStanzaForwarderModule extends AbstractModule {
+public class IqStanzaForwarderModule extends AbstractMucModule {
+
+	public static final String ID = "iqforwarder";
 
 	private final Criteria crit = new Criteria() {
 
@@ -56,15 +55,6 @@ public class IqStanzaForwarderModule extends AbstractModule {
 			return checkIfProcessed(element);
 		}
 	};
-
-	/**
-	 * @param config
-	 * @param writer
-	 * @param mucRepository
-	 */
-	public IqStanzaForwarderModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository) {
-		super(config, writer, mucRepository);
-	}
 
 	protected boolean checkIfProcessed(Element element) {
 		if (element.getName() != "iq")
@@ -108,7 +98,7 @@ public class IqStanzaForwarderModule extends AbstractModule {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
-			final Room room = repository.getRoom(roomJID);
+			final Room room = context.getMucRepository().getRoom(roomJID);
 			if (room == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
@@ -136,7 +126,7 @@ public class IqStanzaForwarderModule extends AbstractModule {
 
 			Packet p = Packet.packetInstance(iq);
 			p.setXMLNS(Packet.CLIENT_XMLNS);
-			writer.write(p);
+			write(p);
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (TigaseStringprepException e) {

@@ -358,7 +358,7 @@ public class RoomConfig {
 		fireConfigChanged(vars);
 	}
 
-	public void read(final UserRepository repository, final MucConfig config, final String subnode)
+	public void read(final UserRepository repository, final MucContext config, final String subnode)
 			throws UserNotFoundException, TigaseDBException {
 		String[] keys = repository.getKeys(config.getServiceName(), subnode);
 		if (keys != null)
@@ -408,7 +408,7 @@ public class RoomConfig {
 		}
 	}
 
-	public void write(final UserRepository repo, final MucConfig config, final String subnode) throws UserNotFoundException,
+	public void write(final UserRepository repo, final MucContext config, final String subnode) throws UserNotFoundException,
 			TigaseDBException {
 		List<Field> fields = form.getAllFields();
 		for (Field field : fields) {

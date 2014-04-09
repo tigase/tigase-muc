@@ -29,8 +29,8 @@ import java.util.Date;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import tigase.component.ElementWriter;
 
+import tigase.component.PacketWriter;
 import tigase.db.DataRepository;
 import tigase.muc.Room;
 import tigase.xml.Element;
@@ -44,9 +44,10 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 
 	public static final String ADD_MESSAGE_QUERY_VAL = "insert into muc_history (room_name, event_type, timestamp, sender_jid, sender_nickname, body, public_event, msg) values (?, 1, ?, ?, ?, ?, ?, ?)";
 
-	private static final String CREATE_MUC_HISTORY_TABLE_VAL = "create table muc_history (" + "room_name nvarchar(128) NOT NULL,\n"
-			+ "event_type int, \n" + "timestamp bigint,\n" + "sender_jid nvarchar(2049),\n" + "sender_nickname nvarchar(128),\n"
-			+ "body text,\n" + "public_event bit,\n " + "msg text " + ")";
+	private static final String CREATE_MUC_HISTORY_TABLE_VAL = "create table muc_history ("
+			+ "room_name nvarchar(128) NOT NULL,\n" + "event_type int, \n" + "timestamp bigint,\n"
+			+ "sender_jid nvarchar(2049),\n" + "sender_nickname nvarchar(128),\n" + "body text,\n" + "public_event bit,\n "
+			+ "msg text " + ")";
 
 	public static final String DELETE_MESSAGES_QUERY_VAL = "delete from muc_history where room_name=?";
 
@@ -87,7 +88,7 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 	/** {@inheritDoc} */
 	@Override
 	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
-			ElementWriter writer) {
+			PacketWriter writer) {
 		ResultSet rs = null;
 		final String roomJID = room.getRoomJID().toString();
 
@@ -114,7 +115,7 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 				synchronized (st) {
 					st.setInt(1, Math.min(maxstanzas, maxMessages));
 					st.setString(2, roomJID);
-					System.out.println( "getHistoryMessages: " + st + " || \t " + GET_MESSAGES_MAXSTANZAS_QUERY_KEY );
+					System.out.println("getHistoryMessages: " + st + " || \t " + GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
 					rs = st.executeQuery();
 					processResultSet(room, senderJID, writer, rs);
 				}
@@ -136,12 +137,13 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 				}
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
 						GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
-				synchronized ( st ) {
-					st.setInt( 1, maxMessages );
-					st.setString( 2, roomJID );
-					System.out.println( "getHistoryMessages: " + st.toString() + " max " + maxMessages + " roomJID " + roomJID + " || \t " + GET_MESSAGES_MAXSTANZAS_QUERY_KEY );
+				synchronized (st) {
+					st.setInt(1, maxMessages);
+					st.setString(2, roomJID);
+					System.out.println("getHistoryMessages: " + st.toString() + " max " + maxMessages + " roomJID " + roomJID
+							+ " || \t " + GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
 					rs = st.executeQuery();
-					processResultSet( room, senderJID, writer, rs );
+					processResultSet(room, senderJID, writer, rs);
 				}
 			}
 

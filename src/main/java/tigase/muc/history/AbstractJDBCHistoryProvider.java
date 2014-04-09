@@ -27,7 +27,7 @@ import java.sql.SQLException;
 import java.util.Date;
 import java.util.logging.Level;
 
-import tigase.component.ElementWriter;
+import tigase.component.PacketWriter;
 import tigase.db.DataRepository;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
@@ -89,7 +89,7 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 	/** {@inheritDoc} */
 	@Override
 	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
-			ElementWriter writer) {
+			PacketWriter writer) {
 		ResultSet rs = null;
 		final String roomJID = room.getRoomJID().toString();
 
@@ -159,7 +159,7 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 		return true;
 	}
 
-	protected void processResultSet(Room room, JID senderJID, ElementWriter writer, ResultSet rs) throws SQLException,
+	protected void processResultSet(Room room, JID senderJID, PacketWriter writer, ResultSet rs) throws SQLException,
 			TigaseStringprepException {
 		if (log.isLoggable(Level.FINEST)) {
 			log.finest("Select messages for " + senderJID + " from room " + room.getRoomJID());

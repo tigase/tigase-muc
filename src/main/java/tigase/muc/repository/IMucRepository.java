@@ -22,11 +22,11 @@
 package tigase.muc.repository;
 
 import java.util.Map;
+
 import tigase.component.exceptions.RepositoryException;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
-import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
@@ -47,7 +47,7 @@ public interface IMucRepository {
 
 	BareJID[] getPublicVisibleRoomsIdList() throws RepositoryException;
 
-	Room getRoom(BareJID roomJID) throws RepositoryException, MUCException, TigaseStringprepException;
+	Room getRoom(BareJID roomJID) throws RepositoryException, MUCException;
 
 	/**
 	 * @param jid

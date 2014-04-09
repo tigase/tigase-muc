@@ -31,9 +31,10 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import tigase.component.exceptions.RepositoryException;
 import tigase.muc.Affiliation;
-import tigase.muc.MucConfig;
+import tigase.muc.MucContext;
 import tigase.muc.Room;
 import tigase.muc.Room.RoomListener;
 import tigase.muc.RoomConfig;
@@ -41,7 +42,6 @@ import tigase.muc.RoomConfig.RoomConfigListener;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.MucDAO;
-import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
@@ -64,7 +64,7 @@ public class InMemoryMucRepository implements IMucRepository {
 
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 
-	private MucConfig mucConfig;
+	private MucContext mucConfig;
 
 	private final RoomConfigListener roomConfigListener;
 
@@ -72,7 +72,7 @@ public class InMemoryMucRepository implements IMucRepository {
 
 	private final Map<BareJID, Room> rooms = new ConcurrentHashMap<BareJID, Room>();
 
-	public InMemoryMucRepository(final MucConfig mucConfig, final MucDAO dao) throws RepositoryException {
+	public InMemoryMucRepository(final MucContext mucConfig, final MucDAO dao) throws RepositoryException {
 		this.dao = dao;
 		this.mucConfig = mucConfig;
 
@@ -215,7 +215,7 @@ public class InMemoryMucRepository implements IMucRepository {
 	 * @see tigase.muc.repository.IMucRepository#getRoom()
 	 */
 	@Override
-	public Room getRoom(final BareJID roomJID) throws RepositoryException, MUCException, TigaseStringprepException {
+	public Room getRoom(final BareJID roomJID) throws RepositoryException, MUCException {
 		Room room = this.rooms.get(roomJID);
 		if (room == null) {
 			room = dao.readRoom(roomJID);

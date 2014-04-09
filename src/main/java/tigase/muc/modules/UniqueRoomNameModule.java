@@ -20,69 +20,34 @@
  *
  */
 
-
-
 package tigase.muc.modules;
 
-//~--- non-JDK imports --------------------------------------------------------
-
-import tigase.component.ElementWriter;
+import java.security.SecureRandom;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
-
 import tigase.muc.exceptions.MUCException;
-import tigase.muc.MucConfig;
-import tigase.muc.repository.IMucRepository;
-
 import tigase.server.Packet;
-
 import tigase.xml.Element;
-
 import tigase.xmpp.Authorization;
 import tigase.xmpp.JID;
 
 //~--- JDK imports ------------------------------------------------------------
 
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-
 /**
  * @author bmalkow
- *
+ * 
  */
-public class UniqueRoomNameModule
-				extends AbstractModule {
-	private final static String CHARS  = "abcdefghijklmnopqrstuvwxyz0123456789";
-	private static final Criteria CRIT = ElementCriteria.nameType("iq",
-																				 "get").add(ElementCriteria.name("unique",
-																					 "http://jabber.org/protocol/muc#unique"));
+public class UniqueRoomNameModule extends AbstractMucModule {
 
-	//~--- fields ---------------------------------------------------------------
+	private final static String CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
 
-	private SecureRandom random;
+	private static final Criteria CRIT = ElementCriteria.nameType("iq", "get").add(
+			ElementCriteria.name("unique", "http://jabber.org/protocol/muc#unique"));
 
-	//~--- constructors ---------------------------------------------------------
+	public static final String ID = "unique";
 
-	/**
-	 * Constructs ...
-	 *
-	 *
-	 * @param config
-	 * @param writer
-	 * @param mucRepository
-	 */
-	public UniqueRoomNameModule(MucConfig config, ElementWriter writer,
-															IMucRepository mucRepository) {
-		super(config, writer, mucRepository);
-		try {
-			this.random = SecureRandom.getInstance("SHA1PRNG");
-		} catch (NoSuchAlgorithmException e) {
-			this.random = new SecureRandom();
-		}
-	}
-
-	//~--- methods --------------------------------------------------------------
+	private SecureRandom random = new SecureRandom();
 
 	private String generateName(int len) {
 		StringBuilder sb = new StringBuilder();
@@ -96,12 +61,10 @@ public class UniqueRoomNameModule
 		return sb.toString();
 	}
 
-	//~--- get methods ----------------------------------------------------------
-
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @return
 	 */
 	@Override
@@ -111,8 +74,8 @@ public class UniqueRoomNameModule
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @return
 	 */
 	@Override
@@ -120,14 +83,12 @@ public class UniqueRoomNameModule
 		return CRIT;
 	}
 
-	//~--- methods --------------------------------------------------------------
-
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param element
-	 *
+	 * 
 	 * @throws MUCException
 	 */
 	@Override
@@ -144,14 +105,13 @@ public class UniqueRoomNameModule
 
 			do {
 				newRoomName = generateName(30);
-			} while (repository.isRoomIdExists(newRoomName + "@" + host));
+			} while (context.getMucRepository().isRoomIdExists(newRoomName + "@" + host));
 
 			Element unique = new Element("unique", new String[] { "xmlns" },
-																	 new String[] {
-																		 "http://jabber.org/protocol/muc#unique" });
+					new String[] { "http://jabber.org/protocol/muc#unique" });
 
 			unique.setCData(newRoomName);
-			writer.write(element.okResult(unique, 0));
+			write(element.okResult(unique, 0));
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (Exception e) {
@@ -161,6 +121,3 @@ public class UniqueRoomNameModule
 		}
 	}
 }
-
-
-//~ Formatted in Tigase Code Convention on 13/02/20

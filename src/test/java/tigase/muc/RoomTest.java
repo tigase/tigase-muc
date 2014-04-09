@@ -30,7 +30,7 @@ import java.util.Map;
 import org.junit.Assert;
 import org.junit.Before;
 
-import tigase.component.ElementWriter;
+import tigase.component.PacketWriter;
 import tigase.component.exceptions.RepositoryException;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
@@ -38,7 +38,6 @@ import tigase.test.junit.XMPPTestCase;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -46,7 +45,7 @@ import tigase.xmpp.JID;
  */
 public class RoomTest extends XMPPTestCase {
 
-	private final class ArrayWriter implements ElementWriter {
+	private final class ArrayWriter implements PacketWriter {
 
 		private final ArrayList<Element> elements = new ArrayList<Element>();
 
@@ -66,15 +65,6 @@ public class RoomTest extends XMPPTestCase {
 			this.elements.add(element.getElement());
 		}
 
-		@Override
-		public void writeElement(Collection<Element> elements) {
-			this.elements.addAll(elements);
-		}
-
-		@Override
-		public void writeElement(Element element) {
-			this.elements.add(element);
-		}
 	}
 
 	private MUCComponent pubsub;
@@ -84,26 +74,14 @@ public class RoomTest extends XMPPTestCase {
 	@Before
 	public void init() throws RepositoryException, TigaseStringprepException {
 		final ArrayWriter writer = new ArrayWriter();
-		this.pubsub = new MUCComponent(writer) {
-			@Override
-			public JID getComponentId() {
-				try {
-					return JID.jidInstance("test.com");
-				} catch (TigaseStringprepException e) {
-					throw new RuntimeException(e);
-				}
-			}
-		};
+		this.pubsub = new TestMUCCompoent(writer, new MockMucRepository());
 		this.pubsub.setName("xxx");
 
-		Map<String, Object> props = new HashMap<String, Object>();
+		Map<String, Object> props = pubsub.getDefaults(new HashMap<String, Object>());
 		props.put("multi-user-chat", BareJID.bareJIDInstance("multi-user-chat"));
 		props.put(MUCComponent.MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
 		props.put(MUCComponent.PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
 		props.put(MUCComponent.LOG_DIR_KEY, "./");
-
-		pubsub.getConfig().setProperties(props);
-		this.pubsub.setMucRepository(new MockMucRepository(pubsub.getConfig()));
 
 		xmlio = new JUnitXMLIO() {
 
@@ -133,7 +111,7 @@ public class RoomTest extends XMPPTestCase {
 			}
 		};
 
-		pubsub.init();
+		pubsub.setProperties(props);
 	}
 
 	@org.junit.Test

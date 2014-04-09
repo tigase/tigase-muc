@@ -19,52 +19,31 @@
  * If not, see http://www.gnu.org/licenses/.
  *
  */
-
 package tigase.muc.modules;
 
-//~--- non-JDK imports --------------------------------------------------------
+import java.util.Collection;
 
-import tigase.component.ElementWriter;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
-import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
-import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
-//~--- JDK imports ------------------------------------------------------------
-import java.util.Collection;
 
 /**
  * @author bmalkow
  * 
  */
-public class PrivateMessageModule extends AbstractModule {
+public class PrivateMessageModule extends AbstractMucModule {
+
 	private static final Criteria CRIT = ElementCriteria.nameType("message", "chat");
 
-	// ~--- constructors
-	// ---------------------------------------------------------
-
-	/**
-	 * Constructs ...
-	 * 
-	 * 
-	 * @param config
-	 * @param writer
-	 * @param mucRepository
-	 */
-	public PrivateMessageModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository) {
-		super(config, writer, mucRepository);
-	}
-
-	// ~--- get methods
-	// ----------------------------------------------------------
+	public static final String ID = "privatemessages";
 
 	/**
 	 * Method description
@@ -88,9 +67,6 @@ public class PrivateMessageModule extends AbstractModule {
 		return CRIT;
 	}
 
-	// ~--- methods
-	// --------------------------------------------------------------
-
 	/**
 	 * Method description
 	 * 
@@ -110,7 +86,7 @@ public class PrivateMessageModule extends AbstractModule {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
-			final Room room = repository.getRoom(roomJID);
+			final Room room = context.getMucRepository().getRoom(roomJID);
 
 			if (room == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
@@ -135,7 +111,7 @@ public class PrivateMessageModule extends AbstractModule {
 				message.setAttribute("to", jid.toString());
 				Packet p = Packet.packetInstance(message);
 				p.setXMLNS(Packet.CLIENT_XMLNS);
-				writer.write(p);
+				write(p);
 			}
 		} catch (MUCException e1) {
 			throw e1;
@@ -148,5 +124,3 @@ public class PrivateMessageModule extends AbstractModule {
 		}
 	}
 }
-
-// ~ Formatted in Tigase Code Convention on 13/02/20

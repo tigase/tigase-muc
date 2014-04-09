@@ -60,15 +60,15 @@ public class Room {
 		void onChangeSubject(Room room, String nick, String newSubject, Date changeDate);
 
 		void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation);
-		
+
 		void onMessageToOccupants(Room room, JID from, Element[] contents);
 	}
-	
+
 	public static interface RoomOccupantListener {
 		void onOccupantAdded(Room room, JID occupantJid);
-		
+
 		void onOccupantRemoved(Room room, JID occupantJid);
-		
+
 		void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence, boolean newOccupant);
 	}
 
@@ -85,12 +85,12 @@ public class Room {
 
 	private final List<RoomListener> listeners = new CopyOnWriteArrayList<RoomListener>();
 
+	private final List<RoomOccupantListener> occupantListeners = new CopyOnWriteArrayList<RoomOccupantListener>();
+
 	/**
 	 * < nickname,real JID>
 	 */
 	private final TwoHashBidiMap<String, OccupantEntry> occupants = new TwoHashBidiMap<String, OccupantEntry>();
-	
-	private final List<RoomOccupantListener> occupantListeners = new CopyOnWriteArrayList<RoomOccupantListener>();
 
 	private final PresenceStore presences = new PresenceStore();
 
@@ -131,10 +131,6 @@ public class Room {
 		this.listeners.add(listener);
 	}
 
-	public void addOccupantListener(RoomOccupantListener listener) {
-		this.occupantListeners.add(listener);
-	}
-	
 	/**
 	 * @param senderJid
 	 * @param nickName
@@ -156,6 +152,10 @@ public class Room {
 			fireOnOccupantAdded(senderJid);
 	}
 
+	public void addOccupantListener(RoomOccupantListener listener) {
+		this.occupantListeners.add(listener);
+	}
+
 	/**
 	 * @param senderJid
 	 * @param nickName
@@ -173,25 +173,25 @@ public class Room {
 			listener.onMessageToOccupants(this, fromJID, content);
 		}
 	}
-	
+
 	private void fireOnOccupantAdded(JID occupantJid) {
 		for (RoomOccupantListener listener : this.occupantListeners) {
 			listener.onOccupantAdded(this, occupantJid);
 		}
 	}
-	
+
 	private void fireOnOccupantRemoved(JID occupantJid) {
 		for (RoomOccupantListener listener : this.occupantListeners) {
 			listener.onOccupantRemoved(this, occupantJid);
-		}		
+		}
 	}
-	
+
 	private void fireOnOccupantChangedPresence(JID occupantJid, String nickname, Element cp, boolean newOccupant) {
-		for  (RoomOccupantListener listener : this.occupantListeners) {
+		for (RoomOccupantListener listener : this.occupantListeners) {
 			listener.onOccupantChangedPresence(this, occupantJid, nickname, cp, newOccupant);
 		}
 	}
-	
+
 	private void fireOnSetAffiliation(BareJID jid, Affiliation affiliation) {
 		for (RoomListener listener : this.listeners) {
 			listener.onSetAffiliation(this, jid, affiliation);
@@ -479,7 +479,7 @@ public class Room {
 			this.presences.remove(jid);
 		else
 			this.presences.update(cp);
-		
+
 		fireOnOccupantChangedPresence(jid, nickname, cp, newOccupant);
 	}
 

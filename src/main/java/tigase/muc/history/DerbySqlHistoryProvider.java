@@ -30,7 +30,7 @@ import java.util.Date;
 import java.util.Map;
 import java.util.logging.Level;
 
-import tigase.component.ElementWriter;
+import tigase.component.PacketWriter;
 import tigase.db.DataRepository;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
@@ -89,7 +89,7 @@ public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 	/** {@inheritDoc} */
 	@Override
 	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
-			ElementWriter writer) {
+			PacketWriter writer) {
 		ResultSet rs = null;
 		final String roomJID = room.getRoomJID().toString();
 		try {
@@ -171,7 +171,7 @@ public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 		this.dataRepository.initPreparedStatement(GET_MESSAGES_MAXSTANZAS_QUERY_KEY, GET_MESSAGES_MAXSTANZAS_QUERY_VAL);
 	}
 
-	protected void processResultSet(Room room, JID senderJID, ElementWriter writer, Integer maxStanzas, ResultSet rs)
+	protected void processResultSet(Room room, JID senderJID, PacketWriter writer, Integer maxStanzas, ResultSet rs)
 			throws SQLException, TigaseStringprepException {
 		int i = 0;
 

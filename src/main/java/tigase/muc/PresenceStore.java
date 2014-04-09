@@ -20,11 +20,17 @@
  *
  */
 
-
-
 package tigase.muc;
 
 //~--- non-JDK imports --------------------------------------------------------
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+//~--- JDK imports ------------------------------------------------------------
+import java.util.concurrent.ConcurrentHashMap;
 
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
@@ -32,43 +38,60 @@ import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
-//~--- JDK imports ------------------------------------------------------------
-
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
-
 /**
  * Class description
- *
- *
- * @version        Enter version here..., 13/02/16
- * @author         Enter your name here...
+ * 
+ * 
+ * @version Enter version here..., 13/02/16
+ * @author Enter your name here...
  */
 public class PresenceStore {
-	private Map<BareJID, Presence> bestPresence = new ConcurrentHashMap<BareJID,
-																									Presence>();
-	private Map<JID, Presence> presenceByJid                          =
-		new ConcurrentHashMap<JID, Presence>();
-	private Map<BareJID, Map<String, Presence>> presencesMapByBareJid =
-		new ConcurrentHashMap<BareJID, Map<String, Presence>>();
+	private class Presence {
+		final Element element;
+		final int priority;
+		final String type;
 
-	//~--- methods --------------------------------------------------------------
+		// ~--- constructors
+		// -------------------------------------------------------
+
+		/**
+		 * @param presence
+		 */
+		public Presence(Element presence) {
+			this.element = presence;
+			this.type = presence.getAttributeStaticStr(Packet.TYPE_ATT);
+
+			String p = presence.getChildCDataStaticStr(tigase.server.Presence.PRESENCE_PRIORITY_PATH);
+			int x = 0;
+
+			try {
+				x = Integer.parseInt(p);
+			} catch (Exception e) {
+			}
+			this.priority = x;
+		}
+	}
+
+	private Map<BareJID, Presence> bestPresence = new ConcurrentHashMap<BareJID, Presence>();
+	private Map<JID, Presence> presenceByJid = new ConcurrentHashMap<JID, Presence>();
+
+	// ~--- methods
+	// --------------------------------------------------------------
+
+	private Map<BareJID, Map<String, Presence>> presencesMapByBareJid = new ConcurrentHashMap<BareJID, Map<String, Presence>>();
+
+	// ~--- get methods
+	// ----------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
+	 * 
 	 */
 	public void clear() {
 		presenceByJid.clear();
 		bestPresence.clear();
 		presencesMapByBareJid.clear();
 	}
-
-	//~--- get methods ----------------------------------------------------------
 
 	public Collection<JID> getAllKnownJIDs() {
 		ArrayList<JID> result = new ArrayList<JID>();
@@ -81,51 +104,51 @@ public class PresenceStore {
 		return result;
 
 	}
-	
+
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param jid
-	 *
+	 * 
 	 * @return
 	 */
 	public Element getBestPresence(final BareJID jid) {
 		Presence p = this.bestPresence.get(jid);
 
-		return (p == null)
-					 ? null
-					 : p.element;
+		return (p == null) ? null : p.element;
 	}
+
+	// ~--- methods
+	// --------------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param jid
-	 *
+	 * 
 	 * @return
 	 */
 	public Element getPresence(final JID jid) {
 		Presence p = this.presenceByJid.get(jid);
 
-		return (p == null)
-					 ? null
-					 : p.element;
+		return (p == null) ? null : p.element;
 	}
 
-	//~--- methods --------------------------------------------------------------
+	// ~--- get methods
+	// ----------------------------------------------------------
 
 	private Presence intGetBestPresence(final BareJID jid) {
 		Map<String, Presence> resourcesPresence = this.presencesMapByBareJid.get(jid);
-		Presence result                         = null;
+		Presence result = null;
 
 		if (resourcesPresence != null) {
 			Iterator<Presence> it = resourcesPresence.values().iterator();
 
 			while (it.hasNext()) {
 				Presence x = it.next();
-				Integer p  = x.priority;
+				Integer p = x.priority;
 
 				if ((result == null) || ((p >= result.priority) && (x.type == null))) {
 					result = x;
@@ -136,24 +159,25 @@ public class PresenceStore {
 		return result;
 	}
 
-	//~--- get methods ----------------------------------------------------------
+	// ~--- methods
+	// --------------------------------------------------------------
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param jid
-	 *
+	 * 
 	 * @return
 	 */
 	public boolean isAvailable(BareJID jid) {
 		Map<String, Presence> resourcesPresence = this.presencesMapByBareJid.get(jid);
-		boolean result                          = false;
+		boolean result = false;
 
 		if (resourcesPresence != null) {
 			Iterator<Presence> it = resourcesPresence.values().iterator();
 
-			while (it.hasNext() &&!result) {
+			while (it.hasNext() && !result) {
 				Presence x = it.next();
 
 				result = result | x.type == null;
@@ -163,17 +187,13 @@ public class PresenceStore {
 		return result;
 	}
 
-	//~--- methods --------------------------------------------------------------
-
 	/**
-	 *
+	 * 
 	 * @param from
 	 * @throws TigaseStringprepException
 	 */
 	public void remove(final JID from) throws TigaseStringprepException {
-		final String resource = (from.getResource() == null)
-														? ""
-														: from.getResource();
+		final String resource = (from.getResource() == null) ? "" : from.getResource();
 
 		this.presenceByJid.remove(from);
 
@@ -190,10 +210,10 @@ public class PresenceStore {
 
 	/**
 	 * Method description
-	 *
-	 *
+	 * 
+	 * 
 	 * @param presence
-	 *
+	 * 
 	 * @throws TigaseStringprepException
 	 */
 	public void update(final Element presence) throws TigaseStringprepException {
@@ -203,12 +223,10 @@ public class PresenceStore {
 			return;
 		}
 
-		final JID from         = JID.jidInstance(f);
+		final JID from = JID.jidInstance(f);
 		final BareJID bareFrom = from.getBareJID();
-		final String resource  = (from.getResource() == null)
-														 ? ""
-														 : from.getResource();
-		final Presence p       = new Presence(presence);
+		final String resource = (from.getResource() == null) ? "" : from.getResource();
+		final Presence p = new Presence(presence);
 
 		if ((p.type != null) && p.type.equals("unavailable")) {
 			this.presenceByJid.remove(from);
@@ -235,8 +253,10 @@ public class PresenceStore {
 		updateBestPresence(bareFrom);
 	}
 
-	private void updateBestPresence(final BareJID bareFrom)
-					throws TigaseStringprepException {
+	// ~--- inner classes
+	// --------------------------------------------------------
+
+	private void updateBestPresence(final BareJID bareFrom) throws TigaseStringprepException {
 		Presence x = intGetBestPresence(bareFrom);
 
 		if (x == null) {
@@ -245,34 +265,6 @@ public class PresenceStore {
 			this.bestPresence.put(bareFrom, x);
 		}
 	}
-
-	//~--- inner classes --------------------------------------------------------
-
-	private class Presence {
-		final Element element;
-		final int priority;
-		final String type;
-
-		//~--- constructors -------------------------------------------------------
-
-		/**
-		 * @param presence
-		 */
-		public Presence(Element presence) {
-			this.element = presence;
-			this.type    = presence.getAttributeStaticStr(Packet.TYPE_ATT);
-
-			String p =
-				presence.getChildCDataStaticStr(tigase.server.Presence.PRESENCE_PRIORITY_PATH);
-			int x = 0;
-
-			try {
-				x = Integer.parseInt(p);
-			} catch (Exception e) {}
-			this.priority = x;
-		}
-	}
 }
 
-
-//~ Formatted in Tigase Code Convention on 13/02/20
+// ~ Formatted in Tigase Code Convention on 13/02/20

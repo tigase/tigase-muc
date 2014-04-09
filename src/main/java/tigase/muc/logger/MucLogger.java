@@ -22,8 +22,8 @@
 package tigase.muc.logger;
 
 import java.util.Date;
-import java.util.Map;
 
+import tigase.muc.MucContext;
 import tigase.muc.Room;
 import tigase.xmpp.JID;
 
@@ -73,6 +73,6 @@ public interface MucLogger {
 	 */
 	void addSubjectChange(Room room, String message, JID senderJid, String senderNickname, Date time);
 
-	public void init(Map<String, Object> props);
+	public void init(MucContext context);
 
 }

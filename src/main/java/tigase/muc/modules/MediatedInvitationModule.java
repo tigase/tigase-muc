@@ -23,17 +23,14 @@ package tigase.muc.modules;
 
 import java.util.List;
 
-import tigase.component.ElementWriter;
 import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.criteria.Or;
 import tigase.muc.Affiliation;
-import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
-import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
@@ -46,22 +43,13 @@ import tigase.xmpp.StanzaType;
  * @author bmalkow
  * 
  */
-public class MediatedInvitationModule extends AbstractModule {
+public class MediatedInvitationModule extends AbstractMucModule {
+
 	private static final Criteria CRIT = ElementCriteria.name("message").add(
 			ElementCriteria.name("x", "http://jabber.org/protocol/muc#user").add(
 					new Or(ElementCriteria.name("invite"), ElementCriteria.name("decline"))));
 
-	/**
-	 * Constructs ...
-	 * 
-	 * 
-	 * @param config
-	 * @param writer
-	 * @param mucRepository
-	 */
-	public MediatedInvitationModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository) {
-		super(config, writer, mucRepository);
-	}
+	public static final String ID = "invitations";
 
 	/**
 	 * @param senderJID
@@ -85,7 +73,7 @@ public class MediatedInvitationModule extends AbstractModule {
 		if (reason != null) {
 			resultDecline.addChild(reason.clone());
 		}
-		writer.write(resultMessage);
+		write(resultMessage);
 	}
 
 	/**
@@ -140,7 +128,7 @@ public class MediatedInvitationModule extends AbstractModule {
 		if (cont != null) {
 			resultInvite.addChild(cont.clone());
 		}
-		writer.write(resultMessage);
+		write(resultMessage);
 	}
 
 	/**
@@ -183,7 +171,7 @@ public class MediatedInvitationModule extends AbstractModule {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
-			final Room room = repository.getRoom(roomJID);
+			final Room room = context.getMucRepository().getRoom(roomJID);
 
 			final String nickName = room.getOccupantsNickname(senderJID);
 			final Role senderRole = room.getRole(nickName);
@@ -228,6 +216,6 @@ public class MediatedInvitationModule extends AbstractModule {
 				+ (errorCondition == null ? "." : (": " + errorCondition)));
 
 		resultDecline.addChild(reason);
-		writer.write(resultMessage);
+		write(resultMessage);
 	}
 }

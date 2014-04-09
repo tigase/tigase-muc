@@ -28,18 +28,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import tigase.component.ElementWriter;
 import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.Affiliation;
-import tigase.muc.Ghostbuster2;
-import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
 import tigase.muc.exceptions.MUCException;
-import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
@@ -52,9 +48,11 @@ import tigase.xmpp.StanzaType;
  * @author bmalkow
  * 
  */
-public class ModeratorModule extends AbstractModule {
+public class ModeratorModule extends AbstractMucModule {
 	private static final Criteria CRIT = ElementCriteria.name("iq").add(
 			ElementCriteria.name("query", "http://jabber.org/protocol/muc#admin"));
+
+	public static final String ID = "admin";
 
 	private static Affiliation getAffiliation(Element item) throws MUCException {
 		String tmp = item.getAttributeStaticStr("affiliation");
@@ -76,21 +74,6 @@ public class ModeratorModule extends AbstractModule {
 		String tmp = item.getAttributeStaticStr("role");
 
 		return (tmp == null) ? null : Role.valueOf(tmp);
-	}
-
-	private Ghostbuster2 ghostbuster;
-
-	/**
-	 * Constructs ...
-	 * 
-	 * 
-	 * @param config
-	 * @param writer
-	 * @param mucRepository
-	 */
-	public ModeratorModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository, Ghostbuster2 ghostbuster) {
-		super(config, writer, mucRepository);
-		this.ghostbuster = ghostbuster;
 	}
 
 	private void checkItem(final Room room, final Element item, final Affiliation senderaAffiliation, final Role senderRole)
@@ -195,7 +178,7 @@ public class ModeratorModule extends AbstractModule {
 			Packet occupantKickPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
 					occupantAffiliation, Role.none, occupantNick, reason, actor, codes.toArray(new String[] {}));
 
-			writer.write(occupantKickPresence);
+			write(occupantKickPresence);
 		}
 		room.removeOccupant(occupantNick);
 	}
@@ -286,7 +269,7 @@ public class ModeratorModule extends AbstractModule {
 	private void processGet(Packet element) throws RepositoryException, MUCException {
 		try {
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
-			Room room = repository.getRoom(roomJID);
+			Room room = context.getMucRepository().getRoom(roomJID);
 
 			if (room == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
@@ -342,7 +325,7 @@ public class ModeratorModule extends AbstractModule {
 				responseQuery.addChild(ir);
 			}
 		}
-		writer.write(iq.okResult(responseQuery, 0));
+		write(iq.okResult(responseQuery, 0));
 	}
 
 	private void processGetRoles(final Packet iq, final Room room, final Role filterRole) throws RepositoryException,
@@ -365,13 +348,13 @@ public class ModeratorModule extends AbstractModule {
 				responseQuery.addChild(ir);
 			}
 		}
-		writer.write(iq.okResult(responseQuery, 0));
+		write(iq.okResult(responseQuery, 0));
 	}
 
 	private void processSet(Packet element) throws RepositoryException, MUCException {
 		try {
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
-			final Room room = repository.getRoom(roomJID);
+			final Room room = context.getMucRepository().getRoom(roomJID);
 
 			if (room == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
@@ -388,7 +371,7 @@ public class ModeratorModule extends AbstractModule {
 			for (Element item : items) {
 				checkItem(room, item, senderAffiliation, senderRole);
 			}
-			writer.write(element.okResult((Element) null, 0));
+			write(element.okResult((Element) null, 0));
 			for (Element item : items) {
 				final Role newRole = getRole(item);
 				final Affiliation newAffiliation = getAffiliation(item);
@@ -438,10 +421,10 @@ public class ModeratorModule extends AbstractModule {
 					Packet occupantKickPresence = makePresence(jid, room.getRoomJID(), room, occupantBareJid, isUnavailable,
 							newAffiliation, newRole, occupantNick, reason, actor, codes.toArray(new String[] {}));
 
-					writer.write(occupantKickPresence);
+					write(occupantKickPresence);
 				}
 				room.removeOccupant(occupantNick);
-				ghostbuster.remove(occupantJids, room);
+				context.getGhostbuster().remove(occupantJids, room);
 
 			}
 		}
@@ -454,7 +437,7 @@ public class ModeratorModule extends AbstractModule {
 					Packet occupantPresence = makePresence(jid, room.getRoomJID(), room, occupantBareJid, isUnavailable,
 							newAffiliation, currentRole, removed, reason, null, codes.toArray(new String[] {}));
 
-					writer.write(occupantPresence);
+					write(occupantPresence);
 				}
 			}
 		}
@@ -477,10 +460,10 @@ public class ModeratorModule extends AbstractModule {
 				Packet occupantKickPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
 						occupantAffiliation, newRole, occupantNick, reason, actor, codes.toArray(new String[] {}));
 
-				writer.write(occupantKickPresence);
+				write(occupantKickPresence);
 			}
 			room.removeOccupant(occupantNick);
-			ghostbuster.remove(occupantJids, room);
+			context.getGhostbuster().remove(occupantJids, room);
 		} else {
 			room.setNewRole(occupantNick, newRole);
 		}
@@ -493,7 +476,7 @@ public class ModeratorModule extends AbstractModule {
 				Packet occupantPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
 						occupantAffiliation, newRole, occupantNick, reason, null, codes.toArray(new String[] {}));
 
-				writer.write(occupantPresence);
+				write(occupantPresence);
 			}
 		}
 	}
@@ -518,6 +501,6 @@ public class ModeratorModule extends AbstractModule {
 		if (room.getConfig().isPasswordProtectedRoom()) {
 			x.addChild(new Element("password", room.getConfig().getPassword()));
 		}
-		writer.write(message);
+		write(message);
 	}
 }

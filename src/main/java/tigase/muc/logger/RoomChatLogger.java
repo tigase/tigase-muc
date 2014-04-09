@@ -27,9 +27,8 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
-import java.util.Map;
 
-import tigase.muc.MUCComponent;
+import tigase.muc.MucContext;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.xmpp.BareJID;
@@ -97,7 +96,7 @@ public class RoomChatLogger implements MucLogger {
 
 	private final static String SUBJECT_PLAIN_FORMAT = "[%1$s] %2$s has set the subject to: %3$s\n";
 
-	private String logDirectory;
+	private MucContext context;
 
 	private final Worker worker = new Worker();
 
@@ -181,7 +180,7 @@ public class RoomChatLogger implements MucLogger {
 			throw new RuntimeException("Unsupported log format: " + logFormat.name());
 		}
 
-		Item it = new Item(new File(logDirectory + "/" + roomJID + ext), line);
+		Item it = new Item(new File(context.getChatLoggingDirectory() + "/" + roomJID + ext), line);
 		this.worker.items.add(it);
 	}
 
@@ -245,8 +244,8 @@ public class RoomChatLogger implements MucLogger {
 	 * @see tigase.muc.logger.MucLogger#init(java.util.Map)
 	 */
 	@Override
-	public void init(Map<String, Object> props) {
-		this.logDirectory = (String) props.get(MUCComponent.LOG_DIR_KEY);
+	public void init(MucContext context) {
+		this.context = context;
 		this.worker.start();
 	}
 }

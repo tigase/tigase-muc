@@ -49,9 +49,6 @@ public class MockMucRepository implements IMucRepository {
 
 	private final Map<BareJID, InternalRoom> allRooms = new HashMap<BareJID, InternalRoom>();
 
-	@SuppressWarnings("unused")
-	private final MucConfig config;
-
 	private RoomConfig defaultConfig = new RoomConfig(null, true);
 
 	protected Logger log = Logger.getLogger(this.getClass().getName());
@@ -60,9 +57,7 @@ public class MockMucRepository implements IMucRepository {
 
 	private final HashMap<BareJID, Room> rooms = new HashMap<BareJID, Room>();
 
-	public MockMucRepository(final MucConfig mucConfig) throws RepositoryException {
-		this.config = mucConfig;
-
+	public MockMucRepository() throws RepositoryException {
 		this.roomConfigListener = new RoomConfig.RoomConfigListener() {
 
 			@Override

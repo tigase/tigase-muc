@@ -33,11 +33,10 @@ import tigase.db.TigaseDBException;
 import tigase.db.UserNotFoundException;
 import tigase.db.UserRepository;
 import tigase.muc.Affiliation;
-import tigase.muc.MucConfig;
+import tigase.muc.MucContext;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
-import tigase.util.TigaseStringprepException;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
@@ -63,11 +62,11 @@ public class MucDAO {
 
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 
-	private final MucConfig mucConfig;
+	private final MucContext mucConfig;
 
 	private final UserRepository repository;
 
-	public MucDAO(final MucConfig config, final UserRepository repository) throws RepositoryException {
+	public MucDAO(final MucContext config, final UserRepository repository) throws RepositoryException {
 		this.mucConfig = config;
 		this.repository = repository;
 
@@ -207,7 +206,7 @@ public class MucDAO {
 		}
 	}
 
-	public Room readRoom(BareJID roomJID) throws RepositoryException, MUCException, TigaseStringprepException {
+	public Room readRoom(BareJID roomJID) throws RepositoryException, MUCException {
 
 		try {
 			final String tmpDate = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomJID, CREATION_DATE_KEY);
@@ -248,8 +247,6 @@ public class MucDAO {
 				return room;
 			}
 			return null;
-		} catch (tigase.util.TigaseStringprepException e) {
-			throw e;
 		} catch (Exception e) {
 			if (log.isLoggable(Level.WARNING))
 				log.log(Level.WARNING, "Room reading error", e);

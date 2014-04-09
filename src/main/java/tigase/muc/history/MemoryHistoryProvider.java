@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
-import tigase.component.ElementWriter;
+import tigase.component.PacketWriter;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
@@ -99,7 +99,7 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 
 	@Override
 	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
-			ElementWriter writer) {
+			PacketWriter writer) {
 		LinkedList<HItem> stanzas = this.history.get(room.getRoomJID());
 		if (stanzas == null) {
 			stanzas = new LinkedList<HItem>();

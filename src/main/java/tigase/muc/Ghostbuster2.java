@@ -229,7 +229,7 @@ public class Ghostbuster2 {
 		Packet packet = Packet.packetInstance(ping);
 		packet.setXMLNS(Packet.CLIENT_XMLNS);
 
-		mucComponent.addOutPacket(packet, pingHandler, 1, TimeUnit.MINUTES);
+		mucComponent.addOutPacketWithTimeout(packet, pingHandler, 1, TimeUnit.MINUTES);
 
 		if (log.isLoggable(Level.FINER))
 			log.log(Level.FINER, "Pinged " + occupantJID);

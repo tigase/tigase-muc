@@ -19,155 +19,237 @@
  * Last modified by $Author$
  * $Date$
  */
-
 package tigase.muc;
 
-//~--- non-JDK imports --------------------------------------------------------
-
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.script.Bindings;
 
 import tigase.component.AbstractComponent;
-import tigase.component.ElementWriter;
+import tigase.component.AbstractComponent.ModuleRegisteredHandler;
+import tigase.component.PacketWriter;
+import tigase.component.adhoc.AbstractAdHocCommandModule;
+import tigase.component.eventbus.DefaultEventBus;
+import tigase.component.eventbus.EventBus;
 import tigase.component.exceptions.RepositoryException;
-import tigase.conf.Configurable;
+import tigase.component.modules.Module;
+import tigase.component.modules.ModuleProvider;
+import tigase.component.modules.impl.JabberVersionModule;
+import tigase.component.modules.impl.XmppPingModule;
 import tigase.db.RepositoryFactory;
 import tigase.db.UserRepository;
-import tigase.disco.ServiceEntity;
-import tigase.disco.ServiceIdentity;
-import tigase.disco.XMPPService;
 import tigase.form.Field;
 import tigase.muc.history.HistoryManagerFactory;
 import tigase.muc.history.HistoryProvider;
-import tigase.muc.history.MemoryHistoryProvider;
 import tigase.muc.logger.MucLogger;
-import tigase.muc.modules.DiscoInfoModule;
-import tigase.muc.modules.DiscoItemsModule;
+import tigase.muc.modules.AdHocCommandModule;
+import tigase.muc.modules.DiscoveryModule;
 import tigase.muc.modules.GroupchatMessageModule;
 import tigase.muc.modules.IqStanzaForwarderModule;
 import tigase.muc.modules.MediatedInvitationModule;
 import tigase.muc.modules.ModeratorModule;
 import tigase.muc.modules.PresenceModule;
-import tigase.muc.modules.PresenceModule.DelayDeliveryThread.DelDeliverySend;
 import tigase.muc.modules.PrivateMessageModule;
 import tigase.muc.modules.RoomConfigurationModule;
-import tigase.muc.modules.SoftwareVersionModule;
 import tigase.muc.modules.UniqueRoomNameModule;
-import tigase.muc.modules.XmppPingModule;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.MucDAO;
 import tigase.muc.repository.inmemory.InMemoryMucRepository;
-import tigase.server.DisableDisco;
 import tigase.server.Packet;
-import tigase.server.ReceiverTimeoutHandler;
-import tigase.util.DNSResolver;
-import tigase.util.TigaseStringprepException;
-import tigase.xml.Element;
-import tigase.xmpp.JID;
+import tigase.xmpp.BareJID;
 
-//~--- classes ----------------------------------------------------------------
+public class MUCComponent extends AbstractComponent<MucContext> implements ModuleRegisteredHandler {
 
-/**
- * Class description
- * 
- * 
- * @version 5.1.0, 2010.11.02 at 01:01:31 MDT
- * @author Artur Hefczyc <artur.hefczyc@tigase.org>
- */
-public class MUCComponent extends AbstractComponent<MucConfig> implements DelDeliverySend, XMPPService, Configurable,
-		DisableDisco {
-
-	/** Field description */
-	public static final String ADMINS_KEY = "admins";
 	public static final String DEFAULT_ROOM_CONFIG_PREFIX_KEY = "default_room_config/";
-	public static final String LOG_DIR_KEY = "room-log-directory";
-	public static final String MESSAGE_FILTER_ENABLED_KEY = "message-filter-enabled";
-	public static final String MUC_ALLOW_CHAT_STATES_KEY = "muc-allow-chat-states";
-	public static final String MUC_LOCK_NEW_ROOM_KEY = "muc-lock-new-room";
-	public static final String MUC_MULTI_ITEM_ALLOWED_KEY = "muc-multi-item-allowed";
-	protected static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
-	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
-	private static final String MUC_REPOSITORY_VAR = "mucRepository";
 
-	private static final String OWNER_MODULE_VAR = "ownerModule";
+	public static final String LOG_DIR_KEY = "room-log-directory";
+
+	public static final String MESSAGE_FILTER_ENABLED_KEY = "message-filter-enabled";
+
+	public static final String MUC_ALLOW_CHAT_STATES_KEY = "muc-allow-chat-states";
+
+	public static final String MUC_LOCK_NEW_ROOM_KEY = "muc-lock-new-room";
+
+	public static final String MUC_MULTI_ITEM_ALLOWED_KEY = "muc-multi-item-allowed";
+
+	protected static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
+
+	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
+
 	/**
-	 * @deprecated Use {@linkplain MUCComponent#SEARCH_GHOSTS_EVERY_MINUTE_KEY
+	 * 
+	 * @deprecated Use
+	 *             {@linkplain CopyOfMUCComponent#SEARCH_GHOSTS_EVERY_MINUTE_KEY
 	 *             SEARCH_GHOSTS_MINUTE_KEY} instead.
 	 */
 	@Deprecated
 	public static final String PING_EVERY_MINUTE_KEY = "ping-every-minute";
+
 	public static final String PRESENCE_FILTER_ENABLED_KEY = "presence-filter-enabled";
-	private static final String PRESENCE_MODULE_VAR = "presenceModule";
+
 	public static final String SEARCH_GHOSTS_EVERY_MINUTE_KEY = "search-ghosts-every-minute";
 
-	private MucDAO dao;
+	protected String chatLoggingDirectory;
 
-	private final Ghostbuster2 ghostbuster;
+	protected Boolean chatStateAllowed;
 
-	private HistoryProvider historyProvider;
+	protected EventBus eventBus = new DefaultEventBus();
 
-	/** Field description */
-	public String[] HOSTNAMES_PROP_VAL = { "localhost", "hostname" };
+	protected Ghostbuster2 ghostbuster;
 
-	protected Logger log = Logger.getLogger(this.getClass().getName());
+	protected HistoryProvider historyProvider;
 
-	private GroupchatMessageModule messageModule;
+	protected boolean messageFilterEnabled;
 
-	private ModeratorModule moderatorModule;
+	protected MucLogger mucLogger;
 
-	private IMucRepository mucRepository;
+	protected IMucRepository mucRepository;
 
-	private RoomConfigurationModule ownerModule;
+	protected boolean multiItemMode;
 
-	private PresenceModule presenceModule;
+	protected Boolean newRoomLocked;
 
-	private MucLogger roomLogger;
+	protected boolean presenceFilterEnabled;
 
-	private boolean searchGhostsEveryMinute = false;
+	protected boolean publicLoggingEnabled;
 
-	private ServiceEntity serviceEntity;
-	private UserRepository userRepository;
+	protected boolean searchGhostsEveryMinute = false;
 
-	/**
-	 * 
-	 */
+	protected PacketWriter writer = new PacketWriter() {
+		@Override
+		public void write(Collection<Packet> elements) {
+			if (elements != null) {
+				for (Packet element : elements) {
+					if (element != null) {
+						write(element);
+					}
+				}
+			}
+		}
+
+		@Override
+		public void write(Packet packet) {
+			if (log.isLoggable(Level.FINER)) {
+				log.finer("Sent: " + packet.getElement());
+			}
+			addOutPacket(packet);
+		}
+
+	};
+
 	public MUCComponent() {
-		super();
 		this.ghostbuster = new Ghostbuster2(this);
-	}
-
-	public MUCComponent(ElementWriter writer) {
-		super(writer);
-		this.ghostbuster = new Ghostbuster2(this);
-	}
-
-	boolean addOutPacket(Packet packet, ReceiverTimeoutHandler handler, long delay, TimeUnit unit) {
-		return super.addOutPacketWithTimeout(packet, handler, delay, unit);
+		addModuleRegisteredHandler(this);
 	}
 
 	/*
 	 * (non-Javadoc)
 	 * 
-	 * @see
-	 * tigase.component.AbstractComponent#createComponentConfigInstance(tigase
-	 * .component.AbstractComponent)
+	 * @see tigase.component.AbstractComponent#createContext()
 	 */
 	@Override
-	protected MucConfig createComponentConfigInstance(AbstractComponent<?> abstractComponent) {
-		return new MucConfig(abstractComponent);
-	}
+	protected MucContext createContext() {
+		return new MucContext() {
 
-	protected IMucRepository createMucRepository(MucConfig componentConfig, MucDAO dao) throws RepositoryException {
-		return new InMemoryMucRepository(componentConfig, dao);
+			private final BareJID serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
+
+			@Override
+			public String getChatLoggingDirectory() {
+				return MUCComponent.this.chatLoggingDirectory;
+			}
+
+			@Override
+			public String getComponentCategory() {
+				return MUCComponent.this.getDiscoCategory();
+			}
+
+			@Override
+			public String getComponentName() {
+				return MUCComponent.this.getDiscoDescription();
+			}
+
+			@Override
+			public String getComponentType() {
+				return MUCComponent.this.getDiscoCategoryType();
+			}
+
+			@Override
+			public String getComponentVersion() {
+				return MUCComponent.this.getComponentVersion();
+			}
+
+			@Override
+			public EventBus getEventBus() {
+				return MUCComponent.this.eventBus;
+			}
+
+			@Override
+			public Ghostbuster2 getGhostbuster() {
+				return MUCComponent.this.ghostbuster;
+			}
+
+			@Override
+			public HistoryProvider getHistoryProvider() {
+				return MUCComponent.this.historyProvider;
+			}
+
+			@Override
+			public ModuleProvider getModuleProvider() {
+				return MUCComponent.this.modulesManager;
+			}
+
+			@Override
+			public MucLogger getMucLogger() {
+				return MUCComponent.this.mucLogger;
+			}
+
+			@Override
+			public IMucRepository getMucRepository() {
+				return MUCComponent.this.mucRepository;
+			}
+
+			@Override
+			public BareJID getServiceName() {
+				return serviceName;
+			}
+
+			@Override
+			public PacketWriter getWriter() {
+				return MUCComponent.this.writer;
+			}
+
+			@Override
+			public boolean isChatStateAllowed() {
+				return MUCComponent.this.chatStateAllowed;
+			}
+
+			@Override
+			public boolean isMessageFilterEnabled() {
+				return MUCComponent.this.messageFilterEnabled;
+			}
+
+			@Override
+			public boolean isMultiItemMode() {
+				return MUCComponent.this.multiItemMode;
+			}
+
+			@Override
+			public boolean isNewRoomLocked() {
+				return MUCComponent.this.newRoomLocked;
+			}
+
+			@Override
+			public boolean isPresenceFilterEnabled() {
+				return MUCComponent.this.presenceFilterEnabled;
+			}
+
+			@Override
+			public boolean isPublicLoggingEnabled() {
+				return MUCComponent.this.publicLoggingEnabled;
+			}
+		};
 	}
 
 	@Override
@@ -177,11 +259,6 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 			executePingInThread();
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see tigase.server.AbstractMessageReceiver#everyMinute()
-	 */
 	@Override
 	public synchronized void everyMinute() {
 		super.everyMinute();
@@ -205,59 +282,47 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		}
 	}
 
-	public MucConfig getConfig() {
-		return componentConfig;
+	@Override
+	public String getComponentVersion() {
+		String version = this.getClass().getPackage().getImplementationVersion();
+		return version == null ? "0.0.0" : version;
 	}
 
-	/**
-	 * Method description
+	@Override
+	protected Map<String, Class<? extends Module>> getDefaultModulesList() {
+		Map<String, Class<? extends Module>> result = new HashMap<String, Class<? extends Module>>();
+
+		result.put(XmppPingModule.ID, XmppPingModule.class);
+		result.put(JabberVersionModule.ID, JabberVersionModule.class);
+
+		result.put(tigase.component.modules.impl.DiscoveryModule.ID, DiscoveryModule.class);
+		result.put(GroupchatMessageModule.ID, GroupchatMessageModule.class);
+		result.put(IqStanzaForwarderModule.ID, IqStanzaForwarderModule.class);
+		result.put(MediatedInvitationModule.ID, MediatedInvitationModule.class);
+		result.put(ModeratorModule.ID, ModeratorModule.class);
+		result.put(PresenceModule.ID, PresenceModule.class);
+		result.put(PrivateMessageModule.ID, PrivateMessageModule.class);
+		result.put(RoomConfigurationModule.ID, RoomConfigurationModule.class);
+		result.put(UniqueRoomNameModule.ID, UniqueRoomNameModule.class);
+		result.put(AbstractAdHocCommandModule.ID, AdHocCommandModule.class);
+
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * 
-	 * 
-	 * @param params
-	 * 
-	 * @return
+	 * @see tigase.component.AbstractComponent#getDefaults(java.util.Map)
 	 */
 	@Override
 	public Map<String, Object> getDefaults(Map<String, Object> params) {
 		Map<String, Object> props = super.getDefaults(params);
 
-		if (params.get(GEN_VIRT_HOSTS) != null) {
-			HOSTNAMES_PROP_VAL = ((String) params.get(GEN_VIRT_HOSTS)).split(",");
-		} else {
-			HOSTNAMES_PROP_VAL = DNSResolver.getDefHostNames();
-		}
-
+		props.put(LOG_DIR_KEY, new String("./logs/"));
 		props.put(MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
 		props.put(PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
 		props.put(SEARCH_GHOSTS_EVERY_MINUTE_KEY, Boolean.FALSE);
 
-		String[] hostnames = new String[HOSTNAMES_PROP_VAL.length];
-		int i = 0;
-
-		for (String host : HOSTNAMES_PROP_VAL) {
-			hostnames[i++] = getName() + "." + host;
-		}
-
-		props.put(HOSTNAMES_PROP_KEY, hostnames);
-
-		// By default use the same repository as all other components:
-		String repo_class = (params.get(GEN_USER_DB) != null) ? (String) params.get(GEN_USER_DB) : DERBY_REPO_CLASS_PROP_VAL;
-		String repo_uri = (params.get(GEN_USER_DB_URI) != null) ? (String) params.get(GEN_USER_DB_URI)
-				: DERBY_REPO_URL_PROP_VAL;
-
-		props.put(HistoryManagerFactory.DB_CLASS_KEY, repo_class);
-		props.put(HistoryManagerFactory.DB_URI_KEY, repo_uri);
-
-		String[] admins;
-
-		if (params.get(GEN_ADMINS) != null) {
-			admins = ((String) params.get(GEN_ADMINS)).split(",");
-		} else {
-			admins = new String[] { "admin@" + getDefHostName() };
-		}
-
-		props.put(ADMINS_KEY, admins);
-		props.put(LOG_DIR_KEY, new String("./logs/"));
 		props.put(MUC_ALLOW_CHAT_STATES_KEY, Boolean.FALSE);
 		props.put(MUC_LOCK_NEW_ROOM_KEY, Boolean.TRUE);
 		props.put(MUC_MULTI_ITEM_ALLOWED_KEY, Boolean.TRUE);
@@ -265,104 +330,37 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		return props;
 	}
 
-	/**
-	 * Method description
-	 * 
-	 * 
-	 * @return
-	 */
 	@Override
-	public List<Element> getDiscoFeatures() {
-		return null;
+	public String getDiscoCategory() {
+		return "conference";
 	}
 
-	/**
-	 * Method description
-	 * 
-	 * 
-	 * @param node
-	 * @param jid
-	 * 
-	 * @return
-	 */
 	@Override
-	public Element getDiscoInfo(String node, JID jid) {
-		return null;
+	public String getDiscoCategoryType() {
+		return "text";
 	}
 
-	/**
-	 * Method description
-	 * 
-	 * 
-	 * @param node
-	 * @param jid
-	 * 
-	 * @return
-	 */
 	@Override
-	public List<Element> getDiscoItems(String node, JID jid) {
-		if (node == null) {
-			Element result = serviceEntity.getDiscoItem(null, getName() + "." + jid.toString());
-
-			return Arrays.asList(result);
-		} else {
-			return null;
-		}
-	}
-
-	/**
-	 * Method description
-	 * 
-	 * 
-	 * @return
-	 */
-	public Set<String> getFeaturesFromModule() {
-		HashSet<String> result = new HashSet<String>();
-		result.addAll(this.modulesManager.getFeatures());
-		return result;
+	public String getDiscoDescription() {
+		return "Multi User Chat";
 	}
 
 	public IMucRepository getMucRepository() {
 		return mucRepository;
 	}
 
-	protected void init() {
-		final ElementWriter writer = getWriter();
-
-		presenceModule = new PresenceModule(this.componentConfig, writer, this.mucRepository, this.historyProvider, this,
-				roomLogger, ghostbuster);
-
-		ghostbuster.setPresenceModule(presenceModule);
-
-		this.modulesManager.register(new PrivateMessageModule(this.componentConfig, writer, this.mucRepository));
-		messageModule = this.modulesManager.register(new GroupchatMessageModule(this.componentConfig, writer,
-				this.mucRepository, historyProvider, roomLogger));
-		this.modulesManager.register(presenceModule);
-		ownerModule = this.modulesManager.register(new RoomConfigurationModule(this.componentConfig, writer,
-				this.mucRepository, this.historyProvider, messageModule));
-		this.moderatorModule = this.modulesManager.register(new ModeratorModule(this.componentConfig, writer,
-				this.mucRepository, ghostbuster));
-		this.modulesManager.register(new SoftwareVersionModule(writer));
-		this.modulesManager.register(new XmppPingModule(writer));
-		this.modulesManager.register(new DiscoItemsModule(this.componentConfig, writer, this.mucRepository, scriptCommands,
-				this));
-		this.modulesManager.register(new DiscoInfoModule(this.componentConfig, writer, this.mucRepository, this));
-		this.modulesManager.register(new MediatedInvitationModule(this.componentConfig, writer, this.mucRepository));
-		this.modulesManager.register(new UniqueRoomNameModule(this.componentConfig, writer, this.mucRepository));
-		this.modulesManager.register(new IqStanzaForwarderModule(this.componentConfig, writer, this.mucRepository));
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see tigase.server.BasicComponent#initBindings(javax.script.Bindings)
-	 */
 	@Override
-	public void initBindings(Bindings binds) {
-		super.initBindings(binds);
-		binds.put(PRESENCE_MODULE_VAR, presenceModule);
-		binds.put(OWNER_MODULE_VAR, ownerModule);
-		binds.put(MUC_REPOSITORY_VAR, mucRepository);
+	public int hashCodeForPacket(Packet packet) {
+		if ((packet.getStanzaFrom() != null) && (packet.getPacketFrom() != null)
+				&& !getComponentId().equals(packet.getPacketFrom())) {
+			return packet.getStanzaFrom().hashCode();
+		}
+
+		if (packet.getStanzaTo() != null) {
+			return packet.getStanzaTo().hashCode();
+		}
+
+		return 1;
 	}
 
 	@Override
@@ -370,18 +368,39 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		return true;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * tigase.component.AbstractComponent.ModuleRegisteredHandler#onModuleRegistered
+	 * (java.lang.String, tigase.component.modules.Module)
+	 */
+	@Override
+	public void onModuleRegistered(String id, Module module) {
+		if (id.equals(PresenceModule.ID) && module instanceof PresenceModule) {
+			ghostbuster.setPresenceModule((PresenceModule) module);
+		}
+	}
+
 	@Override
 	public int processingInThreads() {
-		return Runtime.getRuntime().availableProcessors();
+		return Runtime.getRuntime().availableProcessors() * 4;
 	}
 
 	@Override
 	public int processingOutThreads() {
-		return Runtime.getRuntime().availableProcessors();
+		return Runtime.getRuntime().availableProcessors() * 4;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * tigase.component.AbstractComponent#processStanzaPacket(tigase.server.
+	 * Packet)
+	 */
 	@Override
-	protected void processStanzaPacket(final Packet packet) {
+	protected void processStanzaPacket(Packet packet) {
 		try {
 			ghostbuster.update(packet);
 		} catch (Exception e) {
@@ -390,166 +409,120 @@ public class MUCComponent extends AbstractComponent<MucConfig> implements DelDel
 		super.processStanzaPacket(packet);
 	}
 
-	/**
-	 * Method description
-	 * 
-	 * 
-	 * @param packet
-	 */
-	@Override
-	public void sendDelayedPacket(Packet packet) {
-		addOutPacket(packet);
-	}
-
-	// ~--- methods
-	// --------------------------------------------------------------
-
-	/**
-	 * Method description
-	 * 
-	 * 
-	 * @param mucRepository
-	 */
-	public void setMucRepository(IMucRepository mucRepository) {
-		this.mucRepository = mucRepository;
-	}
-
-	/**
-	 * Method description
-	 * 
-	 * 
-	 * @param props
-	 */
 	@Override
 	public void setProperties(Map<String, Object> props) {
-		super.setProperties(props);
-
-		if (props.size() == 1) {
-			// If props.size() == 1, it means this is a single property update
-			// and this component does not support single property change for
-			// the rest
-			// of it's settings
-			return;
-		}
-
 		if (props.containsKey(PING_EVERY_MINUTE_KEY)) {
 			this.searchGhostsEveryMinute = (Boolean) props.get(PING_EVERY_MINUTE_KEY);
-		} else
+		} else {
 			this.searchGhostsEveryMinute = (Boolean) props.get(SEARCH_GHOSTS_EVERY_MINUTE_KEY);
+		}
 
-		// String[] hostnames = (String[]) props.get(HOSTNAMES_PROP_KEY);
-		// if (hostnames == null || hostnames.length == 0) {
-		// log.warning("Hostnames definition is empty, setting 'localhost'");
-		// hostnames = new String[] { getName() + ".localhost" };
-		// }
-		// clearRoutings();
-		// for (String host : hostnames) {
-		// addRouting(host);
-		// }
-		serviceEntity = new ServiceEntity(getName(), null, "Multi User Chat");
-		serviceEntity.addIdentities(new ServiceIdentity("conference", "text", "Multi User Chat"));
-		serviceEntity.addFeatures("http://jabber.org/protocol/muc");
+		if (props.containsKey(MUCComponent.MESSAGE_FILTER_ENABLED_KEY))
+			this.messageFilterEnabled = (Boolean) props.get(MUCComponent.MESSAGE_FILTER_ENABLED_KEY);
 
-		try {
-			this.historyProvider = HistoryManagerFactory.getHistoryManager(props);
-			this.historyProvider.init(props);
-		} catch (Exception e) {
-			this.historyProvider = new MemoryHistoryProvider();
-			throw new RuntimeException(e);
+		if (props.containsKey(MUCComponent.PRESENCE_FILTER_ENABLED_KEY))
+			this.presenceFilterEnabled = (Boolean) props.get(MUCComponent.PRESENCE_FILTER_ENABLED_KEY);
+
+		if (props.containsKey(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY))
+			this.multiItemMode = (Boolean) props.get(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY);
+
+		if (props.containsKey(MUCComponent.MUC_ALLOW_CHAT_STATES_KEY))
+			this.chatStateAllowed = (Boolean) props.get(MUCComponent.MUC_ALLOW_CHAT_STATES_KEY);
+
+		if (props.containsKey(MUCComponent.MUC_LOCK_NEW_ROOM_KEY))
+			this.newRoomLocked = (Boolean) props.get(MUCComponent.MUC_LOCK_NEW_ROOM_KEY);
+
+		if (props.containsKey(LOG_DIR_KEY)) {
+			log.config("Setting Chat Logging Directory");
+			this.chatLoggingDirectory = (String) props.get(LOG_DIR_KEY);
+		}
+
+		if (mucRepository == null) {
+			log.config("Initializing MUC Repository");
+			try {
+				final String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
+				final String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
+
+				UserRepository userRepository;
+				if (cls_name != null && res_uri != null) {
+					userRepository = RepositoryFactory.getUserRepository(cls_name, res_uri, null);
+				} else {
+					userRepository = (UserRepository) props.get(RepositoryFactory.SHARED_USER_REPO_PROP_KEY);
+				}
+				MucDAO dao = new MucDAO(context, userRepository);
+				mucRepository = new InMemoryMucRepository(context, dao);
+			} catch (Exception e) {
+				log.log(Level.WARNING, "Cannot initialize MUC Repository", e);
+			}
+		}
+
+		if (props.containsKey(HistoryManagerFactory.DB_CLASS_KEY)) {
+			log.config("Initializing History Provider");
+			try {
+				this.historyProvider = HistoryManagerFactory.getHistoryManager(props);
+				this.historyProvider.init(props);
+			} catch (Exception e) {
+				log.log(Level.WARNING, "Cannot initialize History Provider", e);
+			}
 		}
 
 		if (props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY)) {
+			log.config("Initializing MUC Logger");
 			String loggerClassName = (String) props.get(MucLogger.MUC_LOGGER_CLASS_KEY);
 			try {
 				if (log.isLoggable(Level.CONFIG))
 					log.config("Using Room Logger: " + loggerClassName);
-				this.roomLogger = (MucLogger) Class.forName(loggerClassName).newInstance();
-				this.roomLogger.init(props);
+				this.mucLogger = (MucLogger) Class.forName(loggerClassName).newInstance();
+				this.mucLogger.init(context);
 			} catch (Exception e) {
-				System.err.println("");
-				System.err.println("  --------------------------------------");
-				System.err.println("  ERROR! Terminating the server process.");
-				System.err.println("  Problem initializing the MUC Component: " + e);
-				System.err.println("  Please fix the problem and start the server again.");
-				e.printStackTrace();
-				System.exit(1);
-			}
-		}
-		this.componentConfig.setProperties(props);
-		this.componentConfig.setPublicLoggingEnabled(this.roomLogger != null || this.historyProvider.isPersistent());
-		if (log.isLoggable(Level.CONFIG))
-			log.config("Public Logging Allowed: " + this.componentConfig.isPublicLoggingEnabled());
-
-		if (userRepository == null) {
-			try {
-				final String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
-				if (cls_name != null) {
-					String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
-					this.userRepository = RepositoryFactory.getUserRepository(cls_name, res_uri, null);
-					userRepository.initRepository(res_uri, null);
-				} else {
-					userRepository = (UserRepository) props.get(SHARED_USER_REPO_PROP_KEY);
-				}
-				dao = new MucDAO(this.componentConfig, this.userRepository);
-				mucRepository = createMucRepository(this.componentConfig, dao);
-			} catch (Exception e) {
-				if (log.isLoggable(Level.SEVERE))
-					log.severe("Can't initialize MUC repository: " + e);
-				e.printStackTrace();
-
-				// System.exit(1);
-			}
-
-			init();
-
-			try {
-				final RoomConfig defaultRoomConfig = mucRepository.getDefaultRoomConfig();
-				boolean changed = false;
-				for (Entry<String, Object> x : props.entrySet()) {
-					if (x.getKey().startsWith(DEFAULT_ROOM_CONFIG_PREFIX_KEY)) {
-						String var = x.getKey().substring(DEFAULT_ROOM_CONFIG_PREFIX_KEY.length());
-
-						Field field = defaultRoomConfig.getConfigForm().get(var);
-						if (field != null) {
-							changed = true;
-							field.setValues(new String[] { (String) x.getValue() });
-						} else if (log.isLoggable(Level.WARNING)) {
-							log.warning("Default config room doesn't contains variable '" + var + "'!");
-						}
-					}
-				}
-				if (changed) {
-					if (log.isLoggable(Level.CONFIG))
-						log.config("Default room configuration is udpated");
-					mucRepository.updateDefaultRoomConfig(defaultRoomConfig);
-				}
-			} catch (Exception e) {
-				log.log(Level.WARNING, "Can't set default room ronfiguration", e);
+				log.log(Level.WARNING, "Cannot initialize MUC Logger", e);
 			}
 		}
 
-		this.messageModule.setChatStateAllowed((Boolean) props.get(MUC_ALLOW_CHAT_STATES_KEY));
-		this.presenceModule.setLockNewRoom((Boolean) props.get(MUC_LOCK_NEW_ROOM_KEY));
-		if (log.isLoggable(Level.INFO))
-			log.info("Tigase MUC Component ver. " + MucVersion.getVersion() + " started.");
+		try {
+			updateDefaultRoomConfig(props);
+		} catch (Exception e) {
+			log.log(Level.WARNING, "Cannot update Default Room Config", e);
+		}
+
+		super.setProperties(props);
 	}
 
-	@Override
-	public void stop() {
-		try {
-			for (Room room : mucRepository.getActiveRooms().values()) {
-				for (String nickname : room.getOccupantsNicknames())
-					try {
-						moderatorModule.kickWithoutBroadcast(room, nickname, "MUC component is going down.", null);
-					} catch (TigaseStringprepException e) {
-						log.log(Level.WARNING, "Can't throw out occupant from room", e);
-					}
+	private void updateDefaultRoomConfig(Map<String, Object> props) throws RepositoryException {
+		boolean found = false;
+		for (Entry<String, Object> x : props.entrySet()) {
+			if (x.getKey().startsWith(DEFAULT_ROOM_CONFIG_PREFIX_KEY)) {
+				found = true;
+				break;
 			}
-		} catch (Exception e) {
-			log.log(Level.WARNING, "Problem on throwing out occupants", e);
-		} finally {
-			super.stop();
 		}
+
+		if (!found)
+			return;
+
+		log.config("Updating Default Room Config");
+
+		final RoomConfig defaultRoomConfig = mucRepository.getDefaultRoomConfig();
+		boolean changed = false;
+		for (Entry<String, Object> x : props.entrySet()) {
+			if (x.getKey().startsWith(DEFAULT_ROOM_CONFIG_PREFIX_KEY)) {
+				String var = x.getKey().substring(DEFAULT_ROOM_CONFIG_PREFIX_KEY.length());
+
+				Field field = defaultRoomConfig.getConfigForm().get(var);
+				if (field != null) {
+					changed = true;
+					field.setValues(new String[] { (String) x.getValue() });
+				} else if (log.isLoggable(Level.WARNING)) {
+					log.warning("Default config room doesn't contains variable '" + var + "'!");
+				}
+			}
+		}
+		if (changed) {
+			if (log.isLoggable(Level.CONFIG))
+				log.config("Default room configuration is udpated");
+			mucRepository.updateDefaultRoomConfig(defaultRoomConfig);
+		}
+
 	}
 
 }

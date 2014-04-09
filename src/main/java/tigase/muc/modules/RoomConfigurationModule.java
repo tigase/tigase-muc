@@ -22,25 +22,19 @@
 
 package tigase.muc.modules;
 
-//~--- non-JDK imports --------------------------------------------------------
-
-//~--- JDK imports ------------------------------------------------------------
 import java.util.logging.Level;
 
-import tigase.component.ElementWriter;
 import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.form.Form;
 import tigase.muc.Affiliation;
-import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.modules.PresenceModule.PresenceWrapper;
-import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
@@ -53,38 +47,24 @@ import tigase.xmpp.StanzaType;
  * @author bmalkow
  * 
  */
-public class RoomConfigurationModule extends AbstractModule {
+public class RoomConfigurationModule extends AbstractMucModule {
+
 	private static final Criteria CRIT = ElementCriteria.name("iq").add(
 			ElementCriteria.name("query", "http://jabber.org/protocol/muc#owner"));
 
-	// ~--- fields
-	// ---------------------------------------------------------------
+	public static final String ID = "owner";
 
-	private final HistoryProvider historyProvider;
-	private final GroupchatMessageModule messageModule;
+	private GroupchatMessageModule messageModule;
 
-	// ~--- constructors
-	// ---------------------------------------------------------
+	@Override
+	public void afterRegistration() {
+		super.afterRegistration();
+		messageModule = context.getModuleProvider().getModule(GroupchatMessageModule.ID);
 
-	/**
-	 * Constructs ...
-	 * 
-	 * 
-	 * @param config
-	 * @param writer
-	 * @param mucRepository
-	 * @param historyProvider
-	 * @param messageModule
-	 */
-	public RoomConfigurationModule(MucConfig config, ElementWriter writer, IMucRepository mucRepository,
-			HistoryProvider historyProvider, GroupchatMessageModule messageModule) {
-		super(config, writer, mucRepository);
-		this.messageModule = messageModule;
-		this.historyProvider = historyProvider;
+		if (messageModule == null)
+			throw new RuntimeException("GroupchatMessageModule is required!");
+
 	}
-
-	// ~--- methods
-	// --------------------------------------------------------------
 
 	private void destroy(Room room, Element destroyElement) throws TigaseStringprepException, RepositoryException {
 		for (String occupantNickname : room.getOccupantsNicknames()) {
@@ -97,14 +77,15 @@ public class RoomConfigurationModule extends AbstractModule {
 						occupantNickname, Affiliation.none, Role.none);
 
 				presence.x.addChild(destroyElement);
-				writer.write(presence.packet);
+				write(presence.packet);
 			}
 		}
 
 		// XXX TODO
 		// throw new
 		// MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
-		repository.destroyRoom(room, destroyElement);
+		context.getMucRepository().destroyRoom(room, destroyElement);
+		HistoryProvider historyProvider = context.getHistoryProvider();
 		if (historyProvider != null) {
 			historyProvider.removeHistory(room);
 		}
@@ -207,12 +188,13 @@ public class RoomConfigurationModule extends AbstractModule {
 		try {
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
 			JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
-			Room room = repository.getRoom(roomJID);
+			Room room = context.getMucRepository().getRoom(roomJID);
 
 			if (room == null) {
-				Packet p = Packet.packetInstance(makeConfigFormIq(element.getElement(), repository.getDefaultRoomConfig()));
+				Packet p = Packet.packetInstance(makeConfigFormIq(element.getElement(),
+						context.getMucRepository().getDefaultRoomConfig()));
 				p.setXMLNS(Packet.CLIENT_XMLNS);
-				writer.write(p);
+				write(p);
 			} else {
 				if (room.getAffiliation(senderJID.getBareJID()) != Affiliation.owner) {
 					throw new MUCException(Authorization.FORBIDDEN);
@@ -222,7 +204,7 @@ public class RoomConfigurationModule extends AbstractModule {
 
 				Packet p = Packet.packetInstance(response);
 				p.setXMLNS(Packet.CLIENT_XMLNS);
-				writer.write(p);
+				write(p);
 			}
 		} catch (TigaseStringprepException e) {
 			throw new MUCException(Authorization.BAD_REQUEST);
@@ -234,10 +216,10 @@ public class RoomConfigurationModule extends AbstractModule {
 			final JID roomJID = JID.jidInstance(element.getAttributeStaticStr(Packet.TO_ATT));
 			JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
 			final Element query = element.getElement().getChild("query", "http://jabber.org/protocol/muc#owner");
-			Room room = repository.getRoom(roomJID.getBareJID());
+			Room room = context.getMucRepository().getRoom(roomJID.getBareJID());
 
 			if (room == null) {
-				room = repository.createNewRoom(roomJID.getBareJID(), senderJID);
+				room = context.getMucRepository().createNewRoom(roomJID.getBareJID(), senderJID);
 			}
 
 			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
@@ -254,7 +236,7 @@ public class RoomConfigurationModule extends AbstractModule {
 					throw new MUCException(Authorization.FORBIDDEN);
 				}
 				destroy(room, destroy);
-				writer.write(element.okResult((Element) null, 0));
+				write(element.okResult((Element) null, 0));
 			} else if (x != null) {
 				Form form = new Form(x);
 
@@ -265,7 +247,7 @@ public class RoomConfigurationModule extends AbstractModule {
 							&& ((ps == null) || (ps.length() == 0))) {
 						throw new MUCException(Authorization.NOT_ACCEPTABLE, "Passwords cannot be empty");
 					}
-					writer.write(element.okResult((Element) null, 0));
+					write(element.okResult((Element) null, 0));
 
 					final RoomConfig oldConfig = room.getConfig().clone();
 

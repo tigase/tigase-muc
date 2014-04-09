@@ -44,6 +44,10 @@ public class HistoryManagerFactory {
 		try {
 			String uri = (String) params.get(DB_URI_KEY);
 			String cl = (String) params.get(DB_CLASS_KEY);
+
+			if (uri == null && cl == null)
+				return null;
+
 			if (log.isLoggable(Level.CONFIG))
 				log.config("Used History Provider: " + cl);
 			if (cl.trim().equals("none")) {
@@ -62,9 +66,7 @@ public class HistoryManagerFactory {
 			} else if (cl.contains("sqlserver")) {
 				DataRepository dataRepository = RepositoryFactory.getDataRepository(null, uri, null);
 				return new SqlserverSqlHistoryProvider(dataRepository);
-			}
-
-			else
+			} else
 				throw new RuntimeException("Database not supported");
 		} catch (Exception e) {
 			throw new RuntimeException(e);

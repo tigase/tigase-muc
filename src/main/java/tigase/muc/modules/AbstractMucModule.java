@@ -22,16 +22,11 @@
 
 package tigase.muc.modules;
 
-//~--- non-JDK imports --------------------------------------------------------
-
 import java.util.Collection;
-import java.util.logging.Logger;
 
-import tigase.component.ElementWriter;
-import tigase.component.modules.Module;
-import tigase.muc.MucConfig;
+import tigase.component.modules.AbstractModule;
+import tigase.muc.MucContext;
 import tigase.muc.Room;
-import tigase.muc.repository.IMucRepository;
 import tigase.server.Iq;
 import tigase.server.Message;
 import tigase.server.Packet;
@@ -40,13 +35,11 @@ import tigase.xml.Element;
 import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
 
-//~--- JDK imports ------------------------------------------------------------
-
 /**
  * @author bmalkow
  * 
  */
-public abstract class AbstractModule implements Module {
+public abstract class AbstractMucModule extends AbstractModule<MucContext> {
 	/**
 	 * Method description
 	 * 
@@ -77,43 +70,8 @@ public abstract class AbstractModule implements Module {
 		}
 	}
 
-	/** Field description */
-	protected final MucConfig config;
-
-	/** Field description */
-	protected Logger log = Logger.getLogger(this.getClass().getName());
-
-	// ~--- constructors
-	// ---------------------------------------------------------
-
-	/** Field description */
-	protected final IMucRepository repository;
-
-	// ~--- methods
-	// --------------------------------------------------------------
-
-	/** Field description */
-	protected final ElementWriter writer;
-
-	// ~--- get methods
-	// ----------------------------------------------------------
-
-	/**
-	 * Constructs ...
-	 * 
-	 * 
-	 * @param config
-	 * @param writer
-	 * @param mucRepository
-	 */
-	public AbstractModule(final MucConfig config, ElementWriter writer, final IMucRepository mucRepository) {
-		this.config = config;
-		this.repository = mucRepository;
-		this.writer = writer;
+	public AbstractMucModule() {
 	}
-
-	// ~--- methods
-	// --------------------------------------------------------------
 
 	/**
 	 * Method description
@@ -131,9 +89,8 @@ public abstract class AbstractModule implements Module {
 		for (JID jid : occupantJids) {
 			Packet msg = Message.getMessage(JID.jidInstance(room.getRoomJID()), jid, StanzaType.groupchat, message, null, null,
 					null);
-			writer.write(msg);
+			msg.setXMLNS(Packet.CLIENT_XMLNS);
+			context.getWriter().write(msg);
 		}
 	}
 }
-
-// ~ Formatted in Tigase Code Convention on 13/02/20

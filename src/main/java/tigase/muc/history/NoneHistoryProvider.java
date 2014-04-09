@@ -24,7 +24,7 @@ package tigase.muc.history;
 import java.util.Date;
 import java.util.Map;
 
-import tigase.component.ElementWriter;
+import tigase.component.PacketWriter;
 import tigase.muc.Room;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
@@ -87,7 +87,7 @@ public class NoneHistoryProvider implements HistoryProvider {
 	 */
 	@Override
 	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
-			ElementWriter writer) {
+			PacketWriter writer) {
 	}
 
 	/*

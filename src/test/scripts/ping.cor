@@ -7,19 +7,11 @@ expect: {
 }
 
 send: {
-<iq from='alice@localhost/test' type='get' id='2' to='muc'><ping xmlns='http://www.xmpp.org/extensions/xep-0199.html#ns'/></iq>
+<iq from='alice@localhost/test' type='get' id='2' to='muc'><query xmlns='not:existent:xmlns'/></iq>
 }
 
 expect: {
-<iq to='alice@localhost/test' type='result' id='2'/>
-}
-
-send: {
-<iq from='alice@localhost/test' type='get' id='3' to='muc'><query xmlns='not:existent:xmlns'/></iq>
-}
-
-expect: {
-<iq to="alice@localhost/test" type="error" from="muc" id="3"><error type="cancel" code="501"><feature-not-implemented xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/></error></iq>
+<iq to="alice@localhost/test" type="error" from="muc" id="2"><error type="cancel" code="501"><feature-not-implemented xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/></error></iq>
 }
 
 
