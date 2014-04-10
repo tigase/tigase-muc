@@ -177,13 +177,13 @@ public class PresenceModule extends AbstractMucModule {
 		void addStatusCode(int code) {
 			x.addChild(new Element("status", new String[] { "code" }, new String[] { "" + code }));
 		}
-		
-		public Element getX() {
-			return x;
-		}
-		
+
 		public Packet getPacket() {
 			return packet;
+		}
+
+		public Element getX() {
+			return x;
 		}
 	}
 
@@ -265,9 +265,9 @@ public class PresenceModule extends AbstractMucModule {
 	 * 
 	 * @throws TigaseStringprepException
 	 */
-	public static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, BareJID occupantBareJID,
-			Collection<JID> occupantJIDs, String occupantNickname, Affiliation occupantAffiliation, Role occupantRole)
-			throws TigaseStringprepException {
+	public static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence,
+			BareJID occupantBareJID, Collection<JID> occupantJIDs, String occupantNickname, Affiliation occupantAffiliation,
+			Role occupantRole) throws TigaseStringprepException {
 		Anonymity anonymity = room.getConfig().getRoomAnonymity();
 		final Affiliation destinationAffiliation = room.getAffiliation(destinationJID.getBareJID());
 
@@ -775,7 +775,7 @@ public class PresenceModule extends AbstractMucModule {
 		// TODO Service Informs User that Room Occupant Limit Has Been Reached
 		// Service Sends Presence from Existing Occupants to New Occupant
 		sendPresencesToNewOccupant(room, senderJID);
-		
+
 		final Role newRole = getDefaultRole(room.getConfig(), affiliation);
 
 		if (log.isLoggable(Level.FINEST)) {
@@ -896,6 +896,37 @@ public class PresenceModule extends AbstractMucModule {
 		}
 	}
 
+	public void sendPresencesToNewOccupant(Room room, JID senderJID) throws TigaseStringprepException {
+		BareJID currentOccupantJid = senderJID.getBareJID();
+		for (String occupantNickname : room.getOccupantsNicknames()) {
+			final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNickname);
+			if (currentOccupantJid != null && currentOccupantJid.equals(occupantJid)) {
+				continue;
+			}
+			Element op = room.getLastPresenceCopyByJid(occupantJid);
+
+			final Collection<JID> occupantJIDs = room.getOccupantsJidsByNickname(occupantNickname);
+			final BareJID occupantBareJID = room.getOccupantsJidByNickname(occupantNickname);
+			final Affiliation occupantAffiliation = room.getAffiliation(occupantBareJID);
+			final Role occupantRole = room.getRole(occupantNickname);
+
+			if (context.isMultiItemMode()) {
+				PresenceWrapper l = preparePresenceW(room, senderJID, op.clone(), occupantBareJID, occupantJIDs,
+						occupantNickname, occupantAffiliation, occupantRole);
+				write(l.packet);
+			} else {
+				for (JID jid : occupantJIDs) {
+					Collection<JID> z = new ArrayList<JID>(1);
+					z.add(jid);
+					PresenceWrapper l = preparePresenceW(room, senderJID, op.clone(), occupantBareJID, z, occupantNickname,
+							occupantAffiliation, occupantRole);
+					write(l.packet);
+				}
+			}
+		}
+
+	}
+
 	private void sendPresenceToAllOccupants(final Element $presence, Room room, JID senderJID, boolean newRoomCreated,
 			String newNickName) throws TigaseStringprepException {
 
@@ -944,36 +975,4 @@ public class PresenceModule extends AbstractMucModule {
 		sendPresenceToAllOccupants(presence, room, senderJID, newRoomCreated, newNickName);
 	}
 
-	public void sendPresencesToNewOccupant(Room room, JID senderJID) throws TigaseStringprepException {
-		BareJID currentOccupantJid = senderJID.getBareJID();
-		for (String occupantNickname : room.getOccupantsNicknames()) {
-			final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNickname);
-			if (currentOccupantJid != null && currentOccupantJid.equals(occupantJid)) {
-				continue;
-			}
-			Element op = room.getLastPresenceCopyByJid(occupantJid);
-
-			final Collection<JID> occupantJIDs = room.getOccupantsJidsByNickname(occupantNickname);
-			final BareJID occupantBareJID = room.getOccupantsJidByNickname(occupantNickname);
-			final Affiliation occupantAffiliation = room.getAffiliation(occupantBareJID);
-			final Role occupantRole = room.getRole(occupantNickname);
-
-			if (context.isMultiItemMode()) {
-				PresenceWrapper l = preparePresenceW(room, senderJID, op.clone(), occupantBareJID, occupantJIDs,
-						occupantNickname, occupantAffiliation, occupantRole);
-				write(l.packet);
-			} else {
-				for (JID jid : occupantJIDs) {
-					Collection<JID> z = new ArrayList<JID>(1);
-					z.add(jid);
-					PresenceWrapper l = preparePresenceW(room, senderJID, op.clone(), occupantBareJID, z, occupantNickname,
-							occupantAffiliation, occupantRole);
-					write(l.packet);
-				}
-			}
-		}
-		
-	}
-	
-	
 }

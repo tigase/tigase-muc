@@ -59,17 +59,17 @@ public class Room {
 	public static interface RoomListener {
 		void onChangeSubject(Room room, String nick, String newSubject, Date changeDate);
 
-		void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation);
-
 		void onMessageToOccupants(Room room, JID from, Element[] contents);
+
+		void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation);
 	}
 
 	public static interface RoomOccupantListener {
 		void onOccupantAdded(Room room, JID occupantJid);
 
-		void onOccupantRemoved(Room room, JID occupantJid);
-
 		void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence, boolean newOccupant);
+
+		void onOccupantRemoved(Room room, JID occupantJid);
 	}
 
 	/**
@@ -180,15 +180,15 @@ public class Room {
 		}
 	}
 
-	private void fireOnOccupantRemoved(JID occupantJid) {
-		for (RoomOccupantListener listener : this.occupantListeners) {
-			listener.onOccupantRemoved(this, occupantJid);
-		}
-	}
-
 	private void fireOnOccupantChangedPresence(JID occupantJid, String nickname, Element cp, boolean newOccupant) {
 		for (RoomOccupantListener listener : this.occupantListeners) {
 			listener.onOccupantChangedPresence(this, occupantJid, nickname, cp, newOccupant);
+		}
+	}
+
+	private void fireOnOccupantRemoved(JID occupantJid) {
+		for (RoomOccupantListener listener : this.occupantListeners) {
+			listener.onOccupantRemoved(this, occupantJid);
 		}
 	}
 

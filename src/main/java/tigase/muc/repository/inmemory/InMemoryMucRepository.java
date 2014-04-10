@@ -96,6 +96,11 @@ public class InMemoryMucRepository implements IMucRepository {
 			}
 
 			@Override
+			public void onMessageToOccupants(Room room, JID from, Element[] contents) {
+				// nothing to do here
+			}
+
+			@Override
 			public void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation) {
 				try {
 					if (room.getConfig().isPersistentRoom())
@@ -103,11 +108,6 @@ public class InMemoryMucRepository implements IMucRepository {
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}
-			}
-
-			@Override
-			public void onMessageToOccupants(Room room, JID from, Element[] contents) {
-				// nothing to do here
 			}
 		};
 

@@ -286,13 +286,13 @@ public class GroupchatMessageModule extends AbstractMucModule {
 	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, final Element... content)
 			throws TigaseStringprepException {
 		room.fireOnMessageToOccupants(fromJID, content);
-		
+
 		sendMessagesToAllOccupantsJids(room, fromJID, content);
 	}
-	
+
 	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, final Element... content)
 			throws TigaseStringprepException {
-		
+
 		for (String nickname : room.getOccupantsNicknames()) {
 			final Role role = room.getRole(nickname);
 
