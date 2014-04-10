@@ -54,9 +54,9 @@ send(Entering: thirdwitch1): {
 </presence>
 }
 
-expect strict: {
+expect all: {
 # Service Sends Presence from Existing Occupants to New Occupant
-<presence
+<presence  
     from='darkcave@macbeth.shakespeare.lit/firstwitch'
     to='hag66@shakespeare.lit/pda'>
   <x xmlns='http://jabber.org/protocol/muc#user'>
@@ -64,19 +64,19 @@ expect strict: {
   </x>
 </presence>
 # Service Sends New Occupant's Presence to All Occupants
-<presence
-    from='darkcave@macbeth.shakespeare.lit/thirdwitch'
-    to='hag66@shakespeare.lit/pda'>
-  <x xmlns='http://jabber.org/protocol/muc#user'>
-    <item affiliation='none' nick="thirdwitch" role='participant'/>
-    <status code="110"/>
-  </x>
-</presence>
-<presence
+<presence  
     from='darkcave@macbeth.shakespeare.lit/thirdwitch'
     to='crone1@shakespeare.lit/desktop'>
   <x xmlns='http://jabber.org/protocol/muc#user'>
-    <item affiliation='none' nick="thirdwitch" role='participant'/>
+    <item affiliation='none' nick="thirdwitch"  role='participant'/>
+  </x>
+</presence>
+<presence  
+    from='darkcave@macbeth.shakespeare.lit/thirdwitch'
+    to='hag66@shakespeare.lit/pda'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='none' nick="thirdwitch"   role='participant'/>
+    <status code="110"/>
   </x>
 </presence>
 }
@@ -122,7 +122,7 @@ send(Entering: thirdwitch2): {
 </presence>
 }
 
-expect strict: {
+expect all: {
 # Service Sends Presence from Existing Occupants to New Occupant
 <presence
     from='darkcave@macbeth.shakespeare.lit/firstwitch'
@@ -203,7 +203,7 @@ send(Entering: secondwitch): {
 </presence>
 }
 
-expect strict: {
+expect all: {
 # Service Sends Presence from Existing Occupants to New Occupant
 <presence
     from='darkcave@macbeth.shakespeare.lit/thirdwitch'
