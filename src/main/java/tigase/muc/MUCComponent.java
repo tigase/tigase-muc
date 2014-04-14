@@ -252,6 +252,10 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 		};
 	}
 
+	protected IMucRepository createMucRepository(MucContext componentConfig, MucDAO dao) throws RepositoryException {
+		return new InMemoryMucRepository(componentConfig, dao);
+	}
+	
 	@Override
 	public synchronized void everyHour() {
 		super.everyHour();
@@ -457,7 +461,7 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 					userRepository = (UserRepository) props.get(RepositoryFactory.SHARED_USER_REPO_PROP_KEY);
 				}
 				MucDAO dao = new MucDAO(context, userRepository);
-				mucRepository = new InMemoryMucRepository(context, dao);
+				mucRepository = createMucRepository(context, dao);
 			} catch (Exception e) {
 				log.log(Level.WARNING, "Cannot initialize MUC Repository", e);
 			}
