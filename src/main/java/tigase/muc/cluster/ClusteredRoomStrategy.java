@@ -381,7 +381,7 @@ public class ClusteredRoomStrategy extends AbstractStrategy implements StrategyI
 				Role occupantRole = Role.valueOf(data.get("role"));
 				boolean newOccupant = data.containsKey("new-occupant");
 				
-				PresenceModule presenceModule = ClusteredRoomStrategy.this.muc.getModule(PresenceModule.class);
+				PresenceModule presenceModule = ClusteredRoomStrategy.this.muc.getModule(PresenceModule.ID);
 				Room room = ClusteredRoomStrategy.this.muc.getMucRepository().getRoom(roomJid);
 				for (Element presence : packets) {
 					for (JID destinationJID : room.getAllOccupantsJID()) {
@@ -472,7 +472,7 @@ public class ClusteredRoomStrategy extends AbstractStrategy implements StrategyI
 			JID from = JID.jidInstanceNS(data.get("from"));
 			try {
 				Room room = ClusteredRoomStrategy.this.muc.getMucRepository().getRoom(roomJid);
-				GroupchatMessageModule groupchatModule = ClusteredRoomStrategy.this.muc.getModule(GroupchatMessageModule.class);
+				GroupchatMessageModule groupchatModule = ClusteredRoomStrategy.this.muc.getModule(GroupchatMessageModule.ID);
 				Element message = packets.poll();
 				List<Element> children = message.getChildren();
 				groupchatModule.sendMessagesToAllOccupantsJids(room, from, children.toArray(new Element[children.size()]));

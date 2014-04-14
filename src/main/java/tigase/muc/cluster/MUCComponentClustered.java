@@ -47,7 +47,7 @@ public class MUCComponentClustered extends MUCComponent
 	}
 	
 	@Override
-	protected IMucRepository createMucRepository(MucConfig componentConfig, MucDAO dao) throws RepositoryException {
+	protected IMucRepository createMucRepository(MucContext componentConfig, MucDAO dao) throws RepositoryException {
 		InMemoryMucRepositoryClustered repo = new InMemoryMucRepositoryClustered(componentConfig, dao);
 		strategy.setMucRepository(repo);
 		return repo;
@@ -132,8 +132,8 @@ public class MUCComponentClustered extends MUCComponent
 		return cmpInfo;
 	}
 
-	protected <T extends Module> T getModule(Class<T> x) {
-		return this.modulesManager.get(x);
+	protected <T extends Module> T getModule(String id) {
+		return (T) this.modulesManager.getModule(id);
 	}
 	
 }
