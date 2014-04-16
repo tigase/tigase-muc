@@ -55,12 +55,14 @@ public class MUCComponentClustered extends MUCComponent
 
 	@Override
 	public void nodeConnected(String node) {
-		strategy.nodeConnected(JID.jidInstanceNS(node));
+		JID jid = JID.jidInstanceNS(getName(), node, null);
+		strategy.nodeConnected(jid);
 	}
 
 	@Override
 	public void nodeDisconnected(String node) {
-		strategy.nodeDisconnected(JID.jidInstanceNS(node));
+		JID jid = JID.jidInstanceNS(getName(), node, null);
+		strategy.nodeDisconnected(jid);
 	}
 
 	@Override
