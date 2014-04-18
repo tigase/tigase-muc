@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import tigase.cluster.api.ClusterCommandException;
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
@@ -29,11 +30,11 @@ import tigase.muc.Affiliation;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
-import static tigase.muc.cluster.AbstractStrategy.REQUEST_SYNC_CMD;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.modules.GroupchatMessageModule;
 import tigase.muc.modules.PresenceModule;
 import tigase.muc.modules.PresenceModule.PresenceWrapper;
+import tigase.muc.modules.PresenceModuleImpl;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
@@ -385,10 +386,10 @@ public class ClusteredRoomStrategy extends AbstractStrategy implements StrategyI
 				Room room = ClusteredRoomStrategy.this.muc.getMucRepository().getRoom(roomJid);
 				for (Element presence : packets) {
 					for (JID destinationJID : room.getAllOccupantsJID()) {
-						PresenceWrapper presenceWrapper = presenceModule.preparePresenceW(room, destinationJID, presence, occupantJID.getBareJID(),
+						PresenceWrapper presenceWrapper = PresenceWrapper.preparePresenceW(room, destinationJID, presence, occupantJID.getBareJID(),
 								Collections.singleton(occupantJID), nickname, occupantAffiliation, occupantRole);
 						if (!"unavailable".equals(presence.getAttributeStaticStr("type"))) {
-							presenceModule.addCodes(presenceWrapper, false, nickname);
+							PresenceModuleImpl.addCodes(presenceWrapper, false, nickname);
 						}
 						ClusteredRoomStrategy.this.muc.addOutPacket(presenceWrapper.getPacket());						
 					}
@@ -443,7 +444,7 @@ public class ClusteredRoomStrategy extends AbstractStrategy implements StrategyI
 					final Element p = new Element("presence");
 
 					p.addAttribute("type", "unavailable");					
-					PresenceWrapper presence = PresenceModule.preparePresenceW(room, occupantJid, p, occupantJid.getBareJID(), Collections.singleton(occupantJid),
+					PresenceWrapper presence = PresenceWrapper.preparePresenceW(room, occupantJid, p, occupantJid.getBareJID(), Collections.singleton(occupantJid),
 							occupantNickname, Affiliation.none, Role.none);
 
 					presence.getX().addChild(destroyElement);
