@@ -73,7 +73,7 @@ public class RoomConfigurationModule extends AbstractMucModule {
 
 				p.addAttribute("type", "unavailable");
 
-				PresenceWrapper presence = PresenceModule.preparePresenceW(room, occupantJid, p, occupantJid.getBareJID(),
+				PresenceWrapper presence = PresenceWrapper.preparePresenceW(room, occupantJid, p, occupantJid.getBareJID(),
 						occupantNickname, Affiliation.none, Role.none);
 
 				presence.x.addChild(destroyElement);

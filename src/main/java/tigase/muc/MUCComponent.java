@@ -51,6 +51,7 @@ import tigase.muc.modules.IqStanzaForwarderModule;
 import tigase.muc.modules.MediatedInvitationModule;
 import tigase.muc.modules.ModeratorModule;
 import tigase.muc.modules.PresenceModule;
+import tigase.muc.modules.PresenceModuleImpl;
 import tigase.muc.modules.PrivateMessageModule;
 import tigase.muc.modules.RoomConfigurationModule;
 import tigase.muc.modules.UniqueRoomNameModule;
@@ -255,7 +256,7 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 	protected IMucRepository createMucRepository(MucContext componentConfig, MucDAO dao) throws RepositoryException {
 		return new InMemoryMucRepository(componentConfig, dao);
 	}
-	
+
 	@Override
 	public synchronized void everyHour() {
 		super.everyHour();
@@ -304,7 +305,7 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 		result.put(IqStanzaForwarderModule.ID, IqStanzaForwarderModule.class);
 		result.put(MediatedInvitationModule.ID, MediatedInvitationModule.class);
 		result.put(ModeratorModule.ID, ModeratorModule.class);
-		result.put(PresenceModule.ID, PresenceModule.class);
+		result.put(PresenceModule.ID, PresenceModuleImpl.class);
 		result.put(PrivateMessageModule.ID, PrivateMessageModule.class);
 		result.put(RoomConfigurationModule.ID, RoomConfigurationModule.class);
 		result.put(UniqueRoomNameModule.ID, UniqueRoomNameModule.class);
@@ -417,7 +418,8 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 	public void setProperties(Map<String, Object> props) {
 		if (props.size() == 1) {
 			// If props.size() == 1, it means this is a single property update
-			// and this component does not support single property change for the rest
+			// and this component does not support single property change for
+			// the rest
 			// of it's settings
 			return;
 		}
