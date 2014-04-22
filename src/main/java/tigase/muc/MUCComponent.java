@@ -367,7 +367,12 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 
 		return 1;
 	}
-
+	
+	@Override
+	public boolean isDiscoNonAdmin() {
+		return true;
+	}
+	
 	@Override
 	public boolean isSubdomain() {
 		return true;
