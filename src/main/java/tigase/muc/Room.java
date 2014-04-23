@@ -37,8 +37,11 @@ import tigase.collections.TwoHashBidiMap;
 import tigase.component.exceptions.RepositoryException;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
+
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.HashMap;
 
 /**
  * @author bmalkow
@@ -101,6 +104,8 @@ public class Room {
 	private Date subjectChangeDate;
 
 	private String subjectChangerNick;
+
+	private Map<String,Object> roomCustomData = new HashMap<String, Object>();
 
 	/**
 	 * @param rc
@@ -255,6 +260,10 @@ public class Room {
 		return config;
 	}
 
+	public Object getRoomCustomData(String key) {
+		return roomCustomData.get( key );
+	}
+	
 	/**
 	 * @return
 	 */
@@ -436,6 +445,12 @@ public class Room {
 	public void setAffiliations(Map<BareJID, Affiliation> affiliations) {
 		this.affiliations.clear();
 		this.affiliations.putAll(affiliations);
+	}
+
+	public void setRoomCustomData( String key, Object data ) {
+		synchronized ( this.roomCustomData ) {
+			this.roomCustomData.put( key, data );
+		}
 	}
 
 	/**

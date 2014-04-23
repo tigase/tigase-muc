@@ -67,7 +67,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 	 * @param nickName
 	 * @param sendDate
 	 */
-	private void addMessageToHistory(Room room, final Element message, String body, JID senderJid, String senderNickname,
+	protected void addMessageToHistory(Room room, final Element message, String body, JID senderJid, String senderNickname,
 			Date time) {
 		try {
 			HistoryProvider historyProvider = context.getHistoryProvider();
@@ -97,7 +97,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 	 * @param nickName
 	 * @param sendDate
 	 */
-	private void addSubjectChangeToHistory(Room room, Element message, final String subject, JID senderJid,
+	protected void addSubjectChangeToHistory(Room room, Element message, final String subject, JID senderJid,
 			String senderNickname, Date time) {
 		try {
 			HistoryProvider historyProvider = context.getHistoryProvider();
