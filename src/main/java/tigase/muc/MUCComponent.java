@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 
+import javax.script.Bindings;
+
 import tigase.component.AbstractComponent;
 import tigase.component.AbstractComponent.ModuleRegisteredHandler;
 import tigase.component.PacketWriter;
@@ -79,6 +81,10 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 
 	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
 
+	private static final String MUC_REPOSITORY_VAR = "mucRepository";
+
+	private static final String OWNER_MODULE_VAR = "ownerModule";
+
 	/**
 	 * 
 	 * @deprecated Use
@@ -90,7 +96,15 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 
 	public static final String PRESENCE_FILTER_ENABLED_KEY = "presence-filter-enabled";
 
+	private static final String PRESENCE_MODULE_VAR = "presenceModule";
+
 	public static final String SEARCH_GHOSTS_EVERY_MINUTE_KEY = "search-ghosts-every-minute";
+
+	protected static void addIfExists(Bindings binds, String name, Object value) {
+		if (value != null) {
+			binds.put(name, value);
+		}
+	}
 
 	protected String chatLoggingDirectory;
 
@@ -373,6 +387,15 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 		return true;
 	}
 	
+	@Override
+	public void initBindings(Bindings binds) {
+		super.initBindings(binds);
+
+		addIfExists(binds, PRESENCE_MODULE_VAR, modulesManager.getModule(PresenceModule.ID));
+		addIfExists(binds, OWNER_MODULE_VAR, modulesManager.getModule(RoomConfigurationModule.ID));
+		addIfExists(binds, MUC_REPOSITORY_VAR, mucRepository);
+	}
+
 	@Override
 	public boolean isSubdomain() {
 		return true;
