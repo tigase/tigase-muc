@@ -416,7 +416,7 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		return CRIT;
 	}
 
-	private PresenceWrapper preparePresence(JID destinationJID, final Element presence, Room room, JID occupantJID,
+	protected PresenceWrapper preparePresence(JID destinationJID, final Element presence, Room room, JID occupantJID,
 			boolean newRoomCreated, String newNickName) throws TigaseStringprepException {
 		final PresenceWrapper wrapper = PresenceWrapper.preparePresenceW(room, destinationJID, presence, occupantJID);
 
@@ -771,7 +771,7 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 
 	}
 
-	private void sendPresenceToAllOccupants(final Element $presence, Room room, JID senderJID, boolean newRoomCreated,
+	protected void sendPresenceToAllOccupants(final Element $presence, Room room, JID senderJID, boolean newRoomCreated,
 			String newNickName) throws TigaseStringprepException {
 
 		final String occupantNickname = room.getOccupantsNickname(senderJID);
@@ -803,7 +803,7 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		}
 	}
 
-	private void sendPresenceToAllOccupants(Room room, JID senderJID, boolean newRoomCreated, String newNickName)
+	protected void sendPresenceToAllOccupants(Room room, JID senderJID, boolean newRoomCreated, String newNickName)
 			throws TigaseStringprepException {
 		Element presence;
 
