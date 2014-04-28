@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,11 +38,8 @@ import tigase.collections.TwoHashBidiMap;
 import tigase.component.exceptions.RepositoryException;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
-
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
-
-import java.util.HashMap;
 
 /**
  * @author bmalkow
@@ -97,6 +95,8 @@ public class Room {
 
 	private final PresenceStore presences = new PresenceStore();
 
+	private Map<String, Object> roomCustomData = new HashMap<String, Object>();
+
 	private boolean roomLocked;
 
 	private String subject;
@@ -104,8 +104,6 @@ public class Room {
 	private Date subjectChangeDate;
 
 	private String subjectChangerNick;
-
-	private Map<String,Object> roomCustomData = new HashMap<String, Object>();
 
 	/**
 	 * @param rc
@@ -260,10 +258,6 @@ public class Room {
 		return config;
 	}
 
-	public Object getRoomCustomData(String key) {
-		return roomCustomData.get( key );
-	}
-	
 	/**
 	 * @return
 	 */
@@ -368,6 +362,10 @@ public class Room {
 		return entry.role == null ? Role.none : entry.role;
 	}
 
+	public Object getRoomCustomData(String key) {
+		return roomCustomData.get(key);
+	}
+
 	public BareJID getRoomJID() {
 		return this.config.getRoomJID();
 	}
@@ -447,12 +445,6 @@ public class Room {
 		this.affiliations.putAll(affiliations);
 	}
 
-	public void setRoomCustomData( String key, Object data ) {
-		synchronized ( this.roomCustomData ) {
-			this.roomCustomData.put( key, data );
-		}
-	}
-
 	/**
 	 * @param occupantNick
 	 * @param newRole
@@ -474,6 +466,12 @@ public class Room {
 		this.subject = msg;
 		this.subjectChangeDate = new Date();
 		fireOnSetSubject(senderNickname, msg, this.subjectChangeDate);
+	}
+
+	public void setRoomCustomData(String key, Object data) {
+		synchronized (this.roomCustomData) {
+			this.roomCustomData.put(key, data);
+		}
 	}
 
 	public void setRoomLocked(boolean roomLocked) {

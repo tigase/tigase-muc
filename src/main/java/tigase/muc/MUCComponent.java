@@ -21,7 +21,6 @@
  */
 package tigase.muc;
 
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -31,13 +30,10 @@ import javax.script.Bindings;
 
 import tigase.component.AbstractComponent;
 import tigase.component.AbstractComponent.ModuleRegisteredHandler;
-import tigase.component.PacketWriter;
-import tigase.component.adhoc.AbstractAdHocCommandModule;
-import tigase.component.eventbus.DefaultEventBus;
-import tigase.component.eventbus.EventBus;
+import tigase.component.AbstractContext;
 import tigase.component.exceptions.RepositoryException;
 import tigase.component.modules.Module;
-import tigase.component.modules.ModuleProvider;
+import tigase.component.modules.impl.AdHocCommandModule;
 import tigase.component.modules.impl.JabberVersionModule;
 import tigase.component.modules.impl.XmppPingModule;
 import tigase.db.RepositoryFactory;
@@ -46,7 +42,6 @@ import tigase.form.Field;
 import tigase.muc.history.HistoryManagerFactory;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.logger.MucLogger;
-import tigase.muc.modules.AdHocCommandModule;
 import tigase.muc.modules.DiscoveryModule;
 import tigase.muc.modules.GroupchatMessageModule;
 import tigase.muc.modules.IqStanzaForwarderModule;
@@ -64,6 +59,79 @@ import tigase.server.Packet;
 import tigase.xmpp.BareJID;
 
 public class MUCComponent extends AbstractComponent<MucContext> implements ModuleRegisteredHandler {
+
+	private class MucContextImpl extends AbstractContext implements MucContext {
+
+		private final BareJID serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
+
+		/**
+		 * @param component
+		 */
+		public MucContextImpl(AbstractComponent<?> component) {
+			super(component);
+		}
+
+		@Override
+		public String getChatLoggingDirectory() {
+			return MUCComponent.this.chatLoggingDirectory;
+		}
+
+		@Override
+		public Ghostbuster2 getGhostbuster() {
+			return MUCComponent.this.ghostbuster;
+		}
+
+		@Override
+		public HistoryProvider getHistoryProvider() {
+			return MUCComponent.this.historyProvider;
+		}
+
+		@Override
+		public MucLogger getMucLogger() {
+			return MUCComponent.this.mucLogger;
+		}
+
+		@Override
+		public IMucRepository getMucRepository() {
+			return MUCComponent.this.mucRepository;
+		}
+
+		@Override
+		public BareJID getServiceName() {
+			return serviceName;
+		}
+
+		@Override
+		public boolean isChatStateAllowed() {
+			return MUCComponent.this.chatStateAllowed;
+		}
+
+		@Override
+		public boolean isMessageFilterEnabled() {
+			return MUCComponent.this.messageFilterEnabled;
+		}
+
+		@Override
+		public boolean isMultiItemMode() {
+			return MUCComponent.this.multiItemMode;
+		}
+
+		@Override
+		public boolean isNewRoomLocked() {
+			return MUCComponent.this.newRoomLocked;
+		}
+
+		@Override
+		public boolean isPresenceFilterEnabled() {
+			return MUCComponent.this.presenceFilterEnabled;
+		}
+
+		@Override
+		public boolean isPublicLoggingEnabled() {
+			return MUCComponent.this.publicLoggingEnabled;
+		}
+
+	}
 
 	public static final String DEFAULT_ROOM_CONFIG_PREFIX_KEY = "default_room_config/";
 
@@ -110,8 +178,6 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 
 	protected Boolean chatStateAllowed;
 
-	protected EventBus eventBus = new DefaultEventBus();
-
 	protected Ghostbuster2 ghostbuster;
 
 	protected HistoryProvider historyProvider;
@@ -132,28 +198,6 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 
 	protected boolean searchGhostsEveryMinute = false;
 
-	protected PacketWriter writer = new PacketWriter() {
-		@Override
-		public void write(Collection<Packet> elements) {
-			if (elements != null) {
-				for (Packet element : elements) {
-					if (element != null) {
-						write(element);
-					}
-				}
-			}
-		}
-
-		@Override
-		public void write(Packet packet) {
-			if (log.isLoggable(Level.FINER)) {
-				log.finer("Sent: " + packet.getElement());
-			}
-			addOutPacket(packet);
-		}
-
-	};
-
 	public MUCComponent() {
 		this.ghostbuster = new Ghostbuster2(this);
 		addModuleRegisteredHandler(this);
@@ -166,105 +210,7 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 	 */
 	@Override
 	protected MucContext createContext() {
-		return new MucContext() {
-
-			private final BareJID serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
-
-			@Override
-			public String getChatLoggingDirectory() {
-				return MUCComponent.this.chatLoggingDirectory;
-			}
-
-			@Override
-			public String getComponentCategory() {
-				return MUCComponent.this.getDiscoCategory();
-			}
-
-			@Override
-			public String getComponentName() {
-				return MUCComponent.this.getDiscoDescription();
-			}
-
-			@Override
-			public String getComponentType() {
-				return MUCComponent.this.getDiscoCategoryType();
-			}
-
-			@Override
-			public String getComponentVersion() {
-				return MUCComponent.this.getComponentVersion();
-			}
-
-			@Override
-			public EventBus getEventBus() {
-				return MUCComponent.this.eventBus;
-			}
-
-			@Override
-			public Ghostbuster2 getGhostbuster() {
-				return MUCComponent.this.ghostbuster;
-			}
-
-			@Override
-			public HistoryProvider getHistoryProvider() {
-				return MUCComponent.this.historyProvider;
-			}
-
-			@Override
-			public ModuleProvider getModuleProvider() {
-				return MUCComponent.this.modulesManager;
-			}
-
-			@Override
-			public MucLogger getMucLogger() {
-				return MUCComponent.this.mucLogger;
-			}
-
-			@Override
-			public IMucRepository getMucRepository() {
-				return MUCComponent.this.mucRepository;
-			}
-
-			@Override
-			public BareJID getServiceName() {
-				return serviceName;
-			}
-
-			@Override
-			public PacketWriter getWriter() {
-				return MUCComponent.this.writer;
-			}
-
-			@Override
-			public boolean isChatStateAllowed() {
-				return MUCComponent.this.chatStateAllowed;
-			}
-
-			@Override
-			public boolean isMessageFilterEnabled() {
-				return MUCComponent.this.messageFilterEnabled;
-			}
-
-			@Override
-			public boolean isMultiItemMode() {
-				return MUCComponent.this.multiItemMode;
-			}
-
-			@Override
-			public boolean isNewRoomLocked() {
-				return MUCComponent.this.newRoomLocked;
-			}
-
-			@Override
-			public boolean isPresenceFilterEnabled() {
-				return MUCComponent.this.presenceFilterEnabled;
-			}
-
-			@Override
-			public boolean isPublicLoggingEnabled() {
-				return MUCComponent.this.publicLoggingEnabled;
-			}
-		};
+		return new MucContextImpl(this);
 	}
 
 	protected IMucRepository createMucRepository(MucContext componentConfig, MucDAO dao) throws RepositoryException {
@@ -323,7 +269,7 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 		result.put(PrivateMessageModule.ID, PrivateMessageModule.class);
 		result.put(RoomConfigurationModule.ID, RoomConfigurationModule.class);
 		result.put(UniqueRoomNameModule.ID, UniqueRoomNameModule.class);
-		result.put(AbstractAdHocCommandModule.ID, AdHocCommandModule.class);
+		result.put(AdHocCommandModule.ID, AdHocCommandModule.class);
 
 		return result;
 	}
@@ -381,12 +327,7 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 
 		return 1;
 	}
-	
-	@Override
-	public boolean isDiscoNonAdmin() {
-		return true;
-	}
-	
+
 	@Override
 	public void initBindings(Bindings binds) {
 		super.initBindings(binds);
@@ -394,6 +335,11 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 		addIfExists(binds, PRESENCE_MODULE_VAR, modulesManager.getModule(PresenceModule.ID));
 		addIfExists(binds, OWNER_MODULE_VAR, modulesManager.getModule(RoomConfigurationModule.ID));
 		addIfExists(binds, MUC_REPOSITORY_VAR, mucRepository);
+	}
+
+	@Override
+	public boolean isDiscoNonAdmin() {
+		return true;
 	}
 
 	@Override
@@ -425,21 +371,17 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 		return Runtime.getRuntime().availableProcessors() * 4;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * tigase.component.AbstractComponent#processStanzaPacket(tigase.server.
-	 * Packet)
+	/**
+	 * {@inheritDoc}
 	 */
 	@Override
-	protected void processStanzaPacket(Packet packet) {
+	public void processPacket(Packet packet) {
 		try {
 			ghostbuster.update(packet);
 		} catch (Exception e) {
 			log.log(Level.WARNING, "There is no Dana, there is only Zuul", e);
 		}
-		super.processStanzaPacket(packet);
+		super.processPacket(packet);
 	}
 
 	@Override
