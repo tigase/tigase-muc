@@ -2,7 +2,7 @@
  Sets default room configuration.
  AS:Description: Default room config
  AS:CommandId: default-room-config
- AS:Component: tigase-muc
+ AS:Component: muc,tigase.muc.MUCComponent
 */
 
 package muc.admin;

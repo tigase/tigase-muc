@@ -1,6 +1,6 @@
 // AS:Description: Remove room
 // AS:CommandId: room-remove
-// AS:Component: muc
+// AS:Component: muc,tigase.muc.MUCComponent
 
 import tigase.server.Command
 import tigase.server.Packet
