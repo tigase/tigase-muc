@@ -21,11 +21,18 @@
  */
 package tigase.muc;
 
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
+
+import tigase.collections.TwoHashBidiMap;
+import tigase.component.exceptions.RepositoryException;
+import tigase.util.TigaseStringprepException;
+import tigase.xml.Element;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -33,13 +40,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-
-import tigase.collections.TwoHashBidiMap;
-import tigase.component.exceptions.RepositoryException;
-import tigase.util.TigaseStringprepException;
-import tigase.xml.Element;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -95,7 +95,7 @@ public class Room {
 
 	private final PresenceStore presences = new PresenceStore();
 
-	private Map<String, Object> roomCustomData = new HashMap<String, Object>();
+	private final Map<String, Object> roomCustomData = new ConcurrentHashMap<String, Object>();
 
 	private boolean roomLocked;
 
