@@ -12,9 +12,11 @@ import java.util.logging.*;
 import tigase.cluster.api.*;
 import tigase.component.exceptions.RepositoryException;
 import tigase.component.modules.Module;
+import tigase.conf.ConfigurationException;
 import tigase.licence.*;
 import tigase.muc.*;
 import tigase.muc.repository.*;
+import tigase.osgi.ModulesManagerImpl;
 import tigase.server.*;
 import tigase.xmpp.JID;
 
@@ -90,18 +92,22 @@ public class MUCComponentClustered extends MUCComponent
 	}
 	
 	@Override
-	public void setProperties(Map<String, Object> props) {
+	public void setProperties(Map<String, Object> props) throws ConfigurationException {
 		if (props.size() > 1 && props.containsKey(STRATEGY_CLASS_KEY)) {
 			String strategy_class = (String) props.get(STRATEGY_CLASS_KEY);
 			try {
-				strategy = (StrategyIfc) Class.forName(strategy_class).newInstance();
+				strategy = (StrategyIfc) ModulesManagerImpl.getInstance().forName(strategy_class).newInstance();
 				strategy.setMucComponentClustered(this);
 				if (cl_controller != null) {
 					strategy.setClusterController(cl_controller);
 				}
 			} catch (Exception ex) {
-				log.log(Level.SEVERE, "Cannot instance clustering strategy class: "
-						+ strategy_class, ex);
+				if (!XMPPServer.isOSGi()) {
+					log.log(Level.SEVERE, "Cannot instance clustering strategy class: "
+							+ strategy_class, ex);
+				}
+				throw new ConfigurationException("Cannot instance clustering strategy class: "
+						+ strategy_class);
 			}
 		}
 		super.setProperties(props);

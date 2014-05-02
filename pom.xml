@@ -8,7 +8,8 @@
 	<groupId>tigase</groupId>
 	<artifactId>tigase-acs-muc</artifactId>
 	<name>Tigase ACS - MUC Component</name>
-	<version>1.0.1-SNAPSHOT</version>
+	<version>1.1.0-SNAPSHOT</version>
+	<packaging>bundle</packaging>
 	<description>Tigase Advanced Clustering Strategy - MUC Component</description>
 	<url>https://projects.tigase.org/projects/tigase-acs-muc</url>
 	<issueManagement>
@@ -176,6 +177,22 @@
 					<appendAssemblyId>false</appendAssemblyId>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<version>2.4.0</version>
+				<extensions>true</extensions>
+				<configuration>
+					<instructions combine.inherited="append">
+						<manifestLocation>src/main/resources/META-INF/MANIFEST.MF</manifestLocation>
+						<Implementation-Title>${project.name}</Implementation-Title>
+						<Implementation-Version>${project.version}-b${gitVersion}/${buildNumber}</Implementation-Version>
+						<Implementation-Build>${gitVersion}/${buildNumber} (${maven.build.timestamp})</Implementation-Build>
+						<Bundle-Activator>tigase.muc.cluster.Activator</Bundle-Activator>
+						<Export-Package>tigase.muc.cluster</Export-Package>
+					</instructions>
+				</configuration>
+			</plugin>			
 		</plugins>
 		<extensions>
 			<extension>
@@ -203,10 +220,17 @@
 			<version>5.3.0-SNAPSHOT</version>
 			<scope>compile</scope>
 		</dependency>
+        <dependency>
+			<groupId>org.apache.felix</groupId>
+			<artifactId>org.osgi.core</artifactId>
+			<version>1.4.0</version>
+			<scope>provided</scope>
+			<type>bundle</type>
+        </dependency>		
 		<dependency>
 			<groupId>tigase</groupId>
 			<artifactId>licence-lib</artifactId>
-			<version>1.0.1-SNAPSHOT</version>
+			<version>1.1.0-SNAPSHOT</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
