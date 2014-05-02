@@ -26,11 +26,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.junit.Before;
-
 import tigase.component.PacketWriter;
 import tigase.component.exceptions.RepositoryException;
+import tigase.conf.ConfigurationException;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
 import tigase.test.junit.XMPPTestCase;
@@ -110,8 +109,12 @@ public class PresenceTestNAMultiPresenceTest extends XMPPTestCase {
 				}
 			}
 		};
-
-		pubsub.setProperties(props);
+		
+		try {
+			pubsub.setProperties(props);
+		} catch (ConfigurationException ex) {
+			ex.printStackTrace();
+		}
 	}
 
 	@org.junit.Test

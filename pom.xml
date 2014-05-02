@@ -119,6 +119,7 @@
 						<Implementation-Version>${project.version}-b${gitVersion}/${buildNumber}</Implementation-Version>
 						<Implementation-Build>${gitVersion}/${buildNumber} (${maven.build.timestamp})</Implementation-Build>
 						<Bundle-Activator>tigase.muc.Activator</Bundle-Activator>
+						<Export-Package>tigase.muc.*</Export-Package>
 					</instructions>
 				</configuration>
 			</plugin>
