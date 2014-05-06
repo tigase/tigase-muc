@@ -734,6 +734,10 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 	private void sendHistoryToUser(final Room room, final JID senderJID, final Integer maxchars, final Integer maxstanzas,
 			final Integer seconds, final Date since) {
 		HistoryProvider historyProvider = context.getHistoryProvider();
+		if (log.isLoggable(Level.FINEST)) {
+			log.finest("Sending history to user using: " + historyProvider + " history provider");
+		}
+
 		if (historyProvider != null) {
 			historyProvider.getHistoryMessages(room, senderJID, maxchars, maxstanzas, seconds, since, context.getWriter());
 		}

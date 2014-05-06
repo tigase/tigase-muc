@@ -49,7 +49,10 @@ public class HistoryManagerFactory {
 				return null;
 
 			if (log.isLoggable(Level.CONFIG))
-				log.config("Used History Provider: " + cl);
+				log.config("Using History Provider"
+								+ "; params.size: " + params.size()
+								+ "; uri: " + uri
+								+ "; cl: " + cl);
 			if (cl.trim().equals("none")) {
 				return new NoneHistoryProvider();
 			} else if (cl.trim().equals("memory")) {
