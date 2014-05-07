@@ -413,14 +413,17 @@ public class Room {
 	public boolean removeOccupant(JID jid) {
 		OccupantEntry e = getBySenderJid(jid);
 		if (e != null) {
-			synchronized (e.jids) {
-				e.jids.remove(jid);
-				if (e.jids.isEmpty()) {
-					this.occupants.removeValue(e);
-					return true;
+			try {
+				synchronized (e.jids) {
+					e.jids.remove(jid);
+					if (e.jids.isEmpty()) {
+						this.occupants.removeValue(e);
+						return true;
+					}
 				}
+			} finally {
+				fireOnOccupantRemoved(jid);
 			}
-			fireOnOccupantRemoved(jid);
 		}
 		return false;
 	}
