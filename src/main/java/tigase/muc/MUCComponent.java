@@ -25,9 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
-
 import javax.script.Bindings;
-
 import tigase.component.AbstractComponent;
 import tigase.component.AbstractComponent.ModuleRegisteredHandler;
 import tigase.component.AbstractContext;
@@ -36,6 +34,7 @@ import tigase.component.modules.Module;
 import tigase.component.modules.impl.AdHocCommandModule;
 import tigase.component.modules.impl.JabberVersionModule;
 import tigase.component.modules.impl.XmppPingModule;
+import tigase.conf.ConfigurationException;
 import tigase.db.RepositoryFactory;
 import tigase.db.UserRepository;
 import tigase.form.Field;
@@ -397,7 +396,7 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 	}
 
 	@Override
-	public void setProperties(Map<String, Object> props) {
+	public void setProperties(Map<String, Object> props) throws ConfigurationException {
 		if (props.size() == 1) {
 			// If props.size() == 1, it means this is a single property update
 			// and this component does not support single property change for
