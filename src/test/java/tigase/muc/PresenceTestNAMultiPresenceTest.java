@@ -31,6 +31,7 @@ import org.junit.Before;
 
 import tigase.component.PacketWriter;
 import tigase.component.exceptions.RepositoryException;
+import tigase.conf.ConfigurationException;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
 import tigase.test.junit.XMPPTestCase;
@@ -71,7 +72,7 @@ public class PresenceTestNAMultiPresenceTest extends XMPPTestCase {
 	private JUnitXMLIO xmlio;
 
 	@Before
-	public void init() throws RepositoryException, TigaseStringprepException {
+	public void init() throws RepositoryException, TigaseStringprepException, ConfigurationException {
 		final ArrayWriter writer = new ArrayWriter();
 		this.pubsub = new TestMUCCompoent(writer, new MockMucRepository());
 		this.pubsub.setName("xxx");
