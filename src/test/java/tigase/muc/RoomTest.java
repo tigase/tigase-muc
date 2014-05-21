@@ -71,7 +71,7 @@ public class RoomTest extends XMPPTestCase {
 	private JUnitXMLIO xmlio;
 
 	@Before
-	public void init() throws RepositoryException, TigaseStringprepException {
+	public void init() throws RepositoryException, TigaseStringprepException, ConfigurationException {
 		final ArrayWriter writer = new ArrayWriter();
 		this.pubsub = new TestMUCCompoent(writer, new MockMucRepository());
 		this.pubsub.setName("xxx");
