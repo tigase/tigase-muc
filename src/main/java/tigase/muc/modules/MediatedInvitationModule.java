@@ -77,6 +77,7 @@ public class MediatedInvitationModule extends AbstractMucModule {
 	}
 
 	/**
+	 * @param message
 	 * @param senderAffiliation
 	 * @param senderJID
 	 * @param roomJID
@@ -88,7 +89,7 @@ public class MediatedInvitationModule extends AbstractMucModule {
 	 * @throws MUCException
 	 * 
 	 */
-	private void doInvite(Element invite, Room room, BareJID roomJID, JID senderJID, Role senderRole,
+	private void doInvite(Packet message, Element invite, Room room, BareJID roomJID, JID senderJID, Role senderRole,
 			Affiliation senderAffiliation) throws RepositoryException, TigaseStringprepException, MUCException {
 
 		if (room == null)
@@ -128,6 +129,12 @@ public class MediatedInvitationModule extends AbstractMucModule {
 		if (cont != null) {
 			resultInvite.addChild(cont.clone());
 		}
+
+		Element bdy = message.getElement().getChild("body");
+		if (bdy != null) {
+			resultMessage.getElement().addChild(bdy.clone());
+		}
+
 		write(resultMessage);
 	}
 
@@ -184,7 +191,7 @@ public class MediatedInvitationModule extends AbstractMucModule {
 				if (element.getType() == StanzaType.error && "invite".equals(child.getName())) {
 					processInvitationErrorResponse(child, element.getErrorCondition(), roomJID, senderJID);
 				} else if ("invite".equals(child.getName()) && element.getType() != StanzaType.error) {
-					doInvite(child, room, roomJID, senderJID, senderRole, senderAffiliation);
+					doInvite(element, child, room, roomJID, senderJID, senderRole, senderAffiliation);
 				} else if ("decline".equals(child.getName()) && element.getType() != StanzaType.error) {
 					doDecline(child, roomJID, senderJID);
 				}
