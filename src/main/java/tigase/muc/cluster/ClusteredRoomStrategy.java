@@ -25,6 +25,7 @@ import java.util.logging.Logger;
 import tigase.cluster.api.ClusterCommandException;
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
+
 import tigase.component.exceptions.RepositoryException;
 import tigase.muc.Affiliation;
 import tigase.muc.Role;
@@ -35,11 +36,16 @@ import tigase.muc.modules.GroupchatMessageModule;
 import tigase.muc.modules.PresenceModule;
 import tigase.muc.modules.PresenceModule.PresenceWrapper;
 import tigase.muc.modules.PresenceModuleImpl;
+
 import tigase.server.Packet;
+
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
+
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.Arrays;
 
 /**
  * ClusteredRoomStrategy implements strategy which allows to create rooms with
@@ -381,7 +387,11 @@ public class ClusteredRoomStrategy extends AbstractStrategy implements StrategyI
 				Affiliation occupantAffiliation = Affiliation.valueOf(data.get("affiliation"));
 				Role occupantRole = Role.valueOf(data.get("role"));
 				boolean newOccupant = data.containsKey("new-occupant");
-				
+
+				log.log( Level.FINEST, "executig OccupantChangedPresenceCmd command for room = {0}, occupantJID = {1},"
+															 + "nickname: {2}, occupantAffiliation = {3}, occupantRole = {4}, newOccupant = {5} ",
+								 new Object[] { roomJid.toString(), occupantJID.toString(), nickname,
+																occupantAffiliation, occupantRole, newOccupant } );
 				PresenceModule presenceModule = ClusteredRoomStrategy.this.muc.getModule(PresenceModule.ID);
 				Room room = ClusteredRoomStrategy.this.muc.getMucRepository().getRoom(roomJid);
 				for (Element presenceOrig : packets) {
@@ -420,6 +430,8 @@ public class ClusteredRoomStrategy extends AbstractStrategy implements StrategyI
 				Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			JID creatorJid = JID.jidInstanceNS(data.get("creator"));
+			log.log( Level.FINEST, "executig RoomCreatedCmd command for room = {0}, creatorJid = {1}",
+							 new Object[] { roomJid.toString(), creatorJid.toString() } );
 			try {
 				mucRepository.createNewRoomWithoutListener(roomJid, creatorJid);
 			} catch (RepositoryException ex) {
@@ -438,6 +450,9 @@ public class ClusteredRoomStrategy extends AbstractStrategy implements StrategyI
 		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data,
 				Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
+			log.log( Level.FINEST, "executig RoomDestroyedCmd command for room = {0}, packets: {1}",
+							 new Object[] { roomJid.toString(), packets } );
+
 			try {
 				Room room = ClusteredRoomStrategy.this.muc.getMucRepository().getRoom(roomJid);
 				Element destroyElement = packets.poll();
@@ -473,6 +488,8 @@ public class ClusteredRoomStrategy extends AbstractStrategy implements StrategyI
 				Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			JID from = JID.jidInstanceNS(data.get("from"));
+			log.log( Level.FINEST, "executig RoomMessageCmd command for room = {0}, from = {1}, packets: {2}",
+							 new Object[] { roomJid.toString(), from.toString(), packets } );
 			try {
 				Room room = ClusteredRoomStrategy.this.muc.getMucRepository().getRoom(roomJid);
 				GroupchatMessageModule groupchatModule = ClusteredRoomStrategy.this.muc.getModule(GroupchatMessageModule.ID);
@@ -503,6 +520,8 @@ public class ClusteredRoomStrategy extends AbstractStrategy implements StrategyI
 			ConcurrentMap<JID,ConcurrentMap<BareJID,String>> nodeOccupants = occupantsPerNode.get(localNodeJid.getBareJID());
 			LinkedList<Element> localOccupants = new LinkedList<Element>();
 			if (nodeOccupants != null) {
+				log.log( Level.FINEST, "executig RequestSyncCmd command fromNode = {0}, nodeOccupants = {1}",
+								 new Object[] { fromNode.toString(), nodeOccupants.toString() } );
 				for (Map.Entry<JID,ConcurrentMap<BareJID,String>> occupantsEntry : nodeOccupants.entrySet()) {
 					// for each occupant we send
 					Element occupant = new Element("occupant", new String[] { "jid" }, 
@@ -541,6 +560,10 @@ public class ClusteredRoomStrategy extends AbstractStrategy implements StrategyI
 		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
 				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
 			if (packets != null && !packets.isEmpty()) {
+
+				log.log( Level.FINEST, "executig ResponseSyncCmd command fromNode = {0}, packets: {1}",
+								 new Object[] { fromNode.toString(), packets.toString() } );
+
 				for (Element occupantEl : packets) {
 					if (occupantEl.getName() == "occupant") {
 						JID occupantJid = JID.jidInstanceNS(
