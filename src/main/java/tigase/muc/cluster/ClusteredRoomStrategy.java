@@ -384,8 +384,10 @@ public class ClusteredRoomStrategy extends AbstractStrategy implements StrategyI
 				
 				PresenceModule presenceModule = ClusteredRoomStrategy.this.muc.getModule(PresenceModule.ID);
 				Room room = ClusteredRoomStrategy.this.muc.getMucRepository().getRoom(roomJid);
-				for (Element presence : packets) {
+				for (Element presenceOrig : packets) {
 					for (JID destinationJID : room.getAllOccupantsJID()) {
+						// we need to clone original packet as PresenceWrapper will modify original element!
+						Element presence = presenceOrig.clone();
 						PresenceWrapper presenceWrapper = PresenceWrapper.preparePresenceW(room, destinationJID, presence, occupantJID.getBareJID(),
 								Collections.singleton(occupantJID), nickname, occupantAffiliation, occupantRole);
 						if (!"unavailable".equals(presence.getAttributeStaticStr("type"))) {
