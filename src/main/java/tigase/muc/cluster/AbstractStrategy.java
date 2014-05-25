@@ -8,6 +8,7 @@ package tigase.muc.cluster;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -150,13 +151,28 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		}
 	}	
 	
+	protected void sendRemoteOccupantRemovalOnDisconnect(Room room, JID occupant, String occupantNick, boolean sendRemovalToOccupant) {
+		// notify occupants of this room on this node that occupant was removed
+		for (String nickname : room.getOccupantsNicknames()) {
+			Collection<JID> jids = room.getOccupantsJidsByNickname(nickname);
+			for (JID jid : jids) {
+				sendRemovalFromRoomOnNodeDisconnect(JID.jidInstanceNS(room.getRoomJID(), occupantNick), jid);
+			}
+		}
+		if (sendRemovalToOccupant) {
+			sendRemovalFromRoomOnNodeDisconnect(room.getRoomJID(), occupant);
+		}
+	}
+	
 	protected void sendRemovalFromRoomOnNodeDisconnect(BareJID roomJid, JID occupant) {
-		sendRemovalFromRoomOnNodeDisconnect(roomJid.toString(), occupant);
+		sendRemovalFromRoomOnNodeDisconnect(roomJid.toString(), occupant, false);
 	}
-	protected void sendRemovalFromRoomOnNodeDisconnect(JID roomJid, JID occupant) {
-		sendRemovalFromRoomOnNodeDisconnect(roomJid.toString(), occupant);
+	
+	private void sendRemovalFromRoomOnNodeDisconnect(JID roomJid, JID occupant) {
+		sendRemovalFromRoomOnNodeDisconnect(roomJid.toString(), occupant, true);
 	}
-	protected void sendRemovalFromRoomOnNodeDisconnect(String roomJid, JID occupant) {
+	
+	private void sendRemovalFromRoomOnNodeDisconnect(String roomJid, JID occupant, boolean toDisconnectedOccupant) {
 		try {
 			Element presenceEl = new Element("presence", new String[]{"xmlns", "from", "to", "type"},
 					new String[]{Presence.CLIENT_XMLNS, roomJid.toString(), occupant.toString(), "unavailable"});
@@ -164,8 +180,10 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 			presenceEl.addChild(x);
 			Element item = new Element("item", new String[]{"role"}, new String[]{"none"});
 			x.addChild(item);
-			item.addChild(new Element("reason", "MUC component is disconnected."));
-			x.addChild(new Element("status", new String[]{"code"}, new String[]{"332"}));
+			if (toDisconnectedOccupant) {
+				item.addChild(new Element("reason", "MUC component is disconnected."));
+				x.addChild(new Element("status", new String[]{"code"}, new String[]{"332"}));
+			}
 			muc.addOutPacket(Packet.packetInstance(presenceEl));
 		} catch (TigaseStringprepException ex) {
 			log.log(Level.FINE, "Problem on throwing out occupant {0} on node disconnection", new Object[]{occupant});

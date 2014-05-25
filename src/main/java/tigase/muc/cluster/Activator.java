@@ -62,7 +62,7 @@ public class Activator implements BundleActivator, ServiceListener {
 		synchronized (this) {
 			context = bc;
 			mucComponentCls = MUCComponentClustered.class;
-			strategies = new Class[] { ShardingStrategy.class, ClusteredRoomStrategy.class };
+			strategies = new Class[] { ShardingStrategy.class, ClusteredRoomStrategy.class, ClusteredRoomStrategyV2.class };
 			bc.addServiceListener(this, "(&(objectClass=" + ModulesManager.class.getName() + "))");
 			serviceReference = bc.getServiceReference(ModulesManager.class.getName());
 			if (serviceReference != null) {
