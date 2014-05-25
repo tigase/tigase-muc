@@ -170,6 +170,8 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
 		data.put("creator", room.getCreatorJid().toString());
+		// added to improve distribution of processing commands over threads
+		data.put("userId", room.getRoomJID().toString());
 		
 		if (log.isLoggable(Level.FINEST)) {
 			StringBuilder buf = new StringBuilder(100);
@@ -194,6 +196,8 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
+		// added to improve distribution of processing commands over threads
+		data.put("userId", room.getRoomJID().toString());
 		
 		if (log.isLoggable(Level.FINEST)) {
 			StringBuilder buf = new StringBuilder(100);
@@ -228,7 +232,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
-		data.put("from", from.toString());
+		data.put("userId", from.toString());
 		
 		Element message = new Element("message");
 		for (Element content : contents) {
@@ -385,7 +389,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data,
 				Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
-			JID from = JID.jidInstanceNS(data.get("from"));
+			JID from = JID.jidInstanceNS(data.get("userId"));
 			log.log( Level.FINEST, "executig RoomMessageCmd command for room = {0}, from = {1}, packets: {2}",
 							 new Object[] { roomJid.toString(), from.toString(), packets } );			
 			try {

@@ -62,7 +62,7 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 			
 			try {
 				BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
-				JID occupantJID = JID.jidInstanceNS(data.get("occupantJid"));
+				JID occupantJID = JID.jidInstanceNS(data.get("userId"));
 				String nickname = data.get("nickname");
 				Affiliation occupantAffiliation = Affiliation.valueOf(data.get("affiliation"));
 				Role occupantRole = Role.valueOf(data.get("role"));
@@ -124,7 +124,7 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 		
 		Map<String,String> data = new HashMap<String,String>();
 		data.put("room", room.getRoomJID().toString());
-		data.put("occupantJid", occupantJid.toString());
+		data.put("userId", occupantJid.toString());
 		data.put("nickname", nickname);
 		data.put("affiliation", affiliation.name());
 		data.put("role", role.name());

@@ -103,7 +103,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 
 			Map<String, String> data = new HashMap<String, String>();
 			data.put("room", room.getRoomJID().toString());
-			data.put("occupant-jid", occupantJid.toString());
+			data.put("userId", occupantJid.toString());
 			data.put("occupant-nickname", nickname);
 			
 			if (log.isLoggable(Level.FINEST)) {
@@ -132,7 +132,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 
 			Map<String, String> data = new HashMap<String, String>();
 			data.put("room", room.getRoomJID().toString());
-			data.put("occupant-jid", occupantJid.toString());
+			data.put("userId", occupantJid.toString());
 			
 			if (log.isLoggable(Level.FINEST)) {
 				StringBuilder buf = new StringBuilder(100);
@@ -252,7 +252,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
 				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
-			JID occupantJid = JID.jidInstanceNS(data.get("occupant-jid"));
+			JID occupantJid = JID.jidInstanceNS(data.get("userId"));
 			String nickname = data.get("occupant-nickname");
 			addOccupant(fromNode.getBareJID(), roomJid, occupantJid, nickname);
 			if (log.isLoggable(Level.FINEST)) {
@@ -272,7 +272,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
 				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
-			JID occupantJid = JID.jidInstanceNS(data.get("occupant-jid"));
+			JID occupantJid = JID.jidInstanceNS(data.get("userId"));
 			removeOccupant(fromNode.getBareJID(), roomJid, occupantJid);
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST, "room = {0}, received notification that occupant {1} left room {2} at node {3}", 
