@@ -333,10 +333,12 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 				Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			JID creatorJid = JID.jidInstanceNS(data.get("creator"));
-			log.log( Level.FINEST, "executig RoomCreatedCmd command for room = {0}, creatorJid = {1}",
-							 new Object[] { roomJid.toString(), creatorJid.toString() } );		
 			try {
 				mucRepository.createNewRoomWithoutListener(roomJid, creatorJid);
+				if ( log.isLoggable( Level.FINEST ) ){
+					log.log( Level.FINEST, "executig RoomCreatedCmd command for room = {0}, creatorJid = {1}",
+									 new Object[] { roomJid, creatorJid } );
+				}
 			} catch (RepositoryException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
 			}
@@ -353,8 +355,12 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data,
 				Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
-			log.log( Level.FINEST, "executig RoomDestroyedCmd command for room = {0}, packets: {1}",
-							 new Object[] { roomJid.toString(), packets } );			
+
+			if ( log.isLoggable( Level.FINEST ) ){
+				log.log( Level.FINEST, "executig RoomDestroyedCmd command for room = {0}, packets: {1}",
+								 new Object[] { roomJid, packets } );
+			}
+
 			try {
 				Room room = AbstractClusteredRoomStrategy.this.muc.getMucRepository().getRoom(roomJid);
 				Element destroyElement = packets.poll();
@@ -390,8 +396,10 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 				Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			JID from = JID.jidInstanceNS(data.get("userId"));
-			log.log( Level.FINEST, "executig RoomMessageCmd command for room = {0}, from = {1}, packets: {2}",
-							 new Object[] { roomJid.toString(), from.toString(), packets } );			
+			if ( log.isLoggable( Level.FINEST ) ){
+				log.log( Level.FINEST, "executig RoomMessageCmd command for room = {0}, from = {1}, packets: {2}",
+								 new Object[] { roomJid, from, packets } );
+			}
 			try {
 				Room room = AbstractClusteredRoomStrategy.this.muc.getMucRepository().getRoom(roomJid);
 				GroupchatMessageModule groupchatModule = AbstractClusteredRoomStrategy.this.muc.getModule(GroupchatMessageModule.ID);
@@ -422,8 +430,10 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			ConcurrentMap<JID,ConcurrentMap<BareJID,String>> nodeOccupants = occupantsPerNode.get(localNodeJid.getBareJID());
 			LinkedList<Element> localOccupants = new LinkedList<Element>();
 			if (nodeOccupants != null) {
-				log.log( Level.FINEST, "executig RequestSyncCmd command fromNode = {0}, nodeOccupants = {1}",
-								 new Object[] { fromNode.toString(), nodeOccupants.toString() } );								
+				if ( log.isLoggable( Level.FINEST ) ){
+					log.log( Level.FINEST, "executig RequestSyncCmd command fromNode = {0}, nodeOccupants = {1}",
+									 new Object[] { fromNode, nodeOccupants } );
+				}
 				for (Map.Entry<JID,ConcurrentMap<BareJID,String>> occupantsEntry : nodeOccupants.entrySet()) {
 					// for each occupant we send
 					Element occupant = new Element("occupant", new String[] { "jid" }, 
@@ -462,9 +472,11 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
 				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
 			if (packets != null && !packets.isEmpty()) {
-				
-				log.log( Level.FINEST, "executig ResponseSyncCmd command fromNode = {0}, packets: {1}",
-								 new Object[] { fromNode.toString(), packets.toString() } );
+
+				if ( log.isLoggable( Level.FINEST ) ){
+					log.log( Level.FINEST, "executig ResponseSyncCmd command fromNode = {0}, packets: {1}",
+									 new Object[] { fromNode, packets } );
+				}
 				
 				for (Element occupantEl : packets) {
 					if (occupantEl.getName() == "occupant") {

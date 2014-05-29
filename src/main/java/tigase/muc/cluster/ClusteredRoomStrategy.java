@@ -68,10 +68,12 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 				Role occupantRole = Role.valueOf(data.get("role"));
 				boolean newOccupant = data.containsKey("new-occupant");
 				
-				log.log( Level.FINEST, "executig OccupantChangedPresenceCmd command for room = {0}, occupantJID = {1},"
-															 + "nickname: {2}, occupantAffiliation = {3}, occupantRole = {4}, newOccupant = {5} ",
-								 new Object[] { roomJid.toString(), occupantJID.toString(), nickname,
-																occupantAffiliation, occupantRole, newOccupant } );				
+				if ( log.isLoggable( Level.FINEST ) ){
+					log.log( Level.FINEST, "executig OccupantChangedPresenceCmd command for room = {0}, occupantJID = {1},"
+																 + "nickname: {2}, occupantAffiliation = {3}, occupantRole = {4}, newOccupant = {5} ",
+									 new Object[] { roomJid, occupantJID, nickname,
+																	occupantAffiliation, occupantRole, newOccupant } );
+				}
 				
 				PresenceModule presenceModule = ClusteredRoomStrategy.this.muc.getModule(PresenceModule.ID);
 				Room room = ClusteredRoomStrategy.this.muc.getMucRepository().getRoom(roomJid);
@@ -140,10 +142,10 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 				buf.append(node.toString());
 			}
 			log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] that occupant {2} in room {3} changed presence = {4}",
-					new Object[]{room.getRoomJID(), buf, occupantJid, room.getRoomJID(), presence});
+					new Object[]{room, buf, occupantJid, room, presence});
 		}
 		
-		cl_controller.sendToNodes(OCCUPANT_PRESENCE_CMD, data, presence, localNodeJid, null, toNodes.toArray(new JID[toNodes.size()]));
+//		cl_controller.sendToNodes(OCCUPANT_PRESENCE_CMD, data, presence, localNodeJid, null, toNodes.toArray(new JID[toNodes.size()]));
 	}
 	
 }
