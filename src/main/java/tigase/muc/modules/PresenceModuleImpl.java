@@ -330,7 +330,7 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		boolean nicknameGone = room.removeOccupant(senderJID);
 		context.getGhostbuster().remove(senderJID, room);
 
-		room.updatePresenceByJid(senderJID, leavingNickname, null, false);
+		room.updatePresenceByJid(senderJID, leavingNickname, null);
 
 		if (context.isMultiItemMode()) {
 			final PresenceWrapper selfPresence = PresenceWrapper.preparePresenceW(room, senderJID, presenceElement,
@@ -513,7 +513,7 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		if (log.isLoggable(Level.FINEST)) {
 			log.finest("Processing stanza " + presenceElement.toString());
 		}
-		room.updatePresenceByJid(null, nickname, clonePresence(presenceElement), false);
+		room.updatePresenceByJid(null, nickname, clonePresence(presenceElement));
 
 		Element pe = room.getLastPresenceCopyByJid(senderJID.getBareJID());
 
@@ -625,12 +625,12 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 			log.finest("Occupant '" + nickname + "' <" + senderJID.toString() + "> is entering room " + room.getRoomJID()
 					+ " as role=" + newRole.name() + ", affiliation=" + affiliation.name());
 		}
-		room.addOccupantByJid(senderJID, nickname, newRole);
-		context.getGhostbuster().add(senderJID, room);
 
 		Element pe = clonePresence(element);
+		room.addOccupantByJid(senderJID, nickname, newRole, pe);
 
-		room.updatePresenceByJid(null, nickname, pe, true);
+		context.getGhostbuster().add(senderJID, room);
+
 		// if (currentOccupantJid == null) {
 
 		// Service Sends New Occupant's Presence to All Occupants

@@ -21,14 +21,6 @@
  */
 package tigase.muc;
 
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
-
-import tigase.collections.TwoHashBidiMap;
-import tigase.component.exceptions.RepositoryException;
-import tigase.util.TigaseStringprepException;
-import tigase.xml.Element;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,6 +32,13 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+
+import tigase.collections.TwoHashBidiMap;
+import tigase.component.exceptions.RepositoryException;
+import tigase.util.TigaseStringprepException;
+import tigase.xml.Element;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -137,8 +136,10 @@ public class Room {
 	/**
 	 * @param senderJid
 	 * @param nickName
+	 * @param pe
+	 * @throws TigaseStringprepException
 	 */
-	public void addOccupantByJid(JID senderJid, String nickName, Role role) {
+	public void addOccupantByJid(JID senderJid, String nickName, Role role, Element pe) throws TigaseStringprepException {
 		OccupantEntry entry = this.occupants.get(nickName);
 		if (entry == null) {
 			entry = new OccupantEntry();
@@ -150,9 +151,13 @@ public class Room {
 		boolean added = false;
 		synchronized (entry.jids) {
 			added = entry.jids.add(senderJid);
+			this.presences.update(pe);
 		}
-		if (added)
+
+		if (added) {
 			fireOnOccupantAdded(senderJid);
+			fireOnOccupantChangedPresence(senderJid, nickName, pe, true);
+		}
 	}
 
 	public void addOccupantListener(RoomOccupantListener listener) {
@@ -490,13 +495,13 @@ public class Room {
 	 * @param element
 	 * @throws TigaseStringprepException
 	 */
-	public void updatePresenceByJid(JID jid, String nickname, Element cp, boolean newOccupant) throws TigaseStringprepException {
+	public void updatePresenceByJid(JID jid, String nickname, Element cp) throws TigaseStringprepException {
 		if (cp == null)
 			this.presences.remove(jid);
 		else
 			this.presences.update(cp);
 
-		fireOnOccupantChangedPresence(jid, nickname, cp, newOccupant);
+		fireOnOccupantChangedPresence(jid, nickname, cp, false);
 	}
 
 }
