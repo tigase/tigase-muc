@@ -141,6 +141,7 @@ public class Room {
 	 */
 	public void addOccupantByJid(JID senderJid, String nickName, Role role, Element pe) throws TigaseStringprepException {
 		OccupantEntry entry = this.occupants.get(nickName);
+		this.presences.update(pe);
 		if (entry == null) {
 			entry = new OccupantEntry();
 			entry.jid = senderJid.getBareJID();
@@ -151,7 +152,6 @@ public class Room {
 		boolean added = false;
 		synchronized (entry.jids) {
 			added = entry.jids.add(senderJid);
-			this.presences.update(pe);
 		}
 
 		if (added) {
