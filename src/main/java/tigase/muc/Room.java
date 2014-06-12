@@ -32,6 +32,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import tigase.collections.TwoHashBidiMap;
 import tigase.component.exceptions.RepositoryException;
@@ -54,6 +56,15 @@ public class Room {
 
 		private Role role = Role.none;
 
+		/*
+		 * (non-Javadoc)
+		 * 
+		 * @see java.lang.Object#toString()
+		 */
+		@Override
+		public String toString() {
+			return "[" + role + "; " + jid + "; " + jids.toString() + "]";
+		}
 	}
 
 	public static interface RoomListener {
@@ -71,6 +82,8 @@ public class Room {
 
 		void onOccupantRemoved(Room room, JID occupantJid);
 	}
+
+	protected static final Logger log = Logger.getLogger(Room.class.getName());
 
 	/**
 	 * <bareJID, Affiliation>
@@ -146,12 +159,21 @@ public class Room {
 			entry = new OccupantEntry();
 			entry.jid = senderJid.getBareJID();
 			this.occupants.put(nickName, entry);
+
+			if (log.isLoggable(Level.FINEST))
+				log.finest("Room " + config.getRoomJID() + ". Created OccupantEntry for " + senderJid + ", nickname="
+						+ nickName);
 		}
 
 		entry.role = role;
 		boolean added = false;
 		synchronized (entry.jids) {
 			added = entry.jids.add(senderJid);
+		}
+
+		if (log.isLoggable(Level.FINEST)) {
+			log.finest("Room " + config.getRoomJID() + ". " + (added ? "Added" : "Updated") + " occupant " + senderJid + " ("
+					+ nickName + ") to room with role=" + role);
 		}
 
 		if (added) {
@@ -174,6 +196,11 @@ public class Room {
 
 		this.occupants.remove(oldNickname);
 		this.occupants.put(nickName, occ);
+
+		if (log.isLoggable(Level.FINEST)) {
+			log.finest("Room " + config.getRoomJID() + ". Occupant " + senderJid + " changed nickname from " + oldNickname
+					+ " to " + nickName);
+		}
 	}
 
 	public void fireOnMessageToOccupants(JID fromJID, Element[] content) {
@@ -272,6 +299,18 @@ public class Room {
 
 	public BareJID getCreatorJid() {
 		return creatorJid;
+	}
+
+	/**
+	 * @return
+	 */
+	public String getDebugInfoOccupants() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Occupants in room " + config.getRoomJID() + ": ");
+		for (Entry<String, OccupantEntry> o : occupants.entrySet()) {
+			sb.append(o.getKey()).append('=').append(o.getValue().toString()).append(" ");
+		}
+		return sb.toString();
 	}
 
 	public Element getLastPresenceCopyByJid(BareJID occupantJid) {
@@ -421,8 +460,14 @@ public class Room {
 			try {
 				synchronized (e.jids) {
 					e.jids.remove(jid);
+					if (log.isLoggable(Level.FINEST)) {
+						log.finest("Room " + config.getRoomJID() + ". Removed JID " + jid + " of occupant");
+					}
 					if (e.jids.isEmpty()) {
 						this.occupants.removeValue(e);
+						if (log.isLoggable(Level.FINEST)) {
+							log.finest("Room " + config.getRoomJID() + ". Removed occupant " + jid);
+						}
 						return true;
 					}
 				}
@@ -439,6 +484,10 @@ public class Room {
 	public void removeOccupant(String occupantNick) {
 		OccupantEntry e = this.occupants.remove(occupantNick);
 		if (e != null) {
+			if (log.isLoggable(Level.FINEST)) {
+				log.finest("Room " + config.getRoomJID() + ". Removed occupant " + occupantNick);
+			}
+
 			for (JID jid : e.jids) {
 				fireOnOccupantRemoved(jid);
 			}
@@ -459,8 +508,13 @@ public class Room {
 	 */
 	public void setNewRole(String nickname, Role newRole) {
 		OccupantEntry entry = this.occupants.get(nickname);
-		if (entry != null)
+		if (entry != null) {
 			entry.role = newRole;
+			if (log.isLoggable(Level.FINEST)) {
+				log.finest("Room " + config.getRoomJID() + ". Changed role of occupant " + nickname + " to " + newRole);
+			}
+
+		}
 
 	}
 
@@ -496,12 +550,18 @@ public class Room {
 	 * @throws TigaseStringprepException
 	 */
 	public void updatePresenceByJid(JID jid, String nickname, Element cp) throws TigaseStringprepException {
-		if (cp == null)
+		if (cp == null) {
 			this.presences.remove(jid);
-		else
+			if (log.isLoggable(Level.FINEST)) {
+				log.finest("Room " + config.getRoomJID() + ". Removed presence from " + jid + " (" + nickname + ")");
+			}
+		} else {
+			if (log.isLoggable(Level.FINEST)) {
+				log.finest("Room " + config.getRoomJID() + ". Updated presence from " + jid + " (" + nickname + ")");
+			}
 			this.presences.update(cp);
+		}
 
 		fireOnOccupantChangedPresence(jid, nickname, cp, false);
 	}
-
 }

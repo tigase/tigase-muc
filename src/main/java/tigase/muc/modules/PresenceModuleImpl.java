@@ -694,6 +694,11 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		if (room.getConfig().isLoggingEnabled()) {
 			addJoinToHistory(room, new Date(), senderJID, nickname);
 		}
+
+		if (log.isLoggable(Level.FINEST)) {
+			log.finest(room.getDebugInfoOccupants());
+		}
+
 	}
 
 	/**
