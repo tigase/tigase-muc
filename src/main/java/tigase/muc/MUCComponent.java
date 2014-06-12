@@ -25,7 +25,9 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
+
 import javax.script.Bindings;
+
 import tigase.component.AbstractComponent;
 import tigase.component.AbstractComponent.ModuleRegisteredHandler;
 import tigase.component.AbstractContext;
@@ -134,6 +136,8 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 
 	public static final String DEFAULT_ROOM_CONFIG_PREFIX_KEY = "default_room_config/";
 
+	private static final String GHOSTBUSTER_ENABLED_KEY = "ghostbuster-enabled";
+
 	public static final String LOG_DIR_KEY = "room-log-directory";
 
 	public static final String MESSAGE_FILTER_ENABLED_KEY = "message-filter-enabled";
@@ -198,7 +202,6 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 	protected boolean searchGhostsEveryMinute = false;
 
 	public MUCComponent() {
-		this.ghostbuster = new Ghostbuster2(this);
 		addModuleRegisteredHandler(this);
 	}
 
@@ -286,19 +289,17 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 		props.put(MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
 		props.put(PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
 		props.put(SEARCH_GHOSTS_EVERY_MINUTE_KEY, Boolean.FALSE);
+		props.put(GHOSTBUSTER_ENABLED_KEY, Boolean.TRUE);
 
 		props.put(MUC_ALLOW_CHAT_STATES_KEY, Boolean.FALSE);
 		props.put(MUC_LOCK_NEW_ROOM_KEY, Boolean.TRUE);
 		props.put(MUC_MULTI_ITEM_ALLOWED_KEY, Boolean.TRUE);
 
-
 		// By default use the same repository as all other components:
-		String repo_class = ( params.get( RepositoryFactory.GEN_USER_DB ) != null )
-												? (String) params.get( RepositoryFactory.GEN_USER_DB )
-												: RepositoryFactory.DERBY_REPO_CLASS_PROP_VAL;
-		String repo_uri = ( params.get( RepositoryFactory.GEN_USER_DB_URI ) != null )
-											? (String) params.get( RepositoryFactory.GEN_USER_DB_URI )
-											: RepositoryFactory.DERBY_REPO_URL_PROP_VAL;
+		String repo_class = (params.get(RepositoryFactory.GEN_USER_DB) != null) ? (String) params.get(RepositoryFactory.GEN_USER_DB)
+				: RepositoryFactory.DERBY_REPO_CLASS_PROP_VAL;
+		String repo_uri = (params.get(RepositoryFactory.GEN_USER_DB_URI) != null) ? (String) params.get(RepositoryFactory.GEN_USER_DB_URI)
+				: RepositoryFactory.DERBY_REPO_URL_PROP_VAL;
 
 		props.put(HistoryManagerFactory.DB_CLASS_KEY, repo_class);
 		props.put(HistoryManagerFactory.DB_URI_KEY, repo_uri);
@@ -367,7 +368,7 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 	 */
 	@Override
 	public void onModuleRegistered(String id, Module module) {
-		if (id.equals(PresenceModule.ID) && module instanceof PresenceModule) {
+		if (ghostbuster != null && id.equals(PresenceModule.ID) && module instanceof PresenceModule) {
 			ghostbuster.setPresenceModule((PresenceModule) module);
 		}
 	}
@@ -387,10 +388,12 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 	 */
 	@Override
 	public void processPacket(Packet packet) {
-		try {
-			ghostbuster.update(packet);
-		} catch (Exception e) {
-			log.log(Level.WARNING, "There is no Dana, there is only Zuul", e);
+		if (ghostbuster != null) {
+			try {
+				ghostbuster.update(packet);
+			} catch (Exception e) {
+				log.log(Level.WARNING, "There is no Dana, there is only Zuul", e);
+			}
 		}
 		super.processPacket(packet);
 	}
@@ -415,36 +418,44 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 		}
 		log.config("searchGhostsEveryMinute: " + searchGhostsEveryMinute + "; " + props.containsKey(PING_EVERY_MINUTE_KEY));
 
-		if (props.containsKey(MUCComponent.MESSAGE_FILTER_ENABLED_KEY))
-		{
+		if (props.containsKey(MUCComponent.GHOSTBUSTER_ENABLED_KEY)) {
+			boolean e = (Boolean) props.get(MUCComponent.GHOSTBUSTER_ENABLED_KEY);
+			if (e && ghostbuster == null) {
+				log.config("Enabling Ghostbuster");
+				ghostbuster = new Ghostbuster2(this);
+			} else if (!e && ghostbuster != null) {
+				log.config("Disabling Ghostbuster");
+				ghostbuster = null;
+			}
+		}
+
+		if (props.containsKey(MUCComponent.MESSAGE_FILTER_ENABLED_KEY)) {
 			this.messageFilterEnabled = (Boolean) props.get(MUCComponent.MESSAGE_FILTER_ENABLED_KEY);
 		}
-		log.config("messageFilterEnabled: " + messageFilterEnabled +
-							 "; props: " + props.containsKey(MUCComponent.MESSAGE_FILTER_ENABLED_KEY));
+		log.config("messageFilterEnabled: " + messageFilterEnabled + "; props: "
+				+ props.containsKey(MUCComponent.MESSAGE_FILTER_ENABLED_KEY));
 
 		if (props.containsKey(MUCComponent.PRESENCE_FILTER_ENABLED_KEY)) {
 			this.presenceFilterEnabled = (Boolean) props.get(MUCComponent.PRESENCE_FILTER_ENABLED_KEY);
 		}
-		log.config("presenceFilterEnabled: " + presenceFilterEnabled +
-							 "; props: " + props.containsKey(MUCComponent.PRESENCE_FILTER_ENABLED_KEY));
+		log.config("presenceFilterEnabled: " + presenceFilterEnabled + "; props: "
+				+ props.containsKey(MUCComponent.PRESENCE_FILTER_ENABLED_KEY));
 
 		if (props.containsKey(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY)) {
 			this.multiItemMode = (Boolean) props.get(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY);
 		}
-		log.config("multiItemMode: " + multiItemMode +
-							 "; props: " + props.containsKey(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY));
+		log.config("multiItemMode: " + multiItemMode + "; props: " + props.containsKey(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY));
 
 		if (props.containsKey(MUCComponent.MUC_ALLOW_CHAT_STATES_KEY)) {
 			this.chatStateAllowed = (Boolean) props.get(MUCComponent.MUC_ALLOW_CHAT_STATES_KEY);
 		}
-		log.config("chatStateAllowed: " + chatStateAllowed +
-							 "; props: " + props.containsKey(MUCComponent.MUC_ALLOW_CHAT_STATES_KEY));
+		log.config("chatStateAllowed: " + chatStateAllowed + "; props: "
+				+ props.containsKey(MUCComponent.MUC_ALLOW_CHAT_STATES_KEY));
 
 		if (props.containsKey(MUCComponent.MUC_LOCK_NEW_ROOM_KEY)) {
 			this.newRoomLocked = (Boolean) props.get(MUCComponent.MUC_LOCK_NEW_ROOM_KEY);
 		}
-		log.config("newRoomLocked: " + newRoomLocked +
-							 "; props: " + props.containsKey(MUCComponent.MUC_LOCK_NEW_ROOM_KEY));
+		log.config("newRoomLocked: " + newRoomLocked + "; props: " + props.containsKey(MUCComponent.MUC_LOCK_NEW_ROOM_KEY));
 
 		if (props.containsKey(LOG_DIR_KEY)) {
 			log.config("Setting Chat Logging Directory");
@@ -456,9 +467,7 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 				final String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
 				final String res_uri = (String) props.get(MUC_REPO_URL_PROP_KEY);
 
-				log.config( "Initializing MUC Repository"
-										+ "; cls_name: " + cls_name
-										+ "; res_uri: " + res_uri );
+				log.config("Initializing MUC Repository" + "; cls_name: " + cls_name + "; res_uri: " + res_uri);
 
 				UserRepository userRepository;
 				if (cls_name != null && res_uri != null) {
@@ -468,31 +477,28 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 				}
 				MucDAO dao = new MucDAO(context, userRepository);
 				mucRepository = createMucRepository(context, dao);
-				log.config( "MUC Repository initialized"
-										+ "; userRepository: " + userRepository
-										+ "; MucDAO dao: " + dao
-										+ "; mucRepository: " + mucRepository
-				);
+				log.config("MUC Repository initialized" + "; userRepository: " + userRepository + "; MucDAO dao: " + dao
+						+ "; mucRepository: " + mucRepository);
 
 			} catch (Exception e) {
 				log.log(Level.WARNING, "Cannot initialize MUC Repository", e);
 			}
 		}
 
-		log.config( "Initializing History Provider, props.containsKey(HistoryManagerFactory.DB_CLASS_KEY): "
-								+ props.containsKey(HistoryManagerFactory.DB_CLASS_KEY) );
-//		if (props.containsKey(HistoryManagerFactory.DB_CLASS_KEY)) {
-			try {
-				this.historyProvider = HistoryManagerFactory.getHistoryManager(props);
-				this.historyProvider.init(props);
-			} catch (Exception e) {
-				log.log(Level.WARNING, "Cannot initialize History Provider", e);
-			}
-//		}
+		log.config("Initializing History Provider, props.containsKey(HistoryManagerFactory.DB_CLASS_KEY): "
+				+ props.containsKey(HistoryManagerFactory.DB_CLASS_KEY));
+		// if (props.containsKey(HistoryManagerFactory.DB_CLASS_KEY)) {
+		try {
+			this.historyProvider = HistoryManagerFactory.getHistoryManager(props);
+			this.historyProvider.init(props);
+		} catch (Exception e) {
+			log.log(Level.WARNING, "Cannot initialize History Provider", e);
+		}
+		// }
 
-		log.config( "Initializing MUC Logger, props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY)"
-								+ props.containsKey( MucLogger.MUC_LOGGER_CLASS_KEY ) );
-		if ( props.containsKey( MucLogger.MUC_LOGGER_CLASS_KEY ) ){
+		log.config("Initializing MUC Logger, props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY)"
+				+ props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY));
+		if (props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY)) {
 			String loggerClassName = (String) props.get(MucLogger.MUC_LOGGER_CLASS_KEY);
 			try {
 				if (log.isLoggable(Level.CONFIG))
