@@ -180,10 +180,31 @@ public class Ghostbuster2 {
 
 	/**
 	 * @param stanzaTo
+	 * @throws TigaseStringprepException
 	 */
-	protected void onPingTimeout(JID stanzaTo) {
-		// TODO Auto-generated method stub
+	protected void onPingTimeout(JID stanzaTo) throws TigaseStringprepException {
+		if (log.isLoggable(Level.FINEST))
+			log.finest("Timeouted ping to: " + stanzaTo);
 
+//		final MonitoredObject obj = monitoredObjects.get(stanzaTo);
+//
+//		if (obj == null)
+//			return;
+//
+//		if ((presenceModule == null) || (mucComponent.getMucRepository() == null)) {
+//			return;
+//		}
+//
+//		if (log.isLoggable(Level.FINEST)) {
+//			log.finest("Forced removal last activity of " + obj.source);
+//		}
+//
+//		this.monitoredObjects.remove(obj);
+//		for (Room r : mucComponent.getMucRepository().getActiveRooms().values()) {
+//			if (obj.rooms.contains(r.getRoomJID()) && r.isOccupantInRoom(obj.source)) {
+//				presenceModule.doQuit(r, obj.source);
+//			}
+//		}
 	}
 
 	public void ping() throws TigaseStringprepException {
