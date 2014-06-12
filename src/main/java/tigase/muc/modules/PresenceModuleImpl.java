@@ -324,6 +324,10 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		final Role leavingRole = room.getRole(leavingNickname);
 		Element presenceElement = new Element("presence");
 
+		if (log.isLoggable(Level.FINER)) {
+			log.finer("Occupant " + senderJID + " known as " + leavingNickname + " is leaving room " + room.getRoomJID());
+		}
+
 		presenceElement.setAttribute("type", "unavailable");
 
 		Collection<JID> occupantJIDs = new ArrayList<JID>(room.getOccupantsJidsByNickname(leavingNickname));

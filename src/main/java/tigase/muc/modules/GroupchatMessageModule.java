@@ -187,21 +187,29 @@ public class GroupchatMessageModule extends AbstractMucModule {
 			final BareJID roomJID = BareJID.bareJIDInstance(packet.getAttributeStaticStr(Packet.TO_ATT));
 
 			if (getNicknameFromJid(JID.jidInstance(packet.getAttributeStaticStr(Packet.TO_ATT))) != null) {
-				throw new MUCException(Authorization.BAD_REQUEST);
+				throw new MUCException(Authorization.BAD_REQUEST, "Groupchat message can't be addressed to occupant.");
 			}
 
 			final Room room = context.getMucRepository().getRoom(roomJID);
 
 			if (room == null) {
-				throw new MUCException(Authorization.ITEM_NOT_FOUND);
+				throw new MUCException(Authorization.ITEM_NOT_FOUND, "There is no such room.");
 			}
 
 			final String nickName = room.getOccupantsNickname(senderJID);
 			final Role role = room.getRole(nickName);
 			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
 
+			if (log.isLoggable(Level.FINEST)) {
+				log.finest("Processing groupchat message. room=" + roomJID + "; senderJID=" + senderJID + "; senderNickname="
+						+ nickName + "; role=" + role + "; affiliation=" + affiliation + ";");
+			}
+
 			if (!role.isSendMessagesToAll() || (room.getConfig().isRoomModerated() && (role == Role.visitor))) {
-				throw new MUCException(Authorization.FORBIDDEN);
+				if (log.isLoggable(Level.FINE))
+					log.fine("Insufficient privileges to send grouchat message: role=" + role + "; roomModerated="
+							+ room.getConfig().isRoomModerated() + "; stanza=" + packet.getElement().toStringNoChildren());
+				throw new MUCException(Authorization.FORBIDDEN, "Insufficient privileges to send groupchat message.");
 			}
 
 			Element body = null;
@@ -240,7 +248,10 @@ public class GroupchatMessageModule extends AbstractMucModule {
 
 			if (subject != null) {
 				if (!(room.getConfig().isChangeSubject() && (role == Role.participant)) && !role.isModifySubject()) {
-					throw new MUCException(Authorization.FORBIDDEN);
+					if (log.isLoggable(Level.FINE))
+						log.fine("Insufficient privileges to change subject: role=" + role + "; allowToChangeSubject="
+								+ room.getConfig().isChangeSubject() + "; stanza=" + packet.getElement().toStringNoChildren());
+					throw new MUCException(Authorization.FORBIDDEN, "Insufficient privileges to change subject.");
 				}
 
 				String msg = subject.getCData();
