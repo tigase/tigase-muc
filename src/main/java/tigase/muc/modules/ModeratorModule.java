@@ -49,12 +49,13 @@ import tigase.xmpp.StanzaType;
  * 
  */
 public class ModeratorModule extends AbstractMucModule {
-	private static final Criteria CRIT = ElementCriteria.name("iq").add(
+
+	protected static final Criteria CRIT = ElementCriteria.name("iq").add(
 			ElementCriteria.name("query", "http://jabber.org/protocol/muc#admin"));
 
 	public static final String ID = "admin";
 
-	private static Affiliation getAffiliation(Element item) throws MUCException {
+	protected static Affiliation getAffiliation(Element item) throws MUCException {
 		String tmp = item.getAttributeStaticStr("affiliation");
 
 		try {
@@ -64,19 +65,19 @@ public class ModeratorModule extends AbstractMucModule {
 		}
 	}
 
-	private static String getReason(Element item) {
+	protected static String getReason(Element item) {
 		Element r = item.getChild("reason");
 
 		return (r == null) ? null : r.getCData();
 	}
 
-	private static Role getRole(Element item) {
+	protected static Role getRole(Element item) {
 		String tmp = item.getAttributeStaticStr("role");
 
 		return (tmp == null) ? null : Role.valueOf(tmp);
 	}
 
-	private void checkItem(final Room room, final Element item, final Affiliation senderaAffiliation, final Role senderRole)
+	protected void checkItem(final Room room, final Element item, final Affiliation senderaAffiliation, final Role senderRole)
 			throws MUCException, TigaseStringprepException {
 		final Role newRole = getRole(item);
 		final Affiliation newAffiliation = getAffiliation(item);
@@ -183,7 +184,7 @@ public class ModeratorModule extends AbstractMucModule {
 		room.removeOccupant(occupantNick);
 	}
 
-	private Packet makePresence(final JID destinationJid, final BareJID roomJID, final Room room, final BareJID occupantJid,
+	protected Packet makePresence(final JID destinationJid, final BareJID roomJID, final Room room, final BareJID occupantJid,
 			boolean unavailable, Affiliation affiliation, Role role, String nick, String reason, String actor, String... codes)
 			throws TigaseStringprepException {
 		Element presence = unavailable ? new Element("presence", new String[] { "type" }, new String[] { "unavailable" })
@@ -266,7 +267,7 @@ public class ModeratorModule extends AbstractMucModule {
 		}
 	}
 
-	private void processGet(Packet element) throws RepositoryException, MUCException {
+	protected void processGet(Packet element) throws RepositoryException, MUCException {
 		try {
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
 			Room room = context.getMucRepository().getRoom(roomJID);
@@ -310,8 +311,8 @@ public class ModeratorModule extends AbstractMucModule {
 		}
 	}
 
-	private void processGetAffiliations(final Packet iq, final Room room, final Affiliation filter) throws RepositoryException,
-			MUCException {
+	protected void processGetAffiliations(final Packet iq, final Room room, final Affiliation filter)
+			throws RepositoryException, MUCException {
 		Element responseQuery = new Element("query", new String[] { "xmlns" },
 				new String[] { "http://jabber.org/protocol/muc#admin" });
 
@@ -328,7 +329,7 @@ public class ModeratorModule extends AbstractMucModule {
 		write(iq.okResult(responseQuery, 0));
 	}
 
-	private void processGetRoles(final Packet iq, final Room room, final Role filterRole) throws RepositoryException,
+	protected void processGetRoles(final Packet iq, final Room room, final Role filterRole) throws RepositoryException,
 			MUCException {
 		Element responseQuery = new Element("query", new String[] { "xmlns" },
 				new String[] { "http://jabber.org/protocol/muc#admin" });
@@ -351,7 +352,7 @@ public class ModeratorModule extends AbstractMucModule {
 		write(iq.okResult(responseQuery, 0));
 	}
 
-	private void processSet(Packet element) throws RepositoryException, MUCException {
+	protected void processSet(Packet element) throws RepositoryException, MUCException {
 		try {
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
 			final Room room = context.getMucRepository().getRoom(roomJID);
@@ -395,7 +396,7 @@ public class ModeratorModule extends AbstractMucModule {
 		}
 	}
 
-	private void processSetAffiliation(Room room, Element item, Affiliation newAffiliation, Role newRole, String reason,
+	protected void processSetAffiliation(Room room, Element item, Affiliation newAffiliation, Role newRole, String reason,
 			String actor) throws RepositoryException, TigaseStringprepException {
 		final BareJID occupantBareJid = JID.jidInstance(item.getAttributeStaticStr("jid")).getBareJID();
 		final Affiliation previousAffiliation = room.getAffiliation(occupantBareJid);
@@ -443,7 +444,7 @@ public class ModeratorModule extends AbstractMucModule {
 		}
 	}
 
-	private void processSetRole(Room room, String occupantNick, Role newRole, String reason, String actor)
+	protected void processSetRole(Room room, String occupantNick, Role newRole, String reason, String actor)
 			throws TigaseStringprepException {
 		final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNick);
 		final Affiliation occupantAffiliation = room.getAffiliation(occupantJid);
@@ -486,7 +487,7 @@ public class ModeratorModule extends AbstractMucModule {
 	 * @param occupantBareJid
 	 * @throws TigaseStringprepException
 	 */
-	private void sendInvitation(Room room, BareJID occupantBareJid, String actor) throws TigaseStringprepException {
+	protected void sendInvitation(Room room, BareJID occupantBareJid, String actor) throws TigaseStringprepException {
 		Packet message = Packet.packetInstance(new Element("message", new String[] { Packet.FROM_ATT, Packet.TO_ATT },
 				new String[] { room.getRoomJID().toString(), occupantBareJid.toString() }));
 		message.setXMLNS(Packet.CLIENT_XMLNS);
