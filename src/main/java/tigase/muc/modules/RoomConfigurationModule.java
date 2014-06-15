@@ -22,6 +22,7 @@
 
 package tigase.muc.modules;
 
+import java.util.Date;
 import java.util.logging.Level;
 
 import tigase.component.exceptions.RepositoryException;
@@ -270,7 +271,7 @@ public class RoomConfigurationModule extends AbstractMucModule {
 						for (String code : compareResult) {
 							z.addChild(new Element("status", new String[] { "code" }, new String[] { code }));
 						}
-						this.messageModule.sendMessagesToAllOccupants(room, roomJID, z);
+						this.messageModule.sendMessagesToAllOccupants(room, roomJID, new Date(), z);
 					}
 				}
 			} else {
