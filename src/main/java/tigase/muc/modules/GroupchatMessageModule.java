@@ -272,7 +272,13 @@ public class GroupchatMessageModule extends AbstractMucModule {
 			if (subject != null) {
 				addSubjectChangeToHistory(room, packet.getElement(), subject.getCData(), senderJID, nickName, sendDate);
 			}
-			sendMessagesToAllOccupants(room, senderRoomJID, sendDate, content.toArray(new Element[] {}));
+
+			if (sendDate != null) {
+				content.add(new Element("delay", new String[] { "xmlns", "stamp" }, new String[] { "urn:xmpp:delay",
+						DateUtil.formatDatetime(sendDate) }));
+			}
+
+			sendMessagesToAllOccupants(room, senderRoomJID, content.toArray(new Element[] {}));
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (TigaseStringprepException e) {
@@ -295,14 +301,14 @@ public class GroupchatMessageModule extends AbstractMucModule {
 	 * 
 	 * @throws TigaseStringprepException
 	 */
-	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, Date sendDate, final Element... content)
+	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, final Element... content)
 			throws TigaseStringprepException {
 		room.fireOnMessageToOccupants(fromJID, content);
 
-		sendMessagesToAllOccupantsJids(room, fromJID, sendDate, content);
+		sendMessagesToAllOccupantsJids(room, fromJID, content);
 	}
 
-	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, Date sendDate, final Element... content)
+	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, final Element... content)
 			throws TigaseStringprepException {
 
 		for (String nickname : room.getOccupantsNicknames()) {
@@ -329,12 +335,6 @@ public class GroupchatMessageModule extends AbstractMucModule {
 							message.getElement().addChild(sub);
 						}
 					}
-				}
-
-				if (sendDate != null) {
-					Element delay = new Element("delay", new String[] { "xmlns", "stamp" }, new String[] { "urn:xmpp:delay",
-							DateUtil.formatDatetime(sendDate) });
-					message.getElement().addChild(delay);
 				}
 
 				write(message);
