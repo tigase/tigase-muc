@@ -21,6 +21,14 @@
  */
 package tigase.muc;
 
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
+
+import tigase.collections.TwoHashBidiMap;
+import tigase.component.exceptions.RepositoryException;
+import tigase.util.TigaseStringprepException;
+import tigase.xml.Element;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,16 +39,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import tigase.collections.TwoHashBidiMap;
-import tigase.component.exceptions.RepositoryException;
-import tigase.util.TigaseStringprepException;
-import tigase.xml.Element;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -355,7 +357,7 @@ public class Room {
 		if (entry == null)
 			return new ArrayList<JID>();
 
-		return Collections.unmodifiableCollection(entry.jids);
+		return Collections.unmodifiableCollection(new ConcurrentSkipListSet(entry.jids));
 	}
 
 	/**
@@ -376,7 +378,7 @@ public class Room {
 	 * @return
 	 */
 	public Collection<String> getOccupantsNicknames() {
-		return Collections.unmodifiableCollection(this.occupants.keySet());
+		return Collections.unmodifiableCollection(new ConcurrentSkipListSet(this.occupants.keySet()));
 	}
 
 	/**
@@ -392,7 +394,7 @@ public class Room {
 			}
 		}
 
-		return Collections.unmodifiableCollection(result);
+		return Collections.unmodifiableCollection(new ConcurrentSkipListSet(result));
 	}
 
 	/**
