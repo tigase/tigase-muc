@@ -207,7 +207,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 
 	@Override
 	public void setMucComponentClustered(MUCComponentClustered mucComponent) {
-		setLocalNodeJid(JID.jidInstance(mucComponent.getDefHostName()));
+		setLocalNodeJid(JID.jidInstanceNS(mucComponent.getName(), mucComponent.getDefHostName().getDomain(), null));
 		this.muc = mucComponent;
 	}
 
