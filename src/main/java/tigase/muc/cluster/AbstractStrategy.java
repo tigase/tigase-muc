@@ -294,13 +294,21 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 				for (Element elem : packets) {
 					try {
 						Packet packet = Packet.packetInstance(elem);
-						muc.processPacket(packet);
 						if (log.isLoggable(Level.FINEST)) {
 							log.log(Level.FINEST, "received packet {0} forwarded from node {1}",
 									new Object[]{ packet, fromNode });
 						}
+						if (muc.addPacketNB(packet)) {
+							if (log.isLoggable(Level.FINEST)) {
+								log.log(Level.FINEST, "forwarded packet added to processing queue "
+										+ "of component = {0}", packet.toString());
+							}
+						} else {
+							log.log(Level.FINE, "forwarded packet dropped due to component queue "
+									+ "overflow = {0}", packet.toString());
+						}
 					} catch (TigaseStringprepException ex) {
-						log.warning("Addressing problem, stringprep failed for packet: " + elem);
+						log.log(Level.FINEST, "Addressing problem, stringprep failed for packet: {0}", elem);
 					}
 				}
 			}
