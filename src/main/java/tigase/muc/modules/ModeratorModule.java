@@ -27,6 +27,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
 
 import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
@@ -77,8 +78,8 @@ public class ModeratorModule extends AbstractMucModule {
 		return (tmp == null) ? null : Role.valueOf(tmp);
 	}
 
-	protected void checkItem(final Room room, final Element item, final Affiliation senderaAffiliation, final Role senderRole)
-			throws MUCException, TigaseStringprepException {
+	protected void checkItem(final Room room, final Element item, final String senderNickname,
+			final Affiliation senderaAffiliation, final Role senderRole) throws MUCException, TigaseStringprepException {
 		final Role newRole = getRole(item);
 		final Affiliation newAffiliation = getAffiliation(item);
 		HashSet<String> occupantNicknames = new HashSet<String>();
@@ -94,11 +95,22 @@ public class ModeratorModule extends AbstractMucModule {
 
 			if ((newRole != null) && (newAffiliation == null)) {
 				if ((newRole == Role.none) && !senderRole.isKickParticipantsAndVisitors()) {
+					if (log.isLoggable(Level.FINEST))
+						log.finest("User " + senderNickname + " (a:" + senderaAffiliation + "; r:" + senderRole
+								+ ") is not allowed to kick user " + occupantNickname + " (a:" + occupantAffiliation + ")");
 					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot kick");
 				} else if ((newRole == Role.none) && (occupantAffiliation.getWeight() > senderaAffiliation.getWeight())) {
+					if (log.isLoggable(Level.FINEST))
+						log.finest("User " + senderNickname + " (a:" + senderaAffiliation + "; r:" + senderRole
+								+ ") is not allowed to kick user " + occupantNickname + " (a:" + occupantAffiliation
+								+ ") because of lower affiliation.");
 					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot kick occupant with higher affiliation");
 				}
 				if ((newRole == Role.participant) && !senderRole.isGrantVoice()) {
+					if (log.isLoggable(Level.FINEST))
+						log.finest("User " + senderNickname + " (a:" + senderaAffiliation + "; r:" + senderRole
+								+ ") is not allowed to grant voice to user " + occupantNickname + " (a:" + occupantAffiliation
+								+ ") because of lower affiliation.");
 					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant voice");
 				}
 				if ((newRole == Role.visitor) && !senderRole.isRevokeVoice()) {
@@ -370,7 +382,7 @@ public class ModeratorModule extends AbstractMucModule {
 			final List<Element> items = query.getChildren();
 
 			for (Element item : items) {
-				checkItem(room, item, senderAffiliation, senderRole);
+				checkItem(room, item, nickName, senderAffiliation, senderRole);
 			}
 			write(element.okResult((Element) null, 0));
 			for (Element item : items) {
