@@ -23,8 +23,8 @@ package tigase.muc.history;
 
 import java.util.Date;
 import java.util.Map;
-
 import tigase.component.PacketWriter;
+import tigase.db.Repository;
 import tigase.muc.Room;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
@@ -33,7 +33,7 @@ import tigase.xmpp.JID;
  * @author bmalkow
  * 
  */
-public interface HistoryProvider {
+public interface HistoryProvider extends Repository {
 
 	/**
 	 * Adds join event.

@@ -32,6 +32,7 @@ import java.util.logging.Level;
 
 import tigase.component.PacketWriter;
 import tigase.db.DataRepository;
+import tigase.db.Repository;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
@@ -44,6 +45,7 @@ import tigase.xmpp.JID;
  * @author bmalkow
  * 
  */
+@Repository.Meta( supportedUris = { "jdbc:derby:.*" } )
 public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 
 	public static final String ADD_MESSAGE_QUERY_VAL = "insert into muc_history (room_name, event_type, timestamp, sender_jid, sender_nickname, body, public_event, msg) values (?, 1, ?, ?, ?, ?, ?, ?)";
@@ -61,8 +63,7 @@ public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 	/**
 	 * @param dataRepository
 	 */
-	public DerbySqlHistoryProvider(DataRepository dataRepository) {
-		super(dataRepository);
+	public DerbySqlHistoryProvider() {
 	}
 
 	/** {@inheritDoc} */

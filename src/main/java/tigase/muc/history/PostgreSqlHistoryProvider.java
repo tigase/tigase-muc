@@ -29,6 +29,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.db.DataRepository;
+import tigase.db.Repository;
 import tigase.muc.Room;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
@@ -37,6 +38,7 @@ import tigase.xmpp.JID;
  * @author bmalkow
  * 
  */
+@Repository.Meta( supportedUris = { "jdbc:postgresql:.*" } )
 public class PostgreSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 
 	public static final String ADD_MESSAGE_QUERY_VAL = "insert into muc_history (room_name, event_type, timestamp, sender_jid, sender_nickname, body, public_event, msg) values (?, 1, ?, ?, ?, ?, ?, ?)";
@@ -56,8 +58,7 @@ public class PostgreSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 	/**
 	 * @param dataRepository
 	 */
-	public PostgreSqlHistoryProvider(DataRepository dataRepository) {
-		super(dataRepository);
+	public PostgreSqlHistoryProvider() {
 	}
 
 	/** {@inheritDoc} */

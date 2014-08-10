@@ -25,10 +25,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.Map;
 import java.util.logging.Level;
 
 import tigase.component.PacketWriter;
+import tigase.db.DBInitException;
 import tigase.db.DataRepository;
+import tigase.db.RepositoryFactory;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
@@ -51,13 +54,21 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 
 	public static final String GET_MESSAGES_SINCE_QUERY_KEY = "GET_MESSAGES_SINCE_QUERY_KEY";
 
-	protected final DataRepository dataRepository;
+	protected DataRepository dataRepository;
 
 	/**
 	 * @param dataRepository
 	 */
-	public AbstractJDBCHistoryProvider(DataRepository dataRepository) {
-		this.dataRepository = dataRepository;
+	public AbstractJDBCHistoryProvider() {
+	}
+	
+	@Override
+	public void initRepository(String resource_uri, Map<String, String> params) throws DBInitException {
+		try {
+			dataRepository = RepositoryFactory.getDataRepository(null, resource_uri, params);
+		} catch (Exception ex) {
+			throw new DBInitException("Error during initialization of repository", ex);
+		}
 	}
 
 	/** {@inheritDoc} */

@@ -26,8 +26,8 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
-
 import tigase.component.PacketWriter;
+import tigase.db.DBInitException;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
@@ -61,6 +61,10 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 	 * @param dataRepository
 	 */
 	public MemoryHistoryProvider() {
+	}
+	
+	@Override
+	public void initRepository(String resource_uri, Map<String,String> params) throws DBInitException {
 	}
 
 	@Override

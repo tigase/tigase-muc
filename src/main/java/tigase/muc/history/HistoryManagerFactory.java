@@ -53,24 +53,26 @@ public class HistoryManagerFactory {
 								+ "; params.size: " + params.size()
 								+ "; uri: " + uri
 								+ "; cl: " + cl);
+			Class<? extends HistoryProvider> cls = null;
 			if (cl.trim().equals("none")) {
 				return new NoneHistoryProvider();
 			} else if (cl.trim().equals("memory")) {
 				return new MemoryHistoryProvider();
 			} else if (cl.contains("mysql")) {
-				DataRepository dataRepository = RepositoryFactory.getDataRepository(null, uri, null);
-				return new MySqlHistoryProvider(dataRepository);
+				cls = MySqlHistoryProvider.class;
 			} else if (cl.contains("derby")) {
-				DataRepository dataRepository = RepositoryFactory.getDataRepository(null, uri, null);
-				return new DerbySqlHistoryProvider(dataRepository);
+				cls = DerbySqlHistoryProvider.class;
 			} else if (cl.contains("pgsql")) {
-				DataRepository dataRepository = RepositoryFactory.getDataRepository(null, uri, null);
-				return new PostgreSqlHistoryProvider(dataRepository);
+				cls = PostgreSqlHistoryProvider.class;
 			} else if (cl.contains("sqlserver")) {
-				DataRepository dataRepository = RepositoryFactory.getDataRepository(null, uri, null);
-				return new SqlserverSqlHistoryProvider(dataRepository);
-			} else
-				throw new RuntimeException("Database not supported");
+				cls = SqlserverSqlHistoryProvider.class;
+			} else {
+				cls = RepositoryFactory.getRepoClass(HistoryProvider.class, uri);
+			}
+			
+			HistoryProvider provider = cls.newInstance();
+			provider.initRepository(uri, null);
+			return provider;		
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}

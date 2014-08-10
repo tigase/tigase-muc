@@ -23,8 +23,8 @@ package tigase.muc.history;
 
 import java.util.Date;
 import java.util.Map;
-
 import tigase.component.PacketWriter;
+import tigase.db.DBInitException;
 import tigase.muc.Room;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
@@ -35,6 +35,10 @@ import tigase.xmpp.JID;
  */
 public class NoneHistoryProvider implements HistoryProvider {
 
+	@Override
+	public void initRepository(String repository_uri, Map<String,String> params) throws DBInitException {
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * 
