@@ -613,7 +613,7 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 
 		final BareJID currentOccupantJid = room.getOccupantsJidByNickname(nickname);
 
-		if ((currentOccupantJid != null) && !currentOccupantJid.equals(senderJID.getBareJID())) {
+		if ((currentOccupantJid != null) && (!context.isMultiItemMode() || !currentOccupantJid.equals(senderJID.getBareJID()))) {
 
 			// Service Denies Access Because of Nick Conflict
 			throw new MUCException(Authorization.CONFLICT);

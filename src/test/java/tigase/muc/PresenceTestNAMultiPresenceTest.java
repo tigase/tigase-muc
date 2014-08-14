@@ -79,7 +79,7 @@ public class PresenceTestNAMultiPresenceTest extends XMPPTestCase {
 		props.put("multi-user-chat", BareJID.bareJIDInstance("multi-user-chat"));
 		props.put(MUCComponent.MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
 		props.put(MUCComponent.PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
-		props.put(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY, Boolean.FALSE);
+		props.put(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY, Boolean.TRUE);
 		props.put(MUCComponent.LOG_DIR_KEY, "./");
 
 		xmlio = new JUnitXMLIO() {
