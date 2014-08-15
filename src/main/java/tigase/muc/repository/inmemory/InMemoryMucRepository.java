@@ -155,7 +155,7 @@ public class InMemoryMucRepository implements IMucRepository {
 
 		rc.copyFrom(getDefaultRoomConfig(), false);
 
-		Room room = new Room(rc, new Date(), senderJid.getBareJID());
+		Room room = Room.newInstance(rc, new Date(), senderJid.getBareJID());
 		room.getConfig().addListener(roomConfigListener);
 		room.addListener(roomListener);
 		this.rooms.put(roomJID, room);

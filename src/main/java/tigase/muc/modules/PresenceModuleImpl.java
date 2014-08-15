@@ -369,7 +369,7 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		} else {
 			occupantJIDs = new ArrayList<JID>(room.getOccupantsJidsByNickname(leavingNickname));
 
-			Element pe = room.getLastPresenceCopyByJid(senderJID.getBareJID());
+			Element pe = room.getLastPresenceCopy(senderJID.getBareJID(), leavingNickname);
 			for (String occupantNickname : room.getOccupantsNicknames()) {
 				for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
 					if (context.isMultiItemMode()) {

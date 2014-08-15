@@ -50,6 +50,12 @@ import java.util.logging.Logger;
  */
 public class Room {
 
+	public static interface RoomFactory {
+		
+		public Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid);
+		
+	}
+	
 	private static class OccupantEntry {
 
 		public BareJID jid;
@@ -85,6 +91,15 @@ public class Room {
 		void onOccupantRemoved(Room room, JID occupantJid);
 	}
 
+	protected static RoomFactory factory = new RoomFactory() {
+
+		@Override
+		public Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid) {
+			return new Room(rc, creationDate, creatorJid);
+		}
+		
+	};
+	
 	protected static final Logger log = Logger.getLogger(Room.class.getName());
 
 	/**
@@ -107,7 +122,7 @@ public class Room {
 	 */
 	private final TwoHashBidiMap<String, OccupantEntry> occupants = new TwoHashBidiMap<String, OccupantEntry>();
 
-	private final PresenceStore presences = new PresenceStore();
+	protected final PresenceStore presences = new PresenceStore();
 
 	private final Map<String, Object> roomCustomData = new ConcurrentHashMap<String, Object>();
 
@@ -119,12 +134,16 @@ public class Room {
 
 	private String subjectChangerNick;
 
+	public static Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid) {
+		return factory.newInstance(rc, creationDate, creatorJid);
+	}
+	
 	/**
 	 * @param rc
 	 * @param creationDate
 	 * @param creatorJid2
 	 */
-	public Room(RoomConfig rc, Date creationDate, BareJID creatorJid) {
+	protected Room(RoomConfig rc, Date creationDate, BareJID creatorJid) {
 		this.config = rc;
 		this.creationDate = creationDate;
 		this.creatorJid = creatorJid;
@@ -324,6 +343,14 @@ public class Room {
 		}
 	}
 
+	public Element getLastPresenceCopy(BareJID occupantJid, String nickname) {
+		Element e = this.presences.getBestPresence(occupantJid);
+		if (e != null) {
+			return e.clone();
+		} else {
+			return null;
+		}
+	}	
 	/**
 	 * @return
 	 */

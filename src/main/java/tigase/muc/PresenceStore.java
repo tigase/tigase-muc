@@ -46,7 +46,7 @@ import tigase.xmpp.JID;
  * @author Enter your name here...
  */
 public class PresenceStore {
-	private class Presence {
+	public class Presence {
 		final Element element;
 		final int priority;
 		final String type;
@@ -69,6 +69,14 @@ public class PresenceStore {
 			} catch (Exception e) {
 			}
 			this.priority = x;
+		}
+		
+		public int getPriority() {
+			return priority;
+		}
+		
+		public Element getElement() {
+			return element;
 		}
 	}
 
@@ -117,6 +125,10 @@ public class PresenceStore {
 		Presence p = this.bestPresence.get(jid);
 
 		return (p == null) ? null : p.element;
+	}
+	
+	public Presence getBestPresenceInt(final BareJID jid) {
+		return this.bestPresence.get(jid);
 	}
 
 	// ~--- methods

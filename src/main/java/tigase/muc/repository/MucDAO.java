@@ -221,7 +221,7 @@ public class MucDAO {
 				RoomConfig rc = new RoomConfig(roomJID, mucConfig.isPublicLoggingEnabled());
 				rc.read(repository, mucConfig, ROOMS_KEY + roomJID + "/config");
 
-				final Room room = new Room(rc, date, creatorJID.getBareJID());
+				final Room room = Room.newInstance(rc, date, creatorJID.getBareJID());
 
 				String subject = getSubject(roomJID);
 				String subjectCreator = getSubjectCreatorNickname(roomJID);
