@@ -41,11 +41,12 @@ public class MUCComponentClustered extends MUCComponent
 
 	public MUCComponentClustered() {
 		licenceChecker = LicenceChecker.getLicenceChecker( "acs" );
+		RoomClustered.initialize();
 	}
 
 	@Override
 	public boolean addOutPacket(Packet packet) {
-		return super.addOutPacket(packet);
+		return super.addOutPacket(packet);	
 	}
 	
 	@Override

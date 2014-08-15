@@ -77,23 +77,24 @@ public class ClusteredRoomStrategyV2 extends AbstractClusteredRoomStrategy {
 																occupantAffiliation, occupantRole, newOccupant } );					
 
 				PresenceModule presenceModule = ClusteredRoomStrategyV2.this.muc.getModule(PresenceModule.ID);
-				Room room = ClusteredRoomStrategyV2.this.muc.getMucRepository().getRoom(roomJid);
-				Map<String,Occupant> occupants = getRemoteOccupants(room);
+				RoomClustered room = (RoomClustered) ClusteredRoomStrategyV2.this.muc.getMucRepository().getRoom(roomJid);
 								
 				// update map of remote occupants
 				if ("unavailable".equals(presenceOrig.getAttribute("type"))) {
-					occupants.remove(nickname);
+					room.removeRemoteOccupant(occupantJID);
 				}
 				else {
-					Occupant occupant = new Occupant();
-					occupant.setOccupantJID(occupantJID);
-					occupant.setNickname(nickname);
-					occupant.setRole(occupantRole);
-					occupant.setAffiliation(occupantAffiliation);
-					occupant.setPresence(presenceOrig);
-
-					occupants.put(nickname, occupant);
+					room.addRemoteOccupant(nickname, occupantJID, occupantRole, occupantAffiliation, presenceOrig);
 				}
+				
+				//if (presenceOrig == null || "unavailable".equals(presenceOrig.getAttributeStaticStr("type"))) {
+				// we should always use best presence, no matter what we will receive
+				// as it will be included and processed before
+				Element tmp = room.getLastPresenceCopy(occupantJID.getBareJID(), nickname);
+				if (tmp != null && !"unavailable".equals(tmp.getAttributeStaticStr("type"))) {
+					presenceOrig = tmp;
+				}
+				//}
 				
 				// broadcast remote occupant presece to all local occupants
 				for (JID destinationJID : room.getAllOccupantsJID()) {
@@ -204,33 +205,16 @@ public class ClusteredRoomStrategyV2 extends AbstractClusteredRoomStrategy {
 		super.requestSync(nodeJid);
 		cl_controller.sendToNodes(OCCUPANTS_SYNC_REQUEST_CMD, localNodeJid, nodeJid);
 	}
-	
-	private ConcurrentMap<String,Occupant> getRemoteOccupants(Room room) {
-		ConcurrentMap<String,Occupant> occupants = (ConcurrentMap<String,Occupant>) room.getRoomCustomData(OCCUPANTS_REMOTE_KEY);
-		if (occupants == null) {
-			synchronized (room) {
-				occupants = new ConcurrentHashMap<String,Occupant>();
-				ConcurrentMap<String,Occupant> tmp = (ConcurrentMap<String,Occupant>) room.getRoomCustomData(OCCUPANTS_REMOTE_KEY);
-				if (tmp == null) {
-					room.setRoomCustomData(OCCUPANTS_REMOTE_KEY, occupants);
-				}
-				else {
-					occupants = tmp;
-				}
-			}
-		}
-		return occupants;
-	}
 
 	@Override
 	protected void sendRemoteOccupantRemovalOnDisconnect(Room room, JID occupant, String occupantNick, boolean sendRemovalToOccupant) {
 		super.sendRemoteOccupantRemovalOnDisconnect(room, occupant, occupantNick, sendRemovalToOccupant);
-		Map<String,Occupant> occupants = getRemoteOccupants(room);
-		occupants.remove(occupantNick);
+		RoomClustered croom = (RoomClustered) room;
+		croom.removeRemoteOccupant(occupant);
 	}	
 	
 	private void sendRemoteOccupantPresencesToLocalOccupant(Room room, JID occupantJid) {
-		List<Occupant> occupants = new ArrayList<Occupant>(getRemoteOccupants(room).values());
+		List<Occupant> occupants = new ArrayList<Occupant>(((RoomClustered)room).getRemoteOccupants());
 		for (Occupant occupant : occupants) {
 			try {
 				sendRemoteOccupantPresenceToLocalOccupant(room, occupantJid, occupant);
@@ -241,63 +225,13 @@ public class ClusteredRoomStrategyV2 extends AbstractClusteredRoomStrategy {
 	}
 	
 	private void sendRemoteOccupantPresenceToLocalOccupant(Room room, JID occupantJid, Occupant occupant) throws TigaseStringprepException {
+		
 		PresenceModule.PresenceWrapper presenceWrapper = PresenceModule.PresenceWrapper.preparePresenceW(room, occupantJid,
-				occupant.getPresence().clone(), occupant.getOccupantJID().getBareJID(),
-				Collections.singleton(occupant.getOccupantJID()), occupant.getNickname(), occupant.getAffiliation(), occupant.getRole());
+				occupant.getBestPresence().clone(), occupant.getOccupantJID(),
+				occupant.getOccupants(), occupant.getNickname(), occupant.getAffiliation(), occupant.getRole());
 
 		PresenceModuleImpl.addCodes(presenceWrapper, false, occupant.getNickname());
 		ClusteredRoomStrategyV2.this.muc.addOutPacket(presenceWrapper.getPacket());
 	}
 	
-	private class Occupant {
-		private JID occupantJID;
-		private String nickname;
-		private Affiliation affiliation;
-		private Role role;
-		private Element presence;
-		
-		public Occupant() {}
-
-		public JID getOccupantJID() {
-			return occupantJID;
-		}
-
-		public void setOccupantJID(JID occupantJID) {
-			this.occupantJID = occupantJID;
-		}
-
-		public String getNickname() {
-			return nickname;
-		}
-
-		public void setNickname(String nickname) {
-			this.nickname = nickname;
-		}
-
-		public Affiliation getAffiliation() {
-			return affiliation;
-		}
-
-		public void setAffiliation(Affiliation affiliation) {
-			this.affiliation = affiliation;
-		}
-
-		public Role getRole() {
-			return role;
-		}
-
-		public void setRole(Role role) {
-			this.role = role;
-		}
-
-		public Element getPresence() {
-			return presence;
-		}
-
-		public void setPresence(Element presence) {
-			this.presence = presence;
-		}
-		
-		
-	}
 }
