@@ -168,7 +168,7 @@ public class ClusteredRoomStrategyV2 extends AbstractClusteredRoomStrategy {
 			presence = new Element("presence", new String[] { "type", "xmlns" }, new String[] { "unavailable", Packet.CLIENT_XMLNS });
 		}
 		if (occupantJid == null) occupantJid = JID.jidInstanceNS(presence.getAttributeStaticStr("from"));
-		Affiliation affiliation = room.getAffiliation(occupantJid.getBareJID());
+		Affiliation affiliation = room.getAffiliation(nickname);
 		Role role = room.getRole(nickname);
 		
 		Map<String,String> data = new HashMap<String,String>();

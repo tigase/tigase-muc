@@ -9,6 +9,7 @@
 package tigase.muc.cluster;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -93,12 +94,48 @@ public class RoomClustered extends Room {
 	}
 	
 	@Override
+	public Collection<JID> getOccupantsJidsByNickname(String nickname) {
+		Collection<JID> jids = super.getOccupantsJidsByNickname(nickname);
+		if (jids.isEmpty()) {
+			Occupant occupant = remoteOccupants.get(nickname);
+			if (occupant != null) {
+				return Collections.unmodifiableCollection(occupant.getOccupants());
+			}
+		}
+		return jids;
+	}
+	
+	@Override
 	public boolean removeOccupant(JID jid) {
 		String nickname = getOccupantsNickname(jid);
 		Occupant occupant = nickname == null ? null : remoteOccupants.get(nickname);
 		return super.removeOccupant(jid) && (occupant == null || occupant.isEmpty());
 	}
 
+	@Override
+	public Affiliation getAffiliation(String nickname) {
+		Affiliation affil = super.getAffiliation(nickname);
+		if (affil == Affiliation.none) {
+			Occupant occupant = remoteOccupants.get(nickname);
+			if (occupant != null) {
+				affil = occupant.getAffiliation();
+			}
+		}
+		return affil;
+	}
+	
+	@Override
+	public Role getRole(String nickname) {
+		Role role = super.getRole(nickname);
+		if (role == Role.none) {
+			Occupant occupant = remoteOccupants.get(nickname);
+			if (occupant != null) {
+				role = occupant.getRole();
+			}
+		}
+		return role;
+	}	
+	
 	@Override
 	public Element getLastPresenceCopy(BareJID occupantJid, String nickname) {
 		PresenceStore.Presence p1 = presences.getBestPresenceInt(occupantJid);
