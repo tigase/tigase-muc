@@ -296,12 +296,9 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 		props.put(MUC_MULTI_ITEM_ALLOWED_KEY, Boolean.TRUE);
 
 		// By default use the same repository as all other components:
-		String repo_class = (params.get(RepositoryFactory.GEN_USER_DB) != null) ? (String) params.get(RepositoryFactory.GEN_USER_DB)
-				: RepositoryFactory.DERBY_REPO_CLASS_PROP_VAL;
 		String repo_uri = (params.get(RepositoryFactory.GEN_USER_DB_URI) != null) ? (String) params.get(RepositoryFactory.GEN_USER_DB_URI)
-				: RepositoryFactory.DERBY_REPO_URL_PROP_VAL;
+				: "memory";
 
-		props.put(HistoryManagerFactory.DB_CLASS_KEY, repo_class);
 		props.put(HistoryManagerFactory.DB_URI_KEY, repo_uri);
 
 		return props;
@@ -488,12 +485,10 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 		log.config("Initializing History Provider, props.containsKey(HistoryManagerFactory.DB_CLASS_KEY): "
 				+ props.containsKey(HistoryManagerFactory.DB_CLASS_KEY));
 		// if (props.containsKey(HistoryManagerFactory.DB_CLASS_KEY)) {
-		try {
-			this.historyProvider = HistoryManagerFactory.getHistoryManager(props);
-			this.historyProvider.init(props);
-		} catch (Exception e) {
-			log.log(Level.WARNING, "Cannot initialize History Provider", e);
-		}
+
+		this.historyProvider = HistoryManagerFactory.getHistoryManager(props);
+		this.historyProvider.init(props);
+		
 		// }
 
 		log.config("Initializing MUC Logger, props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY)"

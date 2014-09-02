@@ -24,6 +24,7 @@ package tigase.muc.history;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import tigase.conf.ConfigurationException;
 
 import tigase.db.DataRepository;
 import tigase.db.RepositoryFactory;
@@ -40,7 +41,7 @@ public class HistoryManagerFactory {
 
 	protected static final Logger log = Logger.getLogger(HistoryManagerFactory.class.getName());
 
-	public static HistoryProvider getHistoryManager(Map<String, Object> params) {
+	public static HistoryProvider getHistoryManager(Map<String, Object> params) throws ConfigurationException {
 		try {
 			String uri = (String) params.get(DB_URI_KEY);
 			String cl = (String) params.get(DB_CLASS_KEY);
@@ -54,27 +55,33 @@ public class HistoryManagerFactory {
 								+ "; uri: " + uri
 								+ "; cl: " + cl);
 			Class<? extends HistoryProvider> cls = null;
-			if (cl.trim().equals("none")) {
-				return new NoneHistoryProvider();
-			} else if (cl.trim().equals("memory")) {
-				return new MemoryHistoryProvider();
-			} else if (cl.contains("mysql")) {
-				cls = MySqlHistoryProvider.class;
-			} else if (cl.contains("derby")) {
-				cls = DerbySqlHistoryProvider.class;
-			} else if (cl.contains("pgsql")) {
-				cls = PostgreSqlHistoryProvider.class;
-			} else if (cl.contains("sqlserver")) {
-				cls = SqlserverSqlHistoryProvider.class;
-			} else {
+			if (cl != null) {
+				if (cl.trim().equals("none")) {
+					return new NoneHistoryProvider();
+				} else if (cl.trim().equals("memory")) {
+					return new MemoryHistoryProvider();
+				} else if (cl.contains("mysql")) {
+					cls = MySqlHistoryProvider.class;
+				} else if (cl.contains("derby")) {
+					cls = DerbySqlHistoryProvider.class;
+				} else if (cl.contains("pgsql")) {
+					cls = PostgreSqlHistoryProvider.class;
+				} else if (cl.contains("sqlserver")) {
+					cls = SqlserverSqlHistoryProvider.class;
+				}
+			}
+			if (cls == null) {
 				cls = RepositoryFactory.getRepoClass(HistoryProvider.class, uri);
+			}
+			if (cls == null) {
+				throw new ConfigurationException("Not found implementation of History Provider for " + uri);
 			}
 			
 			HistoryProvider provider = cls.newInstance();
 			provider.initRepository(uri, null);
 			return provider;		
 		} catch (Exception e) {
-			throw new RuntimeException(e);
+			throw new ConfigurationException("Cannot initialize History Provider", e);
 		}
 	}
 }

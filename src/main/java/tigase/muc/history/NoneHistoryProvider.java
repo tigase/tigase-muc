@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.Map;
 import tigase.component.PacketWriter;
 import tigase.db.DBInitException;
+import tigase.db.Repository;
 import tigase.muc.Room;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
@@ -33,6 +34,7 @@ import tigase.xmpp.JID;
  * @author bmalkow
  * 
  */
+@Repository.Meta( supportedUris = { "none" } )
 public class NoneHistoryProvider implements HistoryProvider {
 
 	@Override
