@@ -378,6 +378,16 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 		}
 		super.processPacket(packet);
 	}
+	
+	@Override
+	public void release() {
+		super.release();
+		
+		if (historyProvider != null) {
+			historyProvider.destroy();
+			historyProvider = null;
+		}
+	}
 
 	@Override
 	public void setProperties(Map<String, Object> props) throws ConfigurationException {
