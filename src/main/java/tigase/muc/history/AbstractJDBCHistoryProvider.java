@@ -97,6 +97,12 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 		}
 	}
 
+	@Override
+	public void destroy() {
+		// we have nothing to release as we use DataRepository instance which is
+		// cached by RepositoryFactory and may be used in other places
+	}
+	
 	/** {@inheritDoc} */
 	@Override
 	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,

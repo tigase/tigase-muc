@@ -83,6 +83,11 @@ public class NoneHistoryProvider implements HistoryProvider {
 	public void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname, Date time) {
 	}
 
+	@Override
+	public void destroy() {
+		// nothing to do
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * 

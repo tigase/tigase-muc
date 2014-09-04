@@ -78,6 +78,12 @@ public interface HistoryProvider extends Repository {
 	void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname, Date time);
 
 	/**
+	 * Destroys this instance of HistoryProvider releasing all resources allocated
+	 * but this provider if they should be released
+	 */
+	void destroy();
+	
+	/**
 	 * @param room
 	 * @param senderJID
 	 * @param maxchars

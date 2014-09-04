@@ -104,6 +104,11 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 	}
 
 	@Override
+	public void destroy() {
+		// nothing to do
+	}	
+	
+	@Override
 	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
 			PacketWriter writer) {
 		LinkedList<HItem> stanzas = this.history.get(room.getRoomJID());

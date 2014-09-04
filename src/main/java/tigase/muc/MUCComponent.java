@@ -470,8 +470,14 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 				+ props.containsKey(HistoryManagerFactory.DB_CLASS_KEY));
 		// if (props.containsKey(HistoryManagerFactory.DB_CLASS_KEY)) {
 
+		HistoryProvider oldHistoryProvider = this.historyProvider;
 		this.historyProvider = HistoryManagerFactory.getHistoryManager(props);
 		this.historyProvider.init(props);
+		if (oldHistoryProvider != null) {
+			// if there was other instance of HistoryProvider then destroy it as we have
+			// new instance initialized and we should release resources
+			oldHistoryProvider.destroy();
+		}
 		
 		// }
 
