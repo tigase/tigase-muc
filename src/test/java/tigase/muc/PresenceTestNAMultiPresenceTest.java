@@ -26,9 +26,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.junit.Before;
+
 import tigase.component.PacketWriter;
 import tigase.component.exceptions.RepositoryException;
+import tigase.component.responses.AsyncCallback;
 import tigase.conf.ConfigurationException;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
@@ -61,6 +64,11 @@ public class PresenceTestNAMultiPresenceTest extends XMPPTestCase {
 		@Override
 		public void write(Packet element) {
 			this.elements.add(element.getElement());
+		}
+
+		@Override
+		public void write(Packet packet, AsyncCallback callback) {
+			write(packet);
 		}
 
 	}
@@ -109,7 +117,7 @@ public class PresenceTestNAMultiPresenceTest extends XMPPTestCase {
 				}
 			}
 		};
-		
+
 		try {
 			pubsub.setProperties(props);
 		} catch (ConfigurationException ex) {

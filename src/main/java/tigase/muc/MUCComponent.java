@@ -29,7 +29,6 @@ import java.util.logging.Level;
 import javax.script.Bindings;
 
 import tigase.component.AbstractComponent;
-import tigase.component.AbstractComponent.ModuleRegisteredHandler;
 import tigase.component.AbstractContext;
 import tigase.component.exceptions.RepositoryException;
 import tigase.component.modules.Module;
@@ -59,7 +58,7 @@ import tigase.muc.repository.inmemory.InMemoryMucRepository;
 import tigase.server.Packet;
 import tigase.xmpp.BareJID;
 
-public class MUCComponent extends AbstractComponent<MucContext> implements ModuleRegisteredHandler {
+public class MUCComponent extends AbstractComponent<MucContext> {
 
 	private class MucContextImpl extends AbstractContext implements MucContext {
 
@@ -202,7 +201,6 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 	protected boolean searchGhostsEveryMinute = false;
 
 	public MUCComponent() {
-		addModuleRegisteredHandler(this);
 	}
 
 	/*
@@ -356,20 +354,6 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 		return true;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * tigase.component.AbstractComponent.ModuleRegisteredHandler#onModuleRegistered
-	 * (java.lang.String, tigase.component.modules.Module)
-	 */
-	@Override
-	public void onModuleRegistered(String id, Module module) {
-		if (ghostbuster != null && id.equals(PresenceModule.ID) && module instanceof PresenceModule) {
-			ghostbuster.setPresenceModule((PresenceModule) module);
-		}
-	}
-
 	@Override
 	public int processingInThreads() {
 		return Runtime.getRuntime().availableProcessors() * 4;
@@ -512,6 +496,12 @@ public class MUCComponent extends AbstractComponent<MucContext> implements Modul
 		}
 
 		super.setProperties(props);
+
+		if (ghostbuster != null && modulesManager.isRegistered(PresenceModule.ID)) {
+			PresenceModule module = modulesManager.getModule(PresenceModule.ID);
+			ghostbuster.setPresenceModule(module);
+		}
+
 	}
 
 	private void updateDefaultRoomConfig(Map<String, Object> props) throws RepositoryException {
