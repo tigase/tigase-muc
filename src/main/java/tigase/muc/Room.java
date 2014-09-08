@@ -21,14 +21,6 @@
  */
 package tigase.muc;
 
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
-
-import tigase.collections.TwoHashBidiMap;
-import tigase.component.exceptions.RepositoryException;
-import tigase.util.TigaseStringprepException;
-import tigase.xml.Element;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,23 +36,25 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import tigase.component.exceptions.RepositoryException;
+import tigase.util.TigaseStringprepException;
+import tigase.xml.Element;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
+
 /**
  * @author bmalkow
  * 
  */
 public class Room {
 
-	public static interface RoomFactory {
-		
-		public Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid);
-		
-	}
-	
 	private static class OccupantEntry {
 
 		public BareJID jid;
 
 		private final Set<JID> jids = new HashSet<JID>();
+
+		private String nickname;
 
 		private Role role = Role.none;
 
@@ -71,8 +65,14 @@ public class Room {
 		 */
 		@Override
 		public String toString() {
-			return "[" + role + "; " + jid + "; " + jids.toString() + "]";
+			return "[" + nickname + "; " + role + "; " + jid + "; " + jids.toString() + "]";
 		}
+	}
+
+	public static interface RoomFactory {
+
+		public Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid);
+
 	}
 
 	public static interface RoomListener {
@@ -97,10 +97,14 @@ public class Room {
 		public Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid) {
 			return new Room(rc, creationDate, creatorJid);
 		}
-		
+
 	};
-	
+
 	protected static final Logger log = Logger.getLogger(Room.class.getName());
+
+	public static Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid) {
+		return factory.newInstance(rc, creationDate, creatorJid);
+	}
 
 	/**
 	 * <bareJID, Affiliation>
@@ -120,7 +124,7 @@ public class Room {
 	/**
 	 * < nickname,real JID>
 	 */
-	private final TwoHashBidiMap<String, OccupantEntry> occupants = new TwoHashBidiMap<String, OccupantEntry>();
+	private final Map<String, OccupantEntry> occupants = new ConcurrentHashMap<String, Room.OccupantEntry>();
 
 	protected final PresenceStore presences = new PresenceStore();
 
@@ -134,10 +138,6 @@ public class Room {
 
 	private String subjectChangerNick;
 
-	public static Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid) {
-		return factory.newInstance(rc, creationDate, creatorJid);
-	}
-	
 	/**
 	 * @param rc
 	 * @param creationDate
@@ -178,6 +178,7 @@ public class Room {
 		this.presences.update(pe);
 		if (entry == null) {
 			entry = new OccupantEntry();
+			entry.nickname = nickName;
 			entry.jid = senderJid.getBareJID();
 			this.occupants.put(nickName, entry);
 
@@ -213,9 +214,10 @@ public class Room {
 	 */
 	public void changeNickName(JID senderJid, String nickName) {
 		OccupantEntry occ = getBySenderJid(senderJid);
-		String oldNickname = this.occupants.getKey(occ);
+		String oldNickname = occ.nickname;
 
 		this.occupants.remove(oldNickname);
+		occ.nickname = nickName;
 		this.occupants.put(nickName, occ);
 
 		if (log.isLoggable(Level.FINEST)) {
@@ -334,6 +336,15 @@ public class Room {
 		return sb.toString();
 	}
 
+	public Element getLastPresenceCopy(BareJID occupantJid, String nickname) {
+		Element e = this.presences.getBestPresence(occupantJid);
+		if (e != null) {
+			return e.clone();
+		} else {
+			return null;
+		}
+	}
+
 	public Element getLastPresenceCopyByJid(BareJID occupantJid) {
 		Element e = this.presences.getBestPresence(occupantJid);
 		if (e != null) {
@@ -343,14 +354,6 @@ public class Room {
 		}
 	}
 
-	public Element getLastPresenceCopy(BareJID occupantJid, String nickname) {
-		Element e = this.presences.getBestPresence(occupantJid);
-		if (e != null) {
-			return e.clone();
-		} else {
-			return null;
-		}
-	}	
 	/**
 	 * @return
 	 */
@@ -396,7 +399,7 @@ public class Room {
 		if (e == null)
 			return null;
 
-		String nickname = occupants.getKey(e);
+		String nickname = e.nickname;
 
 		return nickname;
 	}
@@ -493,7 +496,7 @@ public class Room {
 						log.finest("Room " + config.getRoomJID() + ". Removed JID " + jid + " of occupant");
 					}
 					if (e.jids.isEmpty()) {
-						this.occupants.removeValue(e);
+						this.occupants.remove(e.nickname);
 						if (log.isLoggable(Level.FINEST)) {
 							log.finest("Room " + config.getRoomJID() + ". Removed occupant " + jid);
 						}
