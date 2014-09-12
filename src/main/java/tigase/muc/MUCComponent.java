@@ -543,7 +543,8 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 				Field field = defaultRoomConfig.getConfigForm().get(var);
 				if (field != null) {
 					changed = true;
-					field.setValues(new String[] { (String) x.getValue() });
+					String[] values = ( (String) x.getValue() ).split( "," );
+					field.setValues( values );
 				} else if (log.isLoggable(Level.WARNING)) {
 					log.warning("Default config room doesn't contains variable '" + var + "'!");
 				}
