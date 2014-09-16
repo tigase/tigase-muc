@@ -21,6 +21,13 @@
  */
 package tigase.muc;
 
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
+
+import tigase.component.exceptions.RepositoryException;
+import tigase.util.TigaseStringprepException;
+import tigase.xml.Element;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -35,12 +42,6 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import tigase.component.exceptions.RepositoryException;
-import tigase.util.TigaseStringprepException;
-import tigase.xml.Element;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -128,6 +129,8 @@ public class Room {
 
 	protected final PresenceStore presences = new PresenceStore();
 
+	protected final PresenceFiltered presenceFiltered;
+
 	private final Map<String, Object> roomCustomData = new ConcurrentHashMap<String, Object>();
 
 	private boolean roomLocked;
@@ -138,6 +141,8 @@ public class Room {
 
 	private String subjectChangerNick;
 
+	public static final String FILTERED_OCCUPANTS_COLLECTION = "filtered_occupants_collection";
+
 	/**
 	 * @param rc
 	 * @param creationDate
@@ -147,6 +152,9 @@ public class Room {
 		this.config = rc;
 		this.creationDate = creationDate;
 		this.creatorJid = creatorJid;
+		this.presenceFiltered = new PresenceFiltered(this);
+		addOccupantListener( presenceFiltered );
+		addListener( presenceFiltered );
 	}
 
 	/**
@@ -182,9 +190,9 @@ public class Room {
 			entry.jid = senderJid.getBareJID();
 			this.occupants.put(nickName, entry);
 
-			if (log.isLoggable(Level.FINEST))
-				log.finest("Room " + config.getRoomJID() + ". Created OccupantEntry for " + senderJid + ", nickname="
-						+ nickName);
+			if ( log.isLoggable( Level.FINEST ) ){
+				log.log( Level.FINEST, "Room " + config.getRoomJID() + ". Created OccupantEntry for " + senderJid + ", nickname=" + nickName );
+			}
 		}
 
 		entry.role = role;
@@ -193,14 +201,18 @@ public class Room {
 			added = entry.jids.add(senderJid);
 		}
 
-		if (log.isLoggable(Level.FINEST)) {
-			log.finest("Room " + config.getRoomJID() + ". " + (added ? "Added" : "Updated") + " occupant " + senderJid + " ("
-					+ nickName + ") to room with role=" + role);
+		if ( log.isLoggable( Level.FINEST ) ){
+			log.log( Level.FINEST, "Room " + config.getRoomJID() + ". " + ( added ? "Added" : "Updated" ) + " occupant " + senderJid + " ("
+														 + nickName + ") to room with role=" + role + "; filtering enabled: " + config.isPresenceFilterEnabled() );
 		}
 
-		if (added) {
-			fireOnOccupantAdded(senderJid);
-			fireOnOccupantChangedPresence(senderJid, nickName, pe, true);
+		if ( added ){
+			if ( !config.isPresenceFilterEnabled()
+					 || ( config.isPresenceFilterEnabled()
+								&& config.getPresenceFilteredAffiliations().contains( getAffiliation( senderJid.getBareJID() ) ) ) ){
+				fireOnOccupantAdded( senderJid );
+				fireOnOccupantChangedPresence( senderJid, nickName, pe, true );
+			}
 		}
 	}
 
@@ -295,7 +307,11 @@ public class Room {
 	 * 
 	 */
 	public Collection<JID> getAllOccupantsJID() {
-		return presences.getAllKnownJIDs();
+		if ( config.isPresenceFilterEnabled() ){
+			return presenceFiltered.getOccupantsPresenceFilteredJIDs();
+		} else {
+			return presences.getAllKnownJIDs();
+		}
 	}
 
 	private OccupantEntry getBySenderJid(JID sender) {
@@ -425,6 +441,10 @@ public class Room {
 		}
 
 		return Collections.unmodifiableCollection(new ConcurrentSkipListSet(result));
+	}
+
+	public PresenceFiltered getPresenceFiltered() {
+		return presenceFiltered;
 	}
 
 	/**

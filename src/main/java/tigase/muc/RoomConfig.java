@@ -21,19 +21,22 @@
  */
 package tigase.muc;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import tigase.db.TigaseDBException;
 import tigase.db.UserNotFoundException;
 import tigase.db.UserRepository;
+
+import tigase.xmpp.BareJID;
+
 import tigase.form.Field;
 import tigase.form.Field.FieldType;
 import tigase.form.Form;
-import tigase.xmpp.BareJID;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author bmalkow
@@ -108,6 +111,10 @@ public class RoomConfig {
 
 	public static final String MUC_ROOMCONFIG_ROOMSECRET_KEY = "muc#roomconfig_roomsecret";
 
+	public static final String TIGASE_ROOMCONFIG_PRESENCE_FILTERING = "tigase#presence_filtering";
+
+	public static final String TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS = "tigase#presence_filtered_affiliations";
+
 	protected static String[] asStringTable(Enum<?>[] values) {
 		String[] result = new String[values.length];
 		int i = 0;
@@ -117,7 +124,19 @@ public class RoomConfig {
 		return result;
 	}
 
-	protected final Set<String> blacklist = new HashSet<String>();
+	protected static <T extends Enum<T>> List<T> asEnum( Class<T> clazz, String[] values, Enum<?>[] defaultValues ) {
+		List<T> list = new ArrayList<>();
+		if ( values != null && values.length > 0 ){
+			for ( String val : values ) {
+				list.add( Enum.valueOf( clazz, val ) );
+			}
+		} else {
+			list.addAll( (Collection<? extends T>) Arrays.asList( defaultValues ) );
+		}
+		return list;
+	}
+
+protected final Set<String> blacklist = new HashSet<String>();
 
 	protected final Form form = new Form("form", null, null);
 
@@ -267,6 +286,11 @@ public class RoomConfig {
 		return asString(form.getAsString(MUC_ROOMCONFIG_ROOMSECRET_KEY), "");
 	}
 
+	public Collection<Affiliation> getPresenceFilteredAffiliations() {
+		String[] presenceFrom = form.getAsStrings(TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS );
+		return asEnum( Affiliation.class, presenceFrom, Affiliation.values() );
+	}
+
 	public Anonymity getRoomAnonymity() {
 		try {
 			String tmp = form.getAsString(MUC_ROOMCONFIG_ANONYMITY_KEY);
@@ -311,6 +335,13 @@ public class RoomConfig {
 
 		form.addField(Field.fieldTextSingle(MUC_ROOMCONFIG_MAXHISTORY_KEY, "50",
 				"Maximum Number of History Messages Returned by Room"));
+		
+		form.addField(Field.fieldBoolean(TIGASE_ROOMCONFIG_PRESENCE_FILTERING, Boolean.FALSE,
+				"Enable filtering of presence (broadcasting presence only between selected groups"));
+
+		form.addField(Field.fieldListMulti(TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS,
+														 asStringTable( Affiliation.values() ), "Affiliations for which presence should be delivered",
+														 asStringTable( Affiliation.values() ), asStringTable( Affiliation.values() ) ) );
 
 	}
 
@@ -328,6 +359,10 @@ public class RoomConfig {
 
 	public boolean isPersistentRoom() {
 		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_PERSISTENTROOM_KEY), false);
+	}
+
+	public boolean isPresenceFilterEnabled() {
+		return asBoolean(form.getAsBoolean(TIGASE_ROOMCONFIG_PRESENCE_FILTERING), false);
 	}
 
 	/**
