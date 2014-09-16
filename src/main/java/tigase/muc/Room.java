@@ -209,7 +209,8 @@ public class Room {
 		if ( added ){
 			if ( !config.isPresenceFilterEnabled()
 					 || ( config.isPresenceFilterEnabled()
-								&& config.getPresenceFilteredAffiliations().contains( getAffiliation( senderJid.getBareJID() ) ) ) ){
+								&& ( !config.getPresenceFilteredAffiliations().isEmpty()
+										 && config.getPresenceFilteredAffiliations().contains( getAffiliation( senderJid.getBareJID() ) ) ) ) ){
 				fireOnOccupantAdded( senderJid );
 				fireOnOccupantChangedPresence( senderJid, nickName, pe, true );
 			}

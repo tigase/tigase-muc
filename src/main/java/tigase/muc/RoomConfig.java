@@ -130,7 +130,7 @@ public class RoomConfig {
 			for ( String val : values ) {
 				list.add( Enum.valueOf( clazz, val ) );
 			}
-		} else {
+		} else if ( null != defaultValues ){
 			list.addAll( (Collection<? extends T>) Arrays.asList( defaultValues ) );
 		}
 		return list;
@@ -288,7 +288,7 @@ protected final Set<String> blacklist = new HashSet<String>();
 
 	public Collection<Affiliation> getPresenceFilteredAffiliations() {
 		String[] presenceFrom = form.getAsStrings(TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS );
-		return asEnum( Affiliation.class, presenceFrom, Affiliation.values() );
+		return asEnum( Affiliation.class, presenceFrom, null );
 	}
 
 	public Anonymity getRoomAnonymity() {
@@ -339,9 +339,9 @@ protected final Set<String> blacklist = new HashSet<String>();
 		form.addField(Field.fieldBoolean(TIGASE_ROOMCONFIG_PRESENCE_FILTERING, Boolean.FALSE,
 				"Enable filtering of presence (broadcasting presence only between selected groups"));
 
-		form.addField(Field.fieldListMulti(TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS,
-														 asStringTable( Affiliation.values() ), "Affiliations for which presence should be delivered",
-														 asStringTable( Affiliation.values() ), asStringTable( Affiliation.values() ) ) );
+		form.addField( Field.fieldListMulti( TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS,
+																				 null, "Affiliations for which presence should be delivered",
+																				 asStringTable( Affiliation.values() ), asStringTable( Affiliation.values() ) ) );
 
 	}
 

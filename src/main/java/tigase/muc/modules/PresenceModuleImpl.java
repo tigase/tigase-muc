@@ -525,6 +525,7 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		// we only update presence if the room is not filtered or user is on the list of desired affiliations
 		if ( !room.getConfig().isPresenceFilterEnabled()
 				 || ( room.getConfig().isPresenceFilterEnabled()
+							&& !room.getConfig().getPresenceFilteredAffiliations().isEmpty()
 							&& room.getConfig().getPresenceFilteredAffiliations().contains( room.getAffiliation( senderJID.getBareJID() ) ) ) ){
 			room.updatePresenceByJid( null, nickname, clonePresence( presenceElement ) );
 		}
