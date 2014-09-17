@@ -128,7 +128,7 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 
 		@Override
 		public boolean isPublicLoggingEnabled() {
-			return MUCComponent.this.publicLoggingEnabled;
+			return mucLogger != null || historyProvider.isPersistent();
 		}
 
 	}
@@ -195,8 +195,6 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 	protected Boolean newRoomLocked;
 
 	protected boolean presenceFilterEnabled;
-
-	protected boolean publicLoggingEnabled;
 
 	protected boolean searchGhostsEveryMinute = false;
 
@@ -378,11 +376,11 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 		}
 		super.processPacket(packet);
 	}
-	
+
 	@Override
 	public void release() {
 		super.release();
-		
+
 		if (historyProvider != null) {
 			historyProvider.destroy();
 			historyProvider = null;
@@ -484,11 +482,12 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 		this.historyProvider = HistoryManagerFactory.getHistoryManager(props);
 		this.historyProvider.init(props);
 		if (oldHistoryProvider != null) {
-			// if there was other instance of HistoryProvider then destroy it as we have
+			// if there was other instance of HistoryProvider then destroy it as
+			// we have
 			// new instance initialized and we should release resources
 			oldHistoryProvider.destroy();
 		}
-		
+
 		// }
 
 		log.config("Initializing MUC Logger, props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY)"
@@ -543,8 +542,8 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 				Field field = defaultRoomConfig.getConfigForm().get(var);
 				if (field != null) {
 					changed = true;
-					String[] values = ( (String) x.getValue() ).split( "," );
-					field.setValues( values );
+					String[] values = ((String) x.getValue()).split(",");
+					field.setValues(values);
 				} else if (log.isLoggable(Level.WARNING)) {
 					log.warning("Default config room doesn't contains variable '" + var + "'!");
 				}
