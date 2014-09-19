@@ -451,6 +451,18 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 			this.chatLoggingDirectory = (String) props.get(LOG_DIR_KEY);
 		}
 
+		log.config("Initializing History Provider, props.containsKey(HistoryManagerFactory.DB_CLASS_KEY): "
+				+ props.containsKey(HistoryManagerFactory.DB_CLASS_KEY));
+		HistoryProvider oldHistoryProvider = this.historyProvider;
+		this.historyProvider = HistoryManagerFactory.getHistoryManager(props);
+		this.historyProvider.init(props);
+		if (oldHistoryProvider != null) {
+			// if there was other instance of HistoryProvider then destroy it as
+			// we have
+			// new instance initialized and we should release resources
+			oldHistoryProvider.destroy();
+		}
+
 		if (mucRepository == null) {
 			try {
 				final String cls_name = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
@@ -473,22 +485,6 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 				log.log(Level.WARNING, "Cannot initialize MUC Repository", e);
 			}
 		}
-
-		log.config("Initializing History Provider, props.containsKey(HistoryManagerFactory.DB_CLASS_KEY): "
-				+ props.containsKey(HistoryManagerFactory.DB_CLASS_KEY));
-		// if (props.containsKey(HistoryManagerFactory.DB_CLASS_KEY)) {
-
-		HistoryProvider oldHistoryProvider = this.historyProvider;
-		this.historyProvider = HistoryManagerFactory.getHistoryManager(props);
-		this.historyProvider.init(props);
-		if (oldHistoryProvider != null) {
-			// if there was other instance of HistoryProvider then destroy it as
-			// we have
-			// new instance initialized and we should release resources
-			oldHistoryProvider.destroy();
-		}
-
-		// }
 
 		log.config("Initializing MUC Logger, props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY)"
 				+ props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY));
