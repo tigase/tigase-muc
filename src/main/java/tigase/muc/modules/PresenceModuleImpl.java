@@ -554,7 +554,7 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 			log.finest("Processing stanza " + element.toString());
 		}
 
-		throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED, "Will me done soon");
+		throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED, "Changing nickname is not supported yet.");
 
 		// TODO Example 23. Service Denies Room Join Because Roomnicks Are
 		// Locked Down (???)
