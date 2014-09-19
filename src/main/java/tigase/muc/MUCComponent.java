@@ -128,7 +128,7 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 
 		@Override
 		public boolean isPublicLoggingEnabled() {
-			return mucLogger != null || historyProvider.isPersistent();
+			return mucLogger != null || (historyProvider != null && historyProvider.isPersistent());
 		}
 
 	}
