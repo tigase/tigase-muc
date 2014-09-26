@@ -115,6 +115,8 @@ public class RoomConfig {
 
 	public static final String TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS = "tigase#presence_filtered_affiliations";
 
+	public static final String TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC = "tigase#presence_delivery_logic";
+
 	protected static String[] asStringTable(Enum<?>[] values) {
 		String[] result = new String[values.length];
 		int i = 0;
@@ -136,7 +138,7 @@ public class RoomConfig {
 		return list;
 	}
 
-protected final Set<String> blacklist = new HashSet<String>();
+	protected final Set<String> blacklist = new HashSet<String>();
 
 	protected final Form form = new Form("form", null, null);
 
@@ -286,6 +288,12 @@ protected final Set<String> blacklist = new HashSet<String>();
 		return asString(form.getAsString(MUC_ROOMCONFIG_ROOMSECRET_KEY), "");
 	}
 
+	public PresenceStore.PresenceDeliveryLogic getPresenceDeliveryLogic() {
+		String PDLasString = form.getAsString( TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC );
+		PresenceStore.PresenceDeliveryLogic pdl = PresenceStore.PresenceDeliveryLogic.valueOf( PDLasString );
+		return pdl;
+	}
+
 	public Collection<Affiliation> getPresenceFilteredAffiliations() {
 		String[] presenceFrom = form.getAsStrings(TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS );
 		return asEnum( Affiliation.class, presenceFrom, null );
@@ -336,6 +344,13 @@ protected final Set<String> blacklist = new HashSet<String>();
 		form.addField(Field.fieldTextSingle(MUC_ROOMCONFIG_MAXHISTORY_KEY, "50",
 				"Maximum Number of History Messages Returned by Room"));
 		
+
+		form.addField( Field.fieldListSingle(TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC,
+																				 PresenceStore.PresenceDeliveryLogic.PREFERE_PRIORITY.toString(),
+																				 "Presence delivery logic",
+																				 asStringTable( PresenceStore.PresenceDeliveryLogic.values() ),
+																				 asStringTable( PresenceStore.PresenceDeliveryLogic.values() ) ) );
+
 		form.addField(Field.fieldBoolean(TIGASE_ROOMCONFIG_PRESENCE_FILTERING, Boolean.FALSE,
 				"Enable filtering of presence (broadcasting presence only between selected groups"));
 

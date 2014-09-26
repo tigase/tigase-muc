@@ -47,7 +47,7 @@ import java.util.logging.Logger;
  * @author bmalkow
  * 
  */
-public class Room {
+public class Room implements RoomConfig.RoomConfigListener {
 
 	private static class OccupantEntry {
 
@@ -155,6 +155,8 @@ public class Room {
 		this.presenceFiltered = new PresenceFiltered(this);
 		addOccupantListener( presenceFiltered );
 		addListener( presenceFiltered );
+		rc.addListener( this);
+		presences.setOrdening( rc.getPresenceDeliveryLogic() ) ;
 	}
 
 	/**
@@ -354,12 +356,7 @@ public class Room {
 	}
 
 	public Element getLastPresenceCopy(BareJID occupantJid, String nickname) {
-		Element e = this.presences.getBestPresence(occupantJid);
-		if (e != null) {
-			return e.clone();
-		} else {
-			return null;
-		}
+		return getLastPresenceCopyByJid( occupantJid );
 	}
 
 	public Element getLastPresenceCopyByJid(BareJID occupantJid) {
@@ -495,6 +492,11 @@ public class Room {
 
 	public boolean isRoomLocked() {
 		return roomLocked;
+	}
+
+	@Override
+	public void onConfigChanged( RoomConfig roomConfig, Set<String> modifiedVars ) {
+		presences.setOrdening( roomConfig.getPresenceDeliveryLogic());
 	}
 
 	public void removeListener(RoomListener listener) {
