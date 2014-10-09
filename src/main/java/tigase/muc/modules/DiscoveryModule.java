@@ -23,6 +23,7 @@ package tigase.muc.modules;
 
 import tigase.component.exceptions.ComponentException;
 import tigase.component.exceptions.RepositoryException;
+import tigase.muc.Affiliation;
 import tigase.muc.MucContext;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
@@ -133,6 +134,14 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 			for (final BareJID jid : roomsId) {
 				if (jid.getDomain().equals(requestedJID.getDomain())) {
 					final String name = context.getMucRepository().getRoomName(jid.toString());
+
+					final Room room = context.getMucRepository().getRoom(jid);
+					if (!room.getConfig().isRoomconfigPublicroom()) {
+						Affiliation senderAff = room.getAffiliation(senderJID.getBareJID());
+						if (!room.isOccupantInRoom(senderJID)
+								&& (senderAff == Affiliation.none || senderAff == Affiliation.outcast))
+							continue;
+					}
 
 					resultQuery.addChild(new Element("item", new String[] { "jid", "name" }, new String[] { jid.toString(),
 							(name != null) ? name : jid.getLocalpart() }));
