@@ -378,16 +378,6 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 	}
 
 	@Override
-	public void release() {
-		super.release();
-
-		if (historyProvider != null) {
-			historyProvider.destroy();
-			historyProvider = null;
-		}
-	}
-
-	@Override
 	public void setProperties(Map<String, Object> props) throws ConfigurationException {
 		if (props.size() == 1) {
 			// If props.size() == 1, it means this is a single property update

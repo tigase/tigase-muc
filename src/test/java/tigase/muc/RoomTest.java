@@ -32,7 +32,6 @@ import org.junit.Before;
 
 import tigase.component.PacketWriter;
 import tigase.component.exceptions.RepositoryException;
-import tigase.component.responses.AsyncCallback;
 import tigase.conf.ConfigurationException;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
