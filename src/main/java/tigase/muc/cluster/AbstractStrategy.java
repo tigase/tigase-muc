@@ -8,6 +8,7 @@ package tigase.muc.cluster;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -102,7 +103,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 
 			Map<String, String> data = new HashMap<String, String>();
 			data.put("room", room.getRoomJID().toString());
-			data.put("occupant-jid", occupantJid.toString());
+			data.put("userId", occupantJid.toString());
 			data.put("occupant-nickname", nickname);
 			
 			if (log.isLoggable(Level.FINEST)) {
@@ -131,7 +132,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 
 			Map<String, String> data = new HashMap<String, String>();
 			data.put("room", room.getRoomJID().toString());
-			data.put("occupant-jid", occupantJid.toString());
+			data.put("userId", occupantJid.toString());
 			
 			if (log.isLoggable(Level.FINEST)) {
 				StringBuilder buf = new StringBuilder(100);
@@ -150,13 +151,28 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		}
 	}	
 	
+	protected void sendRemoteOccupantRemovalOnDisconnect(Room room, JID occupant, String occupantNick, boolean sendRemovalToOccupant) {
+		// notify occupants of this room on this node that occupant was removed
+		for (String nickname : room.getOccupantsNicknames()) {
+			Collection<JID> jids = room.getOccupantsJidsByNickname(nickname);
+			for (JID jid : jids) {
+				sendRemovalFromRoomOnNodeDisconnect(JID.jidInstanceNS(room.getRoomJID(), occupantNick), jid);
+			}
+		}
+		if (sendRemovalToOccupant) {
+			sendRemovalFromRoomOnNodeDisconnect(room.getRoomJID(), occupant);
+		}
+	}
+	
 	protected void sendRemovalFromRoomOnNodeDisconnect(BareJID roomJid, JID occupant) {
-		sendRemovalFromRoomOnNodeDisconnect(roomJid.toString(), occupant);
+		sendRemovalFromRoomOnNodeDisconnect(roomJid.toString(), occupant, false);
 	}
-	protected void sendRemovalFromRoomOnNodeDisconnect(JID roomJid, JID occupant) {
-		sendRemovalFromRoomOnNodeDisconnect(roomJid.toString(), occupant);
+	
+	private void sendRemovalFromRoomOnNodeDisconnect(JID roomJid, JID occupant) {
+		sendRemovalFromRoomOnNodeDisconnect(roomJid.toString(), occupant, true);
 	}
-	protected void sendRemovalFromRoomOnNodeDisconnect(String roomJid, JID occupant) {
+	
+	private void sendRemovalFromRoomOnNodeDisconnect(String roomJid, JID occupant, boolean toDisconnectedOccupant) {
 		try {
 			Element presenceEl = new Element("presence", new String[]{"xmlns", "from", "to", "type"},
 					new String[]{Presence.CLIENT_XMLNS, roomJid.toString(), occupant.toString(), "unavailable"});
@@ -164,8 +180,10 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 			presenceEl.addChild(x);
 			Element item = new Element("item", new String[]{"role"}, new String[]{"none"});
 			x.addChild(item);
-			item.addChild(new Element("reason", "MUC component is disconnected."));
-			x.addChild(new Element("status", new String[]{"code"}, new String[]{"332"}));
+			if (toDisconnectedOccupant) {
+				item.addChild(new Element("reason", "MUC component is disconnected."));
+				x.addChild(new Element("status", new String[]{"code"}, new String[]{"332"}));
+			}
 			muc.addOutPacket(Packet.packetInstance(presenceEl));
 		} catch (TigaseStringprepException ex) {
 			log.log(Level.FINE, "Problem on throwing out occupant {0} on node disconnection", new Object[]{occupant});
@@ -189,7 +207,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 
 	@Override
 	public void setMucComponentClustered(MUCComponentClustered mucComponent) {
-		setLocalNodeJid(JID.jidInstance(mucComponent.getDefHostName()));
+		setLocalNodeJid(JID.jidInstanceNS(mucComponent.getName(), mucComponent.getDefHostName().getDomain(), null));
 		this.muc = mucComponent;
 	}
 
@@ -234,7 +252,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
 				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
-			JID occupantJid = JID.jidInstanceNS(data.get("occupant-jid"));
+			JID occupantJid = JID.jidInstanceNS(data.get("userId"));
 			String nickname = data.get("occupant-nickname");
 			addOccupant(fromNode.getBareJID(), roomJid, occupantJid, nickname);
 			if (log.isLoggable(Level.FINEST)) {
@@ -254,7 +272,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
 				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
-			JID occupantJid = JID.jidInstanceNS(data.get("occupant-jid"));
+			JID occupantJid = JID.jidInstanceNS(data.get("userId"));
 			removeOccupant(fromNode.getBareJID(), roomJid, occupantJid);
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST, "room = {0}, received notification that occupant {1} left room {2} at node {3}", 
@@ -276,13 +294,21 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 				for (Element elem : packets) {
 					try {
 						Packet packet = Packet.packetInstance(elem);
-						muc.processPacket(packet);
 						if (log.isLoggable(Level.FINEST)) {
 							log.log(Level.FINEST, "received packet {0} forwarded from node {1}",
 									new Object[]{ packet, fromNode });
 						}
+						if (muc.addPacketNB(packet)) {
+							if (log.isLoggable(Level.FINEST)) {
+								log.log(Level.FINEST, "forwarded packet added to processing queue "
+										+ "of component = {0}", packet.toString());
+							}
+						} else {
+							log.log(Level.FINE, "forwarded packet dropped due to component queue "
+									+ "overflow = {0}", packet.toString());
+						}
 					} catch (TigaseStringprepException ex) {
-						log.warning("Addressing problem, stringprep failed for packet: " + elem);
+						log.log(Level.FINEST, "Addressing problem, stringprep failed for packet: {0}", elem);
 					}
 				}
 			}

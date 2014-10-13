@@ -12,9 +12,11 @@ import java.util.logging.*;
 import tigase.cluster.api.*;
 import tigase.component.exceptions.RepositoryException;
 import tigase.component.modules.Module;
+import tigase.conf.ConfigurationException;
 import tigase.licence.*;
 import tigase.muc.*;
 import tigase.muc.repository.*;
+import tigase.osgi.ModulesManagerImpl;
 import tigase.server.*;
 import tigase.xmpp.JID;
 
@@ -39,15 +41,16 @@ public class MUCComponentClustered extends MUCComponent
 
 	public MUCComponentClustered() {
 		licenceChecker = LicenceChecker.getLicenceChecker( "acs" );
+		RoomClustered.initialize();
 	}
 
 	@Override
 	public boolean addOutPacket(Packet packet) {
-		return super.addOutPacket(packet);
+		return super.addOutPacket(packet);	
 	}
 	
 	@Override
-	protected IMucRepository createMucRepository(MucConfig componentConfig, MucDAO dao) throws RepositoryException {
+	protected IMucRepository createMucRepository(MucContext componentConfig, MucDAO dao) throws RepositoryException {
 		InMemoryMucRepositoryClustered repo = new InMemoryMucRepositoryClustered(componentConfig, dao);
 		strategy.setMucRepository(repo);
 		return repo;
@@ -55,12 +58,14 @@ public class MUCComponentClustered extends MUCComponent
 
 	@Override
 	public void nodeConnected(String node) {
-		strategy.nodeConnected(JID.jidInstanceNS(node));
+		JID jid = JID.jidInstanceNS(getName(), node, null);
+		strategy.nodeConnected(jid);
 	}
 
 	@Override
 	public void nodeDisconnected(String node) {
-		strategy.nodeDisconnected(JID.jidInstanceNS(node));
+		JID jid = JID.jidInstanceNS(getName(), node, null);
+		strategy.nodeDisconnected(jid);
 	}
 
 	@Override
@@ -88,18 +93,22 @@ public class MUCComponentClustered extends MUCComponent
 	}
 	
 	@Override
-	public void setProperties(Map<String, Object> props) {
+	public void setProperties(Map<String, Object> props) throws ConfigurationException {
 		if (props.size() > 1 && props.containsKey(STRATEGY_CLASS_KEY)) {
 			String strategy_class = (String) props.get(STRATEGY_CLASS_KEY);
 			try {
-				strategy = (StrategyIfc) Class.forName(strategy_class).newInstance();
+				strategy = (StrategyIfc) ModulesManagerImpl.getInstance().forName(strategy_class).newInstance();
 				strategy.setMucComponentClustered(this);
 				if (cl_controller != null) {
 					strategy.setClusterController(cl_controller);
 				}
 			} catch (Exception ex) {
-				log.log(Level.SEVERE, "Cannot instance clustering strategy class: "
-						+ strategy_class, ex);
+				if (!XMPPServer.isOSGi()) {
+					log.log(Level.SEVERE, "Cannot instance clustering strategy class: "
+							+ strategy_class, ex);
+				}
+				throw new ConfigurationException("Cannot instance clustering strategy class: "
+						+ strategy_class);
 			}
 		}
 		super.setProperties(props);
@@ -132,8 +141,8 @@ public class MUCComponentClustered extends MUCComponent
 		return cmpInfo;
 	}
 
-	protected <T extends Module> T getModule(Class<T> x) {
-		return this.modulesManager.get(x);
+	protected <T extends Module> T getModule(String id) {
+		return (T) this.modulesManager.getModule(id);
 	}
 	
 }

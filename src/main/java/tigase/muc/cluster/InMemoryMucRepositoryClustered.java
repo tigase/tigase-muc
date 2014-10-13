@@ -8,8 +8,8 @@
 package tigase.muc.cluster;
 
 import java.util.logging.Level;
-import tigase.component.exceptions.RepositoryException;
-import tigase.muc.MucConfig;
+import tigase.component.exceptions.RepositoryException;	
+import tigase.muc.MucContext;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
@@ -35,7 +35,7 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 	private RoomListener roomListener;
 	private Room.RoomOccupantListener roomOccupantListener;
 
-	public InMemoryMucRepositoryClustered(final MucConfig mucConfig, final MucDAO dao) throws RepositoryException {
+	public InMemoryMucRepositoryClustered(final MucContext mucConfig, final MucDAO dao) throws RepositoryException {
 		super(mucConfig, dao);
 	}
 		
@@ -75,7 +75,7 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 	}
 	
 	@Override
-	public Room getRoom(BareJID roomJID) throws RepositoryException, MUCException, TigaseStringprepException {
+	public Room getRoom(BareJID roomJID) throws RepositoryException, MUCException {
 		boolean isNewInstance = !this.getActiveRooms().containsKey(roomJID);
 		Room room = super.getRoom(roomJID); 
 		if (isNewInstance && room != null)
