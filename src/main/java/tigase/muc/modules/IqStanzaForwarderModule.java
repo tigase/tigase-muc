@@ -21,19 +21,22 @@
  */
 package tigase.muc.modules;
 
-import java.util.Collection;
+import tigase.server.Packet;
+
+import tigase.xmpp.Authorization;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 import tigase.component.exceptions.ComponentException;
 import tigase.criteria.Criteria;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
-import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
-import tigase.xmpp.Authorization;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
+
+import java.util.Collection;
+import java.util.logging.Level;
 
 /**
  * @author bmalkow
@@ -103,10 +106,17 @@ public class IqStanzaForwarderModule extends AbstractMucModule {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
 
-			final String senderNickname = getNicknameFromJid(senderJID);
+			final String senderNickname = room.getOccupantsNickname( senderJID );
 			final Role senderRole = room.getRole(senderNickname);
+
+			if ( log.isLoggable( Level.FINEST ) ){
+				log.log( Level.FINEST,
+						 "Processing IQ stanza, from: {0}, to: {1}, recipientNickname: {2}, senderNickname: {3}, senderRole: {4} ",
+						 new Object[] { senderJID, roomJID, recipientNickname, senderNickname, senderRole } );
+			}
+
 			if (!senderRole.isSendPrivateMessages()) {
-				throw new MUCException(Authorization.NOT_ALLOWED);
+				throw new MUCException(Authorization.NOT_ALLOWED, "Role is not allowed to send private messages");
 			}
 			if (room.getOccupantsJidsByNickname(senderNickname).size() > 1)
 				throw new MUCException(Authorization.NOT_ALLOWED, "Many source resources detected.");
