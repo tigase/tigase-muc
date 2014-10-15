@@ -450,6 +450,8 @@ public class Room implements RoomConfig.RoomConfigListener {
 	 * @return
 	 */
 	public Role getRole(String nickname) {
+		if (nickname == null)
+			return Role.none;
 		OccupantEntry entry = this.occupants.get(nickname);
 		if (entry == null)
 			return Role.none;
