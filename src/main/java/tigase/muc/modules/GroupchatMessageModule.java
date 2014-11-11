@@ -273,10 +273,13 @@ public class GroupchatMessageModule extends AbstractMucModule {
 				addSubjectChangeToHistory(room, packet.getElement(), subject.getCData(), senderJID, nickName, sendDate);
 			}
 
-			if (sendDate != null) {
-				content.add(new Element("delay", new String[] { "xmlns", "stamp" }, new String[] { "urn:xmpp:delay",
-						DateUtil.formatDatetime(sendDate) }));
-			}
+			// TODO: Add option to send delay or not.
+			// XXX: temporary removed
+			// if (sendDate != null) {
+			// content.add(new Element("delay", new String[] { "xmlns", "stamp"
+			// }, new String[] { "urn:xmpp:delay",
+			// DateUtil.formatDatetime(sendDate) }));
+			// }
 
 			sendMessagesToAllOccupants(room, senderRoomJID, content.toArray(new Element[] {}));
 		} catch (MUCException e1) {
