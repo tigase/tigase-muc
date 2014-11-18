@@ -348,7 +348,7 @@ public class Room implements RoomConfig.RoomConfigListener {
 	 */
 	public String getDebugInfoOccupants() {
 		StringBuilder sb = new StringBuilder();
-		sb.append("Occupants in room " + config.getRoomJID() + ": ");
+		sb.append("Occupants in room " + config.getRoomJID() + "[" + occupants.entrySet().size() +"]: ");
 		for (Entry<String, OccupantEntry> o : occupants.entrySet()) {
 			sb.append(o.getKey()).append('=').append(o.getValue().toString()).append(" ");
 		}
