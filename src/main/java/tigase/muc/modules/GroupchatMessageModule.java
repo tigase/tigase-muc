@@ -48,7 +48,7 @@ import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
 public class GroupchatMessageModule extends AbstractMucModule {
 
@@ -124,7 +124,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.component.modules.AbstractModule#afterRegistration()
 	 */
 	@Override
@@ -134,8 +134,8 @@ public class GroupchatMessageModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @return
 	 */
 	@Override
@@ -153,8 +153,8 @@ public class GroupchatMessageModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @return
 	 */
 	@Override
@@ -164,8 +164,8 @@ public class GroupchatMessageModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @return
 	 */
 	public boolean isChatStateAllowed() {
@@ -174,10 +174,10 @@ public class GroupchatMessageModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param packet
-	 * 
+	 *
 	 * @throws MUCException
 	 */
 	@Override
@@ -215,6 +215,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 			Element body = null;
 			Element subject = null;
 			Element delay = null;
+			final String id = packet.getAttributeStaticStr(Packet.ID_ATT);
 			ArrayList<Element> content = new ArrayList<Element>();
 			List<Element> ccs = packet.getElement().getChildren();
 
@@ -273,15 +274,12 @@ public class GroupchatMessageModule extends AbstractMucModule {
 				addSubjectChangeToHistory(room, packet.getElement(), subject.getCData(), senderJID, nickName, sendDate);
 			}
 
-			// TODO: Add option to send delay or not.
-			// XXX: temporary removed
-			// if (sendDate != null) {
-			// content.add(new Element("delay", new String[] { "xmlns", "stamp"
-			// }, new String[] { "urn:xmpp:delay",
-			// DateUtil.formatDatetime(sendDate) }));
-			// }
+			if (sendDate != null) {
+				content.add(new Element("delay", new String[] { "xmlns", "stamp" }, new String[] { "urn:xmpp:delay",
+						DateUtil.formatDatetime(sendDate) }));
+			}
 
-			sendMessagesToAllOccupants(room, senderRoomJID, content.toArray(new Element[] {}));
+			sendMessagesToAllOccupants(room, senderRoomJID, id, content.toArray(new Element[] {}));
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (TigaseStringprepException e) {
@@ -295,23 +293,23 @@ public class GroupchatMessageModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param room
 	 * @param fromJID
 	 * @param sendDate
 	 * @param content
-	 * 
+	 *
 	 * @throws TigaseStringprepException
 	 */
-	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, final Element... content)
+	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, String messageId, final Element... content)
 			throws TigaseStringprepException {
 		room.fireOnMessageToOccupants(fromJID, content);
 
-		sendMessagesToAllOccupantsJids(room, fromJID, content);
+		sendMessagesToAllOccupantsJids(room, fromJID, messageId, content);
 	}
 
-	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, final Element... content)
+	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, String messageId, final Element... content)
 			throws TigaseStringprepException {
 
 		for (String nickname : room.getOccupantsNicknames()) {
@@ -324,9 +322,11 @@ public class GroupchatMessageModule extends AbstractMucModule {
 			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
 
 			for (JID jid : occupantJids) {
-
-				Packet message = Packet.packetInstance(new Element("message", new String[] { "type", "from", "to" },
-						new String[] { "groupchat", fromJID.toString(), jid.toString() }));
+				Element e = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",
+						fromJID.toString(), jid.toString() });
+				if (messageId != null)
+					e.setAttribute("id", messageId);
+				Packet message = Packet.packetInstance(e);
 				message.setXMLNS(Packet.CLIENT_XMLNS);
 
 				// Packet message = Message.getMessage(fromJID, jid,

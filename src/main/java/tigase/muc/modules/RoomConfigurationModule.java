@@ -45,7 +45,7 @@ import tigase.xmpp.StanzaType;
 
 /**
  * @author bmalkow
- * 
+ *
  */
 public class RoomConfigurationModule extends AbstractMucModule {
 
@@ -93,12 +93,12 @@ public class RoomConfigurationModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param room
 	 * @param jid
 	 * @param reason
-	 * 
+	 *
 	 * @throws RepositoryException
 	 * @throws TigaseStringprepException
 	 */
@@ -119,8 +119,8 @@ public class RoomConfigurationModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @return
 	 */
 	@Override
@@ -130,8 +130,8 @@ public class RoomConfigurationModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @return
 	 */
 	@Override
@@ -154,10 +154,10 @@ public class RoomConfigurationModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param element
-	 * 
+	 *
 	 * @throws MUCException
 	 */
 	@Override
@@ -270,7 +270,7 @@ public class RoomConfigurationModule extends AbstractMucModule {
 						for (String code : compareResult) {
 							z.addChild(new Element("status", new String[] { "code" }, new String[] { code }));
 						}
-						this.messageModule.sendMessagesToAllOccupants(room, roomJID, z);
+						this.messageModule.sendMessagesToAllOccupants(room, roomJID, null, z);
 					}
 				}
 			} else {
