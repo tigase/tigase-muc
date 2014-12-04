@@ -270,7 +270,7 @@ public class RoomConfigurationModule extends AbstractMucModule {
 						for (String code : compareResult) {
 							z.addChild(new Element("status", new String[] { "code" }, new String[] { code }));
 						}
-						this.messageModule.sendMessagesToAllOccupants(room, roomJID, null, z);
+						this.messageModule.sendMessagesToAllOccupants(room, roomJID, z);
 					}
 				}
 			} else {

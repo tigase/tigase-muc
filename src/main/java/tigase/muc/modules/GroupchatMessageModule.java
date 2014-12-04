@@ -124,7 +124,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 
 	/*
 	 * (non-Javadoc)
-	 *
+	 * 
 	 * @see tigase.component.modules.AbstractModule#afterRegistration()
 	 */
 	@Override
@@ -291,6 +291,11 @@ public class GroupchatMessageModule extends AbstractMucModule {
 		}
 	}
 
+	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, final Element... content)
+			throws TigaseStringprepException {
+		sendMessagesToAllOccupants(room, fromJID, null, content);
+	}
+
 	/**
 	 * Method description
 	 *
@@ -307,6 +312,11 @@ public class GroupchatMessageModule extends AbstractMucModule {
 		room.fireOnMessageToOccupants(fromJID, content);
 
 		sendMessagesToAllOccupantsJids(room, fromJID, messageId, content);
+	}
+
+	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, final Element... content)
+			throws TigaseStringprepException {
+		sendMessagesToAllOccupantsJids(room, fromJID, null, content);
 	}
 
 	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, String messageId, final Element... content)
