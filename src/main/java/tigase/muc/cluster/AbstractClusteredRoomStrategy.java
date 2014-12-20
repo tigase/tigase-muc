@@ -62,6 +62,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	private static final String ROOM_CREATED_CMD = "muc-room-created-cmd";
 	private static final String ROOM_DESTROYED_CMD = "muc-room-destroyed-cmd";
 	private static final String ROOM_MESSAGE_CMD = "muc-room-message-cmd";
+	private static final String ROOM_AFFILIATION_CMD = "muc-room-affiliation-cmd";
 	private static final int SYNC_MAX_BATCH_SIZE = 1000;
 	
 	private final RoomCreatedCmd roomCreatedCmd = new RoomCreatedCmd();
@@ -69,6 +70,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	private final RoomMessageCmd roomMessageCmd = new RoomMessageCmd();
 	private final RequestSyncCmd requestSyncCmd = new RequestSyncCmd();
 	private final ResponseSyncCmd responseSyncCmd = new ResponseSyncCmd();
+	private final RoomAffiliationCmd roomAffiliationCmd = new RoomAffiliationCmd();
 	
 	// Map<node_bare_jid, Map<occupant_jid, Map<room_jid,nickname> > >
 	protected final ConcurrentHashMap<BareJID,ConcurrentMap<JID,ConcurrentMap<BareJID,String>>> occupantsPerNode = new ConcurrentHashMap<>();
@@ -151,6 +153,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			this.cl_controller.removeCommandListener(roomCreatedCmd);
 			this.cl_controller.removeCommandListener(roomDestroyedCmd);
 			this.cl_controller.removeCommandListener(roomMessageCmd);
+			this.cl_controller.removeCommandListener(roomAffiliationCmd);
 		}
 		super.setClusterController(cl_controller);
 		if (cl_controller != null) {
@@ -159,6 +162,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			cl_controller.setCommandListener(roomCreatedCmd);
 			cl_controller.setCommandListener(roomDestroyedCmd);
 			cl_controller.setCommandListener(roomMessageCmd);
+			cl_controller.setCommandListener(roomAffiliationCmd);
 		}
 	}
 	
@@ -222,7 +226,30 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 
 	@Override
 	public void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation) {
-//		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+
+
+
+		List<JID> toNodes = getAllNodes();
+		toNodes.remove(localNodeJid);
+
+		Map<String, String> data = new HashMap<String, String>();
+		data.put("room", room.getRoomJID().toString());
+		data.put("userId", jid.toString());
+		data.put("newAffiliation", newAffiliation.toString());
+
+		if (log.isLoggable(Level.FINEST)) {
+			StringBuilder buf = new StringBuilder(100);
+			for (JID node : toNodes) {
+				if (buf.length() > 0) {
+					buf.append(",");
+				}
+				buf.append(node.toString());
+			}
+			log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] about new affiliation",
+					new Object[] { room.getRoomJID(), buf });
+		}
+		cl_controller.sendToNodes(ROOM_AFFILIATION_CMD, data, localNodeJid,
+				toNodes.toArray(new JID[toNodes.size()]));
 	}
 
 	@Override
@@ -334,11 +361,11 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			JID creatorJid = JID.jidInstanceNS(data.get("creator"));
 			try {
-				mucRepository.createNewRoomWithoutListener(roomJid, creatorJid);
 				if ( log.isLoggable( Level.FINEST ) ){
 					log.log( Level.FINEST, "executig RoomCreatedCmd command for room = {0}, creatorJid = {1}",
 									 new Object[] { roomJid, creatorJid } );
 				}
+				mucRepository.createNewRoomWithoutListener(roomJid, creatorJid);
 			} catch (RepositoryException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
 			}
@@ -496,4 +523,33 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			}
 		}		
 	}
+
+	private class RoomAffiliationCmd extends CommandListenerAbstract {
+
+		public RoomAffiliationCmd() {
+			super(ROOM_AFFILIATION_CMD);
+		}
+
+		@Override
+		public void executeCommand( JID fromNode, Set<JID> visitedNodes,
+																Map<String, String> data, Queue<Element> packets ) throws ClusterCommandException {
+
+				BareJID roomJid = BareJID.bareJIDInstanceNS( data.get( "room" ) );
+				BareJID from = BareJID.bareJIDInstanceNS( data.get( "userId" ) );
+				Affiliation newAffiliation = Affiliation.valueOf( data.get( "newAffiliation" ) );
+				if ( log.isLoggable( Level.FINEST ) ){
+					log.log( Level.FINEST, "executig RoomAffiliationCmd command for room = {0}, from = {1}, newAffiliation: {2}",
+									 new Object[] { roomJid, from, newAffiliation } );
+				}
+
+				try {
+					Room room = AbstractClusteredRoomStrategy.this.muc.getMucRepository().getRoom( roomJid );
+					room.setNewAffiliation( from, newAffiliation );
+				} catch ( RepositoryException | MUCException ex ) {
+					Logger.getLogger( AbstractClusteredRoomStrategy.class.getName() ).log( Level.SEVERE, null, ex );
+				}
+
+		}
+	}
+
 }
