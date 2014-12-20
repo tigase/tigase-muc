@@ -15,9 +15,6 @@
  * along with this program. Look for COPYING file in the top folder.
  * If not, see http://www.gnu.org/licenses/.
  *
- * $Rev$
- * Last modified by $Author$
- * $Date$
  */
 package tigase.muc;
 
@@ -43,10 +40,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * @author bmalkow
- * 
- */
 public class Room implements RoomConfig.RoomConfigListener {
 
 	private static class OccupantEntry {
@@ -59,11 +52,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 
 		private Role role = Role.none;
 
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see java.lang.Object#toString()
-		 */
 		@Override
 		public String toString() {
 			return "[" + nickname + "; " + role + "; " + jid + "; " + jids.toString() + "]";
@@ -107,9 +95,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 		return factory.newInstance(rc, creationDate, creatorJid);
 	}
 
-	/**
-	 * <bareJID, Affiliation>
-	 */
 	private final Map<BareJID, Affiliation> affiliations = new ConcurrentHashMap<BareJID, Affiliation>();
 
 	private final RoomConfig config;
@@ -122,9 +107,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 
 	private final List<RoomOccupantListener> occupantListeners = new CopyOnWriteArrayList<RoomOccupantListener>();
 
-	/**
-	 * < nickname,real JID>
-	 */
 	private final Map<String, OccupantEntry> occupants = new ConcurrentHashMap<String, Room.OccupantEntry>();
 
 	protected final PresenceStore presences = new PresenceStore();
@@ -143,11 +125,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 
 	public static final String FILTERED_OCCUPANTS_COLLECTION = "filtered_occupants_collection";
 
-	/**
-	 * @param rc
-	 * @param creationDate
-	 * @param creatorJid2
-	 */
 	protected Room(RoomConfig rc, Date creationDate, BareJID creatorJid) {
 		this.config = rc;
 		this.creationDate = creationDate;
@@ -159,11 +136,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 		presences.setOrdening( rc.getPresenceDeliveryLogic() ) ;
 	}
 
-	/**
-	 * @param jid
-	 * @param owner
-	 * @throws RepositoryException
-	 */
 	public void addAffiliationByJid(BareJID jid, Affiliation affiliation) throws RepositoryException {
 		if (affiliation == Affiliation.none) {
 			this.affiliations.remove(jid);
@@ -177,12 +149,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 		this.listeners.add(listener);
 	}
 
-	/**
-	 * @param senderJid
-	 * @param nickName
-	 * @param pe
-	 * @throws TigaseStringprepException
-	 */
 	public void addOccupantByJid(JID senderJid, String nickName, Role role, Element pe) throws TigaseStringprepException {
 		OccupantEntry entry = this.occupants.get(nickName);
 		this.presences.update(pe);
@@ -193,7 +159,9 @@ public class Room implements RoomConfig.RoomConfigListener {
 			this.occupants.put(nickName, entry);
 
 			if ( log.isLoggable( Level.FINEST ) ){
-				log.log( Level.FINEST, "Room " + config.getRoomJID() + ". Created OccupantEntry for " + senderJid + ", nickname=" + nickName );
+				log.log( Level.FINEST, "Room {0}. Created OccupantEntry for {1}, nickname={2}",
+								 new Object[] { config.getRoomJID(), senderJid, nickName }
+				);
 			}
 		}
 
@@ -204,8 +172,10 @@ public class Room implements RoomConfig.RoomConfigListener {
 		}
 
 		if ( log.isLoggable( Level.FINEST ) ){
-			log.log( Level.FINEST, "Room " + config.getRoomJID() + ". " + ( added ? "Added" : "Updated" ) + " occupant " + senderJid + " ("
-														 + nickName + ") to room with role=" + role + "; filtering enabled: " + config.isPresenceFilterEnabled() );
+			log.log( Level.FINEST, "Room {0}. {1} occupant {2} ({3}) to room with role={4}; filtering enabled: {5}",
+							 new Object[] { config.getRoomJID(), ( added ? "Added" : "Updated" ),
+																									 senderJid, nickName, role, config.isPresenceFilterEnabled() }
+			);
 		}
 
 		if ( added ){
@@ -223,10 +193,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 		this.occupantListeners.add(listener);
 	}
 
-	/**
-	 * @param senderJid
-	 * @param nickName
-	 */
 	public void changeNickName(JID senderJid, String nickName) {
 		OccupantEntry occ = getBySenderJid(senderJid);
 		String oldNickname = occ.nickname;
@@ -277,38 +243,29 @@ public class Room implements RoomConfig.RoomConfigListener {
 		}
 	}
 
-	/**
-	 * @param value
-	 *            user JID
-	 * @return
-	 */
-	public Affiliation getAffiliation(BareJID jid) {
+	public Affiliation getAffiliation( BareJID jid ) {
+		if ( log.isLoggable( Level.FINEST ) ){
+			log.log( Level.FINEST, "Getting affiliations for: " + jid + " from set: " + affiliations.toString() );
+		}
 		Affiliation result = null;
-		if (jid != null) {
-			result = this.affiliations.get(jid);
+		if ( jid != null ){
+			result = this.affiliations.get( jid );
 		}
 		return result == null ? Affiliation.none : result;
 	}
 
-	/**
-	 * @param occupantNickname
-	 * @return
-	 */
 	public Affiliation getAffiliation(String nickname) {
 		OccupantEntry entry = this.occupants.get(nickname);
 		return getAffiliation(entry == null ? null : entry.jid);
 	}
 
-	/**
-	 * @return
-	 */
 	public Collection<BareJID> getAffiliations() {
+		if ( log.isLoggable( Level.FINEST ) ){
+			log.log( Level.FINEST, "Getting affiliations: " + affiliations.toString() );
+		}
 		return this.affiliations.keySet();
 	}
 
-	/**
-	 * 
-	 */
 	public Collection<JID> getAllOccupantsJID() {
 		if ( config.isPresenceFilterEnabled() ){
 			return presenceFiltered.getOccupantsPresenceFilteredJIDs();
@@ -332,9 +289,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 		return config;
 	}
 
-	/**
-	 * @return
-	 */
 	public Date getCreationDate() {
 		return this.creationDate;
 	}
@@ -343,9 +297,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 		return creatorJid;
 	}
 
-	/**
-	 * @return
-	 */
 	public String getDebugInfoOccupants() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Occupants in room " + config.getRoomJID() + "[" + occupants.entrySet().size() +"]: ");
@@ -368,17 +319,10 @@ public class Room implements RoomConfig.RoomConfigListener {
 		}
 	}
 
-	/**
-	 * @return
-	 */
 	public int getOccupantsCount() {
 		return this.occupants.size();
 	}
 
-	/**
-	 * @param occupantNickname
-	 * @return
-	 */
 	public BareJID getOccupantsJidByNickname(String nickname) {
 		OccupantEntry entry = this.occupants.get(nickname);
 		if (entry == null)
@@ -392,10 +336,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 		return null;
 	}
 
-	/**
-	 * @param recipientNickame
-	 * @return
-	 */
 	public Collection<JID> getOccupantsJidsByNickname(final String nickname) {
 		OccupantEntry entry = this.occupants.get(nickname);
 		if (entry == null)
@@ -404,10 +344,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 		return Collections.unmodifiableCollection(new ConcurrentSkipListSet(entry.jids));
 	}
 
-	/**
-	 * @param jid
-	 * @return
-	 */
 	public String getOccupantsNickname(JID jid) {
 		OccupantEntry e = getBySenderJid(jid);
 		if (e == null)
@@ -418,17 +354,10 @@ public class Room implements RoomConfig.RoomConfigListener {
 		return nickname;
 	}
 
-	/**
-	 * @return
-	 */
 	public Collection<String> getOccupantsNicknames() {
 		return Collections.unmodifiableCollection(new ConcurrentSkipListSet(this.occupants.keySet()));
 	}
 
-	/**
-	 * @param occupantBareJid
-	 * @return
-	 */
 	public Collection<String> getOccupantsNicknames(BareJID bareJid) {
 		Set<String> result = new HashSet<String>();
 
@@ -445,10 +374,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 		return presenceFiltered;
 	}
 
-	/**
-	 * @param nickName
-	 * @return
-	 */
 	public Role getRole(String nickname) {
 		if (nickname == null)
 			return Role.none;
@@ -466,9 +391,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 		return this.config.getRoomJID();
 	}
 
-	/**
-	 * @return
-	 */
 	public String getSubject() {
 		return subject;
 	}
@@ -477,17 +399,10 @@ public class Room implements RoomConfig.RoomConfigListener {
 		return subjectChangeDate;
 	}
 
-	/**
-	 * @return
-	 */
 	public String getSubjectChangerNick() {
 		return subjectChangerNick;
 	}
 
-	/**
-	 * @param senderJID
-	 * @return
-	 */
 	public boolean isOccupantInRoom(final JID jid) {
 		return getBySenderJid(jid) != null;
 	}
@@ -535,9 +450,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 		return false;
 	}
 
-	/**
-	 * @param occupantNick
-	 */
 	public void removeOccupant(String occupantNick) {
 		OccupantEntry e = this.occupants.remove(occupantNick);
 		if (e != null) {
@@ -551,18 +463,15 @@ public class Room implements RoomConfig.RoomConfigListener {
 		}
 	}
 
-	/**
-	 * @param affiliations2
-	 */
 	public void setAffiliations(Map<BareJID, Affiliation> affiliations) {
 		this.affiliations.clear();
 		this.affiliations.putAll(affiliations);
 	}
 
-	/**
-	 * @param occupantNick
-	 * @param newRole
-	 */
+	public void setNewAffiliation(BareJID user, Affiliation affiliation) {
+		this.affiliations.put( user, affiliation );
+	}
+
 	public void setNewRole(String nickname, Role newRole) {
 		OccupantEntry entry = this.occupants.get(nickname);
 		if (entry != null) {
@@ -570,16 +479,9 @@ public class Room implements RoomConfig.RoomConfigListener {
 			if (log.isLoggable(Level.FINEST)) {
 				log.finest("Room " + config.getRoomJID() + ". Changed role of occupant " + nickname + " to " + newRole);
 			}
-
 		}
-
 	}
 
-	/**
-	 * @param msg
-	 * @param senderRoomJid
-	 * @throws RepositoryException
-	 */
 	public void setNewSubject(String msg, String senderNickname) throws RepositoryException {
 		this.subjectChangerNick = senderNickname;
 		this.subject = msg;
@@ -601,11 +503,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 		this.subjectChangeDate = subjectChangeDate;
 	}
 
-	/**
-	 * @param nickName
-	 * @param element
-	 * @throws TigaseStringprepException
-	 */
 	public void updatePresenceByJid(JID jid, String nickname, Element cp) throws TigaseStringprepException {
 		if (cp == null) {
 			this.presences.remove(jid);
