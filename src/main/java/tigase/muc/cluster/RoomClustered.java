@@ -127,7 +127,7 @@ public class RoomClustered extends Room {
 	@Override
 	public Role getRole(String nickname) {
 		Role role = super.getRole(nickname);
-		if (role == Role.none) {
+		if (role == Role.none && nickname != null) {
 			Occupant occupant = remoteOccupants.get(nickname);
 			if (occupant != null) {
 				role = occupant.getRole();
