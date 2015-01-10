@@ -97,7 +97,12 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			for (BareJID roomJid : rooms.keySet()) {
 				try {
 					Room room = mucRepository.getRoom(roomJid);
-					sendRemoteOccupantRemovalOnDisconnect(room, occupant, rooms.get(roomJid), sendRemovalToOccupant);
+					if (room != null) {
+						sendRemoteOccupantRemovalOnDisconnect(room, occupant, rooms.get(roomJid), sendRemovalToOccupant);
+					} else {
+						log.log(Level.FINER, "no room {0} in repository, while instance available in map of active rooms, "
+								+ "propably room removed on other node but not yet synchronized?", roomJid);
+					}
 				} catch (Exception ex) {
 					log.log(Level.SEVERE, "exception retrieving occupants for room " + roomJid, ex);
 				}
