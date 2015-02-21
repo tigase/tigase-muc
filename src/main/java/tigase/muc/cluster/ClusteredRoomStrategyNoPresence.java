@@ -36,7 +36,7 @@ import java.util.logging.Logger;
 /**
  * Stripped down strategy that suppress sending MUC presence between rooms.
  *
- * @author Wojciech Kapcia <wojciech.kapcia@tigase.org>
+ * @author Wojciech Kapcia
  */
 public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrategy {
 
