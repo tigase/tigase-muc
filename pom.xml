@@ -131,7 +131,7 @@
 
 						<option>-allowaccessmodification</option>
 
-						<!--<option>-dontwarn</option>-->
+						<option>-dontwarn</option>
 						<option>-dontshrink</option>
 						<option>-dontoptimize</option>
 
