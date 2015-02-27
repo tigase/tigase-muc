@@ -133,7 +133,9 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 
 	}
 
-	public static final String DEFAULT_ROOM_CONFIG_PREFIX_KEY = "default_room_config/";
+	public static final String DEFAULT_ROOM_CONFIG_KEY = "default_room_config";
+
+	public static final String DEFAULT_ROOM_CONFIG_PREFIX_KEY = DEFAULT_ROOM_CONFIG_KEY + "/";
 
 	private static final String GHOSTBUSTER_ENABLED_KEY = "ghostbuster-enabled";
 

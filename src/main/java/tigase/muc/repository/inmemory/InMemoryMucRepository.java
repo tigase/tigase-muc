@@ -43,8 +43,11 @@ import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.MucDAO;
 import tigase.xml.Element;
+
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import tigase.muc.MUCComponent;
 
 /**
  * @author bmalkow
@@ -200,7 +203,7 @@ public class InMemoryMucRepository implements IMucRepository {
 		if (defaultConfig == null) {
 			defaultConfig = new RoomConfig(null, this.mucConfig.isPublicLoggingEnabled());
 			try {
-				defaultConfig.read(dao.getRepository(), mucConfig, MucDAO.ROOMS_KEY + null + "/config");
+				defaultConfig.read(dao.getRepository(), mucConfig, MucDAO.ROOMS_KEY + MUCComponent.DEFAULT_ROOM_CONFIG_KEY + "/config");
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
