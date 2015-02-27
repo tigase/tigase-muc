@@ -137,6 +137,18 @@ public class InMemoryMucRepository implements IMucRepository {
 					throw new RuntimeException(e);
 				}
 			}
+
+			@Override
+			public void onInitialRoomConfig( RoomConfig roomConfig ) {
+				try {
+					if ( roomConfig.isPersistentRoom() ){
+						final Room room = getRoom( roomConfig.getRoomJID() );
+						dao.createRoom( room );
+					}
+				} catch ( Exception e ) {
+					throw new RuntimeException( e );
+				}
+			}
 		};
 	}
 
@@ -160,6 +172,10 @@ public class InMemoryMucRepository implements IMucRepository {
 		room.addListener(roomListener);
 		this.rooms.put(roomJID, room);
 		this.allRooms.put(roomJID, new InternalRoom());
+
+//		if (rc.isPersistentRoom()) {
+//			dao.createRoom( room );
+//		}
 
 		return room;
 	}

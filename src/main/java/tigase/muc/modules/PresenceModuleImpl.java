@@ -480,7 +480,7 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 				room.setRoomLocked(context.isNewRoomLocked());
 				roomCreated = true;
 				knownNickname = null;
-				room.getConfig().notifyConfigUpdate();
+				room.getConfig().notifyConfigUpdate(true);
 			} else {
 				roomCreated = false;
 				knownNickname = room.getOccupantsNickname(senderJID);

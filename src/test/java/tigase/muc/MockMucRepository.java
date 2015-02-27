@@ -88,6 +88,21 @@ public class MockMucRepository implements IMucRepository {
 					throw new RuntimeException(e);
 				}
 			}
+
+			@Override
+			public void onInitialRoomConfig( RoomConfig roomConfig ) {
+				try {
+					if ( roomConfig.isRoomconfigPublicroom() ){
+						InternalRoom ir = allRooms.get( roomConfig.getRoomJID() );
+						if ( ir != null ){
+							ir.listPublic = roomConfig.isRoomconfigPublicroom();
+						}
+					}
+
+				} catch ( Exception e ) {
+					throw new RuntimeException( e );
+				}
+			}
 		};
 	}
 

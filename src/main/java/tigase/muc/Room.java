@@ -42,6 +42,10 @@ import java.util.logging.Logger;
 
 public class Room implements RoomConfig.RoomConfigListener {
 
+	@Override
+	public void onInitialRoomConfig( RoomConfig roomConfig ) {
+	}
+
 	private static class OccupantEntry {
 
 		public BareJID jid;

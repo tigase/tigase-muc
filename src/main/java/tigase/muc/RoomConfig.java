@@ -77,11 +77,8 @@ public class RoomConfig {
 
 	public static interface RoomConfigListener {
 
-		/**
-		 * @param room
-		 *            TODO
-		 * @param modifiedVars
-		 */
+		void onInitialRoomConfig(RoomConfig roomConfig);
+
 		void onConfigChanged(RoomConfig roomConfig, Set<String> modifiedVars);
 	}
 
@@ -256,11 +253,18 @@ public class RoomConfig {
 		return result;
 	}
 
-	private void fireConfigChanged(final Set<String> modifiedVars) {
-		for (RoomConfigListener listener : this.listeners) {
-			listener.onConfigChanged(this, modifiedVars);
-
+	private void fireConfigChanged(final Set<String> modifiedVars, boolean initialConfigUpdate) {
+		for ( RoomConfigListener listener : this.listeners ) {
+			if ( !initialConfigUpdate ){
+				listener.onConfigChanged( this, modifiedVars );
+			} else {
+				listener.onInitialRoomConfig( this );
+			}
 		}
+	}
+
+	private void fireConfigChanged(final Set<String> modifiedVars) {
+		fireConfigChanged( modifiedVars, false );
 	}
 
 	public Form getConfigForm() {
@@ -397,15 +401,16 @@ public class RoomConfig {
 		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_MODERATEDROOM_KEY), false);
 	}
 
-	/**
-	 * 
-	 */
-	public void notifyConfigUpdate() {
+	public void notifyConfigUpdate(boolean initialConfigUpdate) {
 		HashSet<String> vars = new HashSet<String>();
 		for (Field f : form.getAllFields()) {
 			vars.add(f.getVar());
 		}
-		fireConfigChanged(vars);
+		fireConfigChanged(vars, initialConfigUpdate);
+	}
+
+	public void notifyConfigUpdate() {
+		notifyConfigUpdate( false );
 	}
 
 	public void read(final UserRepository repository, final MucContext config, final String subnode)
