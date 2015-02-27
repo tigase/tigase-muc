@@ -362,8 +362,15 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 					if (occupants != null && !occupants.isEmpty()) {
 						synchronized (occupants) {
 							for (JID occupant : occupants) {
-								Element occupantEl = new Element("occupant", occupant.toString());
 								String nickname = room.getOccupantsNickname(occupant);
+								
+								// it is not possible to have occupants without nickname
+								// so we should skip synchronization as null value of occupants
+								// nickname means that occupant is already gone
+								if (nickname == null)
+									continue;
+								
+								Element occupantEl = new Element("occupant", occupant.toString());
 								occupantEl.addAttribute("nickname", nickname);
 								roomEl.addChild(occupantEl);
 							}
