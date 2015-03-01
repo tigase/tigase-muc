@@ -60,7 +60,7 @@ public abstract class AbstractHistoryProvider implements HistoryProvider {
 				m.setAttribute("type", "groupchat");
 				m.setAttribute("from", JID.jidInstance(roomJID, msgSenderNickname).toString());
 				m.setAttribute("to", senderJID.toString());
-
+				
 				message = Packet.packetInstance(m);
 				message.setXMLNS(Packet.CLIENT_XMLNS);
 			}
@@ -76,10 +76,7 @@ public abstract class AbstractHistoryProvider implements HistoryProvider {
 		String from = addRealJids ? msgSenderJid : roomJID + "/" + msgSenderNickname;
 		Element delay = new Element("delay", new String[] { "xmlns", "from", "stamp" }, new String[] { "urn:xmpp:delay", from,
 				DateUtil.formatDatetime(msgTimestamp) });
-		Element x = new Element("x", new String[] { "xmlns", "from", "stamp" }, new String[] { "jabber:x:delay", from,
-				DateUtil.formatOld(msgTimestamp) });
 		message.getElement().addChild(delay);
-		message.getElement().addChild(x);
 
 		return message;
 	}

@@ -23,6 +23,7 @@
 package tigase.muc.modules;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
@@ -36,6 +37,7 @@ import tigase.muc.Affiliation;
 import tigase.muc.DateUtil;
 import tigase.muc.Role;
 import tigase.muc.Room;
+import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.logger.MucLogger;
@@ -72,7 +74,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 		try {
 			HistoryProvider historyProvider = context.getHistoryProvider();
 			if (historyProvider != null) {
-				historyProvider.addMessage(room, context.isMessageFilterEnabled() ? null : message, body, senderJid,
+				historyProvider.addMessage(room, message, body, senderJid,
 						senderNickname, time);
 			}
 		} catch (Exception e) {
@@ -267,19 +269,22 @@ public class GroupchatMessageModule extends AbstractMucModule {
 			} else {
 				sendDate = new Date();
 			}
+			
+			Packet msg = preparePacket(id, content.toArray(new Element[] {}));
+			
 			if (body != null) {
-				addMessageToHistory(room, packet.getElement(), body.getCData(), senderJID, nickName, sendDate);
+				addMessageToHistory(room, msg.getElement(), body.getCData(), senderJID, nickName, sendDate);
 			}
 			if (subject != null) {
 				addSubjectChangeToHistory(room, packet.getElement(), subject.getCData(), senderJID, nickName, sendDate);
 			}
 
 			if (sendDate != null) {
-				content.add(new Element("delay", new String[] { "xmlns", "stamp" }, new String[] { "urn:xmpp:delay",
+				msg.getElement().addChild(new Element("delay", new String[] { "xmlns", "stamp" }, new String[] { "urn:xmpp:delay",
 						DateUtil.formatDatetime(sendDate) }));
-			}
-
-			sendMessagesToAllOccupants(room, senderRoomJID, id, content.toArray(new Element[] {}));
+			}			
+			
+			sendMessagesToAllOccupantsJids(room, senderRoomJID, msg);
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (TigaseStringprepException e) {
@@ -291,37 +296,86 @@ public class GroupchatMessageModule extends AbstractMucModule {
 		}
 	}
 
+	protected Packet preparePacket(String messageId, Element... content) throws TigaseStringprepException {
+		Element e = new Element("message", new String[]{"type"}, new String[]{"groupchat"});
+		if (messageId != null) {
+			e.setAttribute("id", messageId);
+		}
+		if (content != null)
+			e.addChildren(Arrays.asList(content));
+		Packet message = Packet.packetInstance(e);
+		message.setXMLNS(Packet.CLIENT_XMLNS);
+		return message;
+	}
+	
 	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, final Element... content)
 			throws TigaseStringprepException {
-		sendMessagesToAllOccupants(room, fromJID, null, content);
+		Packet msg = preparePacket(null, content);
+		sendMessagesToAllOccupantsJids(room, fromJID, msg);
 	}
-
-	/**
-	 * Method description
-	 *
-	 *
-	 * @param room
-	 * @param fromJID
-	 * @param sendDate
-	 * @param content
-	 *
-	 * @throws TigaseStringprepException
-	 */
-	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, String messageId, final Element... content)
-			throws TigaseStringprepException {
-		room.fireOnMessageToOccupants(fromJID, content);
-
-		sendMessagesToAllOccupantsJids(room, fromJID, messageId, content);
-	}
-
-	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, final Element... content)
-			throws TigaseStringprepException {
-		sendMessagesToAllOccupantsJids(room, fromJID, null, content);
-	}
-
-	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, String messageId, final Element... content)
-			throws TigaseStringprepException {
-
+//
+//	/**
+//	 * Method description
+//	 *
+//	 *
+//	 * @param room
+//	 * @param fromJID
+//	 * @param sendDate
+//	 * @param content
+//	 *
+//	 * @throws TigaseStringprepException
+//	 */
+//	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, String messageId, final Element... content)
+//			throws TigaseStringprepException {
+//		room.fireOnMessageToOccupants(fromJID, content);
+//
+//		sendMessagesToAllOccupantsJids(room, fromJID, messageId, content);
+//	}
+//
+//	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, final Element... content)
+//			throws TigaseStringprepException {
+//		sendMessagesToAllOccupantsJids(room, fromJID, null, content);
+//	}
+//
+//	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, String messageId, final Element... content)
+//			throws TigaseStringprepException {
+//
+//		for (String nickname : room.getOccupantsNicknames()) {
+//			final Role role = room.getRole(nickname);
+//
+//			if (!role.isReceiveMessages()) {
+//				continue;
+//			}
+//
+//			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
+//
+//			for (JID jid : occupantJids) {
+//				Element e = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",
+//						fromJID.toString(), jid.toString() });
+//				if (messageId != null)
+//					e.setAttribute("id", messageId);
+//				Packet message = Packet.packetInstance(e);
+//				message.setXMLNS(Packet.CLIENT_XMLNS);
+//
+//				// Packet message = Message.getMessage(fromJID, jid,
+//				// StanzaType.groupchat, null, null, null, null);
+//
+//				if (content != null) {
+//					for (Element sub : content) {
+//						if (sub != null) {
+//							message.getElement().addChild(sub);
+//						}
+//					}
+//				}
+//
+//				write(message);
+//			}
+//		}
+//	}
+	
+	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, final Packet msg)
+			throws TigaseStringprepException {	
+		
 		for (String nickname : room.getOccupantsNicknames()) {
 			final Role role = room.getRole(nickname);
 
@@ -332,27 +386,12 @@ public class GroupchatMessageModule extends AbstractMucModule {
 			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
 
 			for (JID jid : occupantJids) {
-				Element e = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",
-						fromJID.toString(), jid.toString() });
-				if (messageId != null)
-					e.setAttribute("id", messageId);
-				Packet message = Packet.packetInstance(e);
+				Packet message = msg.copyElementOnly();//Packet.packetInstance(e);
+				message.initVars(fromJID, jid);
 				message.setXMLNS(Packet.CLIENT_XMLNS);
-
-				// Packet message = Message.getMessage(fromJID, jid,
-				// StanzaType.groupchat, null, null, null, null);
-
-				if (content != null) {
-					for (Element sub : content) {
-						if (sub != null) {
-							message.getElement().addChild(sub);
-						}
-					}
-				}
 
 				write(message);
 			}
-		}
+		}		
 	}
-
 }
