@@ -104,7 +104,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 		try {
 			HistoryProvider historyProvider = context.getHistoryProvider();
 			if (historyProvider != null) {
-				historyProvider.addSubjectChange(room, context.isMessageFilterEnabled() ? null : message, subject, senderJid,
+				historyProvider.addSubjectChange(room, message, subject, senderJid,
 						senderNickname, time);
 			}
 		} catch (Exception e) {
@@ -276,7 +276,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 				addMessageToHistory(room, msg.getElement(), body.getCData(), senderJID, nickName, sendDate);
 			}
 			if (subject != null) {
-				addSubjectChangeToHistory(room, packet.getElement(), subject.getCData(), senderJID, nickName, sendDate);
+				addSubjectChangeToHistory(room, msg.getElement(), subject.getCData(), senderJID, nickName, sendDate);
 			}
 
 			if (sendDate != null) {
@@ -284,7 +284,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 						DateUtil.formatDatetime(sendDate) }));
 			}			
 			
-			sendMessagesToAllOccupantsJids(room, senderRoomJID, msg);
+			sendMessagesToAllOccupants(room, senderRoomJID, msg);
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (TigaseStringprepException e) {
@@ -311,7 +311,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, final Element... content)
 			throws TigaseStringprepException {
 		Packet msg = preparePacket(null, content);
-		sendMessagesToAllOccupantsJids(room, fromJID, msg);
+		sendMessagesToAllOccupants(room, fromJID, msg);
 	}
 //
 //	/**
@@ -372,6 +372,12 @@ public class GroupchatMessageModule extends AbstractMucModule {
 //			}
 //		}
 //	}
+	
+	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, final Packet msg) throws TigaseStringprepException {
+		sendMessagesToAllOccupantsJids(room, fromJID, msg);
+
+		room.fireOnMessageToOccupants(fromJID, msg);	
+	}
 	
 	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, final Packet msg)
 			throws TigaseStringprepException {	

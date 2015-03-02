@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import tigase.server.Packet;
 
 public class Room implements RoomConfig.RoomConfigListener {
 
@@ -71,7 +72,7 @@ public class Room implements RoomConfig.RoomConfigListener {
 	public static interface RoomListener {
 		void onChangeSubject(Room room, String nick, String newSubject, Date changeDate);
 
-		void onMessageToOccupants(Room room, JID from, Element[] contents);
+		void onMessageToOccupants(Room room, JID from, Packet msg);
 
 		void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation);
 	}
@@ -211,9 +212,9 @@ public class Room implements RoomConfig.RoomConfigListener {
 		}
 	}
 
-	public void fireOnMessageToOccupants(JID fromJID, Element[] content) {
+	public void fireOnMessageToOccupants(JID fromJID, Packet msg) {
 		for (RoomListener listener : this.listeners) {
-			listener.onMessageToOccupants(this, fromJID, content);
+			listener.onMessageToOccupants(this, fromJID, msg);
 		}
 	}
 

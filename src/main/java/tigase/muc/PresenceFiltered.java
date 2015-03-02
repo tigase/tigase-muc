@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import tigase.server.Packet;
 
 /**
  *
@@ -97,7 +98,7 @@ public class PresenceFiltered implements Room.RoomOccupantListener, Room.RoomLis
 	}
 
 	@Override
-	public void onMessageToOccupants( Room room, JID from, Element[] contents ) {
+	public void onMessageToOccupants( Room room, JID from, Packet msg ) {
 	}
 
 	@Override

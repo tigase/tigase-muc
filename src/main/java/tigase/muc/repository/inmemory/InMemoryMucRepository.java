@@ -48,6 +48,7 @@ import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
 import tigase.muc.MUCComponent;
+import tigase.server.Packet;
 
 /**
  * @author bmalkow
@@ -99,7 +100,7 @@ public class InMemoryMucRepository implements IMucRepository {
 			}
 
 			@Override
-			public void onMessageToOccupants(Room room, JID from, Element[] contents) {
+			public void onMessageToOccupants(Room room, JID from, Packet msg) {
 				// nothing to do here
 			}
 
