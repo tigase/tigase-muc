@@ -258,7 +258,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	}
 
 	@Override
-	public void onMessageToOccupants(Room room, JID from, Element[] contents) {
+	public void onMessageToOccupants(Room room, JID from, Packet packet) {
 		List<JID> toNodes = getAllNodes();
 		toNodes.remove(localNodeJid);
 
@@ -266,10 +266,10 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 		data.put("room", room.getRoomJID().toString());
 		data.put("userId", from.toString());
 		
-		Element message = new Element("message");
-		for (Element content : contents) {
-			message.addChild(content);
-		}
+		Element message = packet.getElement().clone();
+		// this should not be needed but I'm adding it just in case
+		message.removeAttribute("from");
+		message.removeAttribute("to");
 
 		if (log.isLoggable(Level.FINEST)) {
 			StringBuilder buf = new StringBuilder(100);
@@ -436,8 +436,8 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 				Room room = AbstractClusteredRoomStrategy.this.muc.getMucRepository().getRoom(roomJid);
 				GroupchatMessageModule groupchatModule = AbstractClusteredRoomStrategy.this.muc.getModule(GroupchatMessageModule.ID);
 				Element message = packets.poll();
-				List<Element> children = message.getChildren();
-				groupchatModule.sendMessagesToAllOccupantsJids(room, from, children.toArray(new Element[children.size()]));
+				Packet packet = Packet.packetInstance(message);
+				groupchatModule.sendMessagesToAllOccupantsJids(room, from, packet);
 			} catch (RepositoryException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
 			} catch (MUCException ex) {
