@@ -423,8 +423,10 @@ public class ModeratorModule extends AbstractMucModule {
 		Set<String> codes = new HashSet<String>();
 		Collection<String> occupantsNicknames = room.getOccupantsNicknames(occupantBareJid);
 
-		for (String occupantNick : occupantsNicknames) {
-			if (newAffiliation == Affiliation.outcast) {
+		boolean kick = newAffiliation == Affiliation.outcast;
+		kick |= room.getConfig().isRoomMembersOnly() && newAffiliation == Affiliation.none;
+		if (kick) {
+			for (String occupantNick : occupantsNicknames) {
 				codes.add("301");
 				isUnavailable = true;
 
