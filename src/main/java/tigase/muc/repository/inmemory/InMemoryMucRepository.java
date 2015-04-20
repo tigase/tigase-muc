@@ -167,7 +167,7 @@ public class InMemoryMucRepository implements IMucRepository {
 		if (log.isLoggable(Level.FINE))
 			log.fine("Creating new room '" + roomJID + "'");
 
-		RoomConfig rc = new RoomConfig(roomJID, this.mucConfig.isPublicLoggingEnabled());
+		RoomConfig rc = new RoomConfig(roomJID);
 
 		rc.copyFrom(getDefaultRoomConfig(), false);
 
@@ -202,7 +202,7 @@ public class InMemoryMucRepository implements IMucRepository {
 	@Override
 	public RoomConfig getDefaultRoomConfig() throws RepositoryException {
 		if (defaultConfig == null) {
-			defaultConfig = new RoomConfig(null, this.mucConfig.isPublicLoggingEnabled());
+			defaultConfig = new RoomConfig(null);
 			try {
 				defaultConfig.read(dao.getRepository(), mucConfig, MucDAO.ROOMS_KEY + MUCComponent.DEFAULT_ROOM_CONFIG_KEY + "/config");
 			} catch (Exception e) {

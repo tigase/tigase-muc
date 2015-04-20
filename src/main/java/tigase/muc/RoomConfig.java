@@ -123,14 +123,14 @@ public class RoomConfig {
 		return result;
 	}
 
-	protected static <T extends Enum<T>> List<T> asEnum( Class<T> clazz, String[] values, Enum<?>[] defaultValues ) {
+	protected static <T extends Enum<T>> List<T> asEnum(Class<T> clazz, String[] values, Enum<?>[] defaultValues) {
 		List<T> list = new ArrayList<>();
-		if ( values != null && values.length > 0 ){
-			for ( String val : values ) {
-				list.add( Enum.valueOf( clazz, val ) );
+		if (values != null && values.length > 0) {
+			for (String val : values) {
+				list.add(Enum.valueOf(clazz, val));
 			}
-		} else if ( null != defaultValues ){
-			list.addAll( (Collection<? extends T>) Arrays.asList( defaultValues ) );
+		} else if (null != defaultValues) {
+			list.addAll((Collection<? extends T>) Arrays.asList(defaultValues));
 		}
 		return list;
 	}
@@ -141,18 +141,14 @@ public class RoomConfig {
 
 	private final ArrayList<RoomConfigListener> listeners = new ArrayList<RoomConfigListener>();
 
-	private final boolean publicLoggingAvailable;
-
 	private final BareJID roomJID;
 
 	/**
 	 * @param roomJID
 	 */
-	public RoomConfig(BareJID roomJID, boolean publicLoggingAvailable) {
+	public RoomConfig(BareJID roomJID) {
 		this.roomJID = roomJID;
-		this.publicLoggingAvailable = publicLoggingAvailable;
 		init();
-
 	}
 
 	public void addListener(RoomConfigListener listener) {
@@ -169,7 +165,7 @@ public class RoomConfig {
 
 	@Override
 	public RoomConfig clone() {
-		final RoomConfig rc = new RoomConfig(getRoomJID(), this.publicLoggingAvailable);
+		final RoomConfig rc = new RoomConfig(getRoomJID());
 		rc.blacklist.addAll(this.blacklist);
 		rc.form.copyValuesFrom(form);
 		return rc;
@@ -254,17 +250,17 @@ public class RoomConfig {
 	}
 
 	private void fireConfigChanged(final Set<String> modifiedVars, boolean initialConfigUpdate) {
-		for ( RoomConfigListener listener : this.listeners ) {
-			if ( !initialConfigUpdate ){
-				listener.onConfigChanged( this, modifiedVars );
+		for (RoomConfigListener listener : this.listeners) {
+			if (!initialConfigUpdate) {
+				listener.onConfigChanged(this, modifiedVars);
 			} else {
-				listener.onInitialRoomConfig( this );
+				listener.onInitialRoomConfig(this);
 			}
 		}
 	}
 
 	private void fireConfigChanged(final Set<String> modifiedVars) {
-		fireConfigChanged( modifiedVars, false );
+		fireConfigChanged(modifiedVars, false);
 	}
 
 	public Form getConfigForm() {
@@ -293,14 +289,14 @@ public class RoomConfig {
 	}
 
 	public PresenceStore.PresenceDeliveryLogic getPresenceDeliveryLogic() {
-		String PDLasString = form.getAsString( TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC );
-		PresenceStore.PresenceDeliveryLogic pdl = PresenceStore.PresenceDeliveryLogic.valueOf( PDLasString );
+		String PDLasString = form.getAsString(TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC);
+		PresenceStore.PresenceDeliveryLogic pdl = PresenceStore.PresenceDeliveryLogic.valueOf(PDLasString);
 		return pdl;
 	}
 
 	public Collection<Affiliation> getPresenceFilteredAffiliations() {
-		String[] presenceFrom = form.getAsStrings(TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS );
-		return asEnum( Affiliation.class, presenceFrom, null );
+		String[] presenceFrom = form.getAsStrings(TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS);
+		return asEnum(Affiliation.class, presenceFrom, null);
 	}
 
 	public Anonymity getRoomAnonymity() {
@@ -339,28 +335,24 @@ public class RoomConfig {
 				new String[] { Anonymity.nonanonymous.name(), Anonymity.semianonymous.name(), Anonymity.fullanonymous.name() }));
 		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_CHANGESUBJECT_KEY, Boolean.FALSE, "Allow Occupants to Change Subject?"));
 
-		if (publicLoggingAvailable) {
-			form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_ENABLELOGGING_KEY, Boolean.FALSE, "Enable Public Logging?"));
-			form.addField(Field.fieldListSingle(LOGGING_FORMAT_KEY, LogFormat.html.name(), "Logging format:", new String[] {
-					"HTML", "Plain text" }, new String[] { LogFormat.html.name(), LogFormat.plain.name() }));
-		}
+		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_ENABLELOGGING_KEY, Boolean.FALSE, "Enable Public Logging?"));
+		form.addField(Field.fieldListSingle(LOGGING_FORMAT_KEY, LogFormat.html.name(), "Logging format:", new String[] {
+				"HTML", "Plain text" }, new String[] { LogFormat.html.name(), LogFormat.plain.name() }));
 
 		form.addField(Field.fieldTextSingle(MUC_ROOMCONFIG_MAXHISTORY_KEY, "50",
 				"Maximum Number of History Messages Returned by Room"));
-		
 
-		form.addField( Field.fieldListSingle(TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC,
-																				 PresenceStore.PresenceDeliveryLogic.PREFERE_PRIORITY.toString(),
-																				 "Presence delivery logic",
-																				 asStringTable( PresenceStore.PresenceDeliveryLogic.values() ),
-																				 asStringTable( PresenceStore.PresenceDeliveryLogic.values() ) ) );
+		form.addField(Field.fieldListSingle(TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC,
+				PresenceStore.PresenceDeliveryLogic.PREFERE_PRIORITY.toString(), "Presence delivery logic",
+				asStringTable(PresenceStore.PresenceDeliveryLogic.values()),
+				asStringTable(PresenceStore.PresenceDeliveryLogic.values())));
 
 		form.addField(Field.fieldBoolean(TIGASE_ROOMCONFIG_PRESENCE_FILTERING, Boolean.FALSE,
 				"Enable filtering of presence (broadcasting presence only between selected groups"));
 
-		form.addField( Field.fieldListMulti( TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS,
-																				 null, "Affiliations for which presence should be delivered",
-																				 asStringTable( Affiliation.values() ), asStringTable( Affiliation.values() ) ) );
+		form.addField(Field.fieldListMulti(TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS, null,
+				"Affiliations for which presence should be delivered", asStringTable(Affiliation.values()),
+				asStringTable(Affiliation.values())));
 
 	}
 
@@ -410,7 +402,7 @@ public class RoomConfig {
 	}
 
 	public void notifyConfigUpdate() {
-		notifyConfigUpdate( false );
+		notifyConfigUpdate(false);
 	}
 
 	public void read(final UserRepository repository, final MucContext config, final String subnode)

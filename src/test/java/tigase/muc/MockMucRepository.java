@@ -50,7 +50,7 @@ public class MockMucRepository implements IMucRepository {
 
 	private final Map<BareJID, InternalRoom> allRooms = new HashMap<BareJID, InternalRoom>();
 
-	private RoomConfig defaultConfig = new RoomConfig(null, true);
+	private RoomConfig defaultConfig = new RoomConfig(null);
 
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -115,7 +115,7 @@ public class MockMucRepository implements IMucRepository {
 	@Override
 	public Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException {
 		log.fine("Creating new room '" + roomJID + "'");
-		RoomConfig rc = new RoomConfig(roomJID, true);
+		RoomConfig rc = new RoomConfig(roomJID);
 
 		rc.copyFrom(getDefaultRoomConfig(), false);
 
