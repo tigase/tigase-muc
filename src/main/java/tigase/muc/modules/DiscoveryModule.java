@@ -136,7 +136,13 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 					final String name = context.getMucRepository().getRoomName(jid.toString());
 
 					final Room room = context.getMucRepository().getRoom(jid);
-					if (!room.getConfig().isRoomconfigPublicroom()) {
+					if (room == null) {
+						log.warning("Room " + jid + " is not available!");
+						continue;
+					} else if (room.getConfig() == null) {
+						log.warning("Room " + jid + " hasn't configuration!");
+						continue;
+					} else if (!room.getConfig().isRoomconfigPublicroom()) {
 						Affiliation senderAff = room.getAffiliation(senderJID.getBareJID());
 						if (!room.isOccupantInRoom(senderJID)
 								&& (senderAff == Affiliation.none || senderAff == Affiliation.outcast))
@@ -173,5 +179,4 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 		}
 		write(result);
 	}
-
 }
