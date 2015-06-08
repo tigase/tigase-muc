@@ -1,3 +1,5 @@
+.idea/
+tigase-muc.iml
 .settings
 target
 init.properties
