@@ -295,6 +295,10 @@ public class ModeratorModule extends AbstractMucModule {
 			final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID());
 			final Role senderRole = room.getRole(senderNickname);
 
+			if (item == null ) {
+				throw new MUCException(Authorization.NOT_ACCEPTABLE );
+			}
+
 			final Role filterRole = getRole(item);
 			final Affiliation filterAffiliation = getAffiliation(item);
 
@@ -380,6 +384,11 @@ public class ModeratorModule extends AbstractMucModule {
 			final Role senderRole = room.getRole(nickName);
 			final Element query = element.getElement().getChild("query");
 			final List<Element> items = query.getChildren();
+
+			if (items == null ) {
+				throw new MUCException(Authorization.NOT_ACCEPTABLE );
+			}
+
 
 			for (Element item : items) {
 				checkItem(room, item, nickName, senderAffiliation, senderRole);
