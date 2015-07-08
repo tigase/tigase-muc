@@ -96,7 +96,8 @@ public class PrivateMessageModule extends AbstractMucModule {
 			final Role senderRole = room.getRole(senderNickname);
 
 			if (!senderRole.isSendPrivateMessages()) {
-				throw new MUCException(Authorization.NOT_ALLOWED);
+				throw new MUCException(Authorization.NOT_ALLOWED, "Your role is '" + senderRole
+						+ "'. You can't send private message.");
 			}
 
 			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);
