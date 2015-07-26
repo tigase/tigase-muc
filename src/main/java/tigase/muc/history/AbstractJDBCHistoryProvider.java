@@ -107,22 +107,26 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 	@Override
 	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
 			PacketWriter writer) {
-		ResultSet rs = null;
 		final String roomJID = room.getRoomJID().toString();
 
 		int maxMessages = room.getConfig().getMaxHistory();
 		try {
+			ResultSet rs = null;
 			if (since != null) {
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest("Using SINCE selector: roomJID=" + roomJID + ", since=" + since.getTime() + " (" + since + ")");
 				}
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(), GET_MESSAGES_SINCE_QUERY_KEY);
 				synchronized (st) {
-					st.setString(1, roomJID);
-					st.setLong(2, since.getTime());
-					st.setInt(3, maxMessages);
-					rs = st.executeQuery();
-					processResultSet(room, senderJID, writer, rs);
+					try {
+						st.setString(1, roomJID);
+						st.setLong(2, since.getTime());
+						st.setInt(3, maxMessages);
+						rs = st.executeQuery();
+						processResultSet(room, senderJID, writer, rs);
+					} finally {
+						dataRepository.release(null, rs);
+					}
 				}
 			} else if (maxstanzas != null) {
 				if (log.isLoggable(Level.FINEST)) {
@@ -131,10 +135,14 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
 						GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
 				synchronized (st) {
-					st.setString(1, roomJID);
-					st.setInt(2, Math.min(maxstanzas, maxMessages));
-					rs = st.executeQuery();
-					processResultSet(room, senderJID, writer, rs);
+					try {
+						st.setString(1, roomJID);
+						st.setInt(2, Math.min(maxstanzas, maxMessages));
+						rs = st.executeQuery();
+						processResultSet(room, senderJID, writer, rs);
+					} finally {
+						dataRepository.release(null, rs);
+					}
 				}
 			} else if (seconds != null) {
 				if (log.isLoggable(Level.FINEST)) {
@@ -142,11 +150,15 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 				}
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(), GET_MESSAGES_SINCE_QUERY_KEY);
 				synchronized (st) {
-					st.setString(1, roomJID);
-					st.setLong(2, new Date().getTime() - seconds * 1000);
-					st.setInt(3, maxMessages);
-					rs = st.executeQuery();
-					processResultSet(room, senderJID, writer, rs);
+					try {
+						st.setString(1, roomJID);
+						st.setLong(2, new Date().getTime() - seconds * 1000);
+						st.setInt(3, maxMessages);
+						rs = st.executeQuery();
+						processResultSet(room, senderJID, writer, rs);
+					} finally {
+						dataRepository.release(null, rs);
+					}
 				}
 			} else {
 				if (log.isLoggable(Level.FINEST)) {
@@ -155,10 +167,14 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
 						GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
 				synchronized (st) {
-					st.setString(1, roomJID);
-					st.setInt(2, maxMessages);
-					rs = st.executeQuery();
-					processResultSet(room, senderJID, writer, rs);
+					try {
+						st.setString(1, roomJID);
+						st.setInt(2, maxMessages);
+						rs = st.executeQuery();
+						processResultSet(room, senderJID, writer, rs);
+					} finally {
+						dataRepository.release(null, rs);
+					}
 				}
 			}
 
@@ -166,8 +182,6 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 			if (log.isLoggable(Level.SEVERE))
 				log.log(Level.SEVERE, "Can't get history", e);
 			throw new RuntimeException(e);
-		} finally {
-			dataRepository.release(null, rs);
 		}
 	}
 
