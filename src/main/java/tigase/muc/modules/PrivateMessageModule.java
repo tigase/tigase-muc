@@ -25,9 +25,12 @@ import java.util.Collection;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Inject;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
+import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
@@ -37,18 +40,22 @@ import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
+@Bean(name = PrivateMessageModule.ID)
 public class PrivateMessageModule extends AbstractMucModule {
 
 	private static final Criteria CRIT = ElementCriteria.nameType("message", "chat");
 
 	public static final String ID = "privatemessages";
 
+	@Inject
+	private IMucRepository repository;
+
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @return
 	 */
 	@Override
@@ -58,8 +65,8 @@ public class PrivateMessageModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @return
 	 */
 	@Override
@@ -69,10 +76,10 @@ public class PrivateMessageModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param element
-	 * 
+	 *
 	 * @throws MUCException
 	 */
 	@Override
@@ -86,7 +93,7 @@ public class PrivateMessageModule extends AbstractMucModule {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
-			final Room room = context.getMucRepository().getRoom(roomJID);
+			final Room room = repository.getRoom(roomJID);
 
 			if (room == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
@@ -96,8 +103,8 @@ public class PrivateMessageModule extends AbstractMucModule {
 			final Role senderRole = room.getRole(senderNickname);
 
 			if (!senderRole.isSendPrivateMessages()) {
-				throw new MUCException(Authorization.NOT_ALLOWED, "Your role is '" + senderRole
-						+ "'. You can't send private message.");
+				throw new MUCException(Authorization.NOT_ALLOWED,
+						"Your role is '" + senderRole + "'. You can't send private message.");
 			}
 
 			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);

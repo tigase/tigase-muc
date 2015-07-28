@@ -33,7 +33,7 @@ public class MUCException extends ComponentException {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param errorCondition
 	 * @param text
 	 *            human readable message will be send to client
@@ -43,7 +43,7 @@ public class MUCException extends ComponentException {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param errorCondition
 	 * @param text
 	 *            human readable message will be send to client

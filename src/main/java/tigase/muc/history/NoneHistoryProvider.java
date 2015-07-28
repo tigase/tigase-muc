@@ -23,6 +23,7 @@ package tigase.muc.history;
 
 import java.util.Date;
 import java.util.Map;
+
 import tigase.component.PacketWriter;
 import tigase.db.DBInitException;
 import tigase.db.Repository;
@@ -32,18 +33,14 @@ import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
-@Repository.Meta( supportedUris = { "none" } )
+@Repository.Meta(supportedUris = { "none" })
 public class NoneHistoryProvider implements HistoryProvider {
 
-	@Override
-	public void initRepository(String repository_uri, Map<String,String> params) throws DBInitException {
-	}
-	
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.muc.history.HistoryProvider#addJoinEvent(tigase.muc.Room,
 	 * java.util.Date, tigase.xmpp.JID, java.lang.String)
 	 */
@@ -53,7 +50,7 @@ public class NoneHistoryProvider implements HistoryProvider {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.muc.history.HistoryProvider#addLeaveEvent(tigase.muc.Room,
 	 * java.util.Date, tigase.xmpp.JID, java.lang.String)
 	 */
@@ -63,7 +60,7 @@ public class NoneHistoryProvider implements HistoryProvider {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.muc.history.HistoryProvider#addMessage(tigase.muc.Room,
 	 * tigase.xml.Element, java.lang.String, tigase.xmpp.JID, java.lang.String,
 	 * java.util.Date)
@@ -74,7 +71,7 @@ public class NoneHistoryProvider implements HistoryProvider {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.muc.history.HistoryProvider#addSubjectChange(tigase.muc.Room,
 	 * tigase.xml.Element, java.lang.String, tigase.xmpp.JID, java.lang.String,
 	 * java.util.Date)
@@ -87,10 +84,10 @@ public class NoneHistoryProvider implements HistoryProvider {
 	public void destroy() {
 		// nothing to do
 	}
-	
+
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see
 	 * tigase.muc.history.HistoryProvider#getHistoryMessages(tigase.muc.Room,
 	 * tigase.xmpp.JID, java.lang.Integer, java.lang.Integer, java.lang.Integer,
@@ -101,18 +98,13 @@ public class NoneHistoryProvider implements HistoryProvider {
 			PacketWriter writer) {
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see tigase.muc.history.HistoryProvider#init(java.util.Map)
-	 */
 	@Override
-	public void init(Map<String, Object> props) {
+	public void initRepository(String repository_uri, Map<String, String> params) throws DBInitException {
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.muc.history.HistoryProvider#isPersistent()
 	 */
 	@Override
@@ -122,7 +114,7 @@ public class NoneHistoryProvider implements HistoryProvider {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.muc.history.HistoryProvider#removeHistory(tigase.muc.Room)
 	 */
 	@Override

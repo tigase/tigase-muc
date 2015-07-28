@@ -16,7 +16,7 @@ public class DateUtil {
 
 	/**
 	 * Used only in jabber:x:delivery
-	 * 
+	 *
 	 * @param date
 	 * @return
 	 */

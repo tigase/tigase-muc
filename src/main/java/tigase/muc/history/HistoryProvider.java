@@ -22,22 +22,24 @@
 package tigase.muc.history;
 
 import java.util.Date;
-import java.util.Map;
+
 import tigase.component.PacketWriter;
 import tigase.db.Repository;
+import tigase.kernel.beans.Bean;
 import tigase.muc.Room;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
+@Bean(name = "history-provider")
 public interface HistoryProvider extends Repository {
 
 	/**
 	 * Adds join event.
-	 * 
+	 *
 	 * @param room
 	 * @param date
 	 * @param senderJID
@@ -66,7 +68,7 @@ public interface HistoryProvider extends Repository {
 
 	/**
 	 * Adds subject changes to log/history.
-	 * 
+	 *
 	 * @param room
 	 * @param message
 	 *            TODO
@@ -78,11 +80,11 @@ public interface HistoryProvider extends Repository {
 	void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname, Date time);
 
 	/**
-	 * Destroys this instance of HistoryProvider releasing all resources allocated
-	 * but this provider if they should be released
+	 * Destroys this instance of HistoryProvider releasing all resources
+	 * allocated but this provider if they should be released
 	 */
 	void destroy();
-	
+
 	/**
 	 * @param room
 	 * @param senderJID
@@ -95,8 +97,6 @@ public interface HistoryProvider extends Repository {
 	 */
 	void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
 			PacketWriter writer);
-
-	public void init(Map<String, Object> props);
 
 	/**
 	 * @return

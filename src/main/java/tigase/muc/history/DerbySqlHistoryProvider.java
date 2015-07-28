@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.logging.Level;
 
 import tigase.component.PacketWriter;
-import tigase.db.DataRepository;
+import tigase.db.DBInitException;
 import tigase.db.Repository;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
@@ -43,9 +43,9 @@ import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
-@Repository.Meta( supportedUris = { "jdbc:derby:.*" } )
+@Repository.Meta(supportedUris = { "jdbc:derby:.*" })
 public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 
 	public static final String ADD_MESSAGE_QUERY_VAL = "insert into muc_history (room_name, event_type, timestamp, sender_jid, sender_nickname, body, public_event, msg) values (?, 1, ?, ?, ?, ?, ?, ?)";
@@ -96,7 +96,8 @@ public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 		try {
 			Integer maxStanzas = null;
 			if (since != null) {
-				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(), GET_MESSAGES_SINCE_QUERY_KEY);
+				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
+						GET_MESSAGES_SINCE_QUERY_KEY);
 				synchronized (st) {
 					st.setString(1, roomJID);
 					st.setLong(2, since.getTime());
@@ -113,7 +114,8 @@ public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 					processResultSet(room, senderJID, writer, maxStanzas, rs);
 				}
 			} else if (seconds != null) {
-				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(), GET_MESSAGES_SINCE_QUERY_KEY);
+				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
+						GET_MESSAGES_SINCE_QUERY_KEY);
 				synchronized (st) {
 					st.setString(1, roomJID);
 					st.setLong(2, new Date().getTime() - seconds * 1000);
@@ -140,9 +142,7 @@ public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 		}
 	}
 
-	/** {@inheritDoc} */
-	@Override
-	public void init(Map<String, Object> props) {
+	public void init() {
 		try {
 			this.dataRepository.checkTable("muc_history", CREATE_MUC_HISTORY_TABLE_VAL);
 
@@ -165,6 +165,12 @@ public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 		}
 	}
 
+	@Override
+	public void initRepository(String resource_uri, Map<String, String> params) throws DBInitException {
+		super.initRepository(resource_uri, params);
+		init();
+	}
+
 	private void internalInit() throws SQLException {
 		this.dataRepository.initPreparedStatement(ADD_MESSAGE_QUERY_KEY, ADD_MESSAGE_QUERY_VAL);
 		this.dataRepository.initPreparedStatement(DELETE_MESSAGES_QUERY_KEY, DELETE_MESSAGES_QUERY_VAL);
@@ -179,7 +185,7 @@ public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 		Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID());
 		boolean addRealJids = room.getConfig().getRoomAnonymity() == Anonymity.nonanonymous
 				|| room.getConfig().getRoomAnonymity() == Anonymity.semianonymous
-				&& (recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
+						&& (recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
 
 		ArrayList<Packet> result = new ArrayList<Packet>();
 		for (; rs.next() && (maxStanzas == null || maxStanzas > i); i++) {

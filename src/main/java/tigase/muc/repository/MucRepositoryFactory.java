@@ -19,56 +19,26 @@
  * Last modified by $Author$
  * $Date$
  */
-package tigase.muc;
+package tigase.muc.repository;
 
-import tigase.component.Context;
-import tigase.muc.history.HistoryProvider;
-import tigase.muc.logger.MucLogger;
-import tigase.muc.repository.IMucRepository;
-import tigase.xmpp.BareJID;
+import tigase.kernel.KernelException;
+import tigase.kernel.beans.BeanFactory;
+import tigase.kernel.beans.Inject;
+import tigase.muc.MUCConfig;
+import tigase.muc.repository.inmemory.InMemoryMucRepository;
 
 /**
  * @author bmalkow
- * 
+ *
  */
-public interface MucContext extends Context {
+public class MucRepositoryFactory implements BeanFactory<IMucRepository> {
 
-	/**
-	 * @return
-	 */
-	String getChatLoggingDirectory();
+	@Inject
+	private MUCConfig config;
 
-	Ghostbuster2 getGhostbuster();
+	@Override
+	public IMucRepository createInstance() throws KernelException {
+		return new InMemoryMucRepository();
+	}
 
-	HistoryProvider getHistoryProvider();
-
-	MucLogger getMucLogger();
-
-	IMucRepository getMucRepository();
-
-	BareJID getServiceName();
-
-	/**
-	 * @return
-	 */
-	boolean isChatStateAllowed();
-
-	boolean isMessageFilterEnabled();
-
-	boolean isMultiItemMode();
-
-	/**
-	 * @return
-	 */
-	boolean isNewRoomLocked();
-
-	/**
-	 * @return
-	 */
-	boolean isPresenceFilterEnabled();
-
-	/**
-	 * @return
-	 */
-	boolean isPublicLoggingEnabled();
 }

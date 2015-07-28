@@ -26,6 +26,7 @@ import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
+
 import tigase.component.PacketWriter;
 import tigase.db.DBInitException;
 import tigase.db.Repository;
@@ -39,9 +40,9 @@ import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
-@Repository.Meta( supportedUris = { "memory" } )
+@Repository.Meta(supportedUris = { "memory" })
 public class MemoryHistoryProvider extends AbstractHistoryProvider {
 
 	private static class HItem {
@@ -63,10 +64,6 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 	 * @param dataRepository
 	 */
 	public MemoryHistoryProvider() {
-	}
-	
-	@Override
-	public void initRepository(String resource_uri, Map<String,String> params) throws DBInitException {
 	}
 
 	@Override
@@ -106,8 +103,8 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 	@Override
 	public void destroy() {
 		// nothing to do
-	}	
-	
+	}
+
 	@Override
 	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
 			PacketWriter writer) {
@@ -138,7 +135,7 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 			Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID());
 			boolean addRealJids = room.getConfig().getRoomAnonymity() == Anonymity.nonanonymous
 					|| room.getConfig().getRoomAnonymity() == Anonymity.semianonymous
-					&& (recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
+							&& (recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
 
 			try {
 				Packet message = createMessage(room.getRoomJID(), senderJID, item.senderNickname, item.msg, item.body,
@@ -155,13 +152,12 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 	}
 
 	@Override
-	public void init(Map<String, Object> props) {
-
+	public void initRepository(String resource_uri, Map<String, String> params) throws DBInitException {
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.muc.history.HistoryProvider#isPersistent()
 	 */
 	@Override

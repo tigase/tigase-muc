@@ -25,7 +25,6 @@ package tigase.muc.modules;
 import java.util.Collection;
 
 import tigase.component.modules.AbstractModule;
-import tigase.muc.MucContext;
 import tigase.muc.Room;
 import tigase.server.Iq;
 import tigase.server.Message;
@@ -37,15 +36,15 @@ import tigase.xmpp.StanzaType;
 
 /**
  * @author bmalkow
- * 
+ *
  */
-public abstract class AbstractMucModule extends AbstractModule<MucContext> {
+public abstract class AbstractMucModule extends AbstractModule {
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param iq
-	 * 
+	 *
 	 * @return
 	 */
 	public static Element createResultIQ(Element iq) {
@@ -56,10 +55,10 @@ public abstract class AbstractMucModule extends AbstractModule<MucContext> {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param jid
-	 * 
+	 *
 	 * @return
 	 */
 	public static String getNicknameFromJid(JID jid) {
@@ -75,12 +74,12 @@ public abstract class AbstractMucModule extends AbstractModule<MucContext> {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param room
 	 * @param recipientNickame
 	 * @param message
-	 * 
+	 *
 	 * @throws TigaseStringprepException
 	 */
 	protected void sendMucMessage(Room room, String recipientNickame, String message) throws TigaseStringprepException {
@@ -90,7 +89,8 @@ public abstract class AbstractMucModule extends AbstractModule<MucContext> {
 			Packet msg = Message.getMessage(JID.jidInstance(room.getRoomJID()), jid, StanzaType.groupchat, message, null, null,
 					null);
 			msg.setXMLNS(Packet.CLIENT_XMLNS);
-			context.getWriter().write(msg);
+			writer.write(msg);
 		}
 	}
+
 }

@@ -28,7 +28,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 
-import tigase.muc.MucContext;
+import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Initializable;
+import tigase.kernel.beans.Inject;
+import tigase.muc.MUCConfig;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.xmpp.BareJID;
@@ -36,9 +39,10 @@ import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
-public class RoomChatLogger implements MucLogger {
+@Bean(name = MucLogger.ID)
+public class RoomChatLogger implements MucLogger, Initializable {
 
 	private static class Item {
 		final String data;
@@ -96,7 +100,8 @@ public class RoomChatLogger implements MucLogger {
 
 	private final static String SUBJECT_PLAIN_FORMAT = "[%1$s] %2$s has set the subject to: %3$s\n";
 
-	private MucContext context;
+	@Inject
+	private MUCConfig config;
 
 	private final Worker worker = new Worker();
 
@@ -108,7 +113,7 @@ public class RoomChatLogger implements MucLogger {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.muc.IChatRoomLogger#addJoin(tigase.muc.RoomConfig.LogFormat,
 	 * java.lang.String, java.util.Date, java.lang.String)
 	 */
@@ -134,7 +139,7 @@ public class RoomChatLogger implements MucLogger {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.muc.IChatRoomLogger#addLeave(tigase.muc.RoomConfig.LogFormat,
 	 * java.lang.String, java.util.Date, java.lang.String)
 	 */
@@ -180,13 +185,13 @@ public class RoomChatLogger implements MucLogger {
 			throw new RuntimeException("Unsupported log format: " + logFormat.name());
 		}
 
-		Item it = new Item(new File(context.getChatLoggingDirectory() + "/" + roomJID + ext), line);
+		Item it = new Item(new File(config.getChatLoggingDirectory() + "/" + roomJID + ext), line);
 		this.worker.items.add(it);
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see
 	 * tigase.muc.IChatRoomLogger#addMessage(tigase.muc.RoomConfig.LogFormat,
 	 * java.lang.String, java.util.Date, java.lang.String, java.lang.String)
@@ -213,7 +218,7 @@ public class RoomChatLogger implements MucLogger {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see
 	 * tigase.muc.IChatRoomLogger#addSubject(tigase.muc.RoomConfig.LogFormat,
 	 * java.lang.String, java.util.Date, java.lang.String, java.lang.String)
@@ -238,14 +243,8 @@ public class RoomChatLogger implements MucLogger {
 		addLine(pattern, room.getConfig().getLoggingFormat(), room.getRoomJID(), time, senderNickname, message);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see tigase.muc.logger.MucLogger#init(java.util.Map)
-	 */
 	@Override
-	public void init(MucContext context) {
-		this.context = context;
+	public void initialize() {
 		this.worker.start();
 	}
 }

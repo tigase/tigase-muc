@@ -21,27 +21,29 @@
  */
 package tigase.muc.modules;
 
-import tigase.server.Packet;
+import java.util.Collection;
+import java.util.logging.Level;
 
+import tigase.component.exceptions.ComponentException;
+import tigase.criteria.Criteria;
+import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Inject;
+import tigase.muc.Role;
+import tigase.muc.Room;
+import tigase.muc.exceptions.MUCException;
+import tigase.muc.repository.IMucRepository;
+import tigase.server.Packet;
+import tigase.util.TigaseStringprepException;
+import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
-import tigase.component.exceptions.ComponentException;
-import tigase.criteria.Criteria;
-import tigase.muc.Role;
-import tigase.muc.Room;
-import tigase.muc.exceptions.MUCException;
-import tigase.util.TigaseStringprepException;
-import tigase.xml.Element;
-
-import java.util.Collection;
-import java.util.logging.Level;
-
 /**
  * @author bmalkow
- * 
+ *
  */
+@Bean(name = IqStanzaForwarderModule.ID)
 public class IqStanzaForwarderModule extends AbstractMucModule {
 
 	public static final String ID = "iqforwarder";
@@ -58,6 +60,9 @@ public class IqStanzaForwarderModule extends AbstractMucModule {
 			return checkIfProcessed(element);
 		}
 	};
+
+	@Inject
+	private IMucRepository repository;
 
 	protected boolean checkIfProcessed(Element element) {
 		if (element.getName() != "iq")
@@ -77,7 +82,7 @@ public class IqStanzaForwarderModule extends AbstractMucModule {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.component.modules.Module#getModuleCriteria()
 	 */
 	@Override
@@ -87,7 +92,7 @@ public class IqStanzaForwarderModule extends AbstractMucModule {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.component.modules.Module#process(tigase.server.Packet)
 	 */
 	@Override
@@ -101,18 +106,18 @@ public class IqStanzaForwarderModule extends AbstractMucModule {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
-			final Room room = context.getMucRepository().getRoom(roomJID);
+			final Room room = repository.getRoom(roomJID);
 			if (room == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
 
-			final String senderNickname = room.getOccupantsNickname( senderJID );
+			final String senderNickname = room.getOccupantsNickname(senderJID);
 			final Role senderRole = room.getRole(senderNickname);
 
-			if ( log.isLoggable( Level.FINEST ) ){
-				log.log( Level.FINEST,
-						 "Processing IQ stanza, from: {0}, to: {1}, recipientNickname: {2}, senderNickname: {3}, senderRole: {4} ",
-						 new Object[] { senderJID, roomJID, recipientNickname, senderNickname, senderRole } );
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST,
+						"Processing IQ stanza, from: {0}, to: {1}, recipientNickname: {2}, senderNickname: {3}, senderRole: {4} ",
+						new Object[] { senderJID, roomJID, recipientNickname, senderNickname, senderRole });
 			}
 
 			if (!senderRole.isSendPrivateMessages()) {

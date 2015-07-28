@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import tigase.db.DataRepository;
+import tigase.db.DBInitException;
 import tigase.db.Repository;
 import tigase.muc.Room;
 import tigase.xml.Element;
@@ -36,9 +36,9 @@ import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
-@Repository.Meta( supportedUris = { "jdbc:postgresql:.*" } )
+@Repository.Meta(supportedUris = { "jdbc:postgresql:.*" })
 public class PostgreSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 
 	public static final String ADD_MESSAGE_QUERY_VAL = "insert into muc_history (room_name, event_type, timestamp, sender_jid, sender_nickname, body, public_event, msg) values (?, 1, ?, ?, ?, ?, ?, ?)";
@@ -82,9 +82,7 @@ public class PostgreSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 
 	}
 
-	/** {@inheritDoc} */
-	@Override
-	public void init(Map<String, Object> props) {
+	public void init() {
 		try {
 			this.dataRepository.checkTable("muc_history", CREATE_MUC_HISTORY_TABLE_VAL);
 
@@ -106,6 +104,12 @@ public class PostgreSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 				throw new RuntimeException(e1);
 			}
 		}
+	}
+
+	@Override
+	public void initRepository(String resource_uri, Map<String, String> params) throws DBInitException {
+		super.initRepository(resource_uri, params);
+		init();
 	}
 
 	private void internalInit() throws SQLException {

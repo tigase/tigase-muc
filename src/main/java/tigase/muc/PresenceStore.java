@@ -22,16 +22,6 @@
 
 package tigase.muc;
 
-//~--- non-JDK imports --------------------------------------------------------
-
-import tigase.server.Packet;
-
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
-
-import tigase.util.TigaseStringprepException;
-import tigase.xml.Element;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -42,31 +32,31 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+//~--- non-JDK imports --------------------------------------------------------
+
+import tigase.server.Packet;
+import tigase.util.TigaseStringprepException;
+import tigase.xml.Element;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
+
 /**
  * Class description
- * 
- * 
+ *
+ *
  * @version Enter version here..., 13/02/16
  * @author Enter your name here...
  */
 public class PresenceStore {
 
-	public PresenceStore() {
-		presenceOrdening = PresenceDeliveryLogic.PREFERE_PRIORITY;
-	}
-
-	public PresenceStore( PresenceDeliveryLogic pdl ) {
-		presenceOrdening = pdl;
-	}
-
 	public class Presence {
 
 		final Element element;
-		final int priority;
-		final String type;
-		final String show;
 		final JID from;
 		final Date lastUpdated;
+		final int priority;
+		final String show;
+		final String type;
 
 		/**
 		 * @param presence
@@ -75,9 +65,9 @@ public class PresenceStore {
 			this.lastUpdated = new Date();
 			this.element = presence;
 			this.type = presence.getAttributeStaticStr(Packet.TYPE_ATT);
-			this.from = JID.jidInstanceNS( presence.getAttributeStaticStr(Packet.FROM_ATT) );
+			this.from = JID.jidInstanceNS(presence.getAttributeStaticStr(Packet.FROM_ATT));
 
-			this.show = presence.getChildCDataStaticStr( tigase.server.Presence.PRESENCE_SHOW_PATH );
+			this.show = presence.getChildCDataStaticStr(tigase.server.Presence.PRESENCE_SHOW_PATH);
 
 			String p = presence.getChildCDataStaticStr(tigase.server.Presence.PRESENCE_PRIORITY_PATH);
 			int x = 0;
@@ -97,24 +87,24 @@ public class PresenceStore {
 			return lastUpdated;
 		}
 
-		public String getShow() {
-			return show;
-		}
-
 		public int getPriority() {
 			return priority;
 		}
 
+		public String getShow() {
+			return show;
+		}
+
 		@Override
 		public String toString() {
-			return "Presence[" + "priority=" + priority + ", type=" + type + ", show=" + show
-						 + ", from=" + from + ", lastUpdated=" + lastUpdated + "]";
+			return "Presence[" + "priority=" + priority + ", type=" + type + ", show=" + show + ", from=" + from
+					+ ", lastUpdated=" + lastUpdated + "]";
 		}
 	}
 
 	/**
-	 * Possible presence delivery strategies - either prefering last send presence
-	 * or the presence with the highest priority
+	 * Possible presence delivery strategies - either prefering last send
+	 * presence or the presence with the highest priority
 	 */
 	public enum PresenceDeliveryLogic {
 
@@ -122,25 +112,34 @@ public class PresenceStore {
 		PREFERE_PRIORITY;
 	}
 
-	private final Map<BareJID, Presence> bestPresence = new ConcurrentHashMap<>();
-	private final Map<JID, Presence> presenceByJid = new ConcurrentHashMap<>();
 	protected static final Logger log = Logger.getLogger(PresenceStore.class.getName());
-	private Map<BareJID, Map<String, Presence>> presencesMapByBareJid = new ConcurrentHashMap<BareJID, Map<String, Presence>>();
+
+	private final Map<BareJID, Presence> bestPresence = new ConcurrentHashMap<>();
+
+	private final Map<JID, Presence> presenceByJid = new ConcurrentHashMap<>();
 	private PresenceDeliveryLogic presenceOrdening;
+	private Map<BareJID, Map<String, Presence>> presencesMapByBareJid = new ConcurrentHashMap<BareJID, Map<String, Presence>>();
+
+	public PresenceStore() {
+		presenceOrdening = PresenceDeliveryLogic.PREFERE_PRIORITY;
+	}
+
+	public PresenceStore(PresenceDeliveryLogic pdl) {
+		presenceOrdening = pdl;
+	}
 
 	// ~--- methods
 	// --------------------------------------------------------------
 
-
 	/**
 	 * Method description
-	 * 
+	 *
 	 */
 	public void clear() {
 		presenceByJid.clear();
 		bestPresence.clear();
 		presencesMapByBareJid.clear();
-		
+
 	}
 
 	public Collection<JID> getAllKnownJIDs() {
@@ -156,28 +155,28 @@ public class PresenceStore {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param jid
-	 * 
+	 *
 	 * @return
 	 */
 	public Element getBestPresence(final BareJID jid) {
-		Presence p = getBestPresenceInt( jid );
+		Presence p = getBestPresenceInt(jid);
 
 		return (p == null) ? null : p.element;
 	}
-	
+
 	public Presence getBestPresenceInt(final BareJID jid) {
 		return this.bestPresence.get(jid);
 	}
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param jid
-	 * 
+	 *
 	 * @return
 	 */
 	public Element getPresence(final JID jid) {
@@ -186,37 +185,34 @@ public class PresenceStore {
 		return (p == null) ? null : p.element;
 	}
 
-	private Presence intGetBestPresence( final BareJID jid ) {
-		Map<String, Presence> resourcesPresence = this.presencesMapByBareJid.get( jid );
+	private Presence intGetBestPresence(final BareJID jid) {
+		Map<String, Presence> resourcesPresence = this.presencesMapByBareJid.get(jid);
 		Presence result = null;
 
-		if ( log.isLoggable( Level.FINEST ) ){
-			log.log(Level.FINEST, "User resources presences: " + resourcesPresence );
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST, "User resources presences: " + resourcesPresence);
 		}
 
-		if ( resourcesPresence != null ){
+		if (resourcesPresence != null) {
 			Iterator<Presence> it = resourcesPresence.values().iterator();
 
-			while ( it.hasNext() ) {
+			while (it.hasNext()) {
 				Presence x = it.next();
 
-				switch ( presenceOrdening ) {
-					case PREFERE_PRIORITY:
-						if ( ( result == null )
-								 || ( ( x.type == null )
-											&& ( x.priority > result.priority
-													 || ( x.priority == result.priority && x.lastUpdated.after( result.lastUpdated ) ) ) ) ){
-							result = x;
-						}
+				switch (presenceOrdening) {
+				case PREFERE_PRIORITY:
+					if ((result == null) || ((x.type == null) && (x.priority > result.priority
+							|| (x.priority == result.priority && x.lastUpdated.after(result.lastUpdated))))) {
+						result = x;
+					}
 
-						break;
-					case PREFERE_LAST:
-						Date l = x.lastUpdated;
-						if ( ( result == null )
-								 || ( ( l.after( result.lastUpdated ) ) && ( x.type == null ) ) ){
-							result = x;
-						}
-						break;
+					break;
+				case PREFERE_LAST:
+					Date l = x.lastUpdated;
+					if ((result == null) || ((l.after(result.lastUpdated)) && (x.type == null))) {
+						result = x;
+					}
+					break;
 				}
 			}
 		}
@@ -225,16 +221,16 @@ public class PresenceStore {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param jid
-	 * 
+	 *
 	 * @return
 	 */
 	public boolean isAvailable(BareJID jid) {
-		Map<String, Presence> resourcesPresence = this.presencesMapByBareJid.get( jid );
-		if ( log.isLoggable( Level.FINEST ) ){
-			log.log( Level.FINEST, "resourcesPresence: " + resourcesPresence );
+		Map<String, Presence> resourcesPresence = this.presencesMapByBareJid.get(jid);
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST, "resourcesPresence: " + resourcesPresence);
 		}
 
 		boolean result = false;
@@ -252,15 +248,8 @@ public class PresenceStore {
 		return result;
 	}
 
-	public void setOrdening( PresenceDeliveryLogic pdl ) {
-		if ( log.isLoggable( Level.FINEST ) ){
-			log.log( Level.FINEST, "Setting presence delivery logic to: " + pdl);
-		}
-		presenceOrdening = pdl;
-	}
-
 	/**
-	 * 
+	 *
 	 * @param from
 	 * @throws TigaseStringprepException
 	 */
@@ -280,12 +269,19 @@ public class PresenceStore {
 		updateBestPresence(from.getBareJID());
 	}
 
+	public void setOrdening(PresenceDeliveryLogic pdl) {
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST, "Setting presence delivery logic to: " + pdl);
+		}
+		presenceOrdening = pdl;
+	}
+
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param presence
-	 * 
+	 *
 	 * @throws TigaseStringprepException
 	 */
 	public void update(final Element presence) throws TigaseStringprepException {
@@ -332,8 +328,8 @@ public class PresenceStore {
 	private void updateBestPresence(final BareJID bareFrom) throws TigaseStringprepException {
 		Presence x = intGetBestPresence(bareFrom);
 
-		if ( log.isLoggable( Level.FINEST ) ){
-			log.finest( "Selected BestPresence: " + (x !=null ? x.element.toString() : "n/a" ) );
+		if (log.isLoggable(Level.FINEST)) {
+			log.finest("Selected BestPresence: " + (x != null ? x.element.toString() : "n/a"));
 		}
 
 		if (x == null) {

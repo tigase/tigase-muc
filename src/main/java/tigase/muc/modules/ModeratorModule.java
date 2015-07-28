@@ -32,11 +32,15 @@ import java.util.logging.Level;
 import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Inject;
 import tigase.muc.Affiliation;
+import tigase.muc.Ghostbuster2;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
 import tigase.muc.exceptions.MUCException;
+import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
@@ -47,8 +51,9 @@ import tigase.xmpp.StanzaType;
 
 /**
  * @author bmalkow
- * 
+ *
  */
+@Bean(name = ModeratorModule.ID)
 public class ModeratorModule extends AbstractMucModule {
 
 	protected static final Criteria CRIT = ElementCriteria.name("iq").add(
@@ -77,6 +82,12 @@ public class ModeratorModule extends AbstractMucModule {
 
 		return (tmp == null) ? null : Role.valueOf(tmp);
 	}
+
+	@Inject
+	private Ghostbuster2 ghostbuster;
+
+	@Inject
+	private IMucRepository repository;
 
 	protected void checkItem(final Room room, final Element item, final String senderNickname,
 			final Affiliation senderaAffiliation, final Role senderRole) throws MUCException, TigaseStringprepException {
@@ -140,7 +151,8 @@ public class ModeratorModule extends AbstractMucModule {
 				if ((newAffiliation == Affiliation.owner) && !senderaAffiliation.isEditOwnerList()) {
 					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant owner provileges");
 				}
-				if ((newAffiliation == Affiliation.none) && (occupantAffiliation.getWeight() > senderaAffiliation.getWeight())) {
+				if ((newAffiliation == Affiliation.none)
+						&& (occupantAffiliation.getWeight() > senderaAffiliation.getWeight())) {
 					throw new MUCException(Authorization.NOT_ALLOWED,
 							"You cannot remove affiliation occupant with higher affiliation");
 				}
@@ -152,8 +164,8 @@ public class ModeratorModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @return
 	 */
 	@Override
@@ -163,8 +175,8 @@ public class ModeratorModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @return
 	 */
 	@Override
@@ -198,7 +210,7 @@ public class ModeratorModule extends AbstractMucModule {
 
 	protected Packet makePresence(final JID destinationJid, final BareJID roomJID, final Room room, final BareJID occupantJid,
 			boolean unavailable, Affiliation affiliation, Role role, String nick, String reason, String actor, String... codes)
-			throws TigaseStringprepException {
+					throws TigaseStringprepException {
 		Element presence = unavailable ? new Element("presence", new String[] { "type" }, new String[] { "unavailable" })
 				: room.getLastPresenceCopyByJid(occupantJid);
 
@@ -249,10 +261,10 @@ public class ModeratorModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param element
-	 * 
+	 *
 	 * @throws MUCException
 	 */
 	@Override
@@ -282,7 +294,7 @@ public class ModeratorModule extends AbstractMucModule {
 	protected void processGet(Packet element) throws RepositoryException, MUCException {
 		try {
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
-			Room room = context.getMucRepository().getRoom(roomJID);
+			Room room = repository.getRoom(roomJID);
 
 			if (room == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
@@ -295,8 +307,8 @@ public class ModeratorModule extends AbstractMucModule {
 			final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID());
 			final Role senderRole = room.getRole(senderNickname);
 
-			if (item == null ) {
-				throw new MUCException(Authorization.NOT_ACCEPTABLE );
+			if (item == null) {
+				throw new MUCException(Authorization.NOT_ACCEPTABLE);
 			}
 
 			final Role filterRole = getRole(item);
@@ -336,8 +348,8 @@ public class ModeratorModule extends AbstractMucModule {
 			final Affiliation affiliation = room.getAffiliation(jid);
 
 			if (affiliation == filter) {
-				Element ir = new Element("item", new String[] { "affiliation", "jid" }, new String[] { affiliation.name(),
-						jid.toString() });
+				Element ir = new Element("item", new String[] { "affiliation", "jid" },
+						new String[] { affiliation.name(), jid.toString() });
 
 				responseQuery.addChild(ir);
 			}
@@ -345,8 +357,8 @@ public class ModeratorModule extends AbstractMucModule {
 		write(iq.okResult(responseQuery, 0));
 	}
 
-	protected void processGetRoles(final Packet iq, final Room room, final Role filterRole) throws RepositoryException,
-			MUCException {
+	protected void processGetRoles(final Packet iq, final Room room, final Role filterRole)
+			throws RepositoryException, MUCException {
 		Element responseQuery = new Element("query", new String[] { "xmlns" },
 				new String[] { "http://jabber.org/protocol/muc#admin" });
 
@@ -356,8 +368,8 @@ public class ModeratorModule extends AbstractMucModule {
 
 			if (role == filterRole) {
 				final Affiliation affiliation = room.getAffiliation(occupantBareJid);
-				Element ir = new Element("item", new String[] { "affiliation", "nick", "role" }, new String[] {
-						affiliation.name(), occupantNickname, role.name() });
+				Element ir = new Element("item", new String[] { "affiliation", "nick", "role" },
+						new String[] { affiliation.name(), occupantNickname, role.name() });
 
 				if (room.getConfig().getRoomAnonymity() != Anonymity.fullanonymous) {
 					ir.setAttribute("jid", occupantBareJid.toString());
@@ -371,7 +383,7 @@ public class ModeratorModule extends AbstractMucModule {
 	protected void processSet(Packet element) throws RepositoryException, MUCException {
 		try {
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
-			final Room room = context.getMucRepository().getRoom(roomJID);
+			final Room room = repository.getRoom(roomJID);
 
 			if (room == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
@@ -385,10 +397,9 @@ public class ModeratorModule extends AbstractMucModule {
 			final Element query = element.getElement().getChild("query");
 			final List<Element> items = query.getChildren();
 
-			if (items == null ) {
-				throw new MUCException(Authorization.NOT_ACCEPTABLE );
+			if (items == null) {
+				throw new MUCException(Authorization.NOT_ACCEPTABLE);
 			}
-
 
 			for (Element item : items) {
 				checkItem(room, item, nickName, senderAffiliation, senderRole);
@@ -448,8 +459,7 @@ public class ModeratorModule extends AbstractMucModule {
 					write(occupantKickPresence);
 				}
 				room.removeOccupant(occupantNick);
-				context.getGhostbuster().remove(occupantJids, room);
-
+				ghostbuster.remove(occupantJids, room);
 			}
 		}
 		for (String nickname : room.getOccupantsNicknames()) {
@@ -487,7 +497,7 @@ public class ModeratorModule extends AbstractMucModule {
 				write(occupantKickPresence);
 			}
 			room.removeOccupant(occupantNick);
-			context.getGhostbuster().remove(occupantJids, room);
+			ghostbuster.remove(occupantJids, room);
 		} else {
 			room.setNewRole(occupantNick, newRole);
 		}

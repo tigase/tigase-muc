@@ -26,7 +26,10 @@ import java.security.SecureRandom;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Inject;
 import tigase.muc.exceptions.MUCException;
+import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
@@ -36,8 +39,9 @@ import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
+@Bean(name = UniqueRoomNameModule.ID)
 public class UniqueRoomNameModule extends AbstractMucModule {
 
 	private final static String CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -48,6 +52,9 @@ public class UniqueRoomNameModule extends AbstractMucModule {
 	public static final String ID = "unique";
 
 	private SecureRandom random = new SecureRandom();
+
+	@Inject
+	private IMucRepository repository;
 
 	private String generateName(int len) {
 		StringBuilder sb = new StringBuilder();
@@ -63,8 +70,8 @@ public class UniqueRoomNameModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @return
 	 */
 	@Override
@@ -74,8 +81,8 @@ public class UniqueRoomNameModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @return
 	 */
 	@Override
@@ -85,10 +92,10 @@ public class UniqueRoomNameModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param element
-	 * 
+	 *
 	 * @throws MUCException
 	 */
 	@Override
@@ -105,7 +112,7 @@ public class UniqueRoomNameModule extends AbstractMucModule {
 
 			do {
 				newRoomName = generateName(30);
-			} while (context.getMucRepository().isRoomIdExists(newRoomName + "@" + host));
+			} while (repository.isRoomIdExists(newRoomName + "@" + host));
 
 			Element unique = new Element("unique", new String[] { "xmlns" },
 					new String[] { "http://jabber.org/protocol/muc#unique" });
@@ -120,4 +127,5 @@ public class UniqueRoomNameModule extends AbstractMucModule {
 			throw new RuntimeException(e);
 		}
 	}
+
 }

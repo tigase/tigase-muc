@@ -23,7 +23,7 @@ package tigase.muc;
 
 /**
  * @author bmalkow
- * 
+ *
  */
 public enum Role {
 

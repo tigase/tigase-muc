@@ -31,7 +31,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.component.PacketWriter;
-import tigase.db.DataRepository;
+import tigase.db.DBInitException;
 import tigase.db.Repository;
 import tigase.muc.Room;
 import tigase.xml.Element;
@@ -39,9 +39,9 @@ import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
-@Repository.Meta( supportedUris = { "jdbc:sqlserver:.*", "jdbc:jtds:.*" } )
+@Repository.Meta(supportedUris = { "jdbc:sqlserver:.*", "jdbc:jtds:.*" })
 public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 
 	public static final String ADD_MESSAGE_QUERY_VAL = "insert into muc_history (room_name, event_type, timestamp, sender_jid, sender_nickname, body, public_event, msg) values (?, 1, ?, ?, ?, ?, ?, ?)";
@@ -99,7 +99,8 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest("Using SINCE selector: roomJID=" + roomJID + ", since=" + since.getTime() + " (" + since + ")");
 				}
-				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(), GET_MESSAGES_SINCE_QUERY_KEY);
+				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
+						GET_MESSAGES_SINCE_QUERY_KEY);
 				synchronized (st) {
 					try {
 						st.setInt(1, maxMessages);
@@ -132,7 +133,8 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest("Using SECONDS selector: roomJID=" + roomJID + ", seconds=" + seconds);
 				}
-				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(), GET_MESSAGES_SINCE_QUERY_KEY);
+				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
+						GET_MESSAGES_SINCE_QUERY_KEY);
 				synchronized (st) {
 					try {
 						st.setInt(1, maxMessages);
@@ -154,8 +156,8 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 					try {
 						st.setInt(1, maxMessages);
 						st.setString(2, roomJID);
-						System.out.println("getHistoryMessages: " + st.toString() + " max " + maxMessages + " roomJID " + roomJID
-								+ " || \t " + GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
+						System.out.println("getHistoryMessages: " + st.toString() + " max " + maxMessages + " roomJID "
+								+ roomJID + " || \t " + GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
 						rs = st.executeQuery();
 						processResultSet(room, senderJID, writer, rs);
 					} finally {
@@ -171,9 +173,7 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 		}
 	}
 
-	/** {@inheritDoc} */
-	@Override
-	public void init(Map<String, Object> props) {
+	public void init() {
 		try {
 			this.dataRepository.checkTable("muc_history", CREATE_MUC_HISTORY_TABLE_VAL);
 
@@ -195,6 +195,19 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 				throw new RuntimeException(e1);
 			}
 		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see
+	 * tigase.muc.history.AbstractJDBCHistoryProvider#initRepository(java.lang.
+	 * String, java.util.Map)
+	 */
+	@Override
+	public void initRepository(String resource_uri, Map<String, String> params) throws DBInitException {
+		super.initRepository(resource_uri, params);
+		init();
 	}
 
 	private void internalInit() throws SQLException {

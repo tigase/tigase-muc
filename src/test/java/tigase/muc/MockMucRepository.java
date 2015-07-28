@@ -40,7 +40,7 @@ import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
 public class MockMucRepository implements IMucRepository {
 
@@ -90,17 +90,17 @@ public class MockMucRepository implements IMucRepository {
 			}
 
 			@Override
-			public void onInitialRoomConfig( RoomConfig roomConfig ) {
+			public void onInitialRoomConfig(RoomConfig roomConfig) {
 				try {
-					if ( roomConfig.isRoomconfigPublicroom() ){
-						InternalRoom ir = allRooms.get( roomConfig.getRoomJID() );
-						if ( ir != null ){
+					if (roomConfig.isRoomconfigPublicroom()) {
+						InternalRoom ir = allRooms.get(roomConfig.getRoomJID());
+						if (ir != null) {
 							ir.listPublic = roomConfig.isRoomconfigPublicroom();
 						}
 					}
 
-				} catch ( Exception e ) {
-					throw new RuntimeException( e );
+				} catch (Exception e) {
+					throw new RuntimeException(e);
 				}
 			}
 		};
@@ -108,7 +108,7 @@ public class MockMucRepository implements IMucRepository {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.muc.repository.IMucRepository#createNewRoom(java.lang.String,
 	 * java.lang.String, java.lang.String)
 	 */
@@ -129,7 +129,7 @@ public class MockMucRepository implements IMucRepository {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.muc.repository.IMucRepository#destroyRoom(tigase.muc.Room)
 	 */
 	@Override
@@ -141,7 +141,7 @@ public class MockMucRepository implements IMucRepository {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.muc.repository.IMucRepository#getActiveRooms()
 	 */
 	@Override
@@ -156,7 +156,7 @@ public class MockMucRepository implements IMucRepository {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.muc.repository.IMucRepository#getRoomsIdList()
 	 */
 	@Override
@@ -172,7 +172,7 @@ public class MockMucRepository implements IMucRepository {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.muc.repository.IMucRepository#getRoom()
 	 */
 	@Override
@@ -184,7 +184,7 @@ public class MockMucRepository implements IMucRepository {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.muc.repository.IMucRepository#getRoomName(java.lang.String)
 	 */
 	@Override
@@ -194,7 +194,7 @@ public class MockMucRepository implements IMucRepository {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see
 	 * tigase.muc.repository.IMucRepository#isRoomIdExists(java.lang.String)
 	 */
@@ -215,7 +215,7 @@ public class MockMucRepository implements IMucRepository {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see
 	 * tigase.muc.repository.IMucRepository#updateDefaultRoomConfig(tigase.muc
 	 * .RoomConfig)

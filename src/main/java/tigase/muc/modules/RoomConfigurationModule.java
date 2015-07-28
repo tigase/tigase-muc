@@ -28,6 +28,8 @@ import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.form.Form;
+import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Inject;
 import tigase.muc.Affiliation;
 import tigase.muc.Role;
 import tigase.muc.Room;
@@ -35,6 +37,7 @@ import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.modules.PresenceModule.PresenceWrapper;
+import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
@@ -47,6 +50,7 @@ import tigase.xmpp.StanzaType;
  * @author bmalkow
  *
  */
+@Bean(name = RoomConfigurationModule.ID)
 public class RoomConfigurationModule extends AbstractMucModule {
 
 	private static final Criteria CRIT = ElementCriteria.name("iq").add(
@@ -54,17 +58,14 @@ public class RoomConfigurationModule extends AbstractMucModule {
 
 	public static final String ID = "owner";
 
+	@Inject
+	private HistoryProvider historyProvider;
+
+	@Inject(nullAllowed = false)
 	private GroupchatMessageModule messageModule;
 
-	@Override
-	public void afterRegistration() {
-		super.afterRegistration();
-		messageModule = context.getModuleProvider().getModule(GroupchatMessageModule.ID);
-
-		if (messageModule == null)
-			throw new RuntimeException("GroupchatMessageModule is required!");
-
-	}
+	@Inject
+	private IMucRepository repository;
 
 	private void destroy(Room room, Element destroyElement) throws TigaseStringprepException, RepositoryException {
 		for (String occupantNickname : room.getOccupantsNicknames()) {
@@ -84,8 +85,7 @@ public class RoomConfigurationModule extends AbstractMucModule {
 		// XXX TODO
 		// throw new
 		// MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
-		context.getMucRepository().destroyRoom(room, destroyElement);
-		HistoryProvider historyProvider = context.getHistoryProvider();
+		repository.destroyRoom(room, destroyElement);
 		if (historyProvider != null) {
 			historyProvider.removeHistory(room);
 		}
@@ -188,11 +188,10 @@ public class RoomConfigurationModule extends AbstractMucModule {
 		try {
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
 			JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
-			Room room = context.getMucRepository().getRoom(roomJID);
+			Room room = repository.getRoom(roomJID);
 
 			if (room == null) {
-				Packet p = Packet.packetInstance(makeConfigFormIq(element.getElement(),
-						context.getMucRepository().getDefaultRoomConfig()));
+				Packet p = Packet.packetInstance(makeConfigFormIq(element.getElement(), repository.getDefaultRoomConfig()));
 				p.setXMLNS(Packet.CLIENT_XMLNS);
 				write(p);
 			} else {
@@ -216,10 +215,10 @@ public class RoomConfigurationModule extends AbstractMucModule {
 			final JID roomJID = JID.jidInstance(element.getAttributeStaticStr(Packet.TO_ATT));
 			JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
 			final Element query = element.getElement().getChild("query", "http://jabber.org/protocol/muc#owner");
-			Room room = context.getMucRepository().getRoom(roomJID.getBareJID());
+			Room room = repository.getRoom(roomJID.getBareJID());
 
 			if (room == null) {
-				room = context.getMucRepository().createNewRoom(roomJID.getBareJID(), senderJID);
+				room = repository.createNewRoom(roomJID.getBareJID(), senderJID);
 			}
 
 			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());

@@ -23,21 +23,22 @@ package tigase.muc.logger;
 
 import java.util.Date;
 
-import tigase.muc.MucContext;
 import tigase.muc.Room;
 import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
 public interface MucLogger {
+
+	public static final String ID = "muc-logger";
 
 	public final static String MUC_LOGGER_CLASS_KEY = "muc-logger-class";
 
 	/**
 	 * Adds join event.
-	 * 
+	 *
 	 * @param room
 	 * @param date
 	 * @param senderJID
@@ -64,7 +65,7 @@ public interface MucLogger {
 
 	/**
 	 * Adds subject changes to log/history.
-	 * 
+	 *
 	 * @param room
 	 * @param message
 	 * @param senderJid
@@ -72,7 +73,5 @@ public interface MucLogger {
 	 * @param time
 	 */
 	void addSubjectChange(Room room, String message, JID senderJid, String senderNickname, Date time);
-
-	public void init(MucContext context);
 
 }

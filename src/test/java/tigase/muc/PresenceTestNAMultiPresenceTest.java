@@ -42,7 +42,7 @@ import tigase.xmpp.BareJID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
 public class PresenceTestNAMultiPresenceTest extends XMPPTestCase {
 
@@ -85,10 +85,10 @@ public class PresenceTestNAMultiPresenceTest extends XMPPTestCase {
 
 		Map<String, Object> props = pubsub.getDefaults(new HashMap<String, Object>());
 		props.put("multi-user-chat", BareJID.bareJIDInstance("multi-user-chat"));
-		props.put(MUCComponent.MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
-		props.put(MUCComponent.PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
-		props.put(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY, Boolean.TRUE);
-		props.put(MUCComponent.LOG_DIR_KEY, "./");
+		props.put(MUCConfig.MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
+		props.put(MUCConfig.PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
+		props.put(MUCConfig.MUC_MULTI_ITEM_ALLOWED_KEY, Boolean.TRUE);
+		props.put(MUCConfig.LOG_DIR_KEY, "./");
 
 		xmlio = new JUnitXMLIO() {
 

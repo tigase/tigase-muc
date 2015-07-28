@@ -39,14 +39,14 @@ import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
 public interface PresenceModule extends Module {
 
 	/**
 	 * Class description
-	 * 
-	 * 
+	 *
+	 *
 	 * @version Enter version here..., 13/02/20
 	 * @author Enter your name here...
 	 */
@@ -54,8 +54,8 @@ public interface PresenceModule extends Module {
 
 		/**
 		 * Method description
-		 * 
-		 * 
+		 *
+		 *
 		 * @param room
 		 * @param destinationJID
 		 * @param presence
@@ -63,14 +63,14 @@ public interface PresenceModule extends Module {
 		 * @param occupantNickname
 		 * @param occupantAffiliation
 		 * @param occupantRole
-		 * 
+		 *
 		 * @return
-		 * 
+		 *
 		 * @throws TigaseStringprepException
 		 */
 		public static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence,
-				BareJID occupantBareJID, Collection<JID> occupantJIDs, String occupantNickname,
-				Affiliation occupantAffiliation, Role occupantRole) throws TigaseStringprepException {
+				BareJID occupantBareJID, Collection<JID> occupantJIDs, String occupantNickname, Affiliation occupantAffiliation,
+				Role occupantRole) throws TigaseStringprepException {
 			Anonymity anonymity = room.getConfig().getRoomAnonymity();
 			final Affiliation destinationAffiliation = room.getAffiliation(destinationJID.getBareJID());
 
@@ -85,8 +85,8 @@ public interface PresenceModule extends Module {
 
 			final ArrayList<Element> items = new ArrayList<Element>();
 			for (JID jid : occupantJIDs) {
-				Element item = new Element("item", new String[] { "affiliation", "role", "nick" }, new String[] {
-						occupantAffiliation.name(), occupantRole.name(), occupantNickname });
+				Element item = new Element("item", new String[] { "affiliation", "role", "nick" },
+						new String[] { occupantAffiliation.name(), occupantRole.name(), occupantNickname });
 				x.addChild(item);
 				items.add(item);
 
@@ -127,15 +127,15 @@ public interface PresenceModule extends Module {
 
 		/**
 		 * Method description
-		 * 
-		 * 
+		 *
+		 *
 		 * @param room
 		 * @param destinationJID
 		 * @param presence
 		 * @param occupantJID
-		 * 
+		 *
 		 * @return
-		 * 
+		 *
 		 * @throws TigaseStringprepException
 		 */
 		static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, JID occupantJID)
@@ -147,15 +147,15 @@ public interface PresenceModule extends Module {
 
 		/**
 		 * Method description
-		 * 
-		 * 
+		 *
+		 *
 		 * @param room
 		 * @param destinationJID
 		 * @param presence
 		 * @param occupantNickname
-		 * 
+		 *
 		 * @return
-		 * 
+		 *
 		 * @throws TigaseStringprepException
 		 */
 		static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, String occupantNickname)
@@ -180,8 +180,8 @@ public interface PresenceModule extends Module {
 
 		/**
 		 * Method description
-		 * 
-		 * 
+		 *
+		 *
 		 * @param code
 		 */
 		void addStatusCode(int code) {

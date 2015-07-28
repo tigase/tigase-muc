@@ -22,17 +22,39 @@
 package tigase.muc;
 
 import tigase.component.PacketWriter;
+import tigase.kernel.core.Kernel;
 import tigase.muc.repository.IMucRepository;
 
 /**
  * @author bmalkow
- * 
+ *
  */
 public class TestMUCCompoent extends MUCComponent {
+
+	private IMucRepository mucRepository;
+	private PacketWriter writer;
 
 	public TestMUCCompoent(PacketWriter writer, IMucRepository mockMucRepository) {
 		this.writer = writer;
 		this.mucRepository = mockMucRepository;
+	}
+
+	public IMucRepository getMucRepository() {
+		return this.mucRepository;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see tigase.muc.MUCComponent#registerModules(tigase.kernel.core.Kernel)
+	 */
+	@Override
+	protected void registerModules(Kernel kernel) {
+		super.registerModules(kernel);
+
+		kernel.registerBean("writer").asInstance(writer).exec();
+		kernel.registerBean(IMucRepository.ID).asInstance(mucRepository).exec();
+
 	}
 
 }

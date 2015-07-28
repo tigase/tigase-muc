@@ -43,7 +43,7 @@ import tigase.xmpp.BareJID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
 public class RoomTest extends XMPPTestCase {
 
@@ -74,7 +74,7 @@ public class RoomTest extends XMPPTestCase {
 
 	}
 
-	private MUCComponent pubsub;
+	private TestMUCCompoent pubsub;
 
 	private JUnitXMLIO xmlio;
 
@@ -86,9 +86,9 @@ public class RoomTest extends XMPPTestCase {
 
 		Map<String, Object> props = pubsub.getDefaults(new HashMap<String, Object>());
 		props.put("multi-user-chat", BareJID.bareJIDInstance("multi-user-chat"));
-		props.put(MUCComponent.MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
-		props.put(MUCComponent.PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
-		props.put(MUCComponent.LOG_DIR_KEY, "./");
+		props.put(MUCConfig.MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
+		props.put(MUCConfig.PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
+		props.put(MUCConfig.LOG_DIR_KEY, "./");
 
 		xmlio = new JUnitXMLIO() {
 
@@ -169,10 +169,10 @@ public class RoomTest extends XMPPTestCase {
 		test("src/test/scripts/ping.cor", xmlio);
 	}
 
-//	@org.junit.Test
-//	public void test_presences2() {
-//		test("src/test/scripts/processPresence2.cor", xmlio);
-//	}
+	// @org.junit.Test
+	// public void test_presences2() {
+	// test("src/test/scripts/processPresence2.cor", xmlio);
+	// }
 
 	@org.junit.Test
 	public void test_presences2_non_anonymous() {

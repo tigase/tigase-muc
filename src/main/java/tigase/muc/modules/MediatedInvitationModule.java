@@ -27,10 +27,13 @@ import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.criteria.Or;
+import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Inject;
 import tigase.muc.Affiliation;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
+import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
@@ -41,8 +44,9 @@ import tigase.xmpp.StanzaType;
 
 /**
  * @author bmalkow
- * 
+ *
  */
+@Bean(name = MediatedInvitationModule.ID)
 public class MediatedInvitationModule extends AbstractMucModule {
 
 	private static final Criteria CRIT = ElementCriteria.name("message").add(
@@ -51,11 +55,14 @@ public class MediatedInvitationModule extends AbstractMucModule {
 
 	public static final String ID = "invitations";
 
+	@Inject
+	private IMucRepository repository;
+
 	/**
 	 * @param senderJID
 	 * @param roomJID
 	 * @throws TigaseStringprepException
-	 * 
+	 *
 	 */
 	private void doDecline(Element decline, BareJID roomJID, JID senderJID) throws TigaseStringprepException {
 		final Element reason = decline.getChild("reason");
@@ -87,7 +94,7 @@ public class MediatedInvitationModule extends AbstractMucModule {
 	 * @throws TigaseStringprepException
 	 * @throws RepositoryException
 	 * @throws MUCException
-	 * 
+	 *
 	 */
 	private void doInvite(Packet message, Element invite, Room room, BareJID roomJID, JID senderJID, Role senderRole,
 			Affiliation senderAffiliation) throws RepositoryException, TigaseStringprepException, MUCException {
@@ -140,8 +147,8 @@ public class MediatedInvitationModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @return
 	 */
 	@Override
@@ -151,8 +158,8 @@ public class MediatedInvitationModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @return
 	 */
 	@Override
@@ -162,10 +169,10 @@ public class MediatedInvitationModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param element
-	 * 
+	 *
 	 * @throws MUCException
 	 */
 	@Override
@@ -178,7 +185,7 @@ public class MediatedInvitationModule extends AbstractMucModule {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
-			final Room room = context.getMucRepository().getRoom(roomJID);
+			final Room room = repository.getRoom(roomJID);
 
 			final String nickName = room.getOccupantsNickname(senderJID);
 			final Role senderRole = room.getRole(nickName);
@@ -219,8 +226,8 @@ public class MediatedInvitationModule extends AbstractMucModule {
 		final Element resultDecline = new Element("decline", new String[] { "from" }, new String[] { senderJID.toString() });
 		resultX.addChild(resultDecline);
 
-		Element reason = new Element("reason", "Your invitation is returned with error"
-				+ (errorCondition == null ? "." : (": " + errorCondition)));
+		Element reason = new Element("reason",
+				"Your invitation is returned with error" + (errorCondition == null ? "." : (": " + errorCondition)));
 
 		resultDecline.addChild(reason);
 		write(resultMessage);

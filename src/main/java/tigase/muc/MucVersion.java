@@ -23,7 +23,7 @@ package tigase.muc;
 
 /**
  * @author bmalkow
- * 
+ *
  */
 public class MucVersion {
 	public static String getVersion() {

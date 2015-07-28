@@ -29,28 +29,27 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.component.exceptions.RepositoryException;
-
 import tigase.db.TigaseDBException;
 import tigase.db.UserNotFoundException;
 import tigase.db.UserRepository;
-
+import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Initializable;
+import tigase.kernel.beans.Inject;
 import tigase.muc.Affiliation;
-import tigase.muc.MucContext;
+import tigase.muc.MUCComponent;
+import tigase.muc.MUCConfig;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
-
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
-import tigase.muc.MUCComponent;
-
-
 /**
  * @author bmalkow
- * 
+ *
  */
-public class MucDAO {
+@Bean(name = "muc-dao")
+public class MucDAO implements Initializable {
 
 	private static final String CREATION_DATE_KEY = "creation-date";
 
@@ -68,33 +67,11 @@ public class MucDAO {
 
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 
-	private final MucContext mucConfig;
+	@Inject
+	private MUCConfig mucConfig;
 
-	private final UserRepository repository;
-
-	public MucDAO(final MucContext config, final UserRepository repository) throws RepositoryException {
-		this.mucConfig = config;
-		this.repository = repository;
-
-		try {
-			this.repository.setData(this.mucConfig.getServiceName(), "last-start", String.valueOf(System.currentTimeMillis()));
-		} catch (UserNotFoundException e) {
-			try {
-				this.repository.addUser(this.mucConfig.getServiceName());
-				this.repository.setData(this.mucConfig.getServiceName(), "last-start",
-						String.valueOf(System.currentTimeMillis()));
-			} catch (Exception e1) {
-				if (log.isLoggable(Level.SEVERE))
-					log.log(Level.SEVERE, "MUC repository initialization problem", e1);
-				throw new RepositoryException("Cannot initialize MUC repository", e);
-			}
-		} catch (TigaseDBException e) {
-			if (log.isLoggable(Level.SEVERE))
-				log.log(Level.SEVERE, "MUC repository initialization problem", e);
-			throw new RepositoryException("Cannot initialize MUC repository", e);
-		}
-
-	}
+	@Inject
+	private UserRepository repository;
 
 	public void createRoom(Room room) throws RepositoryException {
 		try {
@@ -212,6 +189,33 @@ public class MucDAO {
 		}
 	}
 
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see tigase.kernel.beans.Initializable#initialize()
+	 */
+	@Override
+	public void initialize() {
+		try {
+			this.repository.setData(this.mucConfig.getServiceName(), "last-start", String.valueOf(System.currentTimeMillis()));
+		} catch (UserNotFoundException e) {
+			try {
+				this.repository.addUser(this.mucConfig.getServiceName());
+				this.repository.setData(this.mucConfig.getServiceName(), "last-start",
+						String.valueOf(System.currentTimeMillis()));
+			} catch (Exception e1) {
+				if (log.isLoggable(Level.SEVERE))
+					log.log(Level.SEVERE, "MUC repository initialization problem", e1);
+				throw new RuntimeException("Cannot initialize MUC repository", e);
+			}
+		} catch (TigaseDBException e) {
+			if (log.isLoggable(Level.SEVERE))
+				log.log(Level.SEVERE, "MUC repository initialization problem", e);
+			throw new RuntimeException("Cannot initialize MUC repository", e);
+		}
+
+	}
+
 	public Room readRoom(BareJID roomJID) throws RepositoryException, MUCException {
 
 		try {
@@ -287,7 +291,8 @@ public class MucDAO {
 	 * @param msg
 	 * @throws RepositoryException
 	 */
-	public void setSubject(BareJID roomJID, String subject, String creatorNickname, Date changeDate) throws RepositoryException {
+	public void setSubject(BareJID roomJID, String subject, String creatorNickname, Date changeDate)
+			throws RepositoryException {
 		try {
 			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/subject", SUBJECT_CREATOR_NICK_KEY,
 					creatorNickname);
@@ -322,8 +327,8 @@ public class MucDAO {
 	 */
 	public void updateRoomConfig(RoomConfig roomConfig) throws RepositoryException {
 		try {
-			String roomJID = roomConfig.getRoomJID() != null ? roomConfig.getRoomJID().toString() : null ;
-			if (roomJID == null ) {
+			String roomJID = roomConfig.getRoomJID() != null ? roomConfig.getRoomJID().toString() : null;
+			if (roomJID == null) {
 				roomJID = MUCComponent.DEFAULT_ROOM_CONFIG_KEY;
 			}
 			roomConfig.write(repository, mucConfig, ROOMS_KEY + roomJID + "/config");

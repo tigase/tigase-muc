@@ -3,11 +3,13 @@ package tigase.muc;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
+
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceEvent;
 import org.osgi.framework.ServiceListener;
 import org.osgi.framework.ServiceReference;
+
 import tigase.muc.history.DerbySqlHistoryProvider;
 import tigase.muc.history.MemoryHistoryProvider;
 import tigase.muc.history.MySqlHistoryProvider;
@@ -94,7 +96,7 @@ public class Activator implements BundleActivator, ServiceListener {
 			serviceManager.unregisterServerComponentClass(mucComponentClass);
 			for (Class repositoryClass : repositoryClasses) {
 				serviceManager.unregisterClass(repositoryClass);
-			}			
+			}
 			serviceManager.update();
 		}
 	}

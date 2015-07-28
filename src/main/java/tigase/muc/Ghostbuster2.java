@@ -32,19 +32,25 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Initializable;
+import tigase.kernel.beans.Inject;
 import tigase.muc.modules.PresenceModule;
+import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.server.ReceiverTimeoutHandler;
 import tigase.util.TigaseStringprepException;
+import tigase.util.TimerTask;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
- * 
+ *
  */
-public class Ghostbuster2 {
+@Bean(name = "ghostbuster")
+public class Ghostbuster2 implements Initializable {
 
 	private class MonitoredObject {
 
@@ -67,6 +73,7 @@ public class Ghostbuster2 {
 
 	private static final Set<String> intReasons = new HashSet<String>() {
 		private static final long serialVersionUID = 1L;
+
 		{
 			add("gone");
 			add("item-not-found");
@@ -79,17 +86,39 @@ public class Ghostbuster2 {
 
 	public static final Set<String> R = Collections.unmodifiableSet(intReasons);
 
+	@Inject
+	private MUCConfig config;
+
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 
 	protected final Map<JID, MonitoredObject> monitoredObjects = new ConcurrentHashMap<JID, MonitoredObject>();
 
-	private final MUCComponent mucComponent;
+	@Inject(bean = "component", nullAllowed = false)
+	private MUCComponent mucComponent;
 
 	private final ReceiverTimeoutHandler pingHandler;
+
+	@Inject
 	private PresenceModule presenceModule;
 
-	public Ghostbuster2(MUCComponent mucComponent) {
-		this.mucComponent = mucComponent;
+	@Inject
+	private IMucRepository repository;
+
+	private final TimerTask timerTsk = new TimerTask() {
+
+		@Override
+		public void run() {
+			if (config.isGhostbusterEnabled()) {
+				try {
+					ping();
+				} catch (Exception e) {
+					log.log(Level.WARNING, "Problem on executing ghostbuster", e);
+				}
+			}
+		}
+	};
+
+	public Ghostbuster2() {
 		this.pingHandler = new ReceiverTimeoutHandler() {
 			@Override
 			public void responseReceived(Packet data, Packet response) {
@@ -170,6 +199,21 @@ public class Ghostbuster2 {
 		return presenceModule;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see tigase.kernel.beans.Initializable#initialize()
+	 */
+	@Override
+	public void initialize() {
+		try {
+			mucComponent.addTimerTask(timerTsk, 1000 * 60 * 10l, 1000 * 60 * 5l);
+		} catch (Exception e) {
+			log.log(Level.WARNING, "Ghostbaster stuck at HQ", e);
+		}
+
+	}
+
 	/**
 	 * @param response
 	 * @throws TigaseStringprepException
@@ -186,25 +230,28 @@ public class Ghostbuster2 {
 		if (log.isLoggable(Level.FINEST))
 			log.finest("Timeouted ping to: " + stanzaTo);
 
-//		final MonitoredObject obj = monitoredObjects.get(stanzaTo);
-//
-//		if (obj == null)
-//			return;
-//
-//		if ((presenceModule == null) || (mucComponent.getMucRepository() == null)) {
-//			return;
-//		}
-//
-//		if (log.isLoggable(Level.FINEST)) {
-//			log.finest("Forced removal last activity of " + obj.source);
-//		}
-//
-//		this.monitoredObjects.remove(obj);
-//		for (Room r : mucComponent.getMucRepository().getActiveRooms().values()) {
-//			if (obj.rooms.contains(r.getRoomJID()) && r.isOccupantInRoom(obj.source)) {
-//				presenceModule.doQuit(r, obj.source);
-//			}
-//		}
+		// final MonitoredObject obj = monitoredObjects.get(stanzaTo);
+		//
+		// if (obj == null)
+		// return;
+		//
+		// if ((presenceModule == null) || (mucComponent.getMucRepository() ==
+		// null)) {
+		// return;
+		// }
+		//
+		// if (log.isLoggable(Level.FINEST)) {
+		// log.finest("Forced removal last activity of " + obj.source);
+		// }
+		//
+		// this.monitoredObjects.remove(obj);
+		// for (Room r :
+		// mucComponent.getMucRepository().getActiveRooms().values()) {
+		// if (obj.rooms.contains(r.getRoomJID()) &&
+		// r.isOccupantInRoom(obj.source)) {
+		// presenceModule.doQuit(r, obj.source);
+		// }
+		// }
 	}
 
 	public void ping() throws TigaseStringprepException {
@@ -242,8 +289,8 @@ public class Ghostbuster2 {
 			log.log(Level.FINER, "Pinging " + occupantJID + ". id=" + id);
 		}
 
-		Element ping = new Element("iq", new String[] { "type", "id", "from", "to" }, new String[] { "get", id,
-				room.toString(), occupantJID.toString() });
+		Element ping = new Element("iq", new String[] { "type", "id", "from", "to" },
+				new String[] { "get", id, room.toString(), occupantJID.toString() });
 
 		ping.addChild(new Element("ping", new String[] { "xmlns" }, new String[] { "urn:xmpp:ping" }));
 
@@ -262,7 +309,7 @@ public class Ghostbuster2 {
 	 * @throws TigaseStringprepException
 	 */
 	private void processError(MonitoredObject obj, Packet packet) throws TigaseStringprepException {
-		if ((presenceModule == null) || (mucComponent.getMucRepository() == null)) {
+		if ((presenceModule == null) || (repository == null)) {
 			return;
 		}
 
@@ -271,7 +318,7 @@ public class Ghostbuster2 {
 		}
 
 		this.monitoredObjects.remove(obj);
-		for (Room r : mucComponent.getMucRepository().getActiveRooms().values()) {
+		for (Room r : repository.getActiveRooms().values()) {
 			if (obj.rooms.contains(r.getRoomJID()) && r.isOccupantInRoom(obj.source)) {
 				presenceModule.doQuit(r, obj.source);
 			}
