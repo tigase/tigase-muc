@@ -58,12 +58,14 @@ public class MUCComponentClustered extends MUCComponent
 
 	@Override
 	public void nodeConnected(String node) {
+		super.nodeConnected(node);
 		JID jid = JID.jidInstanceNS(getName(), node, null);
 		strategy.nodeConnected(jid);
 	}
 
 	@Override
 	public void nodeDisconnected(String node) {
+		super.nodeDisconnected(node);
 		JID jid = JID.jidInstanceNS(getName(), node, null);
 		strategy.nodeDisconnected(jid);
 	}
@@ -79,6 +81,7 @@ public class MUCComponentClustered extends MUCComponent
 
 	@Override
 	public void setClusterController(ClusterControllerIfc cl_controller) {
+		super.setClusterController(cl_controller);
 		this.cl_controller = cl_controller;
 		if (strategy != null) {
 			strategy.setClusterController(cl_controller);
