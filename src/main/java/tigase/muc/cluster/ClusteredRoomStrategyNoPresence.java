@@ -103,7 +103,7 @@ public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrate
 
 	@Override
 	public void onOccupantChangedPresence( Room room, JID occupantJid, String nickname, Element presence, boolean newOccupant ) {
-		List<JID> toNodes = getAllNodes();
+		List<JID> toNodes = getNodesConnected();
 		toNodes.remove( localNodeJid );
 		if ( occupantJid != null && presence == null ){
 			presence = new Element( "presence", new String[] { "type", "xmlns" }, new String[] { "unavailable", Packet.CLIENT_XMLNS } );

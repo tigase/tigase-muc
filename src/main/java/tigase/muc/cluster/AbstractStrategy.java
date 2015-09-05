@@ -44,7 +44,6 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 	private static final String OCCUPANT_REMOVED_CMD = "muc-occupant-removed-cmd";	
 	protected static final String REQUEST_SYNC_CMD = "muc-sync-request";
 
-	protected final CopyOnWriteArrayList<JID> connectedNodes = new CopyOnWriteArrayList<JID>();
 	protected ClusterControllerIfc cl_controller;
 	protected JID localNodeJid;
 	protected MUCComponentClustered muc;
@@ -55,8 +54,13 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 	private final PacketForwardCmd packetForwardCmd = new PacketForwardCmd();
 	
 	@Override
-	public List<JID> getAllNodes() {
-		return new ArrayList<>(connectedNodes);
+	public List<JID> getNodesConnected() {
+		return muc.getNodesConnected();
+	}
+	
+	@Override
+	public List<JID> getNodesConnectedWithLocal() {
+		return muc.getNodesConnectedWithLocal();
 	}
 	
 	/**
@@ -66,31 +70,10 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 	 * @param nodeJid is a <code>JID</code>
 	 */
 	@Override
-	public boolean nodeConnected(JID nodeJid) {
-		boolean added = false;
-		synchronized (connectedNodes) {
-			if (connectedNodes.addIfAbsent(nodeJid)) {
-				added = true;
-				sort(connectedNodes);
-			}
-			if (log.isLoggable(Level.FINEST)) {
-				log.log(Level.FINEST, "node {0} added to list of connected nodes", nodeJid);
-			}
-		}
-		if (added && !localNodeJid.equals(nodeJid)) {
+	public void nodeConnected(JID nodeJid) {
+		if (!localNodeJid.equals(nodeJid)) {
 			requestSync(nodeJid);
 		}		
-		return added;
-	}
-	
-	@Override
-	public void nodeDisconnected(JID nodeJid) {
-		synchronized (connectedNodes) {
-			connectedNodes.remove(nodeJid);
-			if (log.isLoggable(Level.FINEST)) {
-				log.log(Level.FINEST, "node {0} removed from list of connected nodes", nodeJid);
-			}			
-		}
 	}
 	
 	@Override
@@ -98,8 +81,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		String nickname = room.getOccupantsNickname(occupantJid);
 		if (addOccupant(localNodeJid.getBareJID(), room.getRoomJID(), occupantJid, nickname)) {
 			// we should notify other nodes about that
-			List<JID> toNodes = getAllNodes();
-			toNodes.remove(localNodeJid);
+			List<JID> toNodes = getNodesConnected();
 
 			Map<String, String> data = new HashMap<String, String>();
 			data.put("room", room.getRoomJID().toString());
@@ -127,8 +109,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 	public void onOccupantRemoved(Room room, JID occupantJid) {
 		if (removeOccupant(localNodeJid.getBareJID(), room.getRoomJID(), occupantJid)) {
 			// we should notify other nodes about that
-			List<JID> toNodes = getAllNodes();
-			toNodes.remove(localNodeJid);
+			List<JID> toNodes = getNodesConnected();
 
 			Map<String, String> data = new HashMap<String, String>();
 			data.put("room", room.getRoomJID().toString());
@@ -223,15 +204,6 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 	
 	protected void setLocalNodeJid(JID jid) {
 		this.localNodeJid = jid;
-		nodeConnected(localNodeJid);
-	}
-	
-	private void sort(List<JID> list) {
-		JID[] array = list.toArray(new JID[list.size()]);
-
-		Arrays.sort(array);
-		list.clear();
-		list.addAll(Arrays.asList(array));
 	}	
 	
 	abstract protected boolean addOccupant(BareJID node, BareJID roomJid, JID occupantJid, String nickname);

@@ -77,14 +77,13 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	
 	@Override
 	public void nodeDisconnected(JID nodeJid) {
-		super.nodeDisconnected(nodeJid);
-		
 		ConcurrentMap<JID,ConcurrentMap<BareJID,String>> nodeOccupants = occupantsPerNode.remove(nodeJid.getBareJID());
 		if (nodeOccupants == null)
 			return;
 		
-		int localNodeIdx = connectedNodes.indexOf(localNodeJid);
-		int nodesCount = connectedNodes.size();
+		List<JID> allNodes = getNodesConnectedWithLocal();
+		int localNodeIdx = allNodes.indexOf(localNodeJid);
+		int nodesCount = allNodes.size();
 		for (Map.Entry<JID,ConcurrentMap<BareJID,String>> e : nodeOccupants.entrySet()) {
 			JID occupant = e.getKey();
 			// send removal if occupant is not local and if it's hashcode matches this node
@@ -173,8 +172,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	
 	@Override
 	public void onRoomCreated(Room room) {
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);
+		List<JID> toNodes = getNodesConnected();
 		
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
@@ -200,8 +198,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 
 	@Override
 	public void onRoomDestroyed(Room room, Element destroyElement) {
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);
+		List<JID> toNodes = getNodesConnected();
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
@@ -231,11 +228,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 
 	@Override
 	public void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation) {
-
-
-
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);
+		List<JID> toNodes = getNodesConnected();
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
@@ -259,8 +252,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 
 	@Override
 	public void onMessageToOccupants(Room room, JID from, Packet packet) {
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);
+		List<JID> toNodes = getNodesConnected();
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());

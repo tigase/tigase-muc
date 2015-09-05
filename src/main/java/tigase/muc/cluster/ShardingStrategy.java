@@ -68,8 +68,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	 */
 	@Override
 	public void nodeDisconnected(JID nodeJid) {
-		super.nodeDisconnected(nodeJid);
-		
+		List<JID> connectedNodes = getNodesConnectedWithLocal();
 		int localNodeIdx = connectedNodes.indexOf(localNodeJid);
 		// we need to properly handle disconnect!
 		Iterator<Map.Entry<BareJID,JID>> iter = roomsPerNode.entrySet().iterator();
@@ -137,6 +136,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 				log.log(Level.FINEST, "room = {0}, not created on any node", roomJid);
 			}
 			int hash = roomJid.hashCode();
+			List<JID> connectedNodes = getNodesConnectedWithLocal();
 			nodeJid = connectedNodes.get(Math.abs(hash) % connectedNodes.size());
 			if (log.isLoggable(Level.FINEST)) {
 				StringBuilder nodes = new StringBuilder(100);
@@ -174,17 +174,8 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		// if we are stopping this node, we need to notify other nodes that we 
 		// will send informations about destroying/going offline of rooms 
 		// hosted by this node
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);		
+		List<JID> toNodes = getNodesConnected();	
 		cl_controller.sendToNodes(NODE_SHUTDOWN_CMD, localNodeJid, toNodes.toArray(new JID[toNodes.size()]));
-	}
-	
-	private void sort(List<JID> list) {
-		JID[] array = list.toArray(new JID[list.size()]);
-
-		Arrays.sort(array);
-		list.clear();
-		list.addAll(Arrays.asList(array));
 	}
 	
 	@Override
@@ -192,8 +183,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		roomsPerNode.put(room.getRoomJID(), localNodeJid);
 		// notify other nodes about newly created room and it's location on 
 		// node in cluster
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);
+		List<JID> toNodes = getNodesConnected();
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
@@ -223,8 +213,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		// now we should notify other nodes that following occupants where removed
 		// hmm, maybe info sent before about room removal is enought?
 
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);
+		List<JID> toNodes = getNodesConnected();
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
