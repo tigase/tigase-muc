@@ -60,8 +60,6 @@ public class MucDAO {
 
 	public static final String ROOMS_KEY = "rooms/";
 
-	public static final String[] ROOMS_SUBNODES_KEYS = new String[] { "/config", "/affiliations", "/config", "/subject", "" };
-
 	private static final String SUBJECT_CREATOR_NICK_KEY = "creator";
 
 	private static final String SUBJECT_DATE_KEY = "date";
@@ -126,9 +124,7 @@ public class MucDAO {
 	 */
 	public void destroyRoom(BareJID roomJID) throws RepositoryException {
 		try {
-			for ( String subnode : ROOMS_SUBNODES_KEYS ) {
-				repository.removeSubnode( mucConfig.getServiceName(), ROOMS_KEY + roomJID + subnode );
-			}
+			repository.removeSubnode(mucConfig.getServiceName(), ROOMS_KEY + roomJID);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RepositoryException("Room destroing error", e);
