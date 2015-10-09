@@ -64,7 +64,7 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 
 	private final Map<BareJID, InternalRoom> allRooms = new ConcurrentHashMap<BareJID, InternalRoom>();
 
-	@Inject
+	@Inject(nullAllowed = false)
 	private MucDAO dao;
 
 	private RoomConfig defaultConfig;

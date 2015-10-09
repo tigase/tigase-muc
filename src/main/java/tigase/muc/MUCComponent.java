@@ -50,8 +50,8 @@ import tigase.muc.modules.RoomConfigurationModule;
 import tigase.muc.modules.UniqueRoomNameModule;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.MucDAO;
-import tigase.muc.repository.MucRepositoryFactory;
 import tigase.muc.repository.UserRepositoryFactory;
+import tigase.muc.repository.inmemory.InMemoryMucRepository;
 import tigase.server.Packet;
 
 public class MUCComponent extends AbstractKernelBasedComponent {
@@ -171,7 +171,7 @@ public class MUCComponent extends AbstractKernelBasedComponent {
 		kernel.registerBean(MUCConfig.class).exec();
 
 		kernel.registerBean("user-repository").asClass(UserRepository.class).withFactory(UserRepositoryFactory.class).exec();
-		kernel.registerBean(IMucRepository.ID).asClass(IMucRepository.class).withFactory(MucRepositoryFactory.class).exec();
+		kernel.registerBean(IMucRepository.ID).asClass(InMemoryMucRepository.class).exec();
 		kernel.registerBean(HistoryProvider.class).withFactory(HistoryProviderFactory.class).exec();
 		kernel.registerBean(MucDAO.class).exec();
 		kernel.registerBean(RoomChatLogger.class).exec();
