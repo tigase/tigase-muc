@@ -8,15 +8,7 @@
 
 package tigase.muc.cluster;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -26,15 +18,14 @@ import tigase.cluster.api.ClusterCommandException;
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
 import tigase.component.exceptions.RepositoryException;
+import tigase.kernel.beans.Inject;
 import tigase.muc.Affiliation;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.modules.GroupchatMessageModule;
-import tigase.muc.modules.PresenceModule;
 import tigase.muc.modules.PresenceModule.PresenceWrapper;
-import tigase.muc.modules.PresenceModuleImpl;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
@@ -42,55 +33,55 @@ import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
 /**
- * AbstractClusteredRoomStrategy implements strategy which allows to create rooms with
- * large number of occupants as each cluster node will process packets related
- * only to occupants connected to this node. (Base class for strategies implementations
- * using clustered room strategy)
+ * AbstractClusteredRoomStrategy implements strategy which allows to create
+ * rooms with large number of occupants as each cluster node will process
+ * packets related only to occupants connected to this node. (Base class for
+ * strategies implementations using clustered room strategy)
  * 
- * Limitations:
- * - every room needs to be persistent
- * - possible issues with changing affiliations or room configuration
+ * Limitations: - every room needs to be persistent - possible issues with
+ * changing affiliations or room configuration
  * 
  * @author andrzej
  */
-public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy implements StrategyIfc,
-		InMemoryMucRepositoryClustered.RoomListener, Room.RoomListener {
+public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
+		implements StrategyIfc, InMemoryMucRepositoryClustered.RoomListener, Room.RoomListener {
 
 	private static final Logger log = Logger.getLogger(AbstractClusteredRoomStrategy.class.getCanonicalName());
-	
-	private static final String RESPONSE_SYNC_CMD = "muc-sync-response";	
+
+	private static final String RESPONSE_SYNC_CMD = "muc-sync-response";
 	private static final String ROOM_CREATED_CMD = "muc-room-created-cmd";
 	private static final String ROOM_DESTROYED_CMD = "muc-room-destroyed-cmd";
 	private static final String ROOM_MESSAGE_CMD = "muc-room-message-cmd";
 	private static final String ROOM_AFFILIATION_CMD = "muc-room-affiliation-cmd";
 	private static final int SYNC_MAX_BATCH_SIZE = 1000;
-	
+	// Map<node_bare_jid, Map<occupant_jid, Map<room_jid,nickname> > >
+	protected final ConcurrentHashMap<BareJID, ConcurrentMap<JID, ConcurrentMap<BareJID, String>>> occupantsPerNode = new ConcurrentHashMap<>();
 	private final RoomCreatedCmd roomCreatedCmd = new RoomCreatedCmd();
 	private final RoomDestroyedCmd roomDestroyedCmd = new RoomDestroyedCmd();
 	private final RoomMessageCmd roomMessageCmd = new RoomMessageCmd();
 	private final RequestSyncCmd requestSyncCmd = new RequestSyncCmd();
 	private final ResponseSyncCmd responseSyncCmd = new ResponseSyncCmd();
 	private final RoomAffiliationCmd roomAffiliationCmd = new RoomAffiliationCmd();
-	
-	// Map<node_bare_jid, Map<occupant_jid, Map<room_jid,nickname> > >
-	protected final ConcurrentHashMap<BareJID,ConcurrentMap<JID,ConcurrentMap<BareJID,String>>> occupantsPerNode = new ConcurrentHashMap<>();
-	
+	@Inject
+	private GroupchatMessageModule groupchatModule;
+
 	@Override
 	public void nodeDisconnected(JID nodeJid) {
-		ConcurrentMap<JID,ConcurrentMap<BareJID,String>> nodeOccupants = occupantsPerNode.remove(nodeJid.getBareJID());
+		ConcurrentMap<JID, ConcurrentMap<BareJID, String>> nodeOccupants = occupantsPerNode.remove(nodeJid.getBareJID());
 		if (nodeOccupants == null)
 			return;
-		
+
 		List<JID> allNodes = getNodesConnectedWithLocal();
 		int localNodeIdx = allNodes.indexOf(localNodeJid);
 		int nodesCount = allNodes.size();
-		for (Map.Entry<JID,ConcurrentMap<BareJID,String>> e : nodeOccupants.entrySet()) {
+		for (Map.Entry<JID, ConcurrentMap<BareJID, String>> e : nodeOccupants.entrySet()) {
 			JID occupant = e.getKey();
-			// send removal if occupant is not local and if it's hashcode matches this node
-			boolean sendRemovalToOccupant = !muc.isLocalDomain(occupant.getDomain()) 
+			// send removal if occupant is not local and if it's hashcode
+			// matches this node
+			boolean sendRemovalToOccupant = !mucComponentClustered.isLocalDomain(occupant.getDomain())
 					&& (occupant.hashCode() % nodesCount) == localNodeIdx;
-			
-			Map<BareJID,String> rooms = e.getValue();
+
+			Map<BareJID, String> rooms = e.getValue();
 			if (rooms == null)
 				continue;
 			for (BareJID roomJid : rooms.keySet()) {
@@ -108,7 +99,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			}
 		}
 	}
-	
+
 	@Override
 	public boolean processPacket(Packet packet) {
 		JID from = packet.getStanzaFrom();
@@ -116,9 +107,8 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 		if (nodeJid != null) {
 			// we need to forward this packet to this node
 			if (log.isLoggable(Level.FINER)) {
-				log.log(Level.FINER, "forwarding packet to node = {1}", new Object[] {
-					nodeJid });
-			}			
+				log.log(Level.FINER, "forwarding packet to node = {1}", new Object[] { nodeJid });
+			}
 			forwardPacketToNode(JID.jidInstance(nodeJid), packet);
 			return true;
 		}
@@ -131,13 +121,13 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 		mucRepository.setRoomListener(this);
 		mucRepository.setRoomOccupantListener(this);
 		try {
-			// this clustering strategy requires that all rooms are persistent as
+			// this clustering strategy requires that all rooms are persistent
+			// as
 			// none of nodes knows about every occupants
 			RoomConfig roomConfig = mucRepository.getDefaultRoomConfig();
 			roomConfig.setValue(RoomConfig.MUC_ROOMCONFIG_PERSISTENTROOM_KEY, true);
-		}
-		catch (RepositoryException ex) {
-			
+		} catch (RepositoryException ex) {
+
 		}
 	}
 
@@ -148,7 +138,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	@Override
 	public void stop() {
 	}
-	
+
 	@Override
 	public void setClusterController(ClusterControllerIfc cl_controller) {
 		if (this.cl_controller != null) {
@@ -169,17 +159,17 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			cl_controller.setCommandListener(roomAffiliationCmd);
 		}
 	}
-	
+
 	@Override
 	public void onRoomCreated(Room room) {
 		List<JID> toNodes = getNodesConnected();
-		
+
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
 		data.put("creator", room.getCreatorJid().toString());
 		// added to improve distribution of processing commands over threads
 		data.put("userId", room.getRoomJID().toString());
-		
+
 		if (log.isLoggable(Level.FINEST)) {
 			StringBuilder buf = new StringBuilder(100);
 			for (JID node : toNodes) {
@@ -191,9 +181,8 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] that room is created",
 					new Object[] { room.getRoomJID(), buf });
 		}
-		
-		cl_controller.sendToNodes(ROOM_CREATED_CMD, data, localNodeJid,
-				toNodes.toArray(new JID[toNodes.size()]));
+
+		cl_controller.sendToNodes(ROOM_CREATED_CMD, data, localNodeJid, toNodes.toArray(new JID[toNodes.size()]));
 	}
 
 	@Override
@@ -204,7 +193,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 		data.put("room", room.getRoomJID().toString());
 		// added to improve distribution of processing commands over threads
 		data.put("userId", room.getRoomJID().toString());
-		
+
 		if (log.isLoggable(Level.FINEST)) {
 			StringBuilder buf = new StringBuilder(100);
 			for (JID node : toNodes) {
@@ -215,15 +204,16 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			}
 			log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] that room is destroyed",
 					new Object[] { room.getRoomJID(), buf });
-		}		
-		
+		}
+
 		cl_controller.sendToNodes(ROOM_DESTROYED_CMD, data, destroyElement, localNodeJid, null,
-				toNodes.toArray(new JID[toNodes.size()]));	
+				toNodes.toArray(new JID[toNodes.size()]));
 	}
 
 	@Override
 	public void onChangeSubject(Room room, String nick, String newSubject, Date changeDate) {
-//		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+		// throw new UnsupportedOperationException("Not supported yet."); //To
+		// change body of generated methods, choose Tools | Templates.
 	}
 
 	@Override
@@ -246,8 +236,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] about new affiliation",
 					new Object[] { room.getRoomJID(), buf });
 		}
-		cl_controller.sendToNodes(ROOM_AFFILIATION_CMD, data, localNodeJid,
-				toNodes.toArray(new JID[toNodes.size()]));
+		cl_controller.sendToNodes(ROOM_AFFILIATION_CMD, data, localNodeJid, toNodes.toArray(new JID[toNodes.size()]));
 	}
 
 	@Override
@@ -257,7 +246,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
 		data.put("userId", from.toString());
-		
+
 		Element message = packet.getElement().clone();
 		// this should not be needed but I'm adding it just in case
 		message.removeAttribute("from");
@@ -273,54 +262,56 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			}
 			log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] about new message",
 					new Object[] { room.getRoomJID(), buf });
-		}		
-		
+		}
+
 		cl_controller.sendToNodes(ROOM_MESSAGE_CMD, data, message, localNodeJid, null,
 				toNodes.toArray(new JID[toNodes.size()]));
 	}
 
 	@Override
 	protected boolean addOccupant(BareJID node, BareJID roomJid, JID occupantJid, String nickname) {
-		ConcurrentMap<JID,ConcurrentMap<BareJID,String>> nodeOccupants = occupantsPerNode.get(node);
+		ConcurrentMap<JID, ConcurrentMap<BareJID, String>> nodeOccupants = occupantsPerNode.get(node);
 		if (nodeOccupants == null) {
-			ConcurrentHashMap<JID,ConcurrentMap<BareJID,String>> tmp = new ConcurrentHashMap<>();
+			ConcurrentHashMap<JID, ConcurrentMap<BareJID, String>> tmp = new ConcurrentHashMap<>();
 			nodeOccupants = occupantsPerNode.putIfAbsent(node, tmp);
 			if (nodeOccupants == null) {
 				nodeOccupants = tmp;
 			}
 		}
-		ConcurrentMap<BareJID,String> jidRooms = nodeOccupants.get(occupantJid);
+		ConcurrentMap<BareJID, String> jidRooms = nodeOccupants.get(occupantJid);
 		if (jidRooms == null) {
-			ConcurrentHashMap<BareJID,String> tmp = new ConcurrentHashMap<>();
+			ConcurrentHashMap<BareJID, String> tmp = new ConcurrentHashMap<>();
 			jidRooms = nodeOccupants.putIfAbsent(occupantJid, tmp);
 			if (jidRooms == null) {
 				jidRooms = tmp;
-			}			
+			}
 		}
-		// is synchronization needed here? - each thread should be running on per occupant jid basis
+		// is synchronization needed here? - each thread should be running on
+		// per occupant jid basis
 		String oldNickname = jidRooms.put(roomJid, nickname);
 		return oldNickname == null;
 	}
 
 	@Override
 	protected boolean removeOccupant(BareJID node, BareJID roomJid, JID occupantJid) {
-		ConcurrentMap<JID,ConcurrentMap<BareJID,String>> nodeOccupants = occupantsPerNode.get(node);
+		ConcurrentMap<JID, ConcurrentMap<BareJID, String>> nodeOccupants = occupantsPerNode.get(node);
 		if (nodeOccupants == null) {
-			ConcurrentHashMap<JID,ConcurrentMap<BareJID,String>> tmp = new ConcurrentHashMap<>();
+			ConcurrentHashMap<JID, ConcurrentMap<BareJID, String>> tmp = new ConcurrentHashMap<>();
 			nodeOccupants = occupantsPerNode.putIfAbsent(node, tmp);
 			if (nodeOccupants == null) {
 				nodeOccupants = tmp;
 			}
 		}
-		Map<BareJID,String> jidRooms = nodeOccupants.get(occupantJid);
+		Map<BareJID, String> jidRooms = nodeOccupants.get(occupantJid);
 		if (jidRooms == null) {
-			ConcurrentHashMap<BareJID,String> tmp = new ConcurrentHashMap<>();
+			ConcurrentHashMap<BareJID, String> tmp = new ConcurrentHashMap<>();
 			jidRooms = nodeOccupants.putIfAbsent(occupantJid, tmp);
 			if (jidRooms == null) {
 				jidRooms = tmp;
-			}			
+			}
 		}
-		// is synchronization needed here? - each thread should be running on per occupant jid basis
+		// is synchronization needed here? - each thread should be running on
+		// per occupant jid basis
 		String removed = jidRooms.remove(roomJid);
 		if (jidRooms.isEmpty())
 			nodeOccupants.remove(occupantJid);
@@ -330,22 +321,22 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 
 	public BareJID getNodeForJID(JID jid) {
 		// for local domain we should process packets on same node
-		if (muc.isLocalDomain(jid.getDomain()))
+		if (mucComponentClustered.isLocalDomain(jid.getDomain()))
 			return null;
-		
+
 		// if not local packet then we need to always select one node
 		for (BareJID node : occupantsPerNode.keySet()) {
 			// if we have assigned node with this jid then reuse it
-			Map<JID,ConcurrentMap<BareJID,String>> nodeOccupants = occupantsPerNode.get(node);
+			Map<JID, ConcurrentMap<BareJID, String>> nodeOccupants = occupantsPerNode.get(node);
 			if (nodeOccupants.containsKey(jid)) {
 				return node;
 			}
 		}
-		
+
 		// if no node was assigned then use local node
 		return null;
 	}
-		
+
 	private class RoomCreatedCmd extends CommandListenerAbstract {
 
 		public RoomCreatedCmd() {
@@ -353,22 +344,22 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 		}
 
 		@Override
-		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data,
-				Queue<Element> packets) throws ClusterCommandException {
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data, Queue<Element> packets)
+				throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			JID creatorJid = JID.jidInstanceNS(data.get("creator"));
 			try {
-				if ( log.isLoggable( Level.FINEST ) ){
-					log.log( Level.FINEST, "executig RoomCreatedCmd command for room = {0}, creatorJid = {1}",
-									 new Object[] { roomJid, creatorJid } );
+				if (log.isLoggable(Level.FINEST)) {
+					log.log(Level.FINEST, "executig RoomCreatedCmd command for room = {0}, creatorJid = {1}",
+							new Object[] { roomJid, creatorJid });
 				}
 				mucRepository.createNewRoomWithoutListener(roomJid, creatorJid);
 			} catch (RepositoryException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
 			}
-		}		
+		}
 	}
-	
+
 	private class RoomDestroyedCmd extends CommandListenerAbstract {
 
 		public RoomDestroyedCmd() {
@@ -376,25 +367,25 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 		}
 
 		@Override
-		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data,
-				Queue<Element> packets) throws ClusterCommandException {
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data, Queue<Element> packets)
+				throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 
-			if ( log.isLoggable( Level.FINEST ) ){
-				log.log( Level.FINEST, "executig RoomDestroyedCmd command for room = {0}, packets: {1}",
-								 new Object[] { roomJid, packets } );
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "executig RoomDestroyedCmd command for room = {0}, packets: {1}",
+						new Object[] { roomJid, packets });
 			}
 
 			try {
-				Room room = AbstractClusteredRoomStrategy.this.muc.getMucRepository().getRoom(roomJid);
+				Room room = AbstractClusteredRoomStrategy.this.mucRepository.getRoom(roomJid);
 				Element destroyElement = packets.poll();
 				for (JID occupantJid : room.getAllOccupantsJID()) {
 					String occupantNickname = room.getOccupantsNickname(occupantJid);
 					final Element p = new Element("presence");
 
-					p.addAttribute("type", "unavailable");					
-					PresenceWrapper presence = PresenceWrapper.preparePresenceW(room, occupantJid, p, occupantJid.getBareJID(), Collections.singleton(occupantJid),
-							occupantNickname, Affiliation.none, Role.none);
+					p.addAttribute("type", "unavailable");
+					PresenceWrapper presence = PresenceWrapper.preparePresenceW(room, occupantJid, p, occupantJid.getBareJID(),
+							Collections.singleton(occupantJid), occupantNickname, Affiliation.none, Role.none);
 
 					presence.getX().addChild(destroyElement);
 				}
@@ -406,9 +397,9 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			} catch (TigaseStringprepException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
 			}
-		}		
-	}	
-	
+		}
+	}
+
 	private class RoomMessageCmd extends CommandListenerAbstract {
 
 		public RoomMessageCmd() {
@@ -416,17 +407,16 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 		}
 
 		@Override
-		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data,
-				Queue<Element> packets) throws ClusterCommandException {
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data, Queue<Element> packets)
+				throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			JID from = JID.jidInstanceNS(data.get("userId"));
-			if ( log.isLoggable( Level.FINEST ) ){
-				log.log( Level.FINEST, "executig RoomMessageCmd command for room = {0}, from = {1}, packets: {2}",
-								 new Object[] { roomJid, from, packets } );
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "executig RoomMessageCmd command for room = {0}, from = {1}, packets: {2}",
+						new Object[] { roomJid, from, packets });
 			}
 			try {
-				Room room = AbstractClusteredRoomStrategy.this.muc.getMucRepository().getRoom(roomJid);
-				GroupchatMessageModule groupchatModule = AbstractClusteredRoomStrategy.this.muc.getModule(GroupchatMessageModule.ID);
+				Room room = AbstractClusteredRoomStrategy.this.mucRepository.getRoom(roomJid);
 				Element message = packets.poll();
 				Packet packet = Packet.packetInstance(message);
 				groupchatModule.sendMessagesToAllOccupantsJids(room, from, packet);
@@ -437,76 +427,72 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			} catch (TigaseStringprepException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
 			}
-		
-		}		
+
+		}
 	}
 
 	private class RequestSyncCmd extends CommandListenerAbstract {
-		
+
 		public RequestSyncCmd() {
 			super(REQUEST_SYNC_CMD);
 		}
 
 		@Override
-		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
-				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data, Queue<Element> packets)
+				throws ClusterCommandException {
 			// each node should send only info about is's occupants
-			ConcurrentMap<JID,ConcurrentMap<BareJID,String>> nodeOccupants = occupantsPerNode.get(localNodeJid.getBareJID());
+			ConcurrentMap<JID, ConcurrentMap<BareJID, String>> nodeOccupants = occupantsPerNode.get(localNodeJid.getBareJID());
 			LinkedList<Element> localOccupants = new LinkedList<Element>();
 			if (nodeOccupants != null) {
-				if ( log.isLoggable( Level.FINEST ) ){
-					log.log( Level.FINEST, "executig RequestSyncCmd command fromNode = {0}, nodeOccupants = {1}",
-									 new Object[] { fromNode, nodeOccupants } );
+				if (log.isLoggable(Level.FINEST)) {
+					log.log(Level.FINEST, "executig RequestSyncCmd command fromNode = {0}, nodeOccupants = {1}",
+							new Object[] { fromNode, nodeOccupants });
 				}
-				for (Map.Entry<JID,ConcurrentMap<BareJID,String>> occupantsEntry : nodeOccupants.entrySet()) {
+				for (Map.Entry<JID, ConcurrentMap<BareJID, String>> occupantsEntry : nodeOccupants.entrySet()) {
 					// for each occupant we send
-					Element occupant = new Element("occupant", new String[] { "jid" }, 
+					Element occupant = new Element("occupant", new String[] { "jid" },
 							new String[] { occupantsEntry.getKey().toString() });
 					// every room to which he is joined
-					Map<BareJID,String> jidRooms = occupantsEntry.getValue();
-					for (Map.Entry<BareJID,String> roomsEntry : jidRooms.entrySet()) {
-						occupant.addChild(new Element("room", new String[] { "jid", "nickname" }, 
+					Map<BareJID, String> jidRooms = occupantsEntry.getValue();
+					for (Map.Entry<BareJID, String> roomsEntry : jidRooms.entrySet()) {
+						occupant.addChild(new Element("room", new String[] { "jid", "nickname" },
 								new String[] { roomsEntry.getKey().toString(), roomsEntry.getValue() }));
 					}
 					localOccupants.add(occupant);
-					
+
 					if (localOccupants.size() > SYNC_MAX_BATCH_SIZE) {
-						cl_controller.sendToNodes(RESPONSE_SYNC_CMD, localOccupants, 
-								localNodeJid, null, fromNode);
+						cl_controller.sendToNodes(RESPONSE_SYNC_CMD, localOccupants, localNodeJid, null, fromNode);
 						localOccupants = new LinkedList<Element>();
 					}
 				}
 			}
-			
+
 			if (!localOccupants.isEmpty()) {
-				cl_controller.sendToNodes(RESPONSE_SYNC_CMD, localOccupants, 
-						localNodeJid, null, fromNode);
+				cl_controller.sendToNodes(RESPONSE_SYNC_CMD, localOccupants, localNodeJid, null, fromNode);
 			}
 		}
 	}
-	
-	
+
 	private class ResponseSyncCmd extends CommandListenerAbstract {
-		
+
 		public ResponseSyncCmd() {
 			super(RESPONSE_SYNC_CMD);
 		}
 
 		@Override
-		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
-				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data, Queue<Element> packets)
+				throws ClusterCommandException {
 			if (packets != null && !packets.isEmpty()) {
 
-				if ( log.isLoggable( Level.FINEST ) ){
-					log.log( Level.FINEST, "executig ResponseSyncCmd command fromNode = {0}, packets: {1}",
-									 new Object[] { fromNode, packets } );
+				if (log.isLoggable(Level.FINEST)) {
+					log.log(Level.FINEST, "executig ResponseSyncCmd command fromNode = {0}, packets: {1}",
+							new Object[] { fromNode, packets });
 				}
-				
+
 				for (Element occupantEl : packets) {
 					if (occupantEl.getName() == "occupant") {
-						JID occupantJid = JID.jidInstanceNS(
-								occupantEl.getAttributeStaticStr("jid"));						
-						
+						JID occupantJid = JID.jidInstanceNS(occupantEl.getAttributeStaticStr("jid"));
+
 						List<Element> roomsElList = occupantEl.getChildren();
 						if (roomsElList != null && !roomsElList.isEmpty()) {
 							for (Element roomEl : roomsElList) {
@@ -518,7 +504,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 					}
 				}
 			}
-		}		
+		}
 	}
 
 	private class RoomAffiliationCmd extends CommandListenerAbstract {
@@ -528,23 +514,23 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 		}
 
 		@Override
-		public void executeCommand( JID fromNode, Set<JID> visitedNodes,
-																Map<String, String> data, Queue<Element> packets ) throws ClusterCommandException {
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data, Queue<Element> packets)
+				throws ClusterCommandException {
 
-				BareJID roomJid = BareJID.bareJIDInstanceNS( data.get( "room" ) );
-				BareJID from = BareJID.bareJIDInstanceNS( data.get( "userId" ) );
-				Affiliation newAffiliation = Affiliation.valueOf( data.get( "newAffiliation" ) );
-				if ( log.isLoggable( Level.FINEST ) ){
-					log.log( Level.FINEST, "executig RoomAffiliationCmd command for room = {0}, from = {1}, newAffiliation: {2}",
-									 new Object[] { roomJid, from, newAffiliation } );
-				}
+			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
+			BareJID from = BareJID.bareJIDInstanceNS(data.get("userId"));
+			Affiliation newAffiliation = Affiliation.valueOf(data.get("newAffiliation"));
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "executig RoomAffiliationCmd command for room = {0}, from = {1}, newAffiliation: {2}",
+						new Object[] { roomJid, from, newAffiliation });
+			}
 
-				try {
-					Room room = AbstractClusteredRoomStrategy.this.muc.getMucRepository().getRoom( roomJid );
-					room.setNewAffiliation( from, newAffiliation );
-				} catch ( RepositoryException | MUCException ex ) {
-					Logger.getLogger( AbstractClusteredRoomStrategy.class.getName() ).log( Level.SEVERE, null, ex );
-				}
+			try {
+				Room room = AbstractClusteredRoomStrategy.this.mucRepository.getRoom(roomJid);
+				room.setNewAffiliation(from, newAffiliation);
+			} catch (RepositoryException | MUCException ex) {
+				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
+			}
 
 		}
 	}

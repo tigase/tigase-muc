@@ -8,14 +8,11 @@
 package tigase.muc.cluster;
 
 import java.util.logging.Level;
-import tigase.component.exceptions.RepositoryException;	
-import tigase.muc.MucContext;
+
+import tigase.component.exceptions.RepositoryException;
 import tigase.muc.Room;
-import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
-import tigase.muc.repository.MucDAO;
 import tigase.muc.repository.inmemory.InMemoryMucRepository;
-import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
@@ -25,28 +22,18 @@ import tigase.xmpp.JID;
  * @author andrzej
  */
 public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
-	
-	public static interface RoomListener {
-		void onRoomCreated(Room room);
-		
-		void onRoomDestroyed(Room room, Element destroyElement);
-	}
-	
+
 	private RoomListener roomListener;
 	private Room.RoomOccupantListener roomOccupantListener;
 
-	public InMemoryMucRepositoryClustered(final MucContext mucConfig, final MucDAO dao) throws RepositoryException {
-		super(mucConfig, dao);
-	}
-		
 	@Override
 	public Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException {
-		Room room = super.createNewRoom(roomJID, senderJid);		
+		Room room = super.createNewRoom(roomJID, senderJid);
 		addListenersToNewRoom(room);
 		if (roomListener != null) {
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST, "notifing listener that room {0} was created", roomJID);
-			}			
+			}
 			roomListener.onRoomCreated(room);
 		}
 		return room;
@@ -56,16 +43,16 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 		Room room = super.createNewRoom(roomJID, senderJid);
 		addListenersToNewRoom(room);
 		return room;
-	}	
-	
+	}
+
 	@Override
 	public void destroyRoom(Room room, Element destroyElement) throws RepositoryException {
 		super.destroyRoom(room, destroyElement);
-		
+
 		if (roomListener != null) {
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST, "notifing listener that room {0} was destroyed", room.getRoomJID());
-			}			
+			}
 			roomListener.onRoomDestroyed(room, destroyElement);
 		}
 	}
@@ -73,30 +60,30 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 	public void destroyRoomWithoutListener(Room room, Element destroyElement) throws RepositoryException {
 		super.destroyRoom(room, destroyElement);
 	}
-	
+
 	@Override
 	public Room getRoom(BareJID roomJID) throws RepositoryException, MUCException {
 		boolean isNewInstance = !this.getActiveRooms().containsKey(roomJID);
-		Room room = super.getRoom(roomJID); 
+		Room room = super.getRoom(roomJID);
 		if (isNewInstance && room != null)
 			addListenersToNewRoom(room);
 		return room;
 	}
-	
+
 	public void setRoomListener(RoomListener roomListener) {
 		if (log.isLoggable(Level.FINEST)) {
 			log.log(Level.FINEST, "setting room listener to {0}", roomListener);
 		}
 		this.roomListener = roomListener;
 	}
-	
+
 	public void setRoomOccupantListener(Room.RoomOccupantListener roomOccupantListener) {
 		if (log.isLoggable(Level.FINEST)) {
 			log.log(Level.FINEST, "setting room occupants listener to " + roomListener);
 		}
 		this.roomOccupantListener = roomOccupantListener;
 	}
-	
+
 	private void addListenersToNewRoom(Room room) {
 		if (roomOccupantListener != null) {
 			if (log.isLoggable(Level.FINEST)) {
@@ -106,6 +93,12 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 		}
 		if (roomListener != null && roomListener instanceof Room.RoomListener) {
 			room.addListener((Room.RoomListener) roomListener);
-		}		
+		}
+	}
+
+	public interface RoomListener {
+		void onRoomCreated(Room room);
+
+		void onRoomDestroyed(Room room, Element destroyElement);
 	}
 }

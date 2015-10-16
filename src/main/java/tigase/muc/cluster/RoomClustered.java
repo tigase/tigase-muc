@@ -13,11 +13,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import tigase.muc.Affiliation;
-import tigase.muc.PresenceStore;
-import tigase.muc.Role;
-import tigase.muc.Room;
-import tigase.muc.RoomConfig;
+
+import tigase.muc.*;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
@@ -28,6 +25,13 @@ import tigase.xmpp.JID;
  */
 public class RoomClustered extends Room {
 	
+	private final ConcurrentMap<JID, String> remoteNicknames = new ConcurrentHashMap<JID, String>();
+	private final ConcurrentMap<String, Occupant> remoteOccupants = new ConcurrentHashMap<String, Occupant>();
+
+	protected RoomClustered(RoomConfig rc, Date creationDate, BareJID creatorJid) {
+		super(rc, creationDate, creatorJid);
+	}
+
 	public static void initialize() {
 		Room.factory = new RoomFactory() {
 
@@ -35,15 +39,8 @@ public class RoomClustered extends Room {
 			public Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid) {
 				return new RoomClustered(rc, creationDate, creatorJid);
 			}
-			
-		};
-	}
 
-	private final ConcurrentMap<JID,String> remoteNicknames = new ConcurrentHashMap<JID,String>();
-	private final ConcurrentMap<String,Occupant> remoteOccupants = new ConcurrentHashMap<String,Occupant>();
-	
-	protected RoomClustered(RoomConfig rc, Date creationDate, BareJID creatorJid) {
-		super(rc, creationDate, creatorJid);
+		};
 	}
 	
 	public Collection<Occupant> getRemoteOccupants() {

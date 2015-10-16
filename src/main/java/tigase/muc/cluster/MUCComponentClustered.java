@@ -7,17 +7,21 @@
  */
 package tigase.muc.cluster;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
-import java.util.logging.*;
-import tigase.cluster.api.*;
-import tigase.component.exceptions.RepositoryException;
-import tigase.component.modules.Module;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import tigase.cluster.api.ClusterControllerIfc;
+import tigase.cluster.api.ClusteredComponentIfc;
 import tigase.conf.ConfigurationException;
-import tigase.licence.*;
-import tigase.muc.*;
-import tigase.muc.repository.*;
+import tigase.kernel.core.Kernel;
+import tigase.licence.LicenceChecker;
+import tigase.muc.MUCComponent;
 import tigase.osgi.ModulesManagerImpl;
-import tigase.server.*;
+import tigase.server.ComponentInfo;
+import tigase.server.Packet;
+import tigase.server.XMPPServer;
 import tigase.xmpp.JID;
 
 /**
@@ -25,51 +29,46 @@ import tigase.xmpp.JID;
  *
  * @author andrzej
  */
-public class MUCComponentClustered extends MUCComponent
-		implements ClusteredComponentIfc {
+public class MUCComponentClustered extends MUCComponent implements ClusteredComponentIfc {
 
 	private static final Logger log = Logger.getLogger(MUCComponentClustered.class.getCanonicalName());
-	
+
 	private static final String DEF_STRATEGY_CLASS_VAL = ShardingStrategy.class.getCanonicalName();
+
 	private static final String STRATEGY_CLASS_KEY = "muc-strategy-class";
-	private StrategyIfc strategy;
 
 	protected LicenceChecker licenceChecker;
 
-	private ComponentInfo         cmpInfo           = null;
+	private ComponentInfo cmpInfo = null;
 	private ClusterControllerIfc cl_controller;
 
 	public MUCComponentClustered() {
-		licenceChecker = LicenceChecker.getLicenceChecker( "acs" );
+		licenceChecker = LicenceChecker.getLicenceChecker("acs");
 		RoomClustered.initialize();
 	}
 
 	@Override
 	public boolean addOutPacket(Packet packet) {
-		return super.addOutPacket(packet);	
-	}
-	
-	@Override
-	protected IMucRepository createMucRepository(MucContext componentConfig, MucDAO dao) throws RepositoryException {
-		InMemoryMucRepositoryClustered repo = new InMemoryMucRepositoryClustered(componentConfig, dao);
-		strategy.setMucRepository(repo);
-		return repo;
+		return super.addOutPacket(packet);
 	}
 
 	@Override
 	protected void onNodeConnected(JID jid) {
 		super.onNodeConnected(jid);
+		StrategyIfc strategy = kernel.getInstance(StrategyIfc.class);
 		strategy.nodeConnected(jid);
 	}
 
 	@Override
 	public void onNodeDisconnected(JID jid) {
 		super.onNodeDisconnected(jid);
+		StrategyIfc strategy = kernel.getInstance(StrategyIfc.class);
 		strategy.nodeDisconnected(jid);
 	}
 
 	@Override
 	public void processPacket(Packet packet) {
+		StrategyIfc strategy = kernel.getInstance(StrategyIfc.class);
 		boolean handled = strategy.processPacket(packet);
 
 		if (!handled) {
@@ -80,6 +79,7 @@ public class MUCComponentClustered extends MUCComponent
 	@Override
 	public void setClusterController(ClusterControllerIfc cl_controller) {
 		super.setClusterController(cl_controller);
+		StrategyIfc strategy = kernel.getInstance(StrategyIfc.class);
 		this.cl_controller = cl_controller;
 		if (strategy != null) {
 			strategy.setClusterController(cl_controller);
@@ -88,41 +88,46 @@ public class MUCComponentClustered extends MUCComponent
 
 	@Override
 	public Map<String, Object> getDefaults(Map<String, Object> params) {
-		Map<String,Object> defaults = super.getDefaults(params);
+		Map<String, Object> defaults = super.getDefaults(params);
 		defaults.put(STRATEGY_CLASS_KEY, DEF_STRATEGY_CLASS_VAL);
 		return defaults;
 	}
-	
+
 	@Override
-	public void setProperties(Map<String, Object> props) throws ConfigurationException {
-		if (props.size() > 1 && props.containsKey(STRATEGY_CLASS_KEY)) {
+	protected void changeRegisteredBeans(Map<String, Object> props) throws ConfigurationException, InstantiationException,
+			IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+		super.changeRegisteredBeans(props);
+		if (props.containsKey(STRATEGY_CLASS_KEY)) {
 			String strategy_class = (String) props.get(STRATEGY_CLASS_KEY);
 			try {
-				strategy = (StrategyIfc) ModulesManagerImpl.getInstance().forName(strategy_class).newInstance();
-				strategy.setMucComponentClustered(this);
-				if (cl_controller != null) {
-					strategy.setClusterController(cl_controller);
-				}
+				Class<StrategyIfc> sClass = (Class<StrategyIfc>) ModulesManagerImpl.getInstance().forName(strategy_class);
+				kernel.registerBean("strategy").asClass(sClass).exec();
 			} catch (Exception ex) {
 				if (!XMPPServer.isOSGi()) {
-					log.log(Level.SEVERE, "Cannot instance clustering strategy class: "
-							+ strategy_class, ex);
+					log.log(Level.SEVERE, "Cannot find clustering strategy class: " + strategy_class, ex);
 				}
-				throw new ConfigurationException("Cannot instance clustering strategy class: "
-						+ strategy_class);
+				throw new ConfigurationException("Cannot find clustering strategy class: " + strategy_class);
 			}
 		}
-		super.setProperties(props);
 	}
-	
+
+	@Override
+	protected void registerModules(Kernel kernel) {
+		super.registerModules(kernel);
+
+		kernel.registerBean("strategy").asClass(ShardingStrategy.class).exec();
+		kernel.registerBean(InMemoryMucRepositoryClustered.class).exec();
+	}
+
 	@Override
 	public void start() {
 		super.start();
-		//strategy.start();
+		// strategy.start();
 	}
-	
+
 	@Override
 	public void stop() {
+		StrategyIfc strategy = kernel.getInstance(StrategyIfc.class);
 		strategy.stop();
 		super.stop();
 	}
@@ -134,16 +139,11 @@ public class MUCComponentClustered extends MUCComponent
 	 */
 	@Override
 	public ComponentInfo getComponentInfo() {
+		StrategyIfc strategy = kernel.getInstance(StrategyIfc.class);
 		cmpInfo = super.getComponentInfo();
-		cmpInfo.getComponentData().put("MUCClusteringStrategy", (strategy != null)
-				? strategy.getClass()
-				: null);
+		cmpInfo.getComponentData().put("MUCClusteringStrategy", (strategy != null) ? strategy.getClass() : null);
 
 		return cmpInfo;
 	}
 
-	protected <T extends Module> T getModule(String id) {
-		return (T) this.modulesManager.getModule(id);
-	}
-	
 }
