@@ -21,13 +21,9 @@
  */
 package tigase.muc;
 
-import java.util.Map;
 import java.util.logging.Logger;
 
-import tigase.component.PropertiesBeanConfigurator;
 import tigase.kernel.beans.Bean;
-import tigase.kernel.beans.Initializable;
-import tigase.kernel.beans.Inject;
 import tigase.kernel.beans.config.ConfigField;
 import tigase.xmpp.BareJID;
 
@@ -36,7 +32,7 @@ import tigase.xmpp.BareJID;
  *
  */
 @Bean(name = "muc-config")
-public class MUCConfig implements Initializable {
+public class MUCConfig {
 
 	public static final String DB_CLASS_KEY = "history-db";
 
@@ -53,27 +49,27 @@ public class MUCConfig implements Initializable {
 	private static final String GHOSTBUSTER_ENABLED_KEY = "ghostbuster-enabled";
 	protected final Logger log = Logger.getLogger(this.getClass().getName());
 	private final BareJID serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
-	@ConfigField(desc = "Allowing Chat-States")
+	@ConfigField(desc = "Allowing Chat-States", alias = MUC_ALLOW_CHAT_STATES_KEY)
 	protected Boolean chatStateAllowed = false;
-	@ConfigField(desc = "Logs Directory")
+	@ConfigField(desc = "Logs Directory", alias = LOG_DIR_KEY)
 	private String chatLoggingDirectory = "./logs/";
-	@Inject
-	private PropertiesBeanConfigurator configurator;
-	@ConfigField(desc = "Chat history database class")
+	@ConfigField(desc = "Chat history database class", alias = DB_CLASS_KEY)
 	private String databaseClassName;
-	@ConfigField(desc = "Chat history database URI")
+	@ConfigField(desc = "Chat history database URI", alias = DB_URI_KEY)
 	private String databaseUri;
-	@ConfigField(desc = "GhostBuster enabled")
+	@ConfigField(desc = "GhostBuster enabled", alias = GHOSTBUSTER_ENABLED_KEY)
 	private boolean ghostbusterEnabled = true;
-	@ConfigField(desc = "Passing only body element")
+	@ConfigField(desc = "Passing only body element", alias = MESSAGE_FILTER_ENABLED_KEY)
 	private boolean messageFilterEnabled = true;
-	@ConfigField(desc = "Multi resources login allowed")
+	@ConfigField(desc = "Multi resources login allowed", alias = MUC_MULTI_ITEM_ALLOWED_KEY)
 	private boolean multiItemMode = true;
-	@ConfigField(desc = "Lock newly created room")
+	@ConfigField(desc = "Lock newly created room", alias = MUC_LOCK_NEW_ROOM_KEY)
 	private boolean newRoomLocked = true;
-	@ConfigField(desc = "Passing only bare presence")
+	@ConfigField(desc = "Passing only bare presence", alias = PRESENCE_FILTER_ENABLED_KEY)
 	private boolean presenceFilterEnabled = false;
+	@ConfigField(desc = "Repository class name", alias = MUC_REPO_CLASS_PROP_KEY)
 	private String repositoryClassName;
+	@ConfigField(desc = "Repository URI", alias = MUC_REPO_URL_PROP_KEY)
 	private String repositoryUri;
 
 	/**
@@ -87,32 +83,16 @@ public class MUCConfig implements Initializable {
 		return databaseClassName;
 	}
 
-	public void setDatabaseClassName(String databaseClassName) {
-		this.databaseClassName = databaseClassName;
-	}
-
 	public String getDatabaseUri() {
 		return databaseUri;
-	}
-
-	public void setDatabaseUri(String databaseUri) {
-		this.databaseUri = databaseUri;
 	}
 
 	public String getRepositoryClassName() {
 		return repositoryClassName;
 	}
 
-	public void setRepositoryClassName(String repositoryClassName) {
-		this.repositoryClassName = repositoryClassName;
-	}
-
 	public String getRepositoryUri() {
 		return repositoryUri;
-	}
-
-	public void setRepositoryUri(String repositoryUri) {
-		this.repositoryUri = repositoryUri;
 	}
 
 	/**
@@ -120,74 +100,6 @@ public class MUCConfig implements Initializable {
 	 */
 	public BareJID getServiceName() {
 		return serviceName;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see tigase.kernel.beans.Initializable#initialize()
-	 */
-	@Override
-	public void initialize() {
-		final Map<String, Object> props = configurator.getProperties();
-
-		if (props.containsKey(MESSAGE_FILTER_ENABLED_KEY)) {
-			this.messageFilterEnabled = (Boolean) props.get(MESSAGE_FILTER_ENABLED_KEY);
-		}
-		log.config(
-				"messageFilterEnabled: " + messageFilterEnabled + "; props: " + props.containsKey(MESSAGE_FILTER_ENABLED_KEY));
-
-		if (props.containsKey(PRESENCE_FILTER_ENABLED_KEY)) {
-			this.presenceFilterEnabled = (Boolean) props.get(PRESENCE_FILTER_ENABLED_KEY);
-		}
-		log.config("presenceFilterEnabled: " + presenceFilterEnabled + "; props: "
-				+ props.containsKey(PRESENCE_FILTER_ENABLED_KEY));
-
-		if (props.containsKey(MUC_MULTI_ITEM_ALLOWED_KEY)) {
-			this.multiItemMode = (Boolean) props.get(MUC_MULTI_ITEM_ALLOWED_KEY);
-		}
-		log.config("multiItemMode: " + multiItemMode + "; props: " + props.containsKey(MUC_MULTI_ITEM_ALLOWED_KEY));
-
-		if (props.containsKey(MUC_ALLOW_CHAT_STATES_KEY)) {
-			this.chatStateAllowed = (Boolean) props.get(MUC_ALLOW_CHAT_STATES_KEY);
-		}
-		log.config("chatStateAllowed: " + chatStateAllowed + "; props: " + props.containsKey(MUC_ALLOW_CHAT_STATES_KEY));
-
-		if (props.containsKey(MUC_LOCK_NEW_ROOM_KEY)) {
-			this.newRoomLocked = (Boolean) props.get(MUC_LOCK_NEW_ROOM_KEY);
-		}
-		log.config("newRoomLocked: " + newRoomLocked + "; props: " + props.containsKey(MUC_LOCK_NEW_ROOM_KEY));
-
-		if (props.containsKey(LOG_DIR_KEY)) {
-			log.config("Setting Chat Logging Directory");
-			this.chatLoggingDirectory = (String) props.get(LOG_DIR_KEY);
-		}
-
-		if (props.containsKey(GHOSTBUSTER_ENABLED_KEY)) {
-			this.ghostbusterEnabled = (Boolean) props.get(GHOSTBUSTER_ENABLED_KEY);
-		}
-		log.config("ghostbuster: " + ghostbusterEnabled + "; props: " + props.containsKey(GHOSTBUSTER_ENABLED_KEY));
-
-		if (props.containsKey(DB_CLASS_KEY)) {
-			log.config("Setting Database Class Name");
-			this.databaseClassName = (String) props.get(DB_CLASS_KEY);
-		}
-
-		if (props.containsKey(DB_URI_KEY)) {
-			log.config("Setting Database URI");
-			this.databaseUri = (String) props.get(DB_URI_KEY);
-		}
-
-		if (props.containsKey(MUC_REPO_CLASS_PROP_KEY)) {
-			log.config("Setting Repository class name");
-			this.repositoryClassName = (String) props.get(MUC_REPO_CLASS_PROP_KEY);
-		}
-
-		if (props.containsKey(MUC_REPO_URL_PROP_KEY)) {
-			log.config("Setting Repository URI");
-			this.repositoryUri = (String) props.get(MUC_REPO_URL_PROP_KEY);
-		}
-
 	}
 
 	/**
@@ -199,10 +111,6 @@ public class MUCConfig implements Initializable {
 
 	public boolean isGhostbusterEnabled() {
 		return ghostbusterEnabled;
-	}
-
-	public void setGhostbusterEnabled(boolean ghostbusterEnabled) {
-		this.ghostbusterEnabled = ghostbusterEnabled;
 	}
 
 	/**
