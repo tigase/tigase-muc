@@ -28,6 +28,7 @@ import tigase.component.PropertiesBeanConfigurator;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Initializable;
 import tigase.kernel.beans.Inject;
+import tigase.kernel.beans.config.ConfigField;
 import tigase.xmpp.BareJID;
 
 /**
@@ -40,53 +41,40 @@ public class MUCConfig implements Initializable {
 	public static final String DB_CLASS_KEY = "history-db";
 
 	public static final String DB_URI_KEY = "history-db-uri";
-
-	private static final String GHOSTBUSTER_ENABLED_KEY = "ghostbuster-enabled";
-
 	public static final String LOG_DIR_KEY = "room-log-directory";
-
 	public static final String MESSAGE_FILTER_ENABLED_KEY = "message-filter-enabled";
-
 	public static final String MUC_ALLOW_CHAT_STATES_KEY = "muc-allow-chat-states";
-
 	public static final String MUC_LOCK_NEW_ROOM_KEY = "muc-lock-new-room";
-
 	public static final String MUC_MULTI_ITEM_ALLOWED_KEY = "muc-multi-item-allowed";
-
+	public static final String PRESENCE_FILTER_ENABLED_KEY = "presence-filter-enabled";
 	protected static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
 
 	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
-
-	public static final String PRESENCE_FILTER_ENABLED_KEY = "presence-filter-enabled";
-
-	private String chatLoggingDirectory = "./logs/";
-
+	private static final String GHOSTBUSTER_ENABLED_KEY = "ghostbuster-enabled";
+	protected final Logger log = Logger.getLogger(this.getClass().getName());
+	private final BareJID serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
+	@ConfigField(desc = "Allowing Chat-States")
 	protected Boolean chatStateAllowed = false;
-
+	@ConfigField(desc = "Logs Directory")
+	private String chatLoggingDirectory = "./logs/";
 	@Inject
 	private PropertiesBeanConfigurator configurator;
-
+	@ConfigField(desc = "Chat history database class")
 	private String databaseClassName;
-
+	@ConfigField(desc = "Chat history database URI")
 	private String databaseUri;
-
+	@ConfigField(desc = "GhostBuster enabled")
 	private boolean ghostbusterEnabled = true;
-
-	protected final Logger log = Logger.getLogger(this.getClass().getName());
-
+	@ConfigField(desc = "Passing only body element")
 	private boolean messageFilterEnabled = true;
-
+	@ConfigField(desc = "Multi resources login allowed")
 	private boolean multiItemMode = true;
-
+	@ConfigField(desc = "Lock newly created room")
 	private boolean newRoomLocked = true;
-
+	@ConfigField(desc = "Passing only bare presence")
 	private boolean presenceFilterEnabled = false;
-
 	private String repositoryClassName;
-
 	private String repositoryUri;
-
-	private final BareJID serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
 
 	/**
 	 * @return
@@ -99,16 +87,32 @@ public class MUCConfig implements Initializable {
 		return databaseClassName;
 	}
 
+	public void setDatabaseClassName(String databaseClassName) {
+		this.databaseClassName = databaseClassName;
+	}
+
 	public String getDatabaseUri() {
 		return databaseUri;
+	}
+
+	public void setDatabaseUri(String databaseUri) {
+		this.databaseUri = databaseUri;
 	}
 
 	public String getRepositoryClassName() {
 		return repositoryClassName;
 	}
 
+	public void setRepositoryClassName(String repositoryClassName) {
+		this.repositoryClassName = repositoryClassName;
+	}
+
 	public String getRepositoryUri() {
 		return repositoryUri;
+	}
+
+	public void setRepositoryUri(String repositoryUri) {
+		this.repositoryUri = repositoryUri;
 	}
 
 	/**
@@ -197,6 +201,10 @@ public class MUCConfig implements Initializable {
 		return ghostbusterEnabled;
 	}
 
+	public void setGhostbusterEnabled(boolean ghostbusterEnabled) {
+		this.ghostbusterEnabled = ghostbusterEnabled;
+	}
+
 	/**
 	 * @return
 	 */
@@ -223,26 +231,6 @@ public class MUCConfig implements Initializable {
 	 */
 	public boolean isPresenceFilterEnabled() {
 		return presenceFilterEnabled;
-	}
-
-	public void setDatabaseClassName(String databaseClassName) {
-		this.databaseClassName = databaseClassName;
-	}
-
-	public void setDatabaseUri(String databaseUri) {
-		this.databaseUri = databaseUri;
-	}
-
-	public void setGhostbusterEnabled(boolean ghostbusterEnabled) {
-		this.ghostbusterEnabled = ghostbusterEnabled;
-	}
-
-	public void setRepositoryClassName(String repositoryClassName) {
-		this.repositoryClassName = repositoryClassName;
-	}
-
-	public void setRepositoryUri(String repositoryUri) {
-		this.repositoryUri = repositoryUri;
 	}
 
 }
