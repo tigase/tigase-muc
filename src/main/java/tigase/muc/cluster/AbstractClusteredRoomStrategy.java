@@ -36,6 +36,7 @@ import tigase.muc.modules.PresenceModule;
 import tigase.muc.modules.PresenceModule.PresenceWrapper;
 import tigase.muc.modules.PresenceModuleImpl;
 import tigase.server.Packet;
+import tigase.server.Priority;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
@@ -349,7 +350,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	private class RoomCreatedCmd extends CommandListenerAbstract {
 
 		public RoomCreatedCmd() {
-			super(ROOM_CREATED_CMD);
+			super(ROOM_CREATED_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -372,7 +373,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	private class RoomDestroyedCmd extends CommandListenerAbstract {
 
 		public RoomDestroyedCmd() {
-			super(ROOM_DESTROYED_CMD);
+			super(ROOM_DESTROYED_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -412,7 +413,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	private class RoomMessageCmd extends CommandListenerAbstract {
 
 		public RoomMessageCmd() {
-			super(ROOM_MESSAGE_CMD);
+			super(ROOM_MESSAGE_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -444,7 +445,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	private class RequestSyncCmd extends CommandListenerAbstract {
 		
 		public RequestSyncCmd() {
-			super(REQUEST_SYNC_CMD);
+			super(REQUEST_SYNC_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -489,7 +490,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	private class ResponseSyncCmd extends CommandListenerAbstract {
 		
 		public ResponseSyncCmd() {
-			super(RESPONSE_SYNC_CMD);
+			super(RESPONSE_SYNC_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -524,7 +525,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	private class RoomAffiliationCmd extends CommandListenerAbstract {
 
 		public RoomAffiliationCmd() {
-			super(ROOM_AFFILIATION_CMD);
+			super(ROOM_AFFILIATION_CMD, Priority.HIGH);
 		}
 
 		@Override

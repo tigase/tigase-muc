@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import tigase.server.Priority;
 
 /**
  * Stripped down strategy that suppress sending MUC presence between rooms.
@@ -52,7 +53,7 @@ public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrate
 	private class OccupantChangedPresenceCmd extends CommandListenerAbstract {
 
 		public OccupantChangedPresenceCmd() {
-			super( OCCUPANT_PRESENCE_CMD );
+			super( OCCUPANT_PRESENCE_CMD, Priority.HIGH );
 		}
 
 		@Override
@@ -76,7 +77,7 @@ public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrate
 	private class OccupantsSyncRequestCmd extends CommandListenerAbstract {
 
 		public OccupantsSyncRequestCmd() {
-			super( OCCUPANTS_SYNC_REQUEST_CMD );
+			super( OCCUPANTS_SYNC_REQUEST_CMD, Priority.HIGH );
 		}
 
 		@Override

@@ -26,6 +26,7 @@ import tigase.cluster.api.CommandListenerAbstract;
 import tigase.muc.Room;
 import tigase.server.Packet;
 import tigase.server.Presence;
+import tigase.server.Priority;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
@@ -217,7 +218,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 	private class OccupantAddedCmd extends CommandListenerAbstract {
 
 		public OccupantAddedCmd() {
-			super(OCCUPANT_ADDED_CMD);
+			super(OCCUPANT_ADDED_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -237,7 +238,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 	private class OccupantRemovedCmd extends CommandListenerAbstract {
 
 		public OccupantRemovedCmd() {
-			super(OCCUPANT_REMOVED_CMD);
+			super(OCCUPANT_REMOVED_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -256,7 +257,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 	private class PacketForwardCmd extends CommandListenerAbstract {
 
 		public PacketForwardCmd() {
-			super(PACKET_FORWARD_CMD);
+			super(PACKET_FORWARD_CMD, Priority.HIGH);
 		}
 
 		@Override

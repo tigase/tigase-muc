@@ -31,6 +31,7 @@ import tigase.muc.exceptions.MUCException;
 import tigase.muc.modules.PresenceModule;
 import tigase.muc.modules.PresenceModuleImpl;
 import tigase.server.Packet;
+import tigase.server.Priority;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
@@ -54,7 +55,7 @@ public class ClusteredRoomStrategyV2 extends AbstractClusteredRoomStrategy {
 	private class OccupantChangedPresenceCmd extends CommandListenerAbstract {
 
 		public OccupantChangedPresenceCmd() {
-			super(OCCUPANT_PRESENCE_CMD);
+			super(OCCUPANT_PRESENCE_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -124,7 +125,7 @@ public class ClusteredRoomStrategyV2 extends AbstractClusteredRoomStrategy {
 	private class OccupantsSyncRequestCmd extends CommandListenerAbstract {
 
 		public OccupantsSyncRequestCmd() {
-			super(OCCUPANTS_SYNC_REQUEST_CMD);
+			super(OCCUPANTS_SYNC_REQUEST_CMD, Priority.HIGH);
 		}
 
 		@Override

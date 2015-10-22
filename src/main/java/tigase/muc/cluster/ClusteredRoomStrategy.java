@@ -37,6 +37,7 @@ import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
 import java.util.Arrays;
+import tigase.server.Priority;
 
 /**
  *
@@ -53,7 +54,7 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 	private class OccupantChangedPresenceCmd extends CommandListenerAbstract {
 
 		public OccupantChangedPresenceCmd() {
-			super(OCCUPANT_PRESENCE_CMD);
+			super(OCCUPANT_PRESENCE_CMD, Priority.HIGH);
 		}
 
 		@Override

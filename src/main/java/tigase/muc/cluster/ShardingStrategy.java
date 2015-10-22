@@ -28,6 +28,7 @@ import tigase.component.exceptions.RepositoryException;
 import tigase.muc.Room;
 import tigase.server.Packet;
 import tigase.server.Presence;
+import tigase.server.Priority;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
@@ -269,7 +270,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private class RoomCreatedCmd extends CommandListenerAbstract {
 
 		public RoomCreatedCmd() {
-			super(ROOM_CREATED_CMD);
+			super(ROOM_CREATED_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -287,7 +288,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private class RoomDestroyedCmd extends CommandListenerAbstract {
 
 		public RoomDestroyedCmd() {
-			super(ROOM_DESTROYED_CMD);
+			super(ROOM_DESTROYED_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -306,7 +307,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private class NodeShutdownCmd extends CommandListenerAbstract {
 
 		public NodeShutdownCmd() {
-			super(NODE_SHUTDOWN_CMD);
+			super(NODE_SHUTDOWN_CMD, Priority.HIGH);
 		}
 		
 		@Override
@@ -328,7 +329,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private class RequestSyncCmd extends CommandListenerAbstract {
 		
 		public RequestSyncCmd() {
-			super(REQUEST_SYNC_CMD);
+			super(REQUEST_SYNC_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -388,7 +389,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private class ResponseSyncCmd extends CommandListenerAbstract {
 		
 		public ResponseSyncCmd() {
-			super(RESPONSE_SYNC_CMD);
+			super(RESPONSE_SYNC_CMD, Priority.HIGH);
 		}
 
 		@Override
