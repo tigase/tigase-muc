@@ -49,6 +49,12 @@ public class MUCComponentClustered extends MUCComponent
 			log.severe( "Shutting down system!" );
 			System.exit( 1 );
 		}
+		String strategyProp = System.getProperty( "sm-cluster-strategy-class" );
+		if ( strategyProp == null || !"tigase.server.cluster.strategy.OnlineUsersCachingStrategy".equals( strategyProp) ){
+			log.severe( "You've tried using Clustered version of the component but ACS is disabled" );
+			log.severe( "Shutting down system!" );
+			System.exit( 1 );
+		}
 	}
 
 	@Override
