@@ -42,6 +42,13 @@ public class MUCComponentClustered extends MUCComponent
 	public MUCComponentClustered() {
 		licenceChecker = LicenceChecker.getLicenceChecker( "acs" );
 		RoomClustered.initialize();
+
+		String clusterProperty = System.getProperty( "cluster-mode" );
+		if ( clusterProperty == null || !Boolean.parseBoolean( clusterProperty ) ){
+			log.severe( "You've tried using Clustered version of the component but cluster-mode is disabled" );
+			log.severe( "Shutting down system!" );
+			System.exit( 1 );
+		}
 	}
 
 	@Override
