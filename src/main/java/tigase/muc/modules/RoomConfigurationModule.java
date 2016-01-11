@@ -53,11 +53,9 @@ import tigase.xmpp.StanzaType;
 @Bean(name = RoomConfigurationModule.ID)
 public class RoomConfigurationModule extends AbstractMucModule {
 
+	public static final String ID = "owner";
 	private static final Criteria CRIT = ElementCriteria.name("iq").add(
 			ElementCriteria.name("query", "http://jabber.org/protocol/muc#owner"));
-
-	public static final String ID = "owner";
-
 	@Inject
 	private HistoryProvider historyProvider;
 
@@ -217,7 +215,12 @@ public class RoomConfigurationModule extends AbstractMucModule {
 			final Element query = element.getElement().getChild("query", "http://jabber.org/protocol/muc#owner");
 			Room room = repository.getRoom(roomJID.getBareJID());
 
-			if (room == null) {
+			final Element x = query.getChild("x", "jabber:x:data");
+			final Element destroy = query.getChild("destroy");
+
+			if (room == null && destroy != null) {
+				throw new MUCException(Authorization.ITEM_NOT_FOUND, "There is no such room.");
+			} else if (room == null) {
 				room = repository.createNewRoom(roomJID.getBareJID(), senderJID);
 			}
 
@@ -226,9 +229,6 @@ public class RoomConfigurationModule extends AbstractMucModule {
 			if (room.getAffiliation(senderJID.getBareJID()) != Affiliation.owner) {
 				throw new MUCException(Authorization.FORBIDDEN);
 			}
-
-			final Element x = query.getChild("x", "jabber:x:data");
-			final Element destroy = query.getChild("destroy");
 
 			if (destroy != null) {
 				if (!affiliation.isDestroyRoom()) {
