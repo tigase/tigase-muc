@@ -22,11 +22,7 @@
 
 package tigase.muc.modules;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 
 import tigase.component.exceptions.RepositoryException;
@@ -56,10 +52,13 @@ import tigase.xmpp.StanzaType;
 @Bean(name = ModeratorModule.ID)
 public class ModeratorModule extends AbstractMucModule {
 
+	public static final String ID = "admin";
 	protected static final Criteria CRIT = ElementCriteria.name("iq").add(
 			ElementCriteria.name("query", "http://jabber.org/protocol/muc#admin"));
-
-	public static final String ID = "admin";
+	@Inject
+	private Ghostbuster2 ghostbuster;
+	@Inject
+	private IMucRepository repository;
 
 	protected static Affiliation getAffiliation(Element item) throws MUCException {
 		String tmp = item.getAttributeStaticStr("affiliation");
@@ -83,11 +82,64 @@ public class ModeratorModule extends AbstractMucModule {
 		return (tmp == null) ? null : Role.valueOf(tmp);
 	}
 
-	@Inject
-	private Ghostbuster2 ghostbuster;
-
-	@Inject
-	private IMucRepository repository;
+	void checkItem(Element item, String occupantNickname, Affiliation occupantAffiliation, Role newRole,
+			Affiliation newAffiliation, String senderNickname, Role senderRole, Affiliation senderaAffiliation)
+					throws MUCException {
+		if ((newRole != null) && (newAffiliation == null)) {
+			if ((newRole == Role.none) && !senderRole.isKickParticipantsAndVisitors()) {
+				if (log.isLoggable(Level.FINEST))
+					log.finest("User " + senderNickname + " (a:" + senderaAffiliation + "; r:" + senderRole
+							+ ") is not allowed to kick user " + occupantNickname + " (a:" + occupantAffiliation + ")");
+				throw new MUCException(Authorization.NOT_ALLOWED, "You cannot kick");
+			} else if ((newRole == Role.none) && (occupantAffiliation.getWeight() > senderaAffiliation.getWeight())) {
+				if (log.isLoggable(Level.FINEST))
+					log.finest("User " + senderNickname + " (a:" + senderaAffiliation + "; r:" + senderRole
+							+ ") is not allowed to kick user " + occupantNickname + " (a:" + occupantAffiliation
+							+ ") because of lower affiliation.");
+				throw new MUCException(Authorization.NOT_ALLOWED, "You cannot kick occupant with higher affiliation");
+			}
+			if ((newRole == Role.participant) && !senderRole.isGrantVoice()) {
+				if (log.isLoggable(Level.FINEST))
+					log.finest("User " + senderNickname + " (a:" + senderaAffiliation + "; r:" + senderRole
+							+ ") is not allowed to grant voice to user " + occupantNickname + " (a:" + occupantAffiliation
+							+ ") because of lower affiliation.");
+				throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant voice");
+			}
+			if ((newRole == Role.visitor) && !senderRole.isRevokeVoice()) {
+				throw new MUCException(Authorization.NOT_ALLOWED, "You cannot revoke voice");
+			} else if ((newRole == Role.visitor) && (occupantAffiliation.getWeight() >= senderaAffiliation.getWeight())) {
+				throw new MUCException(Authorization.NOT_ALLOWED, "You revoke voice occupant with higher affiliation");
+			}
+			if ((newRole == Role.moderator) && !senderaAffiliation.isEditModeratorList()) {
+				throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant moderator provileges");
+			}
+		} else if ((newRole == null) && (newAffiliation != null)) {
+			if (item.getAttributeStaticStr("jid") == null) {
+				throw new MUCException(Authorization.BAD_REQUEST);
+			}
+			if ((newAffiliation == Affiliation.outcast) && !senderaAffiliation.isBanMembersAndUnaffiliatedUsers()) {
+				throw new MUCException(Authorization.NOT_ALLOWED, "You cannot ban");
+			} else if ((newAffiliation == Affiliation.outcast)
+					&& (occupantAffiliation.getWeight() >= senderaAffiliation.getWeight())) {
+				throw new MUCException(Authorization.NOT_ALLOWED, "You ban occupant with higher affiliation");
+			}
+			if ((newAffiliation == Affiliation.member) && !senderaAffiliation.isEditMemberList()) {
+				throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant membership");
+			}
+			if ((newAffiliation == Affiliation.admin) && !senderaAffiliation.isEditAdminList()) {
+				throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant admin provileges");
+			}
+			if ((newAffiliation == Affiliation.owner) && !senderaAffiliation.isEditOwnerList()) {
+				throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant owner provileges");
+			}
+			if ((newAffiliation == Affiliation.none) && (occupantAffiliation.getWeight() > senderaAffiliation.getWeight())) {
+				throw new MUCException(Authorization.NOT_ALLOWED,
+						"You cannot remove affiliation occupant with higher affiliation");
+			}
+		} else {
+			throw new MUCException(Authorization.BAD_REQUEST, "You cannot change role and affiliation in the same time.");
+		}
+	}
 
 	protected void checkItem(final Room room, final Element item, final String senderNickname,
 			final Affiliation senderaAffiliation, final Role senderRole) throws MUCException, TigaseStringprepException {
@@ -103,62 +155,8 @@ public class ModeratorModule extends AbstractMucModule {
 		}
 		for (String occupantNickname : occupantNicknames) {
 			final Affiliation occupantAffiliation = room.getAffiliation(occupantNickname);
-
-			if ((newRole != null) && (newAffiliation == null)) {
-				if ((newRole == Role.none) && !senderRole.isKickParticipantsAndVisitors()) {
-					if (log.isLoggable(Level.FINEST))
-						log.finest("User " + senderNickname + " (a:" + senderaAffiliation + "; r:" + senderRole
-								+ ") is not allowed to kick user " + occupantNickname + " (a:" + occupantAffiliation + ")");
-					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot kick");
-				} else if ((newRole == Role.none) && (occupantAffiliation.getWeight() > senderaAffiliation.getWeight())) {
-					if (log.isLoggable(Level.FINEST))
-						log.finest("User " + senderNickname + " (a:" + senderaAffiliation + "; r:" + senderRole
-								+ ") is not allowed to kick user " + occupantNickname + " (a:" + occupantAffiliation
-								+ ") because of lower affiliation.");
-					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot kick occupant with higher affiliation");
-				}
-				if ((newRole == Role.participant) && !senderRole.isGrantVoice()) {
-					if (log.isLoggable(Level.FINEST))
-						log.finest("User " + senderNickname + " (a:" + senderaAffiliation + "; r:" + senderRole
-								+ ") is not allowed to grant voice to user " + occupantNickname + " (a:" + occupantAffiliation
-								+ ") because of lower affiliation.");
-					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant voice");
-				}
-				if ((newRole == Role.visitor) && !senderRole.isRevokeVoice()) {
-					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot revoke voice");
-				} else if ((newRole == Role.visitor) && (occupantAffiliation.getWeight() >= senderaAffiliation.getWeight())) {
-					throw new MUCException(Authorization.NOT_ALLOWED, "You revoke voice occupant with higher affiliation");
-				}
-				if ((newRole == Role.moderator) && !senderaAffiliation.isEditModeratorList()) {
-					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant moderator provileges");
-				}
-			} else if ((newRole == null) && (newAffiliation != null)) {
-				if (item.getAttributeStaticStr("jid") == null) {
-					throw new MUCException(Authorization.BAD_REQUEST);
-				}
-				if ((newAffiliation == Affiliation.outcast) && !senderaAffiliation.isBanMembersAndUnaffiliatedUsers()) {
-					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot ban");
-				} else if ((newAffiliation == Affiliation.outcast)
-						&& (occupantAffiliation.getWeight() >= senderaAffiliation.getWeight())) {
-					throw new MUCException(Authorization.NOT_ALLOWED, "You ban occupant with higher affiliation");
-				}
-				if ((newAffiliation == Affiliation.member) && !senderaAffiliation.isEditMemberList()) {
-					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant membership");
-				}
-				if ((newAffiliation == Affiliation.admin) && !senderaAffiliation.isEditAdminList()) {
-					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant admin provileges");
-				}
-				if ((newAffiliation == Affiliation.owner) && !senderaAffiliation.isEditOwnerList()) {
-					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant owner provileges");
-				}
-				if ((newAffiliation == Affiliation.none)
-						&& (occupantAffiliation.getWeight() > senderaAffiliation.getWeight())) {
-					throw new MUCException(Authorization.NOT_ALLOWED,
-							"You cannot remove affiliation occupant with higher affiliation");
-				}
-			} else {
-				throw new MUCException(Authorization.BAD_REQUEST);
-			}
+			checkItem(item, occupantNickname, occupantAffiliation, newRole, newAffiliation, senderNickname, senderRole,
+					senderaAffiliation);
 		}
 	}
 
