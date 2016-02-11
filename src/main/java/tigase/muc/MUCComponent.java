@@ -39,15 +39,7 @@ import tigase.kernel.core.Kernel;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.history.HistoryProviderFactory;
 import tigase.muc.logger.RoomChatLogger;
-import tigase.muc.modules.DiscoveryModule;
-import tigase.muc.modules.GroupchatMessageModule;
-import tigase.muc.modules.IqStanzaForwarderModule;
-import tigase.muc.modules.MediatedInvitationModule;
-import tigase.muc.modules.ModeratorModule;
-import tigase.muc.modules.PresenceModuleImpl;
-import tigase.muc.modules.PrivateMessageModule;
-import tigase.muc.modules.RoomConfigurationModule;
-import tigase.muc.modules.UniqueRoomNameModule;
+import tigase.muc.modules.*;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.MucDAO;
 import tigase.muc.repository.UserRepositoryFactory;
@@ -59,16 +51,15 @@ public class MUCComponent extends AbstractKernelBasedComponent {
 	public static final String DEFAULT_ROOM_CONFIG_KEY = "default_room_config";
 
 	public static final String DEFAULT_ROOM_CONFIG_PREFIX_KEY = DEFAULT_ROOM_CONFIG_KEY + "/";
+	private Ghostbuster2 ghostbuster;
+
+	public MUCComponent() {
+	}
 
 	protected static void addIfExists(Bindings binds, String name, Object value) {
 		if (value != null) {
 			binds.put(name, value);
 		}
-	}
-
-	private Ghostbuster2 ghostbuster;
-
-	public MUCComponent() {
 	}
 
 	@Override
@@ -107,18 +98,6 @@ public class MUCComponent extends AbstractKernelBasedComponent {
 	}
 
 	@Override
-	public void initBindings(Bindings binds) {
-		super.initBindings(binds);
-
-		// TODO addIfExists(binds, PRESENCE_MODULE_VAR,
-		// kernel.getInstance(PresenceModule.ID));
-		// addIfExists(binds, OWNER_MODULE_VAR,
-		// kernel.getInstance(RoomConfigurationModule.ID));
-		// addIfExists(binds, MUC_REPOSITORY_VAR,
-		// kernel.getInstance(IMucRepository.class));
-	}
-
-	@Override
 	public boolean isDiscoNonAdmin() {
 		return true;
 	}
@@ -126,16 +105,6 @@ public class MUCComponent extends AbstractKernelBasedComponent {
 	@Override
 	public boolean isSubdomain() {
 		return true;
-	}
-
-	@Override
-	public int processingInThreads() {
-		return Runtime.getRuntime().availableProcessors() * 4;
-	}
-
-	@Override
-	public int processingOutThreads() {
-		return Runtime.getRuntime().availableProcessors() * 4;
 	}
 
 	/**
@@ -151,6 +120,16 @@ public class MUCComponent extends AbstractKernelBasedComponent {
 			}
 		}
 		super.processPacket(packet);
+	}
+
+	@Override
+	public int processingInThreads() {
+		return Runtime.getRuntime().availableProcessors() * 4;
+	}
+
+	@Override
+	public int processingOutThreads() {
+		return Runtime.getRuntime().availableProcessors() * 4;
 	}
 
 	@Override

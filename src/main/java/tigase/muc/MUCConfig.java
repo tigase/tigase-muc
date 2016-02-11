@@ -31,7 +31,7 @@ import tigase.xmpp.BareJID;
  * @author bmalkow
  *
  */
-@Bean(name = "muc-config")
+@Bean(name = "mucConfig")
 public class MUCConfig {
 
 	public static final String DB_CLASS_KEY = "history-db";

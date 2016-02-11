@@ -53,9 +53,11 @@ import tigase.xmpp.StanzaType;
 @Bean(name = RoomConfigurationModule.ID)
 public class RoomConfigurationModule extends AbstractMucModule {
 
-	public static final String ID = "owner";
+	public static final String ID = "ownerModule";
+
 	private static final Criteria CRIT = ElementCriteria.name("iq").add(
 			ElementCriteria.name("query", "http://jabber.org/protocol/muc#owner"));
+
 	@Inject
 	private HistoryProvider historyProvider;
 

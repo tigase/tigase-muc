@@ -37,7 +37,7 @@ import tigase.xmpp.JID;
  */
 public interface IMucRepository {
 
-	public static final String ID = "muc-repository";
+	public static final String ID = "mucRepository";
 
 	Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException;
 
