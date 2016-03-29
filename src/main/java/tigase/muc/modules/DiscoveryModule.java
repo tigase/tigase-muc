@@ -35,6 +35,8 @@ import tigase.xmpp.JID;
  */
 public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModule<MucContext> {
 
+	private DiscoItemsFilter filter = new DefaultDiscoItemsFilter();
+
 	private static void addFeature(Element query, String feature) {
 		query.addChild(new Element("feature", new String[] { "var" }, new String[] { feature }));
 	}
@@ -129,7 +131,7 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 
 		// list-single Affiliations that May Discover Real JIDs of Occupants
 		RoomConfig.Anonymity anonymity = config.getRoomAnonymity();
-		String[] whois;
+		Object[] whois;
 		switch (anonymity) {
 		case nonanonymous:
 			whois = new String[] { Affiliation.owner.name(), Affiliation.admin.name(), Affiliation.member.name(),
@@ -142,6 +144,14 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 		addField(form, "muc#roomconfig_whois", null, "Affiliations that may discover real jIDs of occupants", whois);
 
 		resultQuery.addChild(form);
+	}
+
+	public DiscoItemsFilter getFilter() {
+		return filter;
+	}
+
+	public void setFilter(DiscoItemsFilter filter) {
+		this.filter = filter;
 	}
 
 	/*
@@ -246,11 +256,9 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 					} else if (room.getConfig() == null) {
 						log.warning("Room " + jid + " hasn't configuration!");
 						continue;
-					} else if (!room.getConfig().isRoomconfigPublicroom()) {
-						Affiliation senderAff = room.getAffiliation(senderJID.getBareJID());
-						if (!room.isOccupantInRoom(senderJID)
-								&& (senderAff == Affiliation.none || senderAff == Affiliation.outcast))
-							continue;
+					} else if (filter != null && !filter.allowed(senderJID, room)) {
+						log.fine("Room " + jid + " is filtered off");
+						continue;
 					}
 
 					resultQuery.addChild(new Element("item", new String[] { "jid", "name" },

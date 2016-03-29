@@ -42,16 +42,7 @@ import tigase.form.Field;
 import tigase.muc.history.HistoryManagerFactory;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.logger.MucLogger;
-import tigase.muc.modules.DiscoveryModule;
-import tigase.muc.modules.GroupchatMessageModule;
-import tigase.muc.modules.IqStanzaForwarderModule;
-import tigase.muc.modules.MediatedInvitationModule;
-import tigase.muc.modules.ModeratorModule;
-import tigase.muc.modules.PresenceModule;
-import tigase.muc.modules.PresenceModuleImpl;
-import tigase.muc.modules.PrivateMessageModule;
-import tigase.muc.modules.RoomConfigurationModule;
-import tigase.muc.modules.UniqueRoomNameModule;
+import tigase.muc.modules.*;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.MucDAO;
 import tigase.muc.repository.inmemory.InMemoryMucRepository;
@@ -60,117 +51,43 @@ import tigase.xmpp.BareJID;
 
 public class MUCComponent extends AbstractComponent<MucContext> {
 
-	private class MucContextImpl extends AbstractContext implements MucContext {
-
-		private final BareJID serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
-
-		/**
-		 * @param component
-		 */
-		public MucContextImpl(AbstractComponent<?> component) {
-			super(component);
-		}
-
-		@Override
-		public String getChatLoggingDirectory() {
-			return MUCComponent.this.chatLoggingDirectory;
-		}
-
-		@Override
-		public Ghostbuster2 getGhostbuster() {
-			return MUCComponent.this.ghostbuster;
-		}
-
-		@Override
-		public HistoryProvider getHistoryProvider() {
-			return MUCComponent.this.historyProvider;
-		}
-
-		@Override
-		public MucLogger getMucLogger() {
-			return MUCComponent.this.mucLogger;
-		}
-
-		@Override
-		public IMucRepository getMucRepository() {
-			return MUCComponent.this.mucRepository;
-		}
-
-		@Override
-		public BareJID getServiceName() {
-			return serviceName;
-		}
-
-		@Override
-		public boolean isChatStateAllowed() {
-			return MUCComponent.this.chatStateAllowed;
-		}
-
-		@Override
-		public boolean isMessageFilterEnabled() {
-			return MUCComponent.this.messageFilterEnabled;
-		}
-
-		@Override
-		public boolean isMultiItemMode() {
-			return MUCComponent.this.multiItemMode;
-		}
-
-		@Override
-		public boolean isNewRoomLocked() {
-			return MUCComponent.this.newRoomLocked;
-		}
-
-		@Override
-		public boolean isPresenceFilterEnabled() {
-			return MUCComponent.this.presenceFilterEnabled;
-		}
-
-		@Override
-		public boolean isPublicLoggingEnabled() {
-			return mucLogger != null || (historyProvider != null && historyProvider.isPersistent());
-		}
-
-	}
-
 	public static final String DEFAULT_ROOM_CONFIG_KEY = "default_room_config";
-
 	public static final String DEFAULT_ROOM_CONFIG_PREFIX_KEY = DEFAULT_ROOM_CONFIG_KEY + "/";
-
-	private static final String GHOSTBUSTER_ENABLED_KEY = "ghostbuster-enabled";
-
 	public static final String LOG_DIR_KEY = "room-log-directory";
-
 	public static final String MESSAGE_FILTER_ENABLED_KEY = "message-filter-enabled";
-
 	public static final String MUC_ALLOW_CHAT_STATES_KEY = "muc-allow-chat-states";
-
 	public static final String MUC_LOCK_NEW_ROOM_KEY = "muc-lock-new-room";
-
 	public static final String MUC_MULTI_ITEM_ALLOWED_KEY = "muc-multi-item-allowed";
-
-	protected static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
-
-	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
-
-	private static final String MUC_REPOSITORY_VAR = "mucRepository";
-
-	private static final String OWNER_MODULE_VAR = "ownerModule";
-
 	/**
-	 * 
 	 * @deprecated Use
-	 *             {@linkplain CopyOfMUCComponent#SEARCH_GHOSTS_EVERY_MINUTE_KEY
-	 *             SEARCH_GHOSTS_MINUTE_KEY} instead.
+	 * {@linkplain MUCComponent#SEARCH_GHOSTS_EVERY_MINUTE_KEY
+	 * SEARCH_GHOSTS_MINUTE_KEY} instead.
 	 */
 	@Deprecated
 	public static final String PING_EVERY_MINUTE_KEY = "ping-every-minute";
-
 	public static final String PRESENCE_FILTER_ENABLED_KEY = "presence-filter-enabled";
-
-	private static final String PRESENCE_MODULE_VAR = "presenceModule";
-
 	public static final String SEARCH_GHOSTS_EVERY_MINUTE_KEY = "search-ghosts-every-minute";
+	protected static final String MUC_REPO_CLASS_PROP_KEY = "muc-repo-class";
+	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
+	private static final String GHOSTBUSTER_ENABLED_KEY = "ghostbuster-enabled";
+	private static final String MUC_REPOSITORY_VAR = "mucRepository";
+	private static final String OWNER_MODULE_VAR = "ownerModule";
+	private static final String PRESENCE_MODULE_VAR = "presenceModule";
+	private static final String MUC_CUSTOM_DISCO_FILTER = "roomFilterClass";
+	protected String chatLoggingDirectory;
+	protected Boolean chatStateAllowed;
+	protected Ghostbuster2 ghostbuster;
+	protected HistoryProvider historyProvider;
+	protected boolean messageFilterEnabled;
+	protected MucLogger mucLogger;
+	protected IMucRepository mucRepository;
+	protected boolean multiItemMode;
+	protected Boolean newRoomLocked;
+	protected boolean presenceFilterEnabled;
+	protected boolean searchGhostsEveryMinute = false;
+
+	public MUCComponent() {
+	}
 
 	protected static void addIfExists(Bindings binds, String name, Object value) {
 		if (value != null) {
@@ -178,34 +95,9 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 		}
 	}
 
-	protected String chatLoggingDirectory;
-
-	protected Boolean chatStateAllowed;
-
-	protected Ghostbuster2 ghostbuster;
-
-	protected HistoryProvider historyProvider;
-
-	protected boolean messageFilterEnabled;
-
-	protected MucLogger mucLogger;
-
-	protected IMucRepository mucRepository;
-
-	protected boolean multiItemMode;
-
-	protected Boolean newRoomLocked;
-
-	protected boolean presenceFilterEnabled;
-
-	protected boolean searchGhostsEveryMinute = false;
-
-	public MUCComponent() {
-	}
-
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.component.AbstractComponent#createContext()
 	 */
 	@Override
@@ -276,7 +168,7 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see tigase.component.AbstractComponent#getDefaults(java.util.Map)
 	 */
 	@Override
@@ -294,8 +186,8 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 		props.put(MUC_MULTI_ITEM_ALLOWED_KEY, Boolean.TRUE);
 
 		// By default use the same repository as all other components:
-		String repo_uri = (params.get(RepositoryFactory.GEN_USER_DB_URI) != null) ? (String) params.get(RepositoryFactory.GEN_USER_DB_URI)
-				: "memory";
+		String repo_uri = (params.get(RepositoryFactory.GEN_USER_DB_URI) != null)
+				? (String) params.get(RepositoryFactory.GEN_USER_DB_URI) : "memory";
 
 		props.put(HistoryManagerFactory.DB_URI_KEY, repo_uri);
 
@@ -354,16 +246,6 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 		return true;
 	}
 
-	@Override
-	public int processingInThreads() {
-		return Runtime.getRuntime().availableProcessors() * 4;
-	}
-
-	@Override
-	public int processingOutThreads() {
-		return Runtime.getRuntime().availableProcessors() * 4;
-	}
-
 	/**
 	 * {@inheritDoc}
 	 */
@@ -377,6 +259,16 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 			}
 		}
 		super.processPacket(packet);
+	}
+
+	@Override
+	public int processingInThreads() {
+		return Runtime.getRuntime().availableProcessors() * 4;
+	}
+
+	@Override
+	public int processingOutThreads() {
+		return Runtime.getRuntime().availableProcessors() * 4;
 	}
 
 	@Override
@@ -435,7 +327,8 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 		if (props.containsKey(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY)) {
 			this.multiItemMode = (Boolean) props.get(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY);
 		}
-		log.config("multiItemMode: " + multiItemMode + "; props: " + props.containsKey(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY));
+		log.config(
+				"multiItemMode: " + multiItemMode + "; props: " + props.containsKey(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY));
 
 		if (props.containsKey(MUCComponent.MUC_ALLOW_CHAT_STATES_KEY)) {
 			this.chatStateAllowed = (Boolean) props.get(MUCComponent.MUC_ALLOW_CHAT_STATES_KEY);
@@ -515,6 +408,20 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 			ghostbuster.setPresenceModule(module);
 		}
 
+		if (props.containsKey(MUCComponent.MUC_CUSTOM_DISCO_FILTER)) {
+			try {
+				String filterClassName = (String) props.get(MUCComponent.MUC_CUSTOM_DISCO_FILTER);
+
+				Class filterClass = Class.forName(filterClassName);
+				DiscoItemsFilter filter = (DiscoItemsFilter) filterClass.newInstance();
+				((DiscoveryModule) modulesManager.getModule(DiscoveryModule.ID)).setFilter(filter);
+				log.config("Custom disco#items filter class: " + filterClassName);
+			} catch (Exception e) {
+				log.log(Level.WARNING, "Cannot set custom disco#items filter", e);
+			}
+
+		}
+
 	}
 
 	private void updateDefaultRoomConfig(Map<String, Object> props) throws RepositoryException {
@@ -551,6 +458,79 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 			if (log.isLoggable(Level.CONFIG))
 				log.config("Default room configuration is udpated");
 			mucRepository.updateDefaultRoomConfig(defaultRoomConfig);
+		}
+
+	}
+
+	private class MucContextImpl extends AbstractContext implements MucContext {
+
+		private final BareJID serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
+
+		/**
+		 * @param component
+		 */
+		public MucContextImpl(AbstractComponent<?> component) {
+			super(component);
+		}
+
+		@Override
+		public String getChatLoggingDirectory() {
+			return MUCComponent.this.chatLoggingDirectory;
+		}
+
+		@Override
+		public Ghostbuster2 getGhostbuster() {
+			return MUCComponent.this.ghostbuster;
+		}
+
+		@Override
+		public HistoryProvider getHistoryProvider() {
+			return MUCComponent.this.historyProvider;
+		}
+
+		@Override
+		public MucLogger getMucLogger() {
+			return MUCComponent.this.mucLogger;
+		}
+
+		@Override
+		public IMucRepository getMucRepository() {
+			return MUCComponent.this.mucRepository;
+		}
+
+		@Override
+		public BareJID getServiceName() {
+			return serviceName;
+		}
+
+		@Override
+		public boolean isChatStateAllowed() {
+			return MUCComponent.this.chatStateAllowed;
+		}
+
+		@Override
+		public boolean isMessageFilterEnabled() {
+			return MUCComponent.this.messageFilterEnabled;
+		}
+
+		@Override
+		public boolean isMultiItemMode() {
+			return MUCComponent.this.multiItemMode;
+		}
+
+		@Override
+		public boolean isNewRoomLocked() {
+			return MUCComponent.this.newRoomLocked;
+		}
+
+		@Override
+		public boolean isPresenceFilterEnabled() {
+			return MUCComponent.this.presenceFilterEnabled;
+		}
+
+		@Override
+		public boolean isPublicLoggingEnabled() {
+			return mucLogger != null || (historyProvider != null && historyProvider.isPersistent());
 		}
 
 	}
