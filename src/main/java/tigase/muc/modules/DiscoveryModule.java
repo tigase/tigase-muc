@@ -20,6 +20,8 @@
  */
 package tigase.muc.modules;
 
+import java.util.logging.Level;
+
 import tigase.component.exceptions.ComponentException;
 import tigase.component.exceptions.RepositoryException;
 import tigase.muc.*;
@@ -152,6 +154,8 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 
 	public void setFilter(DiscoItemsFilter filter) {
 		this.filter = filter;
+		if (log.isLoggable(Level.FINER))
+			log.finer("New discoItems filter is set: " + filter);
 	}
 
 	/*
@@ -165,8 +169,14 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 	protected void processDiscoInfo(Packet packet, JID requestedJID, String node, JID senderJID)
 			throws ComponentException, RepositoryException {
 		if ((node == null) && (requestedJID.getLocalpart() == null) && (requestedJID.getResource() == null)) {
+			if (log.isLoggable(Level.FINER))
+				log.finer("Requested component info");
+
 			super.processDiscoInfo(packet, requestedJID, node, senderJID);
 		} else if ((node == null) && (requestedJID.getLocalpart() != null) && (requestedJID.getResource() == null)) {
+			if (log.isLoggable(Level.FINER))
+				log.finer("Requested room " + requestedJID.getBareJID() + " info");
+
 			Element resultQuery = new Element("query", new String[] { "xmlns" },
 					new String[] { "http://jabber.org/protocol/disco#info" });
 
@@ -241,6 +251,10 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 		Packet result = packet.okResult(resultQuery, 0);
 
 		if ((node == null) && (requestedJID.getLocalpart() == null) && (requestedJID.getResource() == null)) {
+
+			if (log.isLoggable(Level.FINER))
+				log.finer("Requested  list of rooms");
+
 			// discovering rooms
 			// (http://xmpp.org/extensions/xep-0045.html#disco-rooms)
 			BareJID[] roomsId = context.getMucRepository().getPublicVisibleRoomsIdList();
@@ -250,6 +264,12 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 					final String name = context.getMucRepository().getRoomName(jid.toString());
 
 					final Room room = context.getMucRepository().getRoom(jid);
+
+					if (log.isLoggable(Level.FINEST) && filter != null) {
+						boolean fa = filter.allowed(senderJID, room);
+						log.finest("Using filter " + filter + "; result(" + senderJID + ", " + room.getRoomJID() + ")=" + fa);
+					}
+
 					if (room == null) {
 						log.warning("Room " + jid + " is not available!");
 						continue;
@@ -261,6 +281,8 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 						continue;
 					}
 
+					if (log.isLoggable(Level.FINER))
+						log.finer("Room " + jid + " is added to response.");
 					resultQuery.addChild(new Element("item", new String[] { "jid", "name" },
 							new String[] { jid.toString(), (name != null) ? name : jid.getLocalpart() }));
 				}
@@ -268,6 +290,10 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 		} else if ((node == null) && (requestedJID.getLocalpart() != null) && (requestedJID.getResource() == null)) {
 			// querying for Room Items
 			// (http://xmpp.org/extensions/xep-0045.html#disco-roomitems)
+
+			if (log.isLoggable(Level.FINER))
+				log.finer("Requested items list of room " + requestedJID.getBareJID());
+
 			Room room = context.getMucRepository().getRoom(requestedJID.getBareJID());
 
 			if (room == null) {
