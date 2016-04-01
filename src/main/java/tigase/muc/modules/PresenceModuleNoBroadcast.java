@@ -22,7 +22,10 @@
 
 package tigase.muc.modules;
 
-import tigase.xmpp.JID;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
@@ -33,10 +36,7 @@ import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryProvider;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.logging.Logger;
+import tigase.xmpp.JID;
 
 /**
  * Class for MucPresenceModule that strips down generated presence stanzas to
@@ -47,43 +47,45 @@ import java.util.logging.Logger;
  */
 public class PresenceModuleNoBroadcast extends PresenceModuleImpl {
 
-	private static final Criteria CRIT = ElementCriteria.name( "presence" );
-
-	protected static final Logger log = Logger.getLogger( PresenceModuleNoBroadcast.class.getName() );
+	protected static final Logger log = Logger.getLogger(PresenceModuleNoBroadcast.class.getName());
+	private static final Criteria CRIT = ElementCriteria.name("presence");
 
 	@Override
-	public void doQuit( final Room room, final JID senderJID ) throws TigaseStringprepException {
-		final String leavingNickname = room.getOccupantsNickname( senderJID );
-		final Affiliation leavingAffiliation = room.getAffiliation( leavingNickname );
-		final Role leavingRole = room.getRole( leavingNickname );
-		Element presenceElement = new Element( "presence" );
+	public void doQuit(final Room room, final JID senderJID) throws TigaseStringprepException {
+		final String leavingNickname = room.getOccupantsNickname(senderJID);
+		final Affiliation leavingAffiliation = room.getAffiliation(leavingNickname);
+		final Role leavingRole = room.getRole(leavingNickname);
+		Element presenceElement = new Element("presence");
 
-		presenceElement.setAttribute( "type", "unavailable" );
+		presenceElement.setAttribute("type", "unavailable");
 
-		Collection<JID> occupantJIDs = new ArrayList<JID>( room.getOccupantsJidsByNickname( leavingNickname ) );
-		context.getGhostbuster().remove( senderJID, room );
+		Collection<JID> occupantJIDs = new ArrayList<JID>(room.getOccupantsJidsByNickname(leavingNickname));
+		context.getGhostbuster().remove(senderJID, room);
 
-		room.updatePresenceByJid( senderJID, leavingNickname, null );
+		room.updatePresenceByJid(senderJID, leavingNickname, null);
 
-		if ( context.isMultiItemMode() ){
-			final PresenceWrapper selfPresence = PresenceWrapper.preparePresenceW( room, senderJID, presenceElement, senderJID.getBareJID(),
-																																						 occupantJIDs, leavingNickname, leavingAffiliation, leavingRole );
-			write( selfPresence.getPacket() );
+		if (context.isMultiItemMode()) {
+			final PresenceWrapper selfPresence = PresenceWrapper.preparePresenceW(room, senderJID, presenceElement,
+					senderJID.getBareJID(), occupantJIDs, leavingNickname, leavingAffiliation, leavingRole);
+			write(selfPresence.getPacket());
 		} else {
-			Collection<JID> z = new ArrayList<JID>( 1 );
-			z.add( senderJID );
+			Collection<JID> z = new ArrayList<JID>(1);
+			z.add(senderJID);
 
-			final PresenceWrapper selfPresence = PresenceWrapper.preparePresenceW( room, senderJID, presenceElement, senderJID.getBareJID(), z,
-																																						 leavingNickname, leavingAffiliation, leavingRole );
-			write( selfPresence.getPacket() );
+			final PresenceWrapper selfPresence = PresenceWrapper.preparePresenceW(room, senderJID, presenceElement,
+					senderJID.getBareJID(), z, leavingNickname, leavingAffiliation, leavingRole);
+			write(selfPresence.getPacket());
 		}
 
-		if ( room.getOccupantsCount() == 0 ){
+		if (room.getOccupantsCount() == 0) {
 			HistoryProvider historyProvider = context.getHistoryProvider();
-			if ( ( historyProvider != null ) && !room.getConfig().isPersistentRoom() ){
-				historyProvider.removeHistory( room );
-			}
-			context.getMucRepository().leaveRoom( room );
+			if ((historyProvider != null)) {
+				if (log.isLoggable(Level.FINE))
+					log.fine("Removing history of room " + room.getRoomJID());
+				historyProvider.removeHistory(room);
+			} else if (log.isLoggable(Level.FINE))
+				log.fine("Cannot remove history of room " + room.getRoomJID() + " because history provider is not available.");
+			context.getMucRepository().leaveRoom(room);
 		}
 	}
 
@@ -98,27 +100,26 @@ public class PresenceModuleNoBroadcast extends PresenceModuleImpl {
 	}
 
 	@Override
-	public void sendPresencesToNewOccupant( Room room, JID senderJID ) throws TigaseStringprepException {
-		// do nothing
-	}
-
-
-	@Override
-	protected void processExit( Room room, Element presenceElement, JID senderJID )
+	protected void processExit(Room room, Element presenceElement, JID senderJID)
 			throws MUCException, TigaseStringprepException {
-		super.processExit( room, presenceElement, senderJID );
+		super.processExit(room, presenceElement, senderJID);
 
 	}
 
 	@Override
-	protected void sendPresenceToAllOccupants( final Element $presence, Room room, JID senderJID, boolean newRoomCreated,
-																						 String newNickName ) throws TigaseStringprepException {
+	protected void sendPresenceToAllOccupants(final Element $presence, Room room, JID senderJID, boolean newRoomCreated,
+			String newNickName) throws TigaseStringprepException {
 
 		// send presence only back to the joining user
-		PresenceWrapper presence = super.preparePresence( senderJID, $presence.clone(), room, senderJID,
-																											newRoomCreated, newNickName );
-		write( presence.getPacket() );
+		PresenceWrapper presence = super.preparePresence(senderJID, $presence.clone(), room, senderJID, newRoomCreated,
+				newNickName);
+		write(presence.getPacket());
 
+	}
+
+	@Override
+	public void sendPresencesToNewOccupant(Room room, JID senderJID) throws TigaseStringprepException {
+		// do nothing
 	}
 
 }

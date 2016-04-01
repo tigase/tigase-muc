@@ -43,17 +43,11 @@ import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
 
-/**
- * @author bmalkow
- *
- */
 public class RoomConfigurationModule extends AbstractMucModule {
 
+	public static final String ID = "owner";
 	private static final Criteria CRIT = ElementCriteria.name("iq").add(
 			ElementCriteria.name("query", "http://jabber.org/protocol/muc#owner"));
-
-	public static final String ID = "owner";
-
 	private GroupchatMessageModule messageModule;
 
 	@Override
@@ -84,11 +78,18 @@ public class RoomConfigurationModule extends AbstractMucModule {
 		// XXX TODO
 		// throw new
 		// MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
+
+		if (log.isLoggable(Level.FINE))
+			log.fine("Destroying room " + room.getRoomJID());
 		context.getMucRepository().destroyRoom(room, destroyElement);
+
 		HistoryProvider historyProvider = context.getHistoryProvider();
 		if (historyProvider != null) {
+			if (log.isLoggable(Level.FINE))
+				log.fine("Removing history of room " + room.getRoomJID());
 			historyProvider.removeHistory(room);
-		}
+		} else if (log.isLoggable(Level.FINE))
+			log.fine("Cannot remove history of room " + room.getRoomJID() + " because history provider is not available.");
 	}
 
 	/**
@@ -114,9 +115,6 @@ public class RoomConfigurationModule extends AbstractMucModule {
 		destroy(room, destroy);
 	}
 
-	// ~--- get methods
-	// ----------------------------------------------------------
-
 	/**
 	 * Method description
 	 *
@@ -138,9 +136,6 @@ public class RoomConfigurationModule extends AbstractMucModule {
 	public Criteria getModuleCriteria() {
 		return CRIT;
 	}
-
-	// ~--- methods
-	// --------------------------------------------------------------
 
 	private Element makeConfigFormIq(final Element request, final RoomConfig roomConfig) {
 		final Element response = createResultIQ(request);
@@ -191,8 +186,8 @@ public class RoomConfigurationModule extends AbstractMucModule {
 			Room room = context.getMucRepository().getRoom(roomJID);
 
 			if (room == null) {
-				Packet p = Packet.packetInstance(makeConfigFormIq(element.getElement(),
-						context.getMucRepository().getDefaultRoomConfig()));
+				Packet p = Packet.packetInstance(
+						makeConfigFormIq(element.getElement(), context.getMucRepository().getDefaultRoomConfig()));
 				p.setXMLNS(Packet.CLIENT_XMLNS);
 				write(p);
 			} else {
@@ -282,5 +277,3 @@ public class RoomConfigurationModule extends AbstractMucModule {
 	}
 
 }
-
-// ~ Formatted in Tigase Code Convention on 13/02/20
