@@ -329,7 +329,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			// if we have assigned node with this jid then reuse it
 			Map<JID,ConcurrentMap<BareJID,String>> nodeOccupants = occupantsPerNode.get(node);
 			if (nodeOccupants.containsKey(jid)) {
-				if (node.equals(localNodeJid))
+				if (node.equals(localNodeJid.getBareJID()))
 					return null;
 				return node;
 			}
