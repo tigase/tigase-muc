@@ -8,20 +8,6 @@
 
 package tigase.muc.cluster;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import tigase.cluster.api.ClusterCommandException;
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
@@ -32,15 +18,19 @@ import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.modules.GroupchatMessageModule;
-import tigase.muc.modules.PresenceModule;
 import tigase.muc.modules.PresenceModule.PresenceWrapper;
-import tigase.muc.modules.PresenceModuleImpl;
 import tigase.server.Packet;
 import tigase.server.Priority;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * AbstractClusteredRoomStrategy implements strategy which allows to create rooms with
@@ -339,6 +329,8 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			// if we have assigned node with this jid then reuse it
 			Map<JID,ConcurrentMap<BareJID,String>> nodeOccupants = occupantsPerNode.get(node);
 			if (nodeOccupants.containsKey(jid)) {
+				if (node.equals(localNodeJid))
+					return null;
 				return node;
 			}
 		}
