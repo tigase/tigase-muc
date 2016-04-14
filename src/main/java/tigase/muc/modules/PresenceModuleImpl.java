@@ -216,7 +216,6 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
     public void doQuit(final Room room, final JID senderJID) throws TigaseStringprepException {
         final String leavingNickname = room.getOccupantsNickname(senderJID);
         final Affiliation leavingAffiliation = room.getAffiliation(leavingNickname);
-        final Role leavingRole = room.getRole(leavingNickname);
         Element presenceElement = new Element("presence");
 
         if (log.isLoggable(Level.FINER)) {
@@ -233,14 +232,14 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 
         if (context.isMultiItemMode()) {
             final PresenceWrapper selfPresence = PresenceWrapper.preparePresenceW(room, senderJID, presenceElement,
-                    senderJID.getBareJID(), occupantJIDs, leavingNickname, leavingAffiliation, leavingRole);
+					senderJID.getBareJID(), occupantJIDs, leavingNickname, leavingAffiliation, Role.none);
             write(selfPresence.packet);
         } else {
             Collection<JID> z = new ArrayList<JID>(1);
             z.add(senderJID);
 
             final PresenceWrapper selfPresence = PresenceWrapper.preparePresenceW(room, senderJID, presenceElement,
-                    senderJID.getBareJID(), z, leavingNickname, leavingAffiliation, leavingRole);
+					senderJID.getBareJID(), z, leavingNickname, leavingAffiliation, Role.none);
             write(selfPresence.packet);
         }
 
@@ -253,7 +252,7 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
                     presenceElement.setAttribute("type", "unavailable");
 
                     PresenceWrapper presence = PresenceWrapper.preparePresenceW(room, occupantJid, presenceElement,
-                            senderJID.getBareJID(), occupantJIDs, leavingNickname, leavingAffiliation, leavingRole);
+							senderJID.getBareJID(), occupantJIDs, leavingNickname, leavingAffiliation, Role.none);
 
                     write(presence.packet);
                 }
@@ -269,14 +268,14 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
                 for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
                     if (context.isMultiItemMode()) {
                         PresenceWrapper presence = PresenceWrapper.preparePresenceW(room, occupantJid, pe.clone(),
-                                senderJID.getBareJID(), occupantJIDs, leavingNickname, leavingAffiliation, leavingRole);
+								senderJID.getBareJID(), occupantJIDs, leavingNickname, leavingAffiliation, Role.none);
                         write(presence.packet);
                     } else {
                         for (JID jid : occupantJIDs) {
                             Collection<JID> z = new ArrayList<JID>(1);
                             z.add(jid);
                             PresenceWrapper presence = PresenceWrapper.preparePresenceW(room, occupantJid, pe.clone(),
-                                    senderJID.getBareJID(), z, leavingNickname, leavingAffiliation, leavingRole);
+									senderJID.getBareJID(), z, leavingNickname, leavingAffiliation, Role.none);
                             write(presence.packet);
                         }
                     }
