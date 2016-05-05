@@ -22,14 +22,6 @@
 
 package tigase.muc.modules;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.logging.Level;
-
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.Affiliation;
@@ -46,18 +38,18 @@ import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
+import java.util.*;
+import java.util.logging.Level;
+
 /**
  * @author bmalkow
  *
  */
 public class GroupchatMessageModule extends AbstractMucModule {
 
-	private static final Criteria CRIT = ElementCriteria.nameType("message", "groupchat");
-
-	private static final Criteria CRIT_CHAT_STAT = ElementCriteria.xmlns("http://jabber.org/protocol/chatstates");
-
 	public static final String ID = "groupchat";
-
+	private static final Criteria CRIT = ElementCriteria.nameType("message", "groupchat");
+	private static final Criteria CRIT_CHAT_STAT = ElementCriteria.xmlns("http://jabber.org/protocol/chatstates");
 	private final Set<Criteria> allowedElements = new HashSet<Criteria>();
 
 	/**
@@ -272,11 +264,6 @@ public class GroupchatMessageModule extends AbstractMucModule {
 			}
 			if (subject != null) {
 				addSubjectChangeToHistory(room, packet.getElement(), subject.getCData(), senderJID, nickName, sendDate);
-			}
-
-			if (sendDate != null) {
-				content.add(new Element("delay", new String[] { "xmlns", "stamp" }, new String[] { "urn:xmpp:delay",
-						DateUtil.formatDatetime(sendDate) }));
 			}
 
 			sendMessagesToAllOccupants(room, senderRoomJID, id, content.toArray(new Element[] {}));
