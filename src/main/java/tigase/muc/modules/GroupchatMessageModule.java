@@ -22,22 +22,12 @@
 
 package tigase.muc.modules;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.logging.Level;
-
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.Affiliation;
 import tigase.muc.DateUtil;
 import tigase.muc.Role;
 import tigase.muc.Room;
-import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.logger.MucLogger;
@@ -48,18 +38,18 @@ import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
+import java.util.*;
+import java.util.logging.Level;
+
 /**
  * @author bmalkow
  *
  */
 public class GroupchatMessageModule extends AbstractMucModule {
 
-	private static final Criteria CRIT = ElementCriteria.nameType("message", "groupchat");
-
-	private static final Criteria CRIT_CHAT_STAT = ElementCriteria.xmlns("http://jabber.org/protocol/chatstates");
-
 	public static final String ID = "groupchat";
-
+	private static final Criteria CRIT = ElementCriteria.nameType("message", "groupchat");
+	private static final Criteria CRIT_CHAT_STAT = ElementCriteria.xmlns("http://jabber.org/protocol/chatstates");
 	private final Set<Criteria> allowedElements = new HashSet<Criteria>();
 
 	/**
@@ -174,6 +164,18 @@ public class GroupchatMessageModule extends AbstractMucModule {
 		return allowedElements.contains(CRIT_CHAT_STAT);
 	}
 
+	protected Packet preparePacket(String messageId, Element... content) throws TigaseStringprepException {
+		Element e = new Element("message", new String[]{"type"}, new String[]{"groupchat"});
+		if (messageId != null) {
+			e.setAttribute("id", messageId);
+		}
+		if (content != null)
+			e.addChildren(Arrays.asList(content));
+		Packet message = Packet.packetInstance(e);
+		message.setXMLNS(Packet.CLIENT_XMLNS);
+		return message;
+	}
+
 	/**
 	 * Method description
 	 *
@@ -269,9 +271,9 @@ public class GroupchatMessageModule extends AbstractMucModule {
 			} else {
 				sendDate = new Date();
 			}
-			
+
 			Packet msg = preparePacket(id, content.toArray(new Element[] {}));
-			
+
 			if (body != null) {
 				addMessageToHistory(room, msg.getElement(), body.getCData(), senderJID, nickName, sendDate);
 			}
@@ -279,11 +281,6 @@ public class GroupchatMessageModule extends AbstractMucModule {
 				addSubjectChangeToHistory(room, msg.getElement(), subject.getCData(), senderJID, nickName, sendDate);
 			}
 
-			if (sendDate != null) {
-				msg.getElement().addChild(new Element("delay", new String[] { "xmlns", "stamp" }, new String[] { "urn:xmpp:delay",
-						DateUtil.formatDatetime(sendDate) }));
-			}			
-			
 			sendMessagesToAllOccupants(room, senderRoomJID, msg);
 		} catch (MUCException e1) {
 			throw e1;
@@ -294,18 +291,6 @@ public class GroupchatMessageModule extends AbstractMucModule {
 
 			throw new RuntimeException(e);
 		}
-	}
-
-	protected Packet preparePacket(String messageId, Element... content) throws TigaseStringprepException {
-		Element e = new Element("message", new String[]{"type"}, new String[]{"groupchat"});
-		if (messageId != null) {
-			e.setAttribute("id", messageId);
-		}
-		if (content != null)
-			e.addChildren(Arrays.asList(content));
-		Packet message = Packet.packetInstance(e);
-		message.setXMLNS(Packet.CLIENT_XMLNS);
-		return message;
 	}
 	
 	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, final Element... content)
