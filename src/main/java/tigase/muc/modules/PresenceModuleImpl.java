@@ -21,29 +21,12 @@
  */
 package tigase.muc.modules;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
-import tigase.muc.Affiliation;
-import tigase.muc.DateUtil;
-import tigase.muc.Ghostbuster2;
-import tigase.muc.MUCConfig;
-import tigase.muc.Role;
-import tigase.muc.Room;
-import tigase.muc.RoomConfig;
+import tigase.muc.*;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.logger.MucLogger;
@@ -57,101 +40,38 @@ import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * @author bmalkow
  */
 @Bean(name = PresenceModuleImpl.ID)
 public class PresenceModuleImpl extends AbstractMucModule implements PresenceModule {
 	/**
-	 * Class description
-	 *
-	 * @author Enter your name here...
-	 * @version Enter version here..., 13/02/20
-	 */
-	public static class DelayDeliveryThread extends Thread {
-		/**
-		 * Interface description
-		 *
-		 * @author Enter your name here...
-		 * @version Enter version here..., 13/02/20
-		 */
-		public static interface DelDeliverySend {
-			/**
-			 * Method description
-			 *
-			 * @param packet
-			 */
-			void sendDelayedPacket(Packet packet);
-		}
-
-		private final LinkedList<Element[]> items = new LinkedList<Element[]>();
-
-		private final DelDeliverySend sender;
-
-		/**
-		 * Constructs ...
-		 *
-		 * @param component
-		 */
-		public DelayDeliveryThread(DelDeliverySend component) {
-			this.sender = component;
-		}
-
-		/**
-		 * @param elements
-		 */
-		public void put(Collection<Element> elements) {
-			if ((elements != null) && (elements.size() > 0)) {
-				items.push(elements.toArray(new Element[] {}));
-			}
-		}
-
-		/**
-		 * Method description
-		 *
-		 * @param element
-		 */
-		public void put(Element element) {
-			items.add(new Element[] { element });
-		}
-
-		/**
-		 * Method description
-		 */
-		@Override
-		public void run() {
-			try {
-				do {
-					sleep(553);
-					if (items.size() > 0) {
-						Element[] toSend = items.poll();
-
-						if (toSend != null) {
-							for (Element element : toSend) {
-								try {
-									Packet p = Packet.packetInstance(element);
-									p.setXMLNS(Packet.CLIENT_XMLNS);
-									sender.sendDelayedPacket(p);
-								} catch (TigaseStringprepException ex) {
-									if (log.isLoggable(Level.INFO)) {
-										log.info("Packet addressing problem, stringprep failed: " + element);
-									}
-								}
-							}
-						}
-					}
-				} while (true);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-	}
-
-	private static final Criteria CRIT = ElementCriteria.name("presence");
-	/**
 	 * Field description
 	 */
 	protected static final Logger log = Logger.getLogger(PresenceModule.class.getName());
+	private static final Criteria CRIT = ElementCriteria.name("presence");
+	private final Set<Criteria> allowedElements = new HashSet<Criteria>();
+	@Inject
+	private MUCConfig config;
+	@Inject
+	private Ghostbuster2 ghostbuster;
+	@Inject
+	private HistoryProvider historyProvider;
+	@Inject
+	private MucLogger mucLogger;
+	@Inject
+	private IMucRepository repository;
+
+	public PresenceModuleImpl() {
+		allowedElements.add(ElementCriteria.name("show"));
+		allowedElements.add(ElementCriteria.name("status"));
+		allowedElements.add(ElementCriteria.name("priority"));
+		allowedElements.add(ElementCriteria.xmlns("http://jabber.org/protocol/caps"));
+	}
 
 	public static void addCodes(PresenceWrapper wrapper, boolean newRoomCreated, String newNickName) {
 		if (newRoomCreated) {
@@ -217,40 +137,6 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		} catch (Exception e) {
 			return defaultValue;
 		}
-	}
-
-	private final Set<Criteria> allowedElements = new HashSet<Criteria>();
-
-	@Inject
-	private MUCConfig config;
-
-	@Inject
-	private Ghostbuster2 ghostbuster;
-
-	@Inject
-	private HistoryProvider historyProvider;
-
-	@Inject
-	private MucLogger mucLogger;
-
-	@Inject
-	private IMucRepository repository;
-
-	/**
-	 * Constructs ...
-	 *
-	 * @param config
-	 * @param writer
-	 * @param mucRepository
-	 * @param historyProvider
-	 * @param sender
-	 * @param mucLogger
-	 */
-	public PresenceModuleImpl() {
-		allowedElements.add(ElementCriteria.name("show"));
-		allowedElements.add(ElementCriteria.name("status"));
-		allowedElements.add(ElementCriteria.name("priority"));
-		allowedElements.add(ElementCriteria.xmlns("http://jabber.org/protocol/caps"));
 	}
 
 	/**
@@ -399,9 +285,15 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 
 		}
 		if (room.getOccupantsCount() == 0) {
-			if ((historyProvider != null) && !room.getConfig().isPersistentRoom()) {
-				historyProvider.removeHistory(room);
-			}
+			if (!room.getConfig().isPersistentRoom()) {
+				if ((historyProvider != null)) {
+					if (log.isLoggable(Level.FINE))
+						log.fine("Removing history of room " + room.getRoomJID());
+					historyProvider.removeHistory(room);
+				} else if (log.isLoggable(Level.FINE))
+					log.fine("Cannot remove history of room " + room.getRoomJID() + " because history provider is not available.");
+			} else if (log.isLoggable(Level.FINE))
+				log.fine("Room persistent. History will not be removed.");
 			repository.leaveRoom(room);
 		}
 	}
@@ -761,64 +653,8 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		}
 	}
 
-	@Override
-	public void sendPresencesToNewOccupant(Room room, JID senderJID) throws TigaseStringprepException {
-		BareJID currentOccupantJid = senderJID.getBareJID();
-		Affiliation senderAffiliation = room.getAffiliation(currentOccupantJid);
-
-		// in filtered room we skip sending occupants list to new occupants
-		// witout propper affiliation
-		if (room.getConfig().isPresenceFilterEnabled()
-				&& !room.getConfig().getPresenceFilteredAffiliations().contains(senderAffiliation)) {
-			if (log.isLoggable(Level.FINEST)) {
-				log.log(Level.FINEST, "Filtering enabled: " + room.getConfig().isPresenceFilterEnabled()
-						+ "; new occupant doesn't have propper affiliation -  skip sending occupants list");
-			}
-			return;
-		}
-
-		for (String occupantNickname : room.getOccupantsNicknames()) {
-			final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNickname);
-			// we don't include current user in occupants presence broadcast
-			if (currentOccupantJid != null && currentOccupantJid.equals(occupantJid)) {
-				continue;
-			}
-
-			Affiliation affiliation = room.getAffiliation(occupantJid);
-			if (room.getConfig().isPresenceFilterEnabled()
-					&& !room.getConfig().getPresenceFilteredAffiliations().contains(affiliation)) {
-				if (log.isLoggable(Level.FINEST)) {
-					log.log(Level.FINEST, "Filtering enabled: " + room.getConfig().isPresenceFilterEnabled()
-							+ "; target occupant doesn't have propper affiliation -  don't include him in the list");
-				}
-				continue;
-			}
-
-			Element op = room.getLastPresenceCopyByJid(occupantJid);
-
-			final Collection<JID> occupantJIDs = room.getOccupantsJidsByNickname(occupantNickname);
-			final BareJID occupantBareJID = room.getOccupantsJidByNickname(occupantNickname);
-			final Affiliation occupantAffiliation = room.getAffiliation(occupantBareJID);
-			final Role occupantRole = room.getRole(occupantNickname);
-
-			if (config.isMultiItemMode()) {
-				PresenceWrapper l = PresenceWrapper.preparePresenceW(room, senderJID, op.clone(), occupantBareJID, occupantJIDs,
-						occupantNickname, occupantAffiliation, occupantRole);
-				write(l.packet);
-			} else {
-				for (JID jid : occupantJIDs) {
-					Collection<JID> z = new ArrayList<JID>(1);
-					z.add(jid);
-					PresenceWrapper l = PresenceWrapper.preparePresenceW(room, senderJID, op.clone(), occupantBareJID, z,
-							occupantNickname, occupantAffiliation, occupantRole);
-					write(l.packet);
-				}
-			}
-		}
-	}
-
 	protected void sendPresenceToAllOccupants(final Element $presence, Room room, JID senderJID, boolean newRoomCreated,
-			String newNickName) throws TigaseStringprepException {
+											  String newNickName) throws TigaseStringprepException {
 
 		final String occupantNickname = room.getOccupantsNickname(senderJID);
 		final BareJID occupantJID = room.getOccupantsJidByNickname(occupantNickname);
@@ -882,6 +718,146 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 			presence = room.getLastPresenceCopyByJid(senderJID.getBareJID());
 		}
 		sendPresenceToAllOccupants(presence, room, senderJID, newRoomCreated, newNickName);
+	}
+
+	@Override
+	public void sendPresencesToNewOccupant(Room room, JID senderJID) throws TigaseStringprepException {
+		BareJID currentOccupantJid = senderJID.getBareJID();
+		Affiliation senderAffiliation = room.getAffiliation(currentOccupantJid);
+
+		// in filtered room we skip sending occupants list to new occupants
+		// witout propper affiliation
+		if (room.getConfig().isPresenceFilterEnabled()
+				&& !room.getConfig().getPresenceFilteredAffiliations().contains(senderAffiliation)) {
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "Filtering enabled: " + room.getConfig().isPresenceFilterEnabled()
+						+ "; new occupant doesn't have propper affiliation -  skip sending occupants list");
+			}
+			return;
+		}
+
+		for (String occupantNickname : room.getOccupantsNicknames()) {
+			final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNickname);
+			// we don't include current user in occupants presence broadcast
+			if (currentOccupantJid != null && currentOccupantJid.equals(occupantJid)) {
+				continue;
+			}
+
+			Affiliation affiliation = room.getAffiliation(occupantJid);
+			if (room.getConfig().isPresenceFilterEnabled()
+					&& !room.getConfig().getPresenceFilteredAffiliations().contains(affiliation)) {
+				if (log.isLoggable(Level.FINEST)) {
+					log.log(Level.FINEST, "Filtering enabled: " + room.getConfig().isPresenceFilterEnabled()
+							+ "; target occupant doesn't have propper affiliation -  don't include him in the list");
+				}
+				continue;
+			}
+
+			Element op = room.getLastPresenceCopyByJid(occupantJid);
+
+			final Collection<JID> occupantJIDs = room.getOccupantsJidsByNickname(occupantNickname);
+			final BareJID occupantBareJID = room.getOccupantsJidByNickname(occupantNickname);
+			final Affiliation occupantAffiliation = room.getAffiliation(occupantBareJID);
+			final Role occupantRole = room.getRole(occupantNickname);
+
+			if (config.isMultiItemMode()) {
+				PresenceWrapper l = PresenceWrapper.preparePresenceW(room, senderJID, op.clone(), occupantBareJID, occupantJIDs,
+						occupantNickname, occupantAffiliation, occupantRole);
+				write(l.packet);
+			} else {
+				for (JID jid : occupantJIDs) {
+					Collection<JID> z = new ArrayList<JID>(1);
+					z.add(jid);
+					PresenceWrapper l = PresenceWrapper.preparePresenceW(room, senderJID, op.clone(), occupantBareJID, z,
+							occupantNickname, occupantAffiliation, occupantRole);
+					write(l.packet);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Class description
+	 *
+	 * @author Enter your name here...
+	 * @version Enter version here..., 13/02/20
+	 */
+	public static class DelayDeliveryThread extends Thread {
+		private final LinkedList<Element[]> items = new LinkedList<Element[]>();
+		private final DelDeliverySend sender;
+
+		/**
+		 * Constructs ...
+		 *
+		 * @param component
+		 */
+		public DelayDeliveryThread(DelDeliverySend component) {
+			this.sender = component;
+		}
+
+		/**
+		 * @param elements
+		 */
+		public void put(Collection<Element> elements) {
+			if ((elements != null) && (elements.size() > 0)) {
+				items.push(elements.toArray(new Element[]{}));
+			}
+		}
+
+		/**
+		 * Method description
+		 *
+		 * @param element
+		 */
+		public void put(Element element) {
+			items.add(new Element[]{element});
+		}
+
+		/**
+		 * Method description
+		 */
+		@Override
+		public void run() {
+			try {
+				do {
+					sleep(553);
+					if (items.size() > 0) {
+						Element[] toSend = items.poll();
+
+						if (toSend != null) {
+							for (Element element : toSend) {
+								try {
+									Packet p = Packet.packetInstance(element);
+									p.setXMLNS(Packet.CLIENT_XMLNS);
+									sender.sendDelayedPacket(p);
+								} catch (TigaseStringprepException ex) {
+									if (log.isLoggable(Level.INFO)) {
+										log.info("Packet addressing problem, stringprep failed: " + element);
+									}
+								}
+							}
+						}
+					}
+				} while (true);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+
+		/**
+		 * Interface description
+		 *
+		 * @author Enter your name here...
+		 * @version Enter version here..., 13/02/20
+		 */
+		public static interface DelDeliverySend {
+			/**
+			 * Method description
+			 *
+			 * @param packet
+			 */
+			void sendDelayedPacket(Packet packet);
+		}
 	}
 
 }
