@@ -317,7 +317,7 @@ public class Ghostbuster2 implements Initializable {
 			log.finest("Forced removal last activity of " + obj.source);
 		}
 
-		this.monitoredObjects.remove(obj);
+		this.monitoredObjects.remove(obj.source);
 		for (Room r : repository.getActiveRooms().values()) {
 			if (obj.rooms.contains(r.getRoomJID()) && r.isOccupantInRoom(obj.source)) {
 				presenceModule.doQuit(r, obj.source);
@@ -351,7 +351,7 @@ public class Ghostbuster2 implements Initializable {
 					if (log.isLoggable(Level.FINE))
 						log.fine("Stop observing " + occupantJid);
 
-					monitoredObjects.remove(o);
+					monitoredObjects.remove(occupantJid);
 
 				}
 			}
