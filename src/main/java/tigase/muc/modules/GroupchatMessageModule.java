@@ -43,7 +43,6 @@ import java.util.logging.Level;
 
 /**
  * @author bmalkow
- *
  */
 public class GroupchatMessageModule extends AbstractMucModule {
 
@@ -52,15 +51,9 @@ public class GroupchatMessageModule extends AbstractMucModule {
 	private static final Criteria CRIT_CHAT_STAT = ElementCriteria.xmlns("http://jabber.org/protocol/chatstates");
 	private final Set<Criteria> allowedElements = new HashSet<Criteria>();
 
-	/**
-	 * @param room
-	 * @param cData
-	 * @param senderJID
-	 * @param nickName
-	 * @param sendDate
-	 */
+
 	protected void addMessageToHistory(Room room, final Element message, String body, JID senderJid, String senderNickname,
-			Date time) {
+									   Date time) {
 		try {
 			HistoryProvider historyProvider = context.getHistoryProvider();
 			if (historyProvider != null) {
@@ -82,15 +75,9 @@ public class GroupchatMessageModule extends AbstractMucModule {
 		}
 	}
 
-	/**
-	 * @param room
-	 * @param cData
-	 * @param senderJID
-	 * @param nickName
-	 * @param sendDate
-	 */
+
 	protected void addSubjectChangeToHistory(Room room, Element message, final String subject, JID senderJid,
-			String senderNickname, Date time) {
+											 String senderNickname, Date time) {
 		try {
 			HistoryProvider historyProvider = context.getHistoryProvider();
 			if (historyProvider != null) {
@@ -127,7 +114,6 @@ public class GroupchatMessageModule extends AbstractMucModule {
 	/**
 	 * Method description
 	 *
-	 *
 	 * @return
 	 */
 	@Override
@@ -140,12 +126,11 @@ public class GroupchatMessageModule extends AbstractMucModule {
 			f.add("http://jabber.org/protocol/chatstates");
 		}
 
-		return f.toArray(new String[] {});
+		return f.toArray(new String[]{});
 	}
 
 	/**
 	 * Method description
-	 *
 	 *
 	 * @return
 	 */
@@ -157,17 +142,19 @@ public class GroupchatMessageModule extends AbstractMucModule {
 	/**
 	 * Method description
 	 *
-	 *
 	 * @return
 	 */
 	public boolean isChatStateAllowed() {
 		return allowedElements.contains(CRIT_CHAT_STAT);
 	}
 
-	protected Packet preparePacket(String messageId, Element... content) throws TigaseStringprepException {
+	protected Packet preparePacket(String messageId, String xmlLang, Element... content) throws TigaseStringprepException {
 		Element e = new Element("message", new String[]{"type"}, new String[]{"groupchat"});
 		if (messageId != null) {
 			e.setAttribute("id", messageId);
+		}
+		if (xmlLang != null) {
+			e.setAttribute("xml:lang", xmlLang);
 		}
 		if (content != null)
 			e.addChildren(Arrays.asList(content));
@@ -179,9 +166,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 	/**
 	 * Method description
 	 *
-	 *
 	 * @param packet
-	 *
 	 * @throws MUCException
 	 */
 	@Override
@@ -216,6 +201,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 				throw new MUCException(Authorization.FORBIDDEN, "Insufficient privileges to send groupchat message.");
 			}
 
+			String xmlLang = packet.getElement().getAttributeStaticStr("xml:lang");
 			Element body = null;
 			Element subject = null;
 			Element delay = null;
@@ -272,7 +258,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 				sendDate = new Date();
 			}
 
-			Packet msg = preparePacket(id, content.toArray(new Element[] {}));
+			Packet msg = preparePacket(id, xmlLang, content.toArray(new Element[]{}));
 
 			if (body != null) {
 				addMessageToHistory(room, msg.getElement(), body.getCData(), senderJID, nickName, sendDate);
@@ -292,10 +278,16 @@ public class GroupchatMessageModule extends AbstractMucModule {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, final Element... content)
 			throws TigaseStringprepException {
-		Packet msg = preparePacket(null, content);
+		Packet msg = preparePacket(null, null, content);
+		sendMessagesToAllOccupants(room, fromJID, msg);
+	}
+
+	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, String xmlLang, final Element... content)
+			throws TigaseStringprepException {
+		Packet msg = preparePacket(null, xmlLang, content);
 		sendMessagesToAllOccupants(room, fromJID, msg);
 	}
 //
@@ -357,16 +349,16 @@ public class GroupchatMessageModule extends AbstractMucModule {
 //			}
 //		}
 //	}
-	
+
 	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, final Packet msg) throws TigaseStringprepException {
 		sendMessagesToAllOccupantsJids(room, fromJID, msg);
 
-		room.fireOnMessageToOccupants(fromJID, msg);	
+		room.fireOnMessageToOccupants(fromJID, msg);
 	}
-	
+
 	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, final Packet msg)
-			throws TigaseStringprepException {	
-		
+			throws TigaseStringprepException {
+
 		for (String nickname : room.getOccupantsNicknames()) {
 			final Role role = room.getRole(nickname);
 
@@ -383,6 +375,6 @@ public class GroupchatMessageModule extends AbstractMucModule {
 
 				write(message);
 			}
-		}		
+		}
 	}
 }
