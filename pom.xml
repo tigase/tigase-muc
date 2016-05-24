@@ -214,7 +214,7 @@
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
-					<groupId>*</groupId>
+					<groupId>tigase</groupId>
 					<artifactId>*</artifactId>
 				</exclusion>
 			</exclusions>
