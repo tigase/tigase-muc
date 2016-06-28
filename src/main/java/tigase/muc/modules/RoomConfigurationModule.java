@@ -22,8 +22,6 @@
 
 package tigase.muc.modules;
 
-import java.util.logging.Level;
-
 import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
@@ -42,6 +40,8 @@ import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
+
+import java.util.logging.Level;
 
 public class RoomConfigurationModule extends AbstractMucModule {
 
@@ -95,11 +95,9 @@ public class RoomConfigurationModule extends AbstractMucModule {
 	/**
 	 * Method description
 	 *
-	 *
 	 * @param room
 	 * @param jid
 	 * @param reason
-	 *
 	 * @throws RepositoryException
 	 * @throws TigaseStringprepException
 	 */
@@ -118,7 +116,6 @@ public class RoomConfigurationModule extends AbstractMucModule {
 	/**
 	 * Method description
 	 *
-	 *
 	 * @return
 	 */
 	@Override
@@ -129,7 +126,6 @@ public class RoomConfigurationModule extends AbstractMucModule {
 	/**
 	 * Method description
 	 *
-	 *
 	 * @return
 	 */
 	@Override
@@ -139,7 +135,7 @@ public class RoomConfigurationModule extends AbstractMucModule {
 
 	private Element makeConfigFormIq(final Element request, final RoomConfig roomConfig) {
 		final Element response = createResultIQ(request);
-		Element query = new Element("query", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#owner" });
+		Element query = new Element("query", new String[]{"xmlns"}, new String[]{"http://jabber.org/protocol/muc#owner"});
 
 		response.addChild(query);
 		query.addChild(roomConfig.getConfigForm().getElement());
@@ -150,9 +146,7 @@ public class RoomConfigurationModule extends AbstractMucModule {
 	/**
 	 * Method description
 	 *
-	 *
 	 * @param element
-	 *
 	 * @throws MUCException
 	 */
 	@Override
@@ -256,14 +250,21 @@ public class RoomConfigurationModule extends AbstractMucModule {
 					room.getConfig().copyFrom(form);
 					room.addAffiliationByJid(senderJID.getBareJID(), Affiliation.owner);
 
+					String[] admins = form.getAsStrings("muc#roomconfig_roomadmins");
+					if (admins != null) {
+						for (String admin : admins) {
+							room.addAffiliationByJid(BareJID.bareJIDInstance(admin), Affiliation.admin);
+						}
+					}
+
 					String[] compareResult = room.getConfig().compareTo(oldConfig);
 
 					if (compareResult != null) {
-						Element z = new Element("x", new String[] { "xmlns" },
-								new String[] { "http://jabber.org/protocol/muc#user" });
+						Element z = new Element("x", new String[]{"xmlns"},
+								new String[]{"http://jabber.org/protocol/muc#user"});
 
 						for (String code : compareResult) {
-							z.addChild(new Element("status", new String[] { "code" }, new String[] { code }));
+							z.addChild(new Element("status", new String[]{"code"}, new String[]{code}));
 						}
 						this.messageModule.sendMessagesToAllOccupants(room, roomJID, z);
 					}
