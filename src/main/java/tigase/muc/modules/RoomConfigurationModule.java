@@ -50,6 +50,13 @@ public class RoomConfigurationModule extends AbstractMucModule {
 			ElementCriteria.name("query", "http://jabber.org/protocol/muc#owner"));
 	private GroupchatMessageModule messageModule;
 
+	public static Element createRoomCreatedEvent(Room room) {
+		Element event = new Element("RoomCreated", new String[]{"xmlns"}, new String[]{"tigase:events:muc"});
+		event.addChild(new Element("room", room.getRoomJID().toString()));
+		event.addChild(new Element("creatorJID", room.getCreatorJid().toString()));
+		return event;
+	}
+
 	@Override
 	public void afterRegistration() {
 		super.afterRegistration();
@@ -207,7 +214,9 @@ public class RoomConfigurationModule extends AbstractMucModule {
 			final Element query = element.getElement().getChild("query", "http://jabber.org/protocol/muc#owner");
 			Room room = context.getMucRepository().getRoom(roomJID.getBareJID());
 
+			boolean roomCreated = false;
 			if (room == null) {
+				roomCreated = true;
 				room = context.getMucRepository().createNewRoom(roomJID.getBareJID(), senderJID);
 			}
 
@@ -269,6 +278,8 @@ public class RoomConfigurationModule extends AbstractMucModule {
 						this.messageModule.sendMessagesToAllOccupants(room, roomJID, z);
 					}
 				}
+				if (roomCreated)
+					fireEvent(createRoomCreatedEvent(room));
 			} else {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}

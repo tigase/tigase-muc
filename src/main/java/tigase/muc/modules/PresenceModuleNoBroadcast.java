@@ -86,6 +86,10 @@ public class PresenceModuleNoBroadcast extends PresenceModuleImpl {
 			} else if (log.isLoggable(Level.FINE))
 				log.fine("Cannot remove history of room " + room.getRoomJID() + " because history provider is not available.");
 			context.getMucRepository().leaveRoom(room);
+
+			Element emptyRoomEvent = new Element("EmptyRoom", new String[]{"xmlns"}, new String[]{"tigase:events:muc"});
+			emptyRoomEvent.addChild(new Element("room", room.getRoomJID().toString()));
+			fireEvent(emptyRoomEvent);
 		}
 	}
 

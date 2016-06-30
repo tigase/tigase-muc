@@ -281,8 +281,14 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 					}
 				}
 			}
-
 		}
+
+		Element event = new Element("RoomLeave", new String[]{"xmlns"}, new String[]{"tigase:events:muc"});
+		event.addChild(new Element("room", room.getRoomJID().toString()));
+		event.addChild(new Element("nickname", leavingNickname));
+		event.addChild(new Element("jid", senderJID.toString()));
+		fireEvent(event);
+
 		if (room.getOccupantsCount() == 0) {
 			if (!room.getConfig().isPersistentRoom()) {
 				HistoryProvider historyProvider = context.getHistoryProvider();
@@ -295,6 +301,10 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 			} else if (log.isLoggable(Level.FINE))
 				log.fine("Room persistent. History will not be removed.");
 			context.getMucRepository().leaveRoom(room);
+
+			Element emptyRoomEvent = new Element("EmptyRoom", new String[]{"xmlns"}, new String[]{"tigase:events:muc"});
+			emptyRoomEvent.addChild(new Element("room", room.getRoomJID().toString()));
+			fireEvent(emptyRoomEvent);
 		}
 	}
 
@@ -546,6 +556,12 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		sendPresenceToAllOccupants(room, senderJID, roomCreated, null);
 		// }
 
+		Element event = new Element("RoomJoin", new String[]{"xmlns"}, new String[]{"tigase:events:muc"});
+		event.addChild(new Element("room", room.getRoomJID().toString()));
+		event.addChild(new Element("nickname", nickname));
+		event.addChild(new Element("jid", senderJID.toString()));
+		fireEvent(event);
+
 		Integer maxchars = null;
 		Integer maxstanzas = null;
 		Integer seconds = null;
@@ -585,6 +601,8 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 			sendMucMessage(room, room.getOccupantsNickname(senderJID), "Room is locked. Please configure.");
 		}
 		if (roomCreated) {
+			fireEvent(RoomConfigurationModule.createRoomCreatedEvent(room));
+
 			StringBuilder sb = new StringBuilder();
 
 			sb.append("Welcome! You created new Multi User Chat Room.");
