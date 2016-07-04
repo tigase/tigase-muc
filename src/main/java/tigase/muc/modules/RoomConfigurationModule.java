@@ -1,8 +1,8 @@
 /*
  * RoomConfigurationModule.java
  *
- * Tigase Jabber/XMPP Server
- * Copyright (C) 2004-2012 "Artur Hefczyc" <artur.hefczyc@tigase.org>
+ * Tigase Workgroup Queues Component
+ * Copyright (C) 2011-2016 "Tigase, Inc." <office@tigase.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -218,6 +218,7 @@ public class RoomConfigurationModule extends AbstractMucModule {
 			if (room == null) {
 				roomCreated = true;
 				room = context.getMucRepository().createNewRoom(roomJID.getBareJID(), senderJID);
+				room.addAffiliationByJid(senderJID.getBareJID(), Affiliation.owner);
 			}
 
 			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
@@ -257,7 +258,6 @@ public class RoomConfigurationModule extends AbstractMucModule {
 						sendMucMessage(room, room.getOccupantsNickname(senderJID), "Room is now unlocked");
 					}
 					room.getConfig().copyFrom(form);
-					room.addAffiliationByJid(senderJID.getBareJID(), Affiliation.owner);
 
 					String[] admins = form.getAsStrings("muc#roomconfig_roomadmins");
 					if (admins != null) {
