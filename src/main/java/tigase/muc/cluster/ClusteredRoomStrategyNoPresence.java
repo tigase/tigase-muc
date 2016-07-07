@@ -21,6 +21,7 @@ import tigase.muc.Affiliation;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.server.Packet;
+import tigase.server.Priority;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
@@ -124,7 +125,7 @@ public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrate
 	private class OccupantChangedPresenceCmd extends CommandListenerAbstract {
 
 		public OccupantChangedPresenceCmd() {
-			super(OCCUPANT_PRESENCE_CMD);
+			super(OCCUPANT_PRESENCE_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -149,7 +150,7 @@ public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrate
 	private class OccupantsSyncRequestCmd extends CommandListenerAbstract {
 
 		public OccupantsSyncRequestCmd() {
-			super(OCCUPANTS_SYNC_REQUEST_CMD);
+			super(OCCUPANTS_SYNC_REQUEST_CMD, Priority.HIGH);
 		}
 
 		@Override

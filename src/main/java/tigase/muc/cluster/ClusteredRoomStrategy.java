@@ -8,10 +8,6 @@
 
 package tigase.muc.cluster;
 
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import tigase.cluster.api.ClusterCommandException;
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
@@ -24,10 +20,15 @@ import tigase.muc.exceptions.MUCException;
 import tigase.muc.modules.PresenceModule;
 import tigase.muc.modules.PresenceModuleImpl;
 import tigase.server.Packet;
+import tigase.server.Priority;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -93,7 +94,7 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 	private class OccupantChangedPresenceCmd extends CommandListenerAbstract {
 
 		public OccupantChangedPresenceCmd() {
-			super(OCCUPANT_PRESENCE_CMD);
+			super(OCCUPANT_PRESENCE_CMD, Priority.HIGH);
 		}
 
 		@Override

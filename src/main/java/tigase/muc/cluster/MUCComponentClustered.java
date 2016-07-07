@@ -7,22 +7,16 @@
  */
 package tigase.muc.cluster;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.ClusteredComponentIfc;
-import tigase.conf.ConfigurationException;
 import tigase.kernel.core.Kernel;
 import tigase.licence.LicenceChecker;
 import tigase.muc.MUCComponent;
-import tigase.osgi.ModulesManagerImpl;
 import tigase.server.ComponentInfo;
 import tigase.server.Packet;
-import tigase.server.XMPPServer;
 import tigase.xmpp.JID;
+
+import java.util.logging.Logger;
 
 /**
  * MUCComponent is class implementing clustering support for MUCComponent.
@@ -45,6 +39,19 @@ public class MUCComponentClustered extends MUCComponent implements ClusteredComp
 	public MUCComponentClustered() {
 		licenceChecker = LicenceChecker.getLicenceChecker("acs");
 		RoomClustered.initialize();
+
+		String clusterProperty = System.getProperty( "cluster-mode" );
+		if ( clusterProperty == null || !Boolean.parseBoolean( clusterProperty ) ){
+			log.severe( "You've tried using Clustered version of the component but cluster-mode is disabled" );
+			log.severe( "Shutting down system!" );
+			System.exit( 1 );
+		}
+		String strategyProp = System.getProperty( "sm-cluster-strategy-class" );
+		if ( strategyProp == null || !"tigase.server.cluster.strategy.OnlineUsersCachingStrategy".equals( strategyProp) ){
+			log.severe( "You've tried using Clustered version of the component but ACS is disabled" );
+			log.severe( "Shutting down system!" );
+			System.exit( 1 );
+		}
 	}
 
 	@Override
@@ -83,31 +90,6 @@ public class MUCComponentClustered extends MUCComponent implements ClusteredComp
 		this.cl_controller = cl_controller;
 		if (strategy != null) {
 			strategy.setClusterController(cl_controller);
-		}
-	}
-
-	@Override
-	public Map<String, Object> getDefaults(Map<String, Object> params) {
-		Map<String, Object> defaults = super.getDefaults(params);
-		defaults.put(STRATEGY_CLASS_KEY, DEF_STRATEGY_CLASS_VAL);
-		return defaults;
-	}
-
-	@Override
-	protected void changeRegisteredBeans(Map<String, Object> props) throws ConfigurationException, InstantiationException,
-			IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-		super.changeRegisteredBeans(props);
-		if (props.containsKey(STRATEGY_CLASS_KEY)) {
-			String strategy_class = (String) props.get(STRATEGY_CLASS_KEY);
-			try {
-				Class<StrategyIfc> sClass = (Class<StrategyIfc>) ModulesManagerImpl.getInstance().forName(strategy_class);
-				kernel.registerBean("strategy").asClass(sClass).exec();
-			} catch (Exception ex) {
-				if (!XMPPServer.isOSGi()) {
-					log.log(Level.SEVERE, "Cannot find clustering strategy class: " + strategy_class, ex);
-				}
-				throw new ConfigurationException("Cannot find clustering strategy class: " + strategy_class);
-			}
 		}
 	}
 

@@ -7,31 +7,22 @@
  */
 package tigase.muc.cluster;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import tigase.cluster.api.ClusterCommandException;
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
-import tigase.component.exceptions.RepositoryException;
+import tigase.kernel.beans.Bean;
 import tigase.muc.Room;
 import tigase.server.Packet;
-import tigase.server.Presence;
-import tigase.util.TigaseStringprepException;
+import tigase.server.Priority;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * ShardingStrategy implements clustering strategy in which each room has assigned
@@ -41,6 +32,7 @@ import tigase.xmpp.JID;
  * 
  * @author andrzej
  */
+@Bean(name = "strategy", parent = MUCComponentClustered.class)
 public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, Room.RoomOccupantListener,
 		InMemoryMucRepositoryClustered.RoomListener {
 
@@ -269,7 +261,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private class RoomCreatedCmd extends CommandListenerAbstract {
 
 		public RoomCreatedCmd() {
-			super(ROOM_CREATED_CMD);
+			super(ROOM_CREATED_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -287,7 +279,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private class RoomDestroyedCmd extends CommandListenerAbstract {
 
 		public RoomDestroyedCmd() {
-			super(ROOM_DESTROYED_CMD);
+			super(ROOM_DESTROYED_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -306,7 +298,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private class NodeShutdownCmd extends CommandListenerAbstract {
 
 		public NodeShutdownCmd() {
-			super(NODE_SHUTDOWN_CMD);
+			super(NODE_SHUTDOWN_CMD, Priority.HIGH);
 		}
 		
 		@Override
@@ -328,7 +320,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private class RequestSyncCmd extends CommandListenerAbstract {
 		
 		public RequestSyncCmd() {
-			super(REQUEST_SYNC_CMD);
+			super(REQUEST_SYNC_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -388,7 +380,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private class ResponseSyncCmd extends CommandListenerAbstract {
 		
 		public ResponseSyncCmd() {
-			super(RESPONSE_SYNC_CMD);
+			super(RESPONSE_SYNC_CMD, Priority.HIGH);
 		}
 
 		@Override
