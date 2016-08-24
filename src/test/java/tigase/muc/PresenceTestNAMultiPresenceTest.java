@@ -21,24 +21,30 @@
  */
 package tigase.muc;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.Before;
-
 import tigase.component.PacketWriter;
 import tigase.component.exceptions.RepositoryException;
 import tigase.component.responses.AsyncCallback;
 import tigase.conf.ConfigurationException;
+import tigase.eventbus.EventBusFactory;
+import tigase.kernel.core.Kernel;
+import tigase.muc.history.HistoryProvider;
+import tigase.muc.history.HistoryProviderFactory;
+import tigase.muc.logger.RoomChatLogger;
+import tigase.muc.modules.DiscoveryModule;
+import tigase.muc.modules.PresenceModuleImpl;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
 import tigase.test.junit.XMPPTestCase;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author bmalkow
@@ -79,8 +85,19 @@ public class PresenceTestNAMultiPresenceTest extends XMPPTestCase {
 
 	@Before
 	public void init() throws RepositoryException, TigaseStringprepException, ConfigurationException {
+		final Kernel kernel = new Kernel();
+		kernel.registerBean("eventBus").asInstance(EventBusFactory.getInstance()).exec();
+		kernel.registerBean(MUCConfig.class).exec();
+		kernel.registerBean(RoomChatLogger.class).exec();
+		kernel.registerBean("mucRepository").asInstance(new MockMucRepository()).exec();
+		kernel.registerBean("historyProvider").asClass(HistoryProvider.class).withFactory(HistoryProviderFactory.class).exec();
+		kernel.registerBean(DiscoveryModule.class).exec();
+		kernel.registerBean(Ghostbuster2.class).exec();
+		kernel.registerBean(PresenceModuleImpl.class).exec();
+
 		final ArrayWriter writer = new ArrayWriter();
-		this.pubsub = new TestMUCCompoent(writer, new MockMucRepository());
+		this.pubsub = new TestMUCCompoent(writer, kernel.getInstance(MockMucRepository.class));
+		pubsub.register(kernel);
 		this.pubsub.setName("xxx");
 
 		Map<String, Object> props = pubsub.getDefaults(new HashMap<String, Object>());

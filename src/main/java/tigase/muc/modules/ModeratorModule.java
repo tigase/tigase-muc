@@ -428,8 +428,14 @@ public class ModeratorModule extends AbstractMucModule {
 
 	protected void processSetAffiliation(Room room, Element item, Affiliation newAffiliation, Role newRole, String reason,
 			String actor) throws RepositoryException, TigaseStringprepException {
+
 		final BareJID occupantBareJid = JID.jidInstance(item.getAttributeStaticStr("jid")).getBareJID();
 		final Affiliation previousAffiliation = room.getAffiliation(occupantBareJid);
+
+		if (log.isLoggable(Level.FINE)) {
+			log.fine(
+					"Set affiliation of " + occupantBareJid + " to " + newAffiliation + " (from: " + previousAffiliation + ")");
+		}
 
 		if (room.getConfig().isRoomMembersOnly() && (previousAffiliation.getWeight() <= Affiliation.none.getWeight())
 				&& (newAffiliation.getWeight() >= Affiliation.member.getWeight())) {
@@ -444,6 +450,9 @@ public class ModeratorModule extends AbstractMucModule {
 		boolean kick = newAffiliation == Affiliation.outcast;
 		kick |= room.getConfig().isRoomMembersOnly() && newAffiliation == Affiliation.none;
 		if (kick) {
+			if (log.isLoggable(Level.FINE)) {
+				log.fine("Kicking occupant " + occupantBareJid + " (" + occupantsNicknames + ")");
+			}
 			for (String occupantNick : occupantsNicknames) {
 				codes.add("301");
 				isUnavailable = true;
@@ -460,15 +469,23 @@ public class ModeratorModule extends AbstractMucModule {
 				ghostbuster.remove(occupantJids, room);
 			}
 		}
+
+		if (log.isLoggable(Level.FINE)) {
+			log.fine("Sending new affiliation of " + occupantBareJid + " to occupants " + room.getOccupantsNicknames());
+		}
 		for (String nickname : room.getOccupantsNicknames()) {
 			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
 
-			for (JID jid : occupantJids) {
-				for (String removed : occupantsNicknames) {
-					final Role currentRole = room.getRole(removed);
-					Packet occupantPresence = makePresence(jid, room.getRoomJID(), room, occupantBareJid, isUnavailable,
-							newAffiliation, currentRole, removed, reason, null, codes.toArray(new String[] {}));
+			if (log.isLoggable(Level.FINER)) {
+				log.finer("Sending new affiliation of " + occupantBareJid + " to occupant " + nickname + " (" + occupantJids
+						+ ")");
+			}
 
+			for (JID jid : occupantJids) {
+				for (String changedNickname : occupantsNicknames) {
+					final Role currentRole = room.getRole(changedNickname);
+					Packet occupantPresence = makePresence(jid, room.getRoomJID(), room, occupantBareJid, isUnavailable,
+							newAffiliation, currentRole, changedNickname, reason, null, codes.toArray(new String[] {}));
 					write(occupantPresence);
 				}
 			}

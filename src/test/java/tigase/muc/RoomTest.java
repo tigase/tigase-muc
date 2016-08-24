@@ -21,19 +21,19 @@
  */
 package tigase.muc;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.Assert;
 import org.junit.Before;
-
 import tigase.component.PacketWriter;
 import tigase.component.exceptions.RepositoryException;
 import tigase.component.responses.AsyncCallback;
 import tigase.conf.ConfigurationException;
+import tigase.eventbus.EventBusFactory;
+import tigase.kernel.core.Kernel;
+import tigase.muc.history.HistoryProvider;
+import tigase.muc.history.HistoryProviderFactory;
+import tigase.muc.logger.RoomChatLogger;
+import tigase.muc.modules.DiscoveryModule;
+import tigase.muc.modules.PresenceModuleImpl;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
 import tigase.test.junit.XMPPTestCase;
@@ -41,8 +41,15 @@ import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author bmalkow
+<<<<<<< HEAD
  *
  */
 public class RoomTest extends XMPPTestCase {
@@ -80,8 +87,19 @@ public class RoomTest extends XMPPTestCase {
 
 	@Before
 	public void init() throws RepositoryException, TigaseStringprepException, ConfigurationException {
+		final Kernel kernel = new Kernel();
+		kernel.registerBean("eventBus").asInstance(EventBusFactory.getInstance()).exec();
+		kernel.registerBean(MUCConfig.class).exec();
+		kernel.registerBean(RoomChatLogger.class).exec();
+		kernel.registerBean("mucRepository").asInstance(new MockMucRepository()).exec();
+		kernel.registerBean("historyProvider").asClass(HistoryProvider.class).withFactory(HistoryProviderFactory.class).exec();
+		kernel.registerBean(DiscoveryModule.class).exec();
+		kernel.registerBean(Ghostbuster2.class).exec();
+		kernel.registerBean(PresenceModuleImpl.class).exec();
+
 		final ArrayWriter writer = new ArrayWriter();
-		this.pubsub = new TestMUCCompoent(writer, new MockMucRepository());
+		this.pubsub = new TestMUCCompoent(writer, kernel.getInstance(MockMucRepository.class));
+		this.pubsub.register(kernel);
 		this.pubsub.setName("xxx");
 
 		Map<String, Object> props = pubsub.getDefaults(new HashMap<String, Object>());
@@ -147,10 +165,10 @@ public class RoomTest extends XMPPTestCase {
 		test("src/test/scripts/hidden-room-problem.cor", xmlio);
 	}
 
-	// @org.junit.Test
-	// public void test_presences() {
-	// test("src/test/scripts/processPresence-empty.cor", xmlio);
-	// }
+	@org.junit.Test
+	public void test_messages() {
+		test("src/test/scripts/messagesGroupchat.cor", xmlio);
+	}
 
 	@org.junit.Test
 	public void test_nonpersistentRoomProblem() {
@@ -169,10 +187,10 @@ public class RoomTest extends XMPPTestCase {
 		test("src/test/scripts/ping.cor", xmlio);
 	}
 
-	// @org.junit.Test
-	// public void test_presences2() {
-	// test("src/test/scripts/processPresence2.cor", xmlio);
-	// }
+	@org.junit.Test
+	public void test_presences2() {
+		test("src/test/scripts/processPresence2.cor", xmlio);
+	}
 
 	@org.junit.Test
 	public void test_presences2_non_anonymous() {

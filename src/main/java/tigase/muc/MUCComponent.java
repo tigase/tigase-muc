@@ -21,12 +21,6 @@
  */
 package tigase.muc;
 
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.logging.Level;
-
-import javax.script.Bindings;
-
 import tigase.component.AbstractKernelBasedComponent;
 import tigase.component.exceptions.RepositoryException;
 import tigase.component.modules.impl.AdHocCommandModule;
@@ -38,18 +32,20 @@ import tigase.form.Field;
 import tigase.kernel.core.Kernel;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.history.HistoryProviderFactory;
-import tigase.muc.logger.RoomChatLogger;
 import tigase.muc.modules.*;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.MucDAO;
 import tigase.muc.repository.UserRepositoryFactory;
-import tigase.muc.repository.inmemory.InMemoryMucRepository;
 import tigase.server.Packet;
+
+import javax.script.Bindings;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.logging.Level;
 
 public class MUCComponent extends AbstractKernelBasedComponent {
 
 	public static final String DEFAULT_ROOM_CONFIG_KEY = "default_room_config";
-
 	public static final String DEFAULT_ROOM_CONFIG_PREFIX_KEY = DEFAULT_ROOM_CONFIG_KEY + "/";
 	private Ghostbuster2 ghostbuster;
 
@@ -136,25 +132,25 @@ public class MUCComponent extends AbstractKernelBasedComponent {
 	protected void registerModules(Kernel kernel) {
 		kernel.registerBean(XmppPingModule.class).exec();
 		kernel.registerBean(JabberVersionModule.class).exec();
-		kernel.registerBean(DiscoveryModule.class).exec();
+		//kernel.registerBean(DiscoveryModule.class).exec();
 		kernel.registerBean(GroupchatMessageModule.class).exec();
 		kernel.registerBean(IqStanzaForwarderModule.class).exec();
 		kernel.registerBean(MediatedInvitationModule.class).exec();
 		kernel.registerBean(ModeratorModule.class).exec();
-		kernel.registerBean(PresenceModuleImpl.class).exec();
+		//kernel.registerBean(PresenceModuleImpl.class).exec();
 		kernel.registerBean(PrivateMessageModule.class).exec();
 		kernel.registerBean(RoomConfigurationModule.class).exec();
 		kernel.registerBean(UniqueRoomNameModule.class).exec();
 		kernel.registerBean(AdHocCommandModule.class).exec();
 
-		kernel.registerBean(MUCConfig.class).exec();
+		//kernel.registerBean(MUCConfig.class).exec();
 
 		kernel.registerBean("user-repository").asClass(UserRepository.class).withFactory(UserRepositoryFactory.class).exec();
-		kernel.registerBean(IMucRepository.ID).asClass(InMemoryMucRepository.class).exec();
+//		kernel.registerBean(IMucRepository.ID).asClass(InMemoryMucRepository.class).exec();
 		kernel.registerBean(HistoryProvider.class).withFactory(HistoryProviderFactory.class).exec();
 		kernel.registerBean(MucDAO.class).exec();
-		kernel.registerBean(RoomChatLogger.class).exec();
-		kernel.registerBean(Ghostbuster2.class).exec();
+		//kernel.registerBean(RoomChatLogger.class).exec();
+		//kernel.registerBean(Ghostbuster2.class).exec();
 	}
 
 	@Override

@@ -31,6 +31,7 @@ import java.util.LinkedList;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Initializable;
 import tigase.kernel.beans.Inject;
+import tigase.muc.MUCComponent;
 import tigase.muc.MUCConfig;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
@@ -41,7 +42,7 @@ import tigase.xmpp.JID;
  * @author bmalkow
  *
  */
-@Bean(name = MucLogger.ID)
+@Bean(name = MucLogger.ID, parent = MUCComponent.class)
 public class RoomChatLogger implements MucLogger, Initializable {
 
 	private static class Item {

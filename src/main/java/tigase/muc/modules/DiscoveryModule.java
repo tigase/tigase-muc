@@ -24,27 +24,30 @@ import tigase.component.exceptions.ComponentException;
 import tigase.component.exceptions.RepositoryException;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
-import tigase.muc.Affiliation;
-import tigase.muc.Role;
-import tigase.muc.Room;
-import tigase.muc.RoomConfig;
+import tigase.muc.*;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
+import tigase.util.DateTimeFormatter;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
+import java.util.logging.Level;
+
 /**
  * @author bmalkow
  *
  */
-@Bean(name = DiscoveryModule.ID)
+@Bean(name = DiscoveryModule.ID, parent = MUCComponent.class)
 public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModule {
 
 	@Inject
 	private IMucRepository repository;
+
+	private final DateTimeFormatter dtf = new DateTimeFormatter();
+	private DiscoItemsFilter filter = new DefaultDiscoItemsFilter();
 
 	private static void addFeature(Element query, String feature) {
 		query.addChild(new Element("feature", new String[] { "var" }, new String[] { feature }));
@@ -94,6 +97,8 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 		final Element form = new Element("x", new String[] { "xmlns", "type" }, new String[] { "jabber:x:data", "result" });
 		addField(form, "FORM_TYPE", "hidden", null, "http://jabber.org/protocol/muc#roominfo");
 
+		// text-single Room creation date
+		addField(form, "muc#roominfo_creationdate", null, "Room creation date", dtf.formatDateTime(room.getCreationDate()));
 		// text-single Current Discussion Topic
 		addField(form, "muc#roominfo_occupants", null, "Number of occupants", room.getOccupantsCount());
 		// text-single Current Discussion Topic
@@ -140,7 +145,7 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 
 		// list-single Affiliations that May Discover Real JIDs of Occupants
 		RoomConfig.Anonymity anonymity = config.getRoomAnonymity();
-		String[] whois;
+		Object[] whois;
 		switch (anonymity) {
 		case nonanonymous:
 			whois = new String[] { Affiliation.owner.name(), Affiliation.admin.name(), Affiliation.member.name(),
@@ -155,6 +160,16 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 		resultQuery.addChild(form);
 	}
 
+	public DiscoItemsFilter getFilter() {
+		return filter;
+	}
+
+	public void setFilter(DiscoItemsFilter filter) {
+		this.filter = filter;
+		if (log.isLoggable(Level.FINER))
+			log.finer("New discoItems filter is set: " + filter);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 *
@@ -166,8 +181,14 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 	protected void processDiscoInfo(Packet packet, JID requestedJID, String node, JID senderJID)
 			throws ComponentException, RepositoryException {
 		if ((node == null) && (requestedJID.getLocalpart() == null) && (requestedJID.getResource() == null)) {
+			if (log.isLoggable(Level.FINER))
+				log.finer("Requested component info");
+
 			super.processDiscoInfo(packet, requestedJID, node, senderJID);
 		} else if ((node == null) && (requestedJID.getLocalpart() != null) && (requestedJID.getResource() == null)) {
+			if (log.isLoggable(Level.FINER))
+				log.finer("Requested room " + requestedJID.getBareJID() + " info");
+
 			Element resultQuery = new Element("query", new String[] { "xmlns" },
 					new String[] { "http://jabber.org/protocol/disco#info" });
 
@@ -242,6 +263,10 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 		Packet result = packet.okResult(resultQuery, 0);
 
 		if ((node == null) && (requestedJID.getLocalpart() == null) && (requestedJID.getResource() == null)) {
+
+			if (log.isLoggable(Level.FINER))
+				log.finer("Requested  list of rooms");
+
 			// discovering rooms
 			// (http://xmpp.org/extensions/xep-0045.html#disco-rooms)
 			BareJID[] roomsId = repository.getPublicVisibleRoomsIdList();
@@ -251,19 +276,25 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 					final String name = repository.getRoomName(jid.toString());
 
 					final Room room = repository.getRoom(jid);
+
+					if (log.isLoggable(Level.FINEST) && filter != null) {
+						boolean fa = filter.allowed(senderJID, room);
+						log.finest("Using filter " + filter + "; result(" + senderJID + ", " + room.getRoomJID() + ")=" + fa);
+					}
+
 					if (room == null) {
 						log.warning("Room " + jid + " is not available!");
 						continue;
 					} else if (room.getConfig() == null) {
 						log.warning("Room " + jid + " hasn't configuration!");
 						continue;
-					} else if (!room.getConfig().isRoomconfigPublicroom()) {
-						Affiliation senderAff = room.getAffiliation(senderJID.getBareJID());
-						if (!room.isOccupantInRoom(senderJID)
-								&& (senderAff == Affiliation.none || senderAff == Affiliation.outcast))
-							continue;
+					} else if (filter != null && !filter.allowed(senderJID, room)) {
+						log.fine("Room " + jid + " is filtered off");
+						continue;
 					}
 
+					if (log.isLoggable(Level.FINER))
+						log.finer("Room " + jid + " is added to response.");
 					resultQuery.addChild(new Element("item", new String[] { "jid", "name" },
 							new String[] { jid.toString(), (name != null) ? name : jid.getLocalpart() }));
 				}
@@ -271,6 +302,10 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 		} else if ((node == null) && (requestedJID.getLocalpart() != null) && (requestedJID.getResource() == null)) {
 			// querying for Room Items
 			// (http://xmpp.org/extensions/xep-0045.html#disco-roomitems)
+
+			if (log.isLoggable(Level.FINER))
+				log.finer("Requested items list of room " + requestedJID.getBareJID());
+
 			Room room = repository.getRoom(requestedJID.getBareJID());
 
 			if (room == null) {

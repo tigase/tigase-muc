@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.build.timestamp.format>yyyy-MM-dd/HH:mm:ss</maven.build.timestamp.format>
@@ -8,6 +9,7 @@
 		<sign-storepass>storepass</sign-storepass>
 		<sign-keypass>keypass</sign-keypass>
 		<sign-skip>true</sign-skip>
+		<verbose-log>false</verbose-log>
 	</properties>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>tigase</groupId>
@@ -179,7 +181,7 @@
 					<alias>${sign-alias}</alias>
 					<storepass>${sign-storepass}</storepass>
 					<keypass>${sign-keypass}</keypass>
-					<!--<verbose>true</verbose>-->
+					<verbose>${verbose-log}</verbose>
 				</configuration>
 			</plugin>		</plugins>
 
@@ -230,7 +232,6 @@
 			<artifactId>org.osgi.core</artifactId>
 			<version>1.4.0</version>
 			<scope>provided</scope>
-			<type>bundle</type>
 		</dependency>
 	</dependencies>
 	<repositories>

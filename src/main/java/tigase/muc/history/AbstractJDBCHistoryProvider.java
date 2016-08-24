@@ -225,6 +225,11 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 			synchronized (st) {
 				st.setString(1, room.getRoomJID().toString());
 
+				if (log.isLoggable(Level.FINE))
+					log.fine("Removing history of room " + room.getRoomJID() + " from database.");
+				if (log.isLoggable(Level.FINEST))
+					log.finest("Executing " + st.toString());
+
 				st.executeUpdate();
 			}
 		} catch (SQLException e) {

@@ -21,36 +21,31 @@
  */
 package tigase.muc;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import tigase.component.ScheduledTask;
 import tigase.kernel.beans.Bean;
-import tigase.kernel.beans.Initializable;
 import tigase.kernel.beans.Inject;
 import tigase.muc.modules.PresenceModule;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.server.ReceiverTimeoutHandler;
 import tigase.util.TigaseStringprepException;
-import tigase.util.TimerTask;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author bmalkow
  *
  */
-@Bean(name = "ghostbuster")
-public class Ghostbuster2 implements Initializable {
+@Bean(name = "ghostbuster", parent = MUCComponent.class)
+public class Ghostbuster2 extends ScheduledTask {
 
 	private class MonitoredObject {
 
@@ -104,21 +99,9 @@ public class Ghostbuster2 implements Initializable {
 	@Inject
 	private IMucRepository repository;
 
-	private final TimerTask timerTsk = new TimerTask() {
-
-		@Override
-		public void run() {
-			if (config.isGhostbusterEnabled()) {
-				try {
-					ping();
-				} catch (Exception e) {
-					log.log(Level.WARNING, "Problem on executing ghostbuster", e);
-				}
-			}
-		}
-	};
-
 	public Ghostbuster2() {
+		super(Duration.ofMinutes(10), Duration.ofMinutes(5));
+
 		this.pingHandler = new ReceiverTimeoutHandler() {
 			@Override
 			public void responseReceived(Packet data, Packet response) {
@@ -199,23 +182,8 @@ public class Ghostbuster2 implements Initializable {
 		return presenceModule;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see tigase.kernel.beans.Initializable#initialize()
-	 */
-	@Override
-	public void initialize() {
-		try {
-			mucComponent.addTimerTask(timerTsk, 1000 * 60 * 10l, 1000 * 60 * 5l);
-		} catch (Exception e) {
-			log.log(Level.WARNING, "Ghostbaster stuck at HQ", e);
-		}
-
-	}
-
 	/**
-	 * @param response
+	 * @param packet
 	 * @throws TigaseStringprepException
 	 */
 	protected void onPingReceived(Packet packet) throws TigaseStringprepException {
@@ -357,6 +325,17 @@ public class Ghostbuster2 implements Initializable {
 			}
 		} catch (Exception e) {
 			log.log(Level.WARNING, "Problem on unregistering occupant", e);
+		}
+	}
+
+	@Override
+	public void run() {
+		if (config.isGhostbusterEnabled()) {
+			try {
+				ping();
+			} catch (Exception e) {
+				log.log(Level.WARNING, "Problem on executing ghostbuster", e);
+			}
 		}
 	}
 

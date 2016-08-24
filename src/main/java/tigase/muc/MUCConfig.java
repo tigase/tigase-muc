@@ -21,17 +21,17 @@
  */
 package tigase.muc;
 
-import java.util.logging.Logger;
-
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.config.ConfigField;
 import tigase.xmpp.BareJID;
+
+import java.util.logging.Logger;
 
 /**
  * @author bmalkow
  *
  */
-@Bean(name = "mucConfig")
+@Bean(name = "mucConfig", parent = MUCComponent.class)
 public class MUCConfig {
 
 	public static final String DB_CLASS_KEY = "history-db";

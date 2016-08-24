@@ -34,9 +34,9 @@ public class TestMUCCompoent extends MUCComponent {
 	private IMucRepository mucRepository;
 	private PacketWriter writer;
 
-	public TestMUCCompoent(PacketWriter writer, IMucRepository mockMucRepository) {
+	public TestMUCCompoent(PacketWriter writer, IMucRepository mucRepository) {
 		this.writer = writer;
-		this.mucRepository = mockMucRepository;
+		this.mucRepository = mucRepository;
 	}
 
 	public IMucRepository getMucRepository() {
@@ -50,11 +50,8 @@ public class TestMUCCompoent extends MUCComponent {
 	 */
 	@Override
 	protected void registerModules(Kernel kernel) {
-		super.registerModules(kernel);
-
 		kernel.registerBean("writer").asInstance(writer).exec();
-		kernel.registerBean(IMucRepository.ID).asInstance(mucRepository).exec();
-
+		super.registerModules(kernel);
 	}
 
 }

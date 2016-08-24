@@ -24,6 +24,7 @@ package tigase.muc.modules;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.criteria.Criteria;
@@ -97,9 +98,16 @@ public class PresenceModuleNoBroadcast extends PresenceModuleImpl {
 
 		if (room.getOccupantsCount() == 0) {
 			if ((historyProvider != null) && !room.getConfig().isPersistentRoom()) {
+				if (log.isLoggable(Level.FINE))
+					log.fine("Removing history of room " + room.getRoomJID());
 				historyProvider.removeHistory(room);
-			}
+			} else if (log.isLoggable(Level.FINE))
+				log.fine("Cannot remove history of room " + room.getRoomJID() + " because history provider is not available.");
 			repository.leaveRoom(room);
+
+			Element emptyRoomEvent = new Element("EmptyRoom", new String[]{"xmlns"}, new String[]{"tigase:events:muc"});
+			emptyRoomEvent.addChild(new Element("room", room.getRoomJID().toString()));
+			fireEvent(emptyRoomEvent);
 		}
 	}
 
@@ -117,12 +125,6 @@ public class PresenceModuleNoBroadcast extends PresenceModuleImpl {
 	protected void processExit(Room room, Element presenceElement, JID senderJID)
 			throws MUCException, TigaseStringprepException {
 		super.processExit(room, presenceElement, senderJID);
-
-	}
-
-	@Override
-	public void sendPresencesToNewOccupant(Room room, JID senderJID) throws TigaseStringprepException {
-		// do nothing
 	}
 
 	@Override
@@ -134,6 +136,11 @@ public class PresenceModuleNoBroadcast extends PresenceModuleImpl {
 				newNickName);
 		write(presence.getPacket());
 
+	}
+
+	@Override
+	public void sendPresencesToNewOccupant(Room room, JID senderJID) throws TigaseStringprepException {
+		// do nothing
 	}
 
 }

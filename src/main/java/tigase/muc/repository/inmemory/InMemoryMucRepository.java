@@ -1,10 +1,13 @@
 /*
- * Tigase Jabber/XMPP Multi-User Chat Component
- * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
+ * InMemoryMucRepository.java
+ *
+ * Tigase Workgroup Queues Component
+ * Copyright (C) 2011-2016 "Tigase, Inc." <office@tigase.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License.
+ * the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -15,33 +18,16 @@
  * along with this program. Look for COPYING file in the top folder.
  * If not, see http://www.gnu.org/licenses/.
  *
- * $Rev$
- * Last modified by $Author$
- * $Date$
  */
 package tigase.muc.repository.inmemory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import tigase.component.exceptions.RepositoryException;
+import tigase.eventbus.EventBus;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Initializable;
 import tigase.kernel.beans.Inject;
-import tigase.muc.Affiliation;
-import tigase.muc.MUCComponent;
-import tigase.muc.MUCConfig;
-import tigase.muc.Room;
+import tigase.muc.*;
 import tigase.muc.Room.RoomListener;
-import tigase.muc.RoomConfig;
 import tigase.muc.RoomConfig.RoomConfigListener;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
@@ -51,16 +37,17 @@ import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * @author bmalkow
  *
  */
-@Bean(name = IMucRepository.ID)
+@Bean(name = IMucRepository.ID, parent = MUCComponent.class)
 public class InMemoryMucRepository implements IMucRepository, Initializable {
-
-	private class InternalRoom {
-		boolean listPublic = true;
-	}
 
 	private final Map<BareJID, InternalRoom> allRooms = new ConcurrentHashMap<BareJID, InternalRoom>();
 
@@ -69,15 +56,16 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 
 	private RoomConfig defaultConfig;
 
+	@Inject
+	private EventBus eventBus;
+
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 
 	@Inject
 	private MUCConfig mucConfig;
 
 	private final RoomConfigListener roomConfigListener;
-
 	private final RoomListener roomListener;
-
 	private final Map<BareJID, Room> rooms = new ConcurrentHashMap<BareJID, Room>();
 
 	public InMemoryMucRepository() {
@@ -186,6 +174,13 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 		this.rooms.remove(roomJID);
 		this.allRooms.remove(roomJID);
 		dao.destroyRoom(roomJID);
+		fireDestroyRoom(room);
+	}
+
+	private void fireDestroyRoom(Room room) {
+		Element emptyRoomEvent = new Element("RoomDestroyed", new String[]{"xmlns"}, new String[]{"tigase:events:muc"});
+		emptyRoomEvent.addChild(new Element("room", room.getRoomJID().toString()));
+		eventBus.fire(emptyRoomEvent);
 	}
 
 	@Override
@@ -216,12 +211,12 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 	@Override
 	public BareJID[] getPublicVisibleRoomsIdList() throws RepositoryException {
 		List<BareJID> result = new ArrayList<BareJID>();
-		for (Entry<BareJID, InternalRoom> entry : this.allRooms.entrySet()) {
+		for (Map.Entry<BareJID, InternalRoom> entry : this.allRooms.entrySet()) {
 			if (entry.getValue().listPublic) {
 				result.add(entry.getKey());
 			}
 		}
-		return result.toArray(new BareJID[] {});
+		return result.toArray(new BareJID[]{});
 	}
 
 	/*
@@ -292,6 +287,7 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 		if (!room.getConfig().isPersistentRoom()) {
 			this.allRooms.remove(roomJID);
 		}
+		fireDestroyRoom(room);
 	}
 
 	@Override
@@ -299,5 +295,9 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 		RoomConfig org = getDefaultRoomConfig();
 		org.copyFrom(config);
 		dao.updateRoomConfig(defaultConfig);
+	}
+
+	private class InternalRoom {
+		boolean listPublic = true;
 	}
 }
