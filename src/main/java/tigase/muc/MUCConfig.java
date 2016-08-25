@@ -34,9 +34,6 @@ import java.util.logging.Logger;
 @Bean(name = "mucConfig", parent = MUCComponent.class)
 public class MUCConfig {
 
-	public static final String DB_CLASS_KEY = "history-db";
-
-	public static final String DB_URI_KEY = "history-db-uri";
 	public static final String LOG_DIR_KEY = "room-log-directory";
 	public static final String MESSAGE_FILTER_ENABLED_KEY = "message-filter-enabled";
 	public static final String MUC_ALLOW_CHAT_STATES_KEY = "muc-allow-chat-states";
@@ -53,10 +50,6 @@ public class MUCConfig {
 	protected Boolean chatStateAllowed = false;
 	@ConfigField(desc = "Logs Directory", alias = LOG_DIR_KEY)
 	private String chatLoggingDirectory = "./logs/";
-	@ConfigField(desc = "Chat history database class", alias = DB_CLASS_KEY)
-	private String databaseClassName;
-	@ConfigField(desc = "Chat history database URI", alias = DB_URI_KEY)
-	private String databaseUri;
 	@ConfigField(desc = "GhostBuster enabled", alias = GHOSTBUSTER_ENABLED_KEY)
 	private boolean ghostbusterEnabled = true;
 	@ConfigField(desc = "Passing only body element", alias = MESSAGE_FILTER_ENABLED_KEY)
@@ -67,32 +60,12 @@ public class MUCConfig {
 	private boolean newRoomLocked = true;
 	@ConfigField(desc = "Passing only bare presence", alias = PRESENCE_FILTER_ENABLED_KEY)
 	private boolean presenceFilterEnabled = false;
-	@ConfigField(desc = "Repository class name", alias = MUC_REPO_CLASS_PROP_KEY)
-	private String repositoryClassName;
-	@ConfigField(desc = "Repository URI", alias = MUC_REPO_URL_PROP_KEY)
-	private String repositoryUri;
 
 	/**
 	 * @return
 	 */
 	public String getChatLoggingDirectory() {
 		return chatLoggingDirectory;
-	}
-
-	public String getDatabaseClassName() {
-		return databaseClassName;
-	}
-
-	public String getDatabaseUri() {
-		return databaseUri;
-	}
-
-	public String getRepositoryClassName() {
-		return repositoryClassName;
-	}
-
-	public String getRepositoryUri() {
-		return repositoryUri;
 	}
 
 	/**
