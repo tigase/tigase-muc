@@ -42,7 +42,7 @@ import tigase.xmpp.JID;
  * @author bmalkow
  *
  */
-@Bean(name = MucLogger.ID, parent = MUCComponent.class)
+@Bean(name = MucLogger.ID, parent = MUCComponent.class, active = false)
 public class RoomChatLogger implements MucLogger, Initializable {
 
 	private static class Item {

@@ -21,8 +21,12 @@
  */
 package tigase.muc;
 
-import tigase.component.PacketWriter;
+import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Inject;
 import tigase.kernel.core.Kernel;
+import tigase.muc.history.HistoryProvider;
+import tigase.muc.history.HistoryProviderMDBean;
+import tigase.muc.history.MemoryHistoryProvider;
 import tigase.muc.repository.IMucRepository;
 
 /**
@@ -31,12 +35,10 @@ import tigase.muc.repository.IMucRepository;
  */
 public class TestMUCCompoent extends MUCComponent {
 
+	@Inject
 	private IMucRepository mucRepository;
-	private PacketWriter writer;
 
-	public TestMUCCompoent(PacketWriter writer, IMucRepository mucRepository) {
-		this.writer = writer;
-		this.mucRepository = mucRepository;
+	public TestMUCCompoent() {
 	}
 
 	public IMucRepository getMucRepository() {
@@ -50,8 +52,18 @@ public class TestMUCCompoent extends MUCComponent {
 	 */
 	@Override
 	protected void registerModules(Kernel kernel) {
-		kernel.registerBean("writer").asInstance(writer).exec();
 		super.registerModules(kernel);
+	}
+
+	@Bean(name = "historyProviderPool", parent = TestMUCCompoent.class)
+	public static class TestHistoryProviderBean extends HistoryProviderMDBean {
+
+		private HistoryProvider provider = new MemoryHistoryProvider();
+
+		@Override
+		protected HistoryProvider getRepository(String name) {
+			return provider;
+		}
 	}
 
 }

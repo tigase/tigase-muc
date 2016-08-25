@@ -26,28 +26,32 @@ import tigase.component.exceptions.RepositoryException;
 import tigase.component.modules.impl.AdHocCommandModule;
 import tigase.component.modules.impl.JabberVersionModule;
 import tigase.component.modules.impl.XmppPingModule;
-import tigase.conf.ConfigurationException;
-import tigase.db.UserRepository;
 import tigase.form.Field;
+import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.BeanSelector;
+import tigase.kernel.beans.Inject;
+import tigase.kernel.beans.config.ConfigField;
 import tigase.kernel.core.Kernel;
-import tigase.muc.history.HistoryProvider;
-import tigase.muc.history.HistoryProviderFactory;
 import tigase.muc.modules.*;
 import tigase.muc.repository.IMucRepository;
-import tigase.muc.repository.MucDAO;
-import tigase.muc.repository.UserRepositoryFactory;
 import tigase.server.Packet;
 
 import javax.script.Bindings;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 
+@Bean(name = "muc", parent = Kernel.class, active = false, selectors = {BeanSelector.NonClusterMode.class})
 public class MUCComponent extends AbstractKernelBasedComponent {
 
 	public static final String DEFAULT_ROOM_CONFIG_KEY = "default_room_config";
 	public static final String DEFAULT_ROOM_CONFIG_PREFIX_KEY = DEFAULT_ROOM_CONFIG_KEY + "/";
+	@Inject
 	private Ghostbuster2 ghostbuster;
+
+	@ConfigField(alias = DEFAULT_ROOM_CONFIG_KEY, desc = "Default room configuration", allowAliasFromParent = false)
+	private Map<String, String> defaultRoomConfig = new HashMap<>();
 
 	public MUCComponent() {
 	}
@@ -145,66 +149,41 @@ public class MUCComponent extends AbstractKernelBasedComponent {
 
 		//kernel.registerBean(MUCConfig.class).exec();
 
-		kernel.registerBean("user-repository").asClass(UserRepository.class).withFactory(UserRepositoryFactory.class).exec();
 //		kernel.registerBean(IMucRepository.ID).asClass(InMemoryMucRepository.class).exec();
-		kernel.registerBean(HistoryProvider.class).withFactory(HistoryProviderFactory.class).exec();
-		kernel.registerBean(MucDAO.class).exec();
 		//kernel.registerBean(RoomChatLogger.class).exec();
 		//kernel.registerBean(Ghostbuster2.class).exec();
 	}
 
 	@Override
-	public void setProperties(Map<String, Object> props) throws ConfigurationException {
-		if (props.size() == 1) {
-			// If props.size() == 1, it means this is a single property update
-			// and this component does not support single property change for
-			// the rest
-			// of it's settings
-			log.config("props.size() == 1, ignoring setting properties");
-			return;
-		}
-
-		super.setProperties(props);
-
-		this.ghostbuster = kernel.getInstance(Ghostbuster2.class);
-
+	public void initialize() {
 		try {
-			updateDefaultRoomConfig(props);
-		} catch (Exception e) {
-			log.log(Level.WARNING, "Cannot update Default Room Config", e);
+			updateDefaultRoomConfig();
+		} catch (Exception ex) {
+			log.log(Level.FINEST, "Exception during modification of default room config", ex);
 		}
+
+		super.initialize();
 	}
 
-	private void updateDefaultRoomConfig(Map<String, Object> props) throws RepositoryException {
+	private void updateDefaultRoomConfig() throws RepositoryException {
 		final IMucRepository mucRepository = kernel.getInstance(IMucRepository.class);
 
-		boolean found = false;
-		for (Entry<String, Object> x : props.entrySet()) {
-			if (x.getKey().startsWith(DEFAULT_ROOM_CONFIG_PREFIX_KEY)) {
-				found = true;
-				break;
-			}
-		}
-
-		if (!found)
+		if (defaultRoomConfig.isEmpty())
 			return;
 
 		log.config("Updating Default Room Config");
 
 		final RoomConfig defaultRoomConfig = mucRepository.getDefaultRoomConfig();
 		boolean changed = false;
-		for (Entry<String, Object> x : props.entrySet()) {
-			if (x.getKey().startsWith(DEFAULT_ROOM_CONFIG_PREFIX_KEY)) {
-				String var = x.getKey().substring(DEFAULT_ROOM_CONFIG_PREFIX_KEY.length());
-
-				Field field = defaultRoomConfig.getConfigForm().get(var);
-				if (field != null) {
-					changed = true;
-					String[] values = ((String) x.getValue()).split(",");
-					field.setValues(values);
-				} else if (log.isLoggable(Level.WARNING)) {
-					log.warning("Default config room doesn't contains variable '" + var + "'!");
-				}
+		for (Entry<String, String> x : this.defaultRoomConfig.entrySet()) {
+			String var = x.getKey();
+			Field field = defaultRoomConfig.getConfigForm().get(var);
+			if (field != null) {
+				changed = true;
+				String[] values = x.getValue().split(",");
+				field.setValues(values);
+			} else if (log.isLoggable(Level.WARNING)) {
+				log.warning("Default config room doesn't contains variable '" + var + "'!");
 			}
 		}
 		if (changed) {

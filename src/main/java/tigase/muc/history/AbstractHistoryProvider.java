@@ -20,10 +20,7 @@
  */
 package tigase.muc.history;
 
-import java.util.Date;
-import java.util.Queue;
-import java.util.logging.Logger;
-
+import tigase.db.DataSource;
 import tigase.muc.DateUtil;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
@@ -34,11 +31,15 @@ import tigase.xml.SingletonFactory;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
+import java.util.Date;
+import java.util.Queue;
+import java.util.logging.Logger;
+
 /**
  * @author bmalkow
  *
  */
-public abstract class AbstractHistoryProvider implements HistoryProvider {
+public abstract class AbstractHistoryProvider<DS extends DataSource> implements HistoryProvider<DS> {
 
 	protected static final SimpleParser parser = SingletonFactory.getParserInstance();
 

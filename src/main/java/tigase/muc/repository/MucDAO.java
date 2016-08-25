@@ -48,7 +48,7 @@ import tigase.xmpp.JID;
  * @author bmalkow
  *
  */
-@Bean(name = "muc-dao")
+@Bean(name = "muc-dao", parent = MUCComponent.class)
 public class MucDAO implements Initializable {
 
 	private static final String CREATION_DATE_KEY = "creation-date";

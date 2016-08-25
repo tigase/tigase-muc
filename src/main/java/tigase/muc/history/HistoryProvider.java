@@ -21,21 +21,22 @@
  */
 package tigase.muc.history;
 
-import java.util.Date;
-
 import tigase.component.PacketWriter;
-import tigase.db.Repository;
+import tigase.db.DataSource;
+import tigase.db.DataSourceAware;
 import tigase.kernel.beans.Bean;
 import tigase.muc.Room;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
+
+import java.util.Date;
 
 /**
  * @author bmalkow
  *
  */
 @Bean(name = "history-provider")
-public interface HistoryProvider extends Repository {
+public interface HistoryProvider<DS extends DataSource> extends DataSourceAware<DS> {
 
 	/**
 	 * Adds join event.
@@ -101,7 +102,7 @@ public interface HistoryProvider extends Repository {
 	/**
 	 * @return
 	 */
-	boolean isPersistent();
+	boolean isPersistent(Room room);
 
 	void removeHistory(Room room);
 

@@ -61,7 +61,7 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 	private Ghostbuster2 ghostbuster;
 	@Inject
 	private HistoryProvider historyProvider;
-	@Inject
+	@Inject(nullAllowed = true)
 	private MucLogger mucLogger;
 	@Inject
 	private IMucRepository repository;

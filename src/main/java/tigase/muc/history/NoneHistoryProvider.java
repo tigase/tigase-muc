@@ -21,15 +21,14 @@
  */
 package tigase.muc.history;
 
-import java.util.Date;
-import java.util.Map;
-
 import tigase.component.PacketWriter;
-import tigase.db.DBInitException;
+import tigase.db.DataSource;
 import tigase.db.Repository;
 import tigase.muc.Room;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
+
+import java.util.Date;
 
 /**
  * @author bmalkow
@@ -98,17 +97,13 @@ public class NoneHistoryProvider implements HistoryProvider {
 			PacketWriter writer) {
 	}
 
-	@Override
-	public void initRepository(String repository_uri, Map<String, String> params) throws DBInitException {
-	}
-
 	/*
 	 * (non-Javadoc)
 	 *
 	 * @see tigase.muc.history.HistoryProvider#isPersistent()
 	 */
 	@Override
-	public boolean isPersistent() {
+	public boolean isPersistent(Room room) {
 		return false;
 	}
 
@@ -121,4 +116,8 @@ public class NoneHistoryProvider implements HistoryProvider {
 	public void removeHistory(Room room) {
 	}
 
+	@Override
+	public void setDataSource(DataSource dataSource) {
+
+	}
 }

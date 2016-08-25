@@ -62,7 +62,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 	@Inject
 	private HistoryProvider historyProvider;
 
-	@Inject
+	@Inject(nullAllowed = true)
 	private MucLogger mucLogger;
 
 	@Inject

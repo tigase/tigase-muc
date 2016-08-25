@@ -24,16 +24,15 @@ package tigase.muc;
 import org.junit.Assert;
 import org.junit.Before;
 import tigase.component.PacketWriter;
+import tigase.component.PropertiesBeanConfigurator;
 import tigase.component.exceptions.RepositoryException;
 import tigase.component.responses.AsyncCallback;
 import tigase.conf.ConfigurationException;
+import tigase.db.beans.DataSourceBean;
 import tigase.eventbus.EventBusFactory;
+import tigase.kernel.DefaultTypesConverter;
+import tigase.kernel.beans.config.AbstractBeanConfigurator;
 import tigase.kernel.core.Kernel;
-import tigase.muc.history.HistoryProvider;
-import tigase.muc.history.HistoryProviderFactory;
-import tigase.muc.logger.RoomChatLogger;
-import tigase.muc.modules.DiscoveryModule;
-import tigase.muc.modules.PresenceModuleImpl;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
 import tigase.test.junit.XMPPTestCase;
@@ -88,25 +87,22 @@ public class RoomTest extends XMPPTestCase {
 	@Before
 	public void init() throws RepositoryException, TigaseStringprepException, ConfigurationException {
 		final Kernel kernel = new Kernel();
-		kernel.registerBean("eventBus").asInstance(EventBusFactory.getInstance()).exec();
-		kernel.registerBean(MUCConfig.class).exec();
-		kernel.registerBean(RoomChatLogger.class).exec();
-		kernel.registerBean("mucRepository").asInstance(new MockMucRepository()).exec();
-		kernel.registerBean("historyProvider").asClass(HistoryProvider.class).withFactory(HistoryProviderFactory.class).exec();
-		kernel.registerBean(DiscoveryModule.class).exec();
-		kernel.registerBean(Ghostbuster2.class).exec();
-		kernel.registerBean(PresenceModuleImpl.class).exec();
+		kernel.registerBean(DefaultTypesConverter.class).exec();
+		kernel.registerBean(AbstractBeanConfigurator.DEFAULT_CONFIGURATOR_NAME).asClass(PropertiesBeanConfigurator.class).exportable().exec();
+		Map<String, Object> props = new HashMap();
+		props.put("muc/" + "multi-user-chat", BareJID.bareJIDInstance("multi-user-chat"));
+		props.put("muc/" + MUCConfig.MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
+		props.put("muc/" + MUCConfig.PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
+		props.put("muc/" + MUCConfig.LOG_DIR_KEY, "./");
+		kernel.getInstance(PropertiesBeanConfigurator.class).setProperties(props);
+		kernel.registerBean("eventBus").asInstance(EventBusFactory.getInstance()).exportable().exec();
+		kernel.registerBean("dataSourceBean").asClass(DataSourceBean.class).exportable().exec();
+		kernel.registerBean("mucRepository").asInstance(new MockMucRepository()).exportable().exec();
 
 		final ArrayWriter writer = new ArrayWriter();
-		this.pubsub = new TestMUCCompoent(writer, kernel.getInstance(MockMucRepository.class));
-		this.pubsub.register(kernel);
-		this.pubsub.setName("xxx");
-
-		Map<String, Object> props = pubsub.getDefaults(new HashMap<String, Object>());
-		props.put("multi-user-chat", BareJID.bareJIDInstance("multi-user-chat"));
-		props.put(MUCConfig.MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
-		props.put(MUCConfig.PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
-		props.put(MUCConfig.LOG_DIR_KEY, "./");
+		kernel.registerBean("muc").asClass(TestMUCCompoent.class).exec();
+		this.pubsub = kernel.getInstance(TestMUCCompoent.class);
+		((Kernel) kernel.getInstance("muc#KERNEL")).registerBean("writer").asInstance(writer).exec();
 
 		xmlio = new JUnitXMLIO() {
 
@@ -136,11 +132,6 @@ public class RoomTest extends XMPPTestCase {
 			}
 		};
 
-		try {
-			pubsub.setProperties(props);
-		} catch (ConfigurationException ex) {
-			ex.printStackTrace();
-		}
 	}
 
 	@org.junit.Test

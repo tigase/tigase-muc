@@ -21,17 +21,8 @@
  */
 package tigase.muc.history;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Map;
-import java.util.logging.Level;
-
 import tigase.component.PacketWriter;
-import tigase.db.DBInitException;
+import tigase.db.DataRepository;
 import tigase.db.Repository;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
@@ -40,6 +31,14 @@ import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
+
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.logging.Level;
 
 /**
  * @author bmalkow
@@ -61,7 +60,6 @@ public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 	public static final String GET_MESSAGES_SINCE_QUERY_VAL = "select room_name, event_type, timestamp, sender_jid, sender_nickname, body, msg from muc_history where room_name=? and timestamp >= ? order by timestamp desc";
 
 	/**
-	 * @param dataRepository
 	 */
 	public DerbySqlHistoryProvider() {
 	}
@@ -142,21 +140,21 @@ public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 		}
 	}
 
-	public void init() {
+	public void init(DataRepository dataRepository) {
 		try {
-			this.dataRepository.checkTable("muc_history", CREATE_MUC_HISTORY_TABLE_VAL);
+			dataRepository.checkTable("muc_history", CREATE_MUC_HISTORY_TABLE_VAL);
 
-			internalInit();
+			internalInit(dataRepository);
 		} catch (SQLException e) {
 			if (log.isLoggable(Level.WARNING))
 				log.log(Level.WARNING, "Initializing problem", e);
 			try {
 				if (log.isLoggable(Level.INFO))
 					log.info("Trying to create tables: " + CREATE_MUC_HISTORY_TABLE_VAL);
-				Statement st = this.dataRepository.createStatement(null);
+				Statement st = dataRepository.createStatement(null);
 				st.execute(CREATE_MUC_HISTORY_TABLE_VAL);
 
-				internalInit();
+				internalInit(dataRepository);
 			} catch (SQLException e1) {
 				if (log.isLoggable(Level.WARNING))
 					log.log(Level.WARNING, "Can't initialize muc history", e1);
@@ -165,17 +163,16 @@ public class DerbySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 		}
 	}
 
-	@Override
-	public void initRepository(String resource_uri, Map<String, String> params) throws DBInitException {
-		super.initRepository(resource_uri, params);
-		init();
+	public void setDataSource(DataRepository dataRepository) {
+		init(dataRepository);
+		super.setDataSource(dataRepository);
 	}
 
-	private void internalInit() throws SQLException {
-		this.dataRepository.initPreparedStatement(ADD_MESSAGE_QUERY_KEY, ADD_MESSAGE_QUERY_VAL);
-		this.dataRepository.initPreparedStatement(DELETE_MESSAGES_QUERY_KEY, DELETE_MESSAGES_QUERY_VAL);
-		this.dataRepository.initPreparedStatement(GET_MESSAGES_SINCE_QUERY_KEY, GET_MESSAGES_SINCE_QUERY_VAL);
-		this.dataRepository.initPreparedStatement(GET_MESSAGES_MAXSTANZAS_QUERY_KEY, GET_MESSAGES_MAXSTANZAS_QUERY_VAL);
+	private void internalInit(DataRepository dataRepository) throws SQLException {
+		dataRepository.initPreparedStatement(ADD_MESSAGE_QUERY_KEY, ADD_MESSAGE_QUERY_VAL);
+		dataRepository.initPreparedStatement(DELETE_MESSAGES_QUERY_KEY, DELETE_MESSAGES_QUERY_VAL);
+		dataRepository.initPreparedStatement(GET_MESSAGES_SINCE_QUERY_KEY, GET_MESSAGES_SINCE_QUERY_VAL);
+		dataRepository.initPreparedStatement(GET_MESSAGES_MAXSTANZAS_QUERY_KEY, GET_MESSAGES_MAXSTANZAS_QUERY_VAL);
 	}
 
 	protected void processResultSet(Room room, JID senderJID, PacketWriter writer, Integer maxStanzas, ResultSet rs)

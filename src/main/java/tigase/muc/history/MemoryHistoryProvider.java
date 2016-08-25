@@ -29,6 +29,7 @@ import java.util.logging.Level;
 
 import tigase.component.PacketWriter;
 import tigase.db.DBInitException;
+import tigase.db.DataSource;
 import tigase.db.Repository;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
@@ -152,17 +153,13 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 	}
 
 	@Override
-	public void initRepository(String resource_uri, Map<String, String> params) throws DBInitException {
+	public boolean isPersistent(Room room) {
+		return false;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see tigase.muc.history.HistoryProvider#isPersistent()
-	 */
 	@Override
-	public boolean isPersistent() {
-		return false;
+	public void setDataSource(DataSource dataSource) {
+
 	}
 
 	@Override

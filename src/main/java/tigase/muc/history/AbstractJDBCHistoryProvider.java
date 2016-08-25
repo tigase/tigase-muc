@@ -21,17 +21,8 @@
  */
 package tigase.muc.history;
 
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.Date;
-import java.util.Map;
-import java.util.logging.Level;
-
 import tigase.component.PacketWriter;
-import tigase.db.DBInitException;
 import tigase.db.DataRepository;
-import tigase.db.RepositoryFactory;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
@@ -40,11 +31,17 @@ import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
 
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Date;
+import java.util.logging.Level;
+
 /**
  * @author bmalkow
  *
  */
-public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvider {
+public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvider<DataRepository> {
 
 	public static final String ADD_MESSAGE_QUERY_KEY = "ADD_MESSAGE_QUERY_KEY";
 
@@ -56,10 +53,14 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 
 	protected DataRepository dataRepository;
 
-	/**
-	 * @param dataRepository
-	 */
 	public AbstractJDBCHistoryProvider() {
+	}
+
+	@Override
+	public void setDataSource(DataRepository dataSource) {
+		this.dataRepository = dataSource;
+
+
 	}
 
 	/** {@inheritDoc} */
@@ -179,16 +180,7 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 	}
 
 	@Override
-	public void initRepository(String resource_uri, Map<String, String> params) throws DBInitException {
-		try {
-			dataRepository = RepositoryFactory.getDataRepository(null, resource_uri, params);
-		} catch (Exception ex) {
-			throw new DBInitException("Error during initialization of repository", ex);
-		}
-	}
-
-	@Override
-	public final boolean isPersistent() {
+	public final boolean isPersistent(Room room) {
 		return true;
 	}
 

@@ -21,21 +21,20 @@
  */
 package tigase.muc.history;
 
+import tigase.component.PacketWriter;
+import tigase.db.DataRepository;
+import tigase.db.Repository;
+import tigase.muc.Room;
+import tigase.xml.Element;
+import tigase.xmpp.JID;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Date;
-import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import tigase.component.PacketWriter;
-import tigase.db.DBInitException;
-import tigase.db.Repository;
-import tigase.muc.Room;
-import tigase.xml.Element;
-import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
@@ -62,7 +61,6 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 	private Logger log = Logger.getLogger(this.getClass().getName());
 
 	/**
-	 * @param dataRepository
 	 */
 	public SqlserverSqlHistoryProvider() {
 	}
@@ -175,11 +173,11 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 		}
 	}
 
-	public void init() {
+	public void init(DataRepository dataRepository) {
 		try {
-			this.dataRepository.checkTable("muc_history", CREATE_MUC_HISTORY_TABLE_VAL);
+			dataRepository.checkTable("muc_history", CREATE_MUC_HISTORY_TABLE_VAL);
 
-			internalInit();
+			internalInit(dataRepository);
 		} catch (SQLException e) {
 			e.printStackTrace();
 			if (log.isLoggable(Level.WARNING))
@@ -187,10 +185,10 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 			try {
 				if (log.isLoggable(Level.INFO))
 					log.info("Trying to create tables: " + CREATE_MUC_HISTORY_TABLE_VAL);
-				Statement st = this.dataRepository.createStatement(null);
+				Statement st = dataRepository.createStatement(null);
 				st.execute(CREATE_MUC_HISTORY_TABLE_VAL);
 
-				internalInit();
+				internalInit(dataRepository);
 			} catch (SQLException e1) {
 				if (log.isLoggable(Level.WARNING))
 					log.log(Level.WARNING, "Can't initialize muc history", e1);
@@ -199,21 +197,14 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see
-	 * tigase.muc.history.AbstractJDBCHistoryProvider#initRepository(java.lang.
-	 * String, java.util.Map)
-	 */
 	@Override
-	public void initRepository(String resource_uri, Map<String, String> params) throws DBInitException {
-		super.initRepository(resource_uri, params);
-		init();
+	public void setDataSource(DataRepository dataSource) {
+		init(dataSource);
+		super.setDataSource(dataSource);
 	}
 
-	private void internalInit() throws SQLException {
-		Statement stmt = this.dataRepository.createStatement(null);
+	private void internalInit(DataRepository dataRepository) throws SQLException {
+		Statement stmt = dataRepository.createStatement(null);
 		ResultSet rs = null;
 		try {
 			rs = stmt.executeQuery(CHECK_TEXT_FIELD_INVALID_TYPES);
@@ -230,10 +221,10 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 				stmt.close();
 		}
 
-		this.dataRepository.initPreparedStatement(ADD_MESSAGE_QUERY_KEY, ADD_MESSAGE_QUERY_VAL);
-		this.dataRepository.initPreparedStatement(DELETE_MESSAGES_QUERY_KEY, DELETE_MESSAGES_QUERY_VAL);
-		this.dataRepository.initPreparedStatement(GET_MESSAGES_SINCE_QUERY_KEY, GET_MESSAGES_SINCE_QUERY_VAL);
-		this.dataRepository.initPreparedStatement(GET_MESSAGES_MAXSTANZAS_QUERY_KEY, GET_MESSAGES_MAXSTANZAS_QUERY_VAL);
+		dataRepository.initPreparedStatement(ADD_MESSAGE_QUERY_KEY, ADD_MESSAGE_QUERY_VAL);
+		dataRepository.initPreparedStatement(DELETE_MESSAGES_QUERY_KEY, DELETE_MESSAGES_QUERY_VAL);
+		dataRepository.initPreparedStatement(GET_MESSAGES_SINCE_QUERY_KEY, GET_MESSAGES_SINCE_QUERY_VAL);
+		dataRepository.initPreparedStatement(GET_MESSAGES_MAXSTANZAS_QUERY_KEY, GET_MESSAGES_MAXSTANZAS_QUERY_VAL);
 	}
 
 }
