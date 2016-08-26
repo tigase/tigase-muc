@@ -8,23 +8,34 @@
 
 package tigase.muc.cluster;
 
+import tigase.kernel.beans.Bean;
+import tigase.muc.*;
+import tigase.xml.Element;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import tigase.muc.*;
-import tigase.xml.Element;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
-
 /**
  *
  * @author andrzej
  */
 public class RoomClustered extends Room {
-	
+
+	@Bean(name = "roomFactory", parent = MUCComponentClustered.class)
+	public static class RoomFactoryImpl implements RoomFactory {
+
+		@Override
+		public Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid) {
+			return new RoomClustered(rc, creationDate, creatorJid);
+		}
+
+	};
+
 	private final ConcurrentMap<JID, String> remoteNicknames = new ConcurrentHashMap<JID, String>();
 	private final ConcurrentMap<String, Occupant> remoteOccupants = new ConcurrentHashMap<String, Occupant>();
 
@@ -32,17 +43,6 @@ public class RoomClustered extends Room {
 		super(rc, creationDate, creatorJid);
 	}
 
-	public static void initialize() {
-		Room.factory = new RoomFactory() {
-
-			@Override
-			public Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid) {
-				return new RoomClustered(rc, creationDate, creatorJid);
-			}
-
-		};
-	}
-	
 	public Collection<Occupant> getRemoteOccupants() {
 		return remoteOccupants.values();
 	}

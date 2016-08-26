@@ -6,13 +6,10 @@
 
 package tigase.muc.cluster;
 
-import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import tigase.cluster.api.ClusterCommandException;
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
+import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.muc.Room;
 import tigase.server.Packet;
@@ -22,6 +19,10 @@ import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -34,9 +35,6 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 	private static final String PACKET_FORWARD_CMD = "muc-packet-forward-cmd";
 	private static final String OCCUPANT_ADDED_CMD = "muc-occupant-added-cmd";
 	private static final String OCCUPANT_REMOVED_CMD = "muc-occupant-removed-cmd";
-	private final OccupantAddedCmd occupantAddedCmd = new OccupantAddedCmd();
-	private final OccupantRemovedCmd occupantRemovedCmd = new OccupantRemovedCmd();
-	private final PacketForwardCmd packetForwardCmd = new PacketForwardCmd();
 	protected ClusterControllerIfc cl_controller;
 	protected JID localNodeJid;
 	@Inject
@@ -164,17 +162,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 
 	@Override
 	public void setClusterController(ClusterControllerIfc cl_controller) {
-		if (this.cl_controller != null) {
-			this.cl_controller.removeCommandListener(occupantAddedCmd);
-			this.cl_controller.removeCommandListener(occupantRemovedCmd);
-			this.cl_controller.removeCommandListener(packetForwardCmd);
-		}
 		this.cl_controller = cl_controller;
-		if (cl_controller != null) {
-			this.cl_controller.setCommandListener(occupantAddedCmd);
-			this.cl_controller.setCommandListener(occupantRemovedCmd);
-			this.cl_controller.setCommandListener(packetForwardCmd);
-		}
 	}
 
 	@Override
@@ -204,7 +192,11 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		cl_controller.sendToNodes(REQUEST_SYNC_CMD, localNodeJid, nodeJid);
 	}
 
-	private class OccupantAddedCmd extends CommandListenerAbstract {
+	@Bean(name = OCCUPANT_ADDED_CMD, parent = AbstractStrategy.class)
+	public static class OccupantAddedCmd extends CommandListenerAbstract {
+
+		@Inject
+		private AbstractStrategy strategy;
 
 		public OccupantAddedCmd() {
 			super(OCCUPANT_ADDED_CMD, Priority.HIGH);
@@ -216,7 +208,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			JID occupantJid = JID.jidInstanceNS(data.get("userId"));
 			String nickname = data.get("occupant-nickname");
-			addOccupant(fromNode.getBareJID(), roomJid, occupantJid, nickname);
+			strategy.addOccupant(fromNode.getBareJID(), roomJid, occupantJid, nickname);
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST, "room = {0}, received notification that occupant {1} joined room {2} at node {3}",
 						new Object[] { roomJid, occupantJid, roomJid, fromNode });
@@ -224,7 +216,11 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		}
 	}
 
-	private class OccupantRemovedCmd extends CommandListenerAbstract {
+	@Bean(name = OCCUPANT_REMOVED_CMD, parent = AbstractStrategy.class)
+	public static class OccupantRemovedCmd extends CommandListenerAbstract {
+
+		@Inject
+		private AbstractStrategy strategy;
 
 		public OccupantRemovedCmd() {
 			super(OCCUPANT_REMOVED_CMD, Priority.HIGH);
@@ -235,7 +231,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 				throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			JID occupantJid = JID.jidInstanceNS(data.get("userId"));
-			removeOccupant(fromNode.getBareJID(), roomJid, occupantJid);
+			strategy.removeOccupant(fromNode.getBareJID(), roomJid, occupantJid);
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST, "room = {0}, received notification that occupant {1} left room {2} at node {3}",
 						new Object[] { roomJid, occupantJid, roomJid, fromNode });
@@ -243,7 +239,11 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		}
 	}
 
-	private class PacketForwardCmd extends CommandListenerAbstract {
+	@Bean(name = PACKET_FORWARD_CMD, parent = AbstractStrategy.class)
+	public static class PacketForwardCmd extends CommandListenerAbstract {
+
+		@Inject
+		private MUCComponentClustered mucComponentClustered;
 
 		public PacketForwardCmd() {
 			super(PACKET_FORWARD_CMD, Priority.HIGH);

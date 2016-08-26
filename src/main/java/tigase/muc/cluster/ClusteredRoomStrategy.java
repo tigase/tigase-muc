@@ -9,9 +9,9 @@
 package tigase.muc.cluster;
 
 import tigase.cluster.api.ClusterCommandException;
-import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
 import tigase.component.exceptions.RepositoryException;
+import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.muc.Affiliation;
 import tigase.muc.Role;
@@ -39,20 +39,6 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 	private static final Logger log = Logger.getLogger(ClusteredRoomStrategy.class.getCanonicalName());
 
 	private static final String OCCUPANT_PRESENCE_CMD = "muc-occupant-presence-cmd";
-	private final OccupantChangedPresenceCmd occupantChangedPresenceCmd = new OccupantChangedPresenceCmd();
-	@Inject
-	private PresenceModule presenceModule;
-
-	@Override
-	public void setClusterController(ClusterControllerIfc cl_controller) {
-		if (this.cl_controller != null) {
-			this.cl_controller.removeCommandListener(occupantChangedPresenceCmd);
-		}
-		super.setClusterController(cl_controller);
-		if (cl_controller != null) {
-			cl_controller.setCommandListener(occupantChangedPresenceCmd);
-		}
-	}
 
 	@Override
 	public void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence, boolean newOccupant) {
@@ -91,7 +77,14 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 		// localNodeJid, null, toNodes.toArray(new JID[toNodes.size()]));
 	}
 
-	private class OccupantChangedPresenceCmd extends CommandListenerAbstract {
+	@Bean(name = OCCUPANT_PRESENCE_CMD, parent = ClusteredRoomStrategy.class)
+	public static class OccupantChangedPresenceCmd extends CommandListenerAbstract {
+
+		@Inject
+		private PresenceModule presenceModule;
+
+		@Inject
+		private ClusteredRoomStrategy strategy;
 
 		public OccupantChangedPresenceCmd() {
 			super(OCCUPANT_PRESENCE_CMD, Priority.HIGH);
@@ -116,7 +109,7 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 							new Object[] { roomJid, occupantJID, nickname, occupantAffiliation, occupantRole, newOccupant });
 				}
 
-				Room room = ClusteredRoomStrategy.this.mucRepository.getRoom(roomJid);
+				Room room = strategy.mucRepository.getRoom(roomJid);
 				for (Element presenceOrig : packets) {
 					for (JID destinationJID : room.getAllOccupantsJID()) {
 						// we need to clone original packet as PresenceWrapper
@@ -128,7 +121,7 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 						if (!"unavailable".equals(presence.getAttributeStaticStr("type"))) {
 							PresenceModuleImpl.addCodes(presenceWrapper, false, nickname);
 						}
-						ClusteredRoomStrategy.this.mucComponentClustered.addOutPacket(presenceWrapper.getPacket());
+						strategy.mucComponentClustered.addOutPacket(presenceWrapper.getPacket());
 					}
 				}
 				if (newOccupant) {

@@ -7,20 +7,23 @@
  */
 package tigase.muc.cluster;
 
-import java.util.logging.Level;
-
 import tigase.component.exceptions.RepositoryException;
+import tigase.kernel.beans.Bean;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
+import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.inmemory.InMemoryMucRepository;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
+import java.util.logging.Level;
+
 /**
  *
  * @author andrzej
  */
+@Bean(name = IMucRepository.ID, parent = MUCComponentClustered.class)
 public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 
 	private RoomListener roomListener;

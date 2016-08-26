@@ -9,6 +9,10 @@ package tigase.muc.cluster;
 
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.ClusteredComponentIfc;
+import tigase.cluster.api.CommandListener;
+import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.BeanSelector;
+import tigase.kernel.beans.Inject;
 import tigase.kernel.core.Kernel;
 import tigase.licence.LicenceChecker;
 import tigase.muc.MUCComponent;
@@ -16,6 +20,7 @@ import tigase.server.ComponentInfo;
 import tigase.server.Packet;
 import tigase.xmpp.JID;
 
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
@@ -23,22 +28,23 @@ import java.util.logging.Logger;
  *
  * @author andrzej
  */
+@Bean(name = "muc", parent = Kernel.class, active = false, selectors = {BeanSelector.ClusterMode.class})
 public class MUCComponentClustered extends MUCComponent implements ClusteredComponentIfc {
 
 	private static final Logger log = Logger.getLogger(MUCComponentClustered.class.getCanonicalName());
 
-	private static final String DEF_STRATEGY_CLASS_VAL = ShardingStrategy.class.getCanonicalName();
-
-	private static final String STRATEGY_CLASS_KEY = "muc-strategy-class";
-
 	protected LicenceChecker licenceChecker;
 
 	private ComponentInfo cmpInfo = null;
-	private ClusterControllerIfc cl_controller;
+	@Inject
+	private List<CommandListener> commandListeners;
+	private ClusterControllerIfc clusterController;
+
+	@Inject
+	private StrategyIfc strategy;
 
 	public MUCComponentClustered() {
 		licenceChecker = LicenceChecker.getLicenceChecker("acs");
-		RoomClustered.initialize();
 
 		String clusterProperty = System.getProperty( "cluster-mode" );
 		if ( clusterProperty == null || !Boolean.parseBoolean( clusterProperty ) ){
@@ -46,12 +52,12 @@ public class MUCComponentClustered extends MUCComponent implements ClusteredComp
 			log.severe( "Shutting down system!" );
 			System.exit( 1 );
 		}
-		String strategyProp = System.getProperty( "sm-cluster-strategy-class" );
-		if ( strategyProp == null || !"tigase.server.cluster.strategy.OnlineUsersCachingStrategy".equals( strategyProp) ){
-			log.severe( "You've tried using Clustered version of the component but ACS is disabled" );
-			log.severe( "Shutting down system!" );
-			System.exit( 1 );
-		}
+//		String strategyProp = System.getProperty( "sm-cluster-strategy-class" );
+//		if ( strategyProp == null || !"tigase.server.cluster.strategy.OnlineUsersCachingStrategy".equals( strategyProp) ){
+//			log.severe( "You've tried using Clustered version of the component but ACS is disabled" );
+//			log.severe( "Shutting down system!" );
+//			System.exit( 1 );
+//		}
 	}
 
 	@Override
@@ -62,20 +68,17 @@ public class MUCComponentClustered extends MUCComponent implements ClusteredComp
 	@Override
 	protected void onNodeConnected(JID jid) {
 		super.onNodeConnected(jid);
-		StrategyIfc strategy = kernel.getInstance(StrategyIfc.class);
 		strategy.nodeConnected(jid);
 	}
 
 	@Override
 	public void onNodeDisconnected(JID jid) {
 		super.onNodeDisconnected(jid);
-		StrategyIfc strategy = kernel.getInstance(StrategyIfc.class);
 		strategy.nodeDisconnected(jid);
 	}
 
 	@Override
 	public void processPacket(Packet packet) {
-		StrategyIfc strategy = kernel.getInstance(StrategyIfc.class);
 		boolean handled = strategy.processPacket(packet);
 
 		if (!handled) {
@@ -86,32 +89,46 @@ public class MUCComponentClustered extends MUCComponent implements ClusteredComp
 	@Override
 	public void setClusterController(ClusterControllerIfc cl_controller) {
 		super.setClusterController(cl_controller);
-		StrategyIfc strategy = kernel.getInstance(StrategyIfc.class);
-		this.cl_controller = cl_controller;
+		if (clusterController != null && commandListeners != null) {
+			for (CommandListener cmd : commandListeners) {
+				clusterController.removeCommandListener(cmd);
+			}
+		}
+		clusterController = cl_controller;
+		if (clusterController != null && commandListeners != null) {
+			for (CommandListener cmd : commandListeners) {
+				clusterController.setCommandListener(cmd);
+			}
+		}
 		if (strategy != null) {
 			strategy.setClusterController(cl_controller);
 		}
+
+		kernel.registerBean("clusterController").asInstance(cl_controller).exec();
 	}
 
-	@Override
-	protected void registerModules(Kernel kernel) {
-		super.registerModules(kernel);
-
-		kernel.registerBean("strategy").asClass(ShardingStrategy.class).exec();
-		kernel.registerBean(InMemoryMucRepositoryClustered.class).exec();
+	public void setCommandListeners(List<CommandListener> commandListeners) {
+		if (clusterController != null && this.commandListeners != null) {
+			for (CommandListener cmd : commandListeners) {
+				clusterController.removeCommandListener(cmd);
+			}
+		}
+		this.commandListeners = commandListeners;
+		if (clusterController != null && commandListeners != null) {
+			for (CommandListener cmd : commandListeners) {
+				clusterController.setCommandListener(cmd);
+			}
+		}
 	}
 
-	@Override
-	public void start() {
-		super.start();
-		// strategy.start();
-	}
-
-	@Override
-	public void stop() {
-		StrategyIfc strategy = kernel.getInstance(StrategyIfc.class);
-		strategy.stop();
-		super.stop();
+	public void setStrategy(StrategyIfc strategy) {
+		if (this.strategy != null) {
+			strategy.setClusterController(null);
+		}
+		this.strategy = strategy;
+		if (this.strategy != null) {
+			this.strategy.setClusterController(this.clusterController);
+		}
 	}
 
 	/**
@@ -121,7 +138,6 @@ public class MUCComponentClustered extends MUCComponent implements ClusteredComp
 	 */
 	@Override
 	public ComponentInfo getComponentInfo() {
-		StrategyIfc strategy = kernel.getInstance(StrategyIfc.class);
 		cmpInfo = super.getComponentInfo();
 		cmpInfo.getComponentData().put("MUCClusteringStrategy", (strategy != null) ? strategy.getClass() : null);
 

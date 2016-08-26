@@ -8,15 +8,10 @@
 
 package tigase.muc.cluster;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import tigase.cluster.api.ClusterCommandException;
-import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
+import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Inject;
 import tigase.muc.Affiliation;
 import tigase.muc.Role;
 import tigase.muc.Room;
@@ -25,6 +20,12 @@ import tigase.server.Priority;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Stripped down strategy that suppress sending MUC presence between rooms.
@@ -38,22 +39,6 @@ public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrate
 	private static final String OCCUPANTS_REMOTE_KEY = "occupants-remote-key";
 	private static final String OCCUPANT_PRESENCE_CMD = "muc-occupant-presence-cmd";
 	private static final String OCCUPANTS_SYNC_REQUEST_CMD = "request-occupants-sync";
-
-	private final OccupantChangedPresenceCmd occupantChangedPresenceCmd = new OccupantChangedPresenceCmd();
-	private final OccupantsSyncRequestCmd occupantsSyncRequestCmd = new OccupantsSyncRequestCmd();
-
-	@Override
-	public void setClusterController(ClusterControllerIfc cl_controller) {
-		if (this.cl_controller != null) {
-			this.cl_controller.removeCommandListener(occupantChangedPresenceCmd);
-			this.cl_controller.removeCommandListener(occupantsSyncRequestCmd);
-		}
-		super.setClusterController(cl_controller);
-		if (cl_controller != null) {
-			cl_controller.setCommandListener(occupantChangedPresenceCmd);
-			cl_controller.setCommandListener(occupantsSyncRequestCmd);
-		}
-	}
 
 	@Override
 	public void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence, boolean newOccupant) {
@@ -122,7 +107,8 @@ public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrate
 		occupants.remove(occupantNick);
 	}
 
-	private class OccupantChangedPresenceCmd extends CommandListenerAbstract {
+	@Bean(name = OCCUPANT_PRESENCE_CMD, parent = ClusteredRoomStrategyNoPresence.class)
+	public static class OccupantChangedPresenceCmd extends CommandListenerAbstract {
 
 		public OccupantChangedPresenceCmd() {
 			super(OCCUPANT_PRESENCE_CMD, Priority.HIGH);
@@ -147,7 +133,11 @@ public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrate
 		}
 	}
 
-	private class OccupantsSyncRequestCmd extends CommandListenerAbstract {
+	@Bean(name = OCCUPANTS_SYNC_REQUEST_CMD, parent = ClusteredRoomStrategyNoPresence.class)
+	public static class OccupantsSyncRequestCmd extends CommandListenerAbstract {
+
+		@Inject
+		private InMemoryMucRepositoryClustered mucRepository;
 
 		public OccupantsSyncRequestCmd() {
 			super(OCCUPANTS_SYNC_REQUEST_CMD, Priority.HIGH);

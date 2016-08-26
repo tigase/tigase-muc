@@ -8,16 +8,10 @@
 
 package tigase.muc.cluster;
 
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import tigase.cluster.api.ClusterCommandException;
-import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
 import tigase.component.exceptions.RepositoryException;
+import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.muc.Affiliation;
 import tigase.muc.Role;
@@ -32,6 +26,12 @@ import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * AbstractClusteredRoomStrategy implements strategy which allows to create
@@ -57,12 +57,6 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 	private static final int SYNC_MAX_BATCH_SIZE = 1000;
 	// Map<node_bare_jid, Map<occupant_jid, Map<room_jid,nickname> > >
 	protected final ConcurrentHashMap<BareJID, ConcurrentMap<JID, ConcurrentMap<BareJID, String>>> occupantsPerNode = new ConcurrentHashMap<>();
-	private final RoomCreatedCmd roomCreatedCmd = new RoomCreatedCmd();
-	private final RoomDestroyedCmd roomDestroyedCmd = new RoomDestroyedCmd();
-	private final RoomMessageCmd roomMessageCmd = new RoomMessageCmd();
-	private final RequestSyncCmd requestSyncCmd = new RequestSyncCmd();
-	private final ResponseSyncCmd responseSyncCmd = new ResponseSyncCmd();
-	private final RoomAffiliationCmd roomAffiliationCmd = new RoomAffiliationCmd();
 	@Inject
 	private GroupchatMessageModule groupchatModule;
 
@@ -138,27 +132,6 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 
 	@Override
 	public void stop() {
-	}
-
-	@Override
-	public void setClusterController(ClusterControllerIfc cl_controller) {
-		if (this.cl_controller != null) {
-			this.cl_controller.removeCommandListener(requestSyncCmd);
-			this.cl_controller.removeCommandListener(responseSyncCmd);
-			this.cl_controller.removeCommandListener(roomCreatedCmd);
-			this.cl_controller.removeCommandListener(roomDestroyedCmd);
-			this.cl_controller.removeCommandListener(roomMessageCmd);
-			this.cl_controller.removeCommandListener(roomAffiliationCmd);
-		}
-		super.setClusterController(cl_controller);
-		if (cl_controller != null) {
-			cl_controller.setCommandListener(requestSyncCmd);
-			cl_controller.setCommandListener(responseSyncCmd);
-			cl_controller.setCommandListener(roomCreatedCmd);
-			cl_controller.setCommandListener(roomDestroyedCmd);
-			cl_controller.setCommandListener(roomMessageCmd);
-			cl_controller.setCommandListener(roomAffiliationCmd);
-		}
 	}
 
 	@Override
@@ -340,7 +313,11 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 		return null;
 	}
 
-	private class RoomCreatedCmd extends CommandListenerAbstract {
+	@Bean(name = ROOM_CREATED_CMD, parent = AbstractClusteredRoomStrategy.class)
+	public static class RoomCreatedCmd extends CommandListenerAbstract {
+
+		@Inject
+		private InMemoryMucRepositoryClustered mucRepository;
 
 		public RoomCreatedCmd() {
 			super(ROOM_CREATED_CMD, Priority.HIGH);
@@ -363,7 +340,11 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 		}
 	}
 
-	private class RoomDestroyedCmd extends CommandListenerAbstract {
+	@Bean(name = ROOM_DESTROYED_CMD, parent = AbstractClusteredRoomStrategy.class)
+	public static class RoomDestroyedCmd extends CommandListenerAbstract {
+
+		@Inject
+		private InMemoryMucRepositoryClustered mucRepository;
 
 		public RoomDestroyedCmd() {
 			super(ROOM_DESTROYED_CMD, Priority.HIGH);
@@ -380,7 +361,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 			}
 
 			try {
-				Room room = AbstractClusteredRoomStrategy.this.mucRepository.getRoom(roomJid);
+				Room room = mucRepository.getRoom(roomJid);
 				Element destroyElement = packets.poll();
 				for (JID occupantJid : room.getAllOccupantsJID()) {
 					String occupantNickname = room.getOccupantsNickname(occupantJid);
@@ -403,7 +384,13 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 		}
 	}
 
-	private class RoomMessageCmd extends CommandListenerAbstract {
+	@Bean(name = ROOM_MESSAGE_CMD, parent = AbstractClusteredRoomStrategy.class)
+	public static class RoomMessageCmd extends CommandListenerAbstract {
+
+		@Inject
+		private InMemoryMucRepositoryClustered mucRepository;
+		@Inject
+		private GroupchatMessageModule groupchatModule;
 
 		public RoomMessageCmd() {
 			super(ROOM_MESSAGE_CMD, Priority.HIGH);
@@ -419,7 +406,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 						new Object[]{roomJid, from, packets});
 			}
 			try {
-				Room room = AbstractClusteredRoomStrategy.this.mucRepository.getRoom(roomJid);
+				Room room = mucRepository.getRoom(roomJid);
 				Element message = packets.poll();
 				Packet packet = Packet.packetInstance(message);
 				groupchatModule.sendMessagesToAllOccupantsJids(room, from, packet);
@@ -434,7 +421,11 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 		}
 	}
 
-	private class RequestSyncCmd extends CommandListenerAbstract {
+	@Bean(name = REQUEST_SYNC_CMD, parent = AbstractClusteredRoomStrategy.class)
+	public static class RequestSyncCmd extends CommandListenerAbstract {
+
+		@Inject
+		private AbstractClusteredRoomStrategy strategy;
 
 		public RequestSyncCmd() {
 			super(REQUEST_SYNC_CMD, Priority.HIGH);
@@ -444,7 +435,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data, Queue<Element> packets)
 				throws ClusterCommandException {
 			// each node should send only info about is's occupants
-			ConcurrentMap<JID, ConcurrentMap<BareJID, String>> nodeOccupants = occupantsPerNode.get(localNodeJid.getBareJID());
+			ConcurrentMap<JID, ConcurrentMap<BareJID, String>> nodeOccupants = strategy.occupantsPerNode.get(strategy.localNodeJid.getBareJID());
 			LinkedList<Element> localOccupants = new LinkedList<Element>();
 			if (nodeOccupants != null) {
 				if (log.isLoggable(Level.FINEST)) {
@@ -464,19 +455,23 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 					localOccupants.add(occupant);
 
 					if (localOccupants.size() > SYNC_MAX_BATCH_SIZE) {
-						cl_controller.sendToNodes(RESPONSE_SYNC_CMD, localOccupants, localNodeJid, null, fromNode);
+						strategy.cl_controller.sendToNodes(RESPONSE_SYNC_CMD, localOccupants, strategy.localNodeJid, null, fromNode);
 						localOccupants = new LinkedList<Element>();
 					}
 				}
 			}
 
 			if (!localOccupants.isEmpty()) {
-				cl_controller.sendToNodes(RESPONSE_SYNC_CMD, localOccupants, localNodeJid, null, fromNode);
+				strategy.cl_controller.sendToNodes(RESPONSE_SYNC_CMD, localOccupants, strategy.localNodeJid, null, fromNode);
 			}
 		}
 	}
 
-	private class ResponseSyncCmd extends CommandListenerAbstract {
+	@Bean(name = RESPONSE_SYNC_CMD, parent = AbstractClusteredRoomStrategy.class)
+	public static class ResponseSyncCmd extends CommandListenerAbstract {
+
+		@Inject
+		private AbstractClusteredRoomStrategy strategy;
 
 		public ResponseSyncCmd() {
 			super(RESPONSE_SYNC_CMD, Priority.HIGH);
@@ -501,7 +496,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 							for (Element roomEl : roomsElList) {
 								BareJID roomJid = BareJID.bareJIDInstanceNS(roomEl.getAttributeStaticStr("jid"));
 								String nickname = roomEl.getAttributeStaticStr("nickname");
-								addOccupant(fromNode.getBareJID(), roomJid, occupantJid, nickname);
+								strategy.addOccupant(fromNode.getBareJID(), roomJid, occupantJid, nickname);
 							}
 						}
 					}
@@ -510,7 +505,11 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 		}
 	}
 
-	private class RoomAffiliationCmd extends CommandListenerAbstract {
+	@Bean(name = ROOM_AFFILIATION_CMD, parent = AbstractClusteredRoomStrategy.class)
+	public static class RoomAffiliationCmd extends CommandListenerAbstract {
+
+		@Inject
+		private InMemoryMucRepositoryClustered mucRepository;
 
 		public RoomAffiliationCmd() {
 			super(ROOM_AFFILIATION_CMD, Priority.HIGH);
@@ -529,7 +528,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 			}
 
 			try {
-				Room room = AbstractClusteredRoomStrategy.this.mucRepository.getRoom(roomJid);
+				Room room = mucRepository.getRoom(roomJid);
 				room.setNewAffiliation(from, newAffiliation);
 			} catch (RepositoryException | MUCException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);

@@ -7,16 +7,19 @@
  */
 package tigase.muc.cluster;
 
-import java.util.List;
 import tigase.cluster.api.ClusterControllerIfc;
+import tigase.kernel.beans.Initializable;
+import tigase.kernel.beans.UnregisterAware;
 import tigase.server.Packet;
-import tigase.xmpp.*;
+import tigase.xmpp.JID;
+
+import java.util.List;
 
 /**
  *
  * @author andrzej
  */
-public interface StrategyIfc {
+public interface StrategyIfc extends Initializable, UnregisterAware {
 	
 	/**
 	 * Method called when new node connected
@@ -95,4 +98,12 @@ public interface StrategyIfc {
 	 * Method called when component is stopped
 	 */
 	void stop();
+
+	default void beforeUnregister() {
+		stop();
+	}
+
+	default void initialize() {
+		start();
+	}
 }
