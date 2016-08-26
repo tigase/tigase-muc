@@ -68,6 +68,9 @@ public class MucDAO implements Initializable {
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 
 	@Inject
+	private Room.RoomFactory roomFactory;
+
+	@Inject
 	private MUCConfig mucConfig;
 
 	@Inject
@@ -231,7 +234,7 @@ public class MucDAO implements Initializable {
 				RoomConfig rc = new RoomConfig(roomJID);
 				rc.read(repository, mucConfig, ROOMS_KEY + roomJID + "/config");
 
-				final Room room = Room.newInstance(rc, date, creatorJID.getBareJID());
+				final Room room = roomFactory.newInstance(rc, date, creatorJID.getBareJID());
 
 				String subject = getSubject(roomJID);
 				String subjectCreator = getSubjectCreatorNickname(roomJID);

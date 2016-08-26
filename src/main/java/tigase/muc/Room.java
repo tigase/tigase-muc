@@ -18,27 +18,21 @@
  */
 package tigase.muc;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import tigase.component.exceptions.RepositoryException;
+import tigase.kernel.beans.Bean;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Room implements RoomConfig.RoomConfigListener {
 
@@ -80,7 +74,8 @@ public class Room implements RoomConfig.RoomConfigListener {
 		void onOccupantRemoved(Room room, JID occupantJid);
 	}
 
-	protected static RoomFactory factory = new RoomFactory() {
+	@Bean(name = "roomFactory", parent = MUCComponent.class)
+	public static class RoomFactoryImpl implements RoomFactory {
 
 		@Override
 		public Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid) {
@@ -92,10 +87,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 	public static final String FILTERED_OCCUPANTS_COLLECTION = "filtered_occupants_collection";
 
 	protected static final Logger log = Logger.getLogger(Room.class.getName());
-
-	public static Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid) {
-		return factory.newInstance(rc, creationDate, creatorJid);
-	}
 
 	private final Map<BareJID, Affiliation> affiliations = new ConcurrentHashMap<BareJID, Affiliation>();
 

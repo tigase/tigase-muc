@@ -64,6 +64,9 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 	@Inject
 	private MUCConfig mucConfig;
 
+	@Inject
+	private Room.RoomFactory roomFactory;
+
 	private final RoomConfigListener roomConfigListener;
 	private final RoomListener roomListener;
 	private final Map<BareJID, Room> rooms = new ConcurrentHashMap<BareJID, Room>();
@@ -153,7 +156,7 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 
 		rc.copyFrom(getDefaultRoomConfig(), false);
 
-		Room room = Room.newInstance(rc, new Date(), senderJid.getBareJID());
+		Room room = roomFactory.newInstance(rc, new Date(), senderJid.getBareJID());
 		room.getConfig().addListener(roomConfigListener);
 		room.addListener(roomListener);
 		this.rooms.put(roomJID, room);
