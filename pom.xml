@@ -9,6 +9,7 @@
 		<sign-storepass>storepass</sign-storepass>
 		<sign-keypass>keypass</sign-keypass>
 		<sign-skip>true</sign-skip>
+		<tsa-uri></tsa-uri>
 		<verbose-log>false</verbose-log>
 	</properties>
 	<modelVersion>4.0.0</modelVersion>
@@ -175,7 +176,7 @@
 					</includes>
 					<processMainArtifact>false</processMainArtifact>
 					<processAttachedArtifacts>false</processAttachedArtifacts>
-					<tsa>http://timestamp.comodoca.com/rfc3161</tsa>
+					<tsa>${tsa-uri}</tsa>
 					<skip>${sign-skip}</skip>
 
 					<keystore>${sign-keystore}</keystore>
