@@ -48,7 +48,6 @@ import java.util.Map;
 
 /**
  * @author bmalkow
-<<<<<<< HEAD
  *
  */
 public class RoomTest extends XMPPTestCase {
@@ -87,7 +86,7 @@ public class RoomTest extends XMPPTestCase {
 	@Before
 	public void init() throws RepositoryException, TigaseStringprepException, ConfigurationException {
 		final Kernel kernel = new Kernel();
-		kernel.registerBean(DefaultTypesConverter.class).exec();
+		kernel.registerBean(DefaultTypesConverter.class).exportable().exec();
 		kernel.registerBean(AbstractBeanConfigurator.DEFAULT_CONFIGURATOR_NAME).asClass(PropertiesBeanConfigurator.class).exportable().exec();
 		Map<String, Object> props = new HashMap();
 		props.put("muc/" + "multi-user-chat", BareJID.bareJIDInstance("multi-user-chat"));
