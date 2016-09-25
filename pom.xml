@@ -258,8 +258,7 @@
 			<artifactId>org.osgi.core</artifactId>
 			<version>1.4.0</version>
 			<scope>provided</scope>
-			<type>bundle</type>
-        </dependency>		
+        </dependency>
 		<dependency>
 			<groupId>tigase</groupId>
 			<artifactId>licence-lib</artifactId>
