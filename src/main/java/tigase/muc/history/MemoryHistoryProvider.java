@@ -43,7 +43,6 @@ import tigase.xmpp.JID;
  * @author bmalkow
  *
  */
-@Repository.Meta(supportedUris = { "memory" })
 public class MemoryHistoryProvider extends AbstractHistoryProvider {
 
 	private static class HItem {

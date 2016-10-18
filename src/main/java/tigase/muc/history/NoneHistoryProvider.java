@@ -23,7 +23,6 @@ package tigase.muc.history;
 
 import tigase.component.PacketWriter;
 import tigase.db.DataSource;
-import tigase.db.Repository;
 import tigase.muc.Room;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
@@ -34,7 +33,6 @@ import java.util.Date;
  * @author bmalkow
  *
  */
-@Repository.Meta(supportedUris = { "none" })
 public class NoneHistoryProvider implements HistoryProvider {
 
 	/*

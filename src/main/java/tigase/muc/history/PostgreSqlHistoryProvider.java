@@ -22,7 +22,6 @@
 package tigase.muc.history;
 
 import tigase.db.DataRepository;
-import tigase.db.Repository;
 import tigase.muc.Room;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
@@ -37,7 +36,6 @@ import java.util.logging.Logger;
  * @author bmalkow
  *
  */
-@Repository.Meta(supportedUris = { "jdbc:postgresql:.*" })
 public class PostgreSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 
 	public static final String ADD_MESSAGE_QUERY_VAL = "insert into muc_history (room_name, event_type, timestamp, sender_jid, sender_nickname, body, public_event, msg) values (?, 1, ?, ?, ?, ?, ?, ?)";

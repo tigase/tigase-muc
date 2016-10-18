@@ -1,5 +1,5 @@
 /*
- * IMucRepository.java
+ * IMucDAO.java
  *
  * Tigase Multi User Chat Component
  * Copyright (C) 2004-2016 "Tigase, Inc." <office@tigase.com>
@@ -21,43 +21,35 @@
 package tigase.muc.repository;
 
 import tigase.component.exceptions.RepositoryException;
-import tigase.muc.Room;
+import tigase.db.DataSource;
+import tigase.db.DataSourceAware;
+import tigase.muc.Affiliation;
 import tigase.muc.RoomConfig;
-import tigase.muc.exceptions.MUCException;
-import tigase.xml.Element;
+import tigase.muc.RoomWithId;
 import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
 
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.Map;
 
 /**
- * @author bmalkow
- *
+ * Created by andrzej on 14.10.2016.
  */
-public interface IMucRepository {
+public interface IMucDAO<DS extends DataSource, ID> extends DataSourceAware<DS> {
 
-	public static final String ID = "mucRepository";
+	ID createRoom(RoomWithId<ID> room) throws RepositoryException;
 
-	Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException;
+	void destroyRoom(BareJID roomJID) throws RepositoryException;
 
-	void destroyRoom(Room room, Element destroyElement) throws RepositoryException;
+	Map<BareJID, Affiliation> getAffiliations(RoomWithId<ID> room) throws RepositoryException;
 
-	Map<BareJID, Room> getActiveRooms();
+	RoomWithId<ID> getRoom(BareJID roomJID) throws RepositoryException;
 
-	RoomConfig getDefaultRoomConfig() throws RepositoryException;
+	ArrayList<BareJID> getRoomsJIDList() throws RepositoryException;
 
-	BareJID[] getPublicVisibleRoomsIdList() throws RepositoryException;
+	void setAffiliation(RoomWithId<ID> room, BareJID jid, Affiliation affiliation) throws RepositoryException;
 
-	Room getRoom(BareJID roomJID) throws RepositoryException, MUCException;
+	void setSubject(RoomWithId<ID> room, String subject, String creatorNickname, Date changeDate) throws RepositoryException;
 
-	/**
-	 * @param newRoomName
-	 * @return
-	 */
-	boolean isRoomIdExists(String newRoomName);
-
-	void leaveRoom(Room room);
-
-	void updateDefaultRoomConfig(RoomConfig config) throws RepositoryException;
-
+	void updateRoomConfig(RoomConfig roomConfig) throws RepositoryException;
 }

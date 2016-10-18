@@ -21,22 +21,16 @@
  */
 package tigase.muc;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.logging.Logger;
-
 import tigase.component.exceptions.RepositoryException;
 import tigase.muc.RoomConfig.RoomConfigListener;
 import tigase.muc.repository.IMucRepository;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.logging.Logger;
 
 /**
  * @author bmalkow
@@ -180,16 +174,6 @@ public class MockMucRepository implements IMucRepository {
 		Room room = this.rooms.get(roomJID);
 
 		return room;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see tigase.muc.repository.IMucRepository#getRoomName(java.lang.String)
-	 */
-	@Override
-	public String getRoomName(String jid) throws RepositoryException {
-		return null;
 	}
 
 	/*

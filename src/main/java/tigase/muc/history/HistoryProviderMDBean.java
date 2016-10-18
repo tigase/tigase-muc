@@ -27,8 +27,10 @@ import tigase.db.DataSource;
 import tigase.db.DataSourceHelper;
 import tigase.db.beans.MDRepositoryBean;
 import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.config.ConfigField;
 import tigase.muc.MUCComponent;
 import tigase.muc.Room;
+import tigase.osgi.ModulesManagerImpl;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
 
@@ -39,6 +41,10 @@ import java.util.Date;
  */
 @Bean(name = "historyProviderPool", parent = MUCComponent.class)
 public class HistoryProviderMDBean extends MDRepositoryBean<HistoryProvider> implements HistoryProvider {
+
+	@ConfigField(desc = "Use domain without component name to lookup for repository", alias = "map-component-to-bare-domain")
+	private boolean mapComponentToBareDomain = false;
+
 	@Override
 	public Class<?> getDefaultBeanClass() {
 		return HistoryProviderConfigBean.class;
@@ -84,6 +90,12 @@ public class HistoryProviderMDBean extends MDRepositoryBean<HistoryProvider> imp
 		return getRepository(room).isPersistent(room);
 	}
 
+//	@Override
+//	public void register(Kernel kernel) {
+//		kernel.getParent().ln("muc-dao", kernel, "muc-dao");
+//		super.register(kernel);
+//	}
+
 	@Override
 	public void removeHistory(Room room) {
 		getRepository(room).removeHistory(room);
@@ -94,20 +106,57 @@ public class HistoryProviderMDBean extends MDRepositoryBean<HistoryProvider> imp
 	}
 
 	@Override
+	protected HistoryProvider getRepository(String domain) {
+		if (mapComponentToBareDomain) {
+			int idx = domain.indexOf(".");
+			if (idx > 0) {
+				domain = domain.substring(idx + 1);
+			}
+		}
+		return super.getRepository(domain);
+	}
+
+
+	@Override
 	protected Class<? extends HistoryProvider> findClassForDataSource(DataSource dataSource) throws DBInitException {
 		return DataSourceHelper.getDefaultClass(HistoryProvider.class, dataSource.getResourceUri());
 	}
 
 	public static class HistoryProviderConfigBean extends MDRepositoryBean.MDRepositoryConfigBean<HistoryProvider> {
 
+//		@Override
+//		public void register(Kernel kernel) {
+//			kernel.getParent().ln("muc-dao", kernel, "muc-dao");
+//			super.register(kernel);
+//		}
+
 		@Override
 		protected Class<?> getRepositoryClassName() throws DBInitException, ClassNotFoundException {
-			if ("memory".equals(getCls())) {
-				return MemoryHistoryProvider.class;
-			} else if ("none".equals(getCls())) {
-				return NoneHistoryProvider.class;
+			String cls = getCls();
+			if (cls == null) {
+				cls = "default";
 			}
-			return super.getRepositoryClassName();
+
+			switch (cls) {
+				case "memory":
+					return MemoryHistoryProvider.class;
+				case "none":
+					return NoneHistoryProvider.class;
+				case "default":
+					return JDBCHistoryProvider.class;
+				default:
+					return ModulesManagerImpl.getInstance().forName(cls);
+
+				// Old history providers - should be removed in future
+				case "mysql":
+					return MySqlHistoryProvider.class;
+				case "postgresql":
+					return PostgreSqlHistoryProvider.class;
+				case "sqlserver":
+					return SqlserverSqlHistoryProvider.class;
+				case "derby":
+					return DerbySqlHistoryProvider.class;
+			}
 		}
 	}
 }

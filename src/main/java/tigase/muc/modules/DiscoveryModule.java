@@ -273,8 +273,6 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 
 			for (final BareJID jid : roomsId) {
 				if (jid.getDomain().equals(requestedJID.getDomain())) {
-					final String name = repository.getRoomName(jid.toString());
-
 					final Room room = repository.getRoom(jid);
 
 					if (log.isLoggable(Level.FINEST) && filter != null) {
@@ -293,10 +291,11 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 						continue;
 					}
 
+					String name = room.getConfig().getRoomName();
 					if (log.isLoggable(Level.FINER))
 						log.finer("Room " + jid + " is added to response.");
 					resultQuery.addChild(new Element("item", new String[] { "jid", "name" },
-							new String[] { jid.toString(), (name != null) ? name : jid.getLocalpart() }));
+							new String[] { jid.toString(), (name != null && !name.isEmpty()) ? name : jid.getLocalpart() }));
 				}
 			}
 		} else if ((node == null) && (requestedJID.getLocalpart() != null) && (requestedJID.getResource() == null)) {

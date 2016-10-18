@@ -27,7 +27,6 @@ import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -36,25 +35,9 @@ import java.util.logging.Logger;
 
 public class Room implements RoomConfig.RoomConfigListener {
 
-	private static class OccupantEntry {
-
-		public BareJID jid;
-
-		private final Set<JID> jids = new HashSet<JID>();
-
-		private String nickname;
-
-		private Role role = Role.none;
-
-		@Override
-		public String toString() {
-			return "[" + nickname + "; " + role + "; " + jid + "; " + jids.toString() + "]";
-		}
-	}
-
 	public static interface RoomFactory {
 
-		public Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid);
+		public <T> RoomWithId<T> newInstance(T id, RoomConfig rc, Date creationDate, BareJID creatorJid);
 
 	}
 
@@ -74,17 +57,33 @@ public class Room implements RoomConfig.RoomConfigListener {
 		void onOccupantRemoved(Room room, JID occupantJid);
 	}
 
-	@Bean(name = "roomFactory", parent = MUCComponent.class)
+	@Bean(name = "roomFactory", parent = MUCComponent.class, exportable = true)
 	public static class RoomFactoryImpl implements RoomFactory {
 
 		@Override
-		public Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid) {
-			return new Room(rc, creationDate, creatorJid);
+		public <T> RoomWithId<T> newInstance(T id, RoomConfig rc, Date creationDate, BareJID creatorJid) {
+			return new RoomWithId(id, rc, creationDate, creatorJid);
 		}
 
 	};
 
 	public static final String FILTERED_OCCUPANTS_COLLECTION = "filtered_occupants_collection";
+
+	private static class OccupantEntry {
+
+		public BareJID jid;
+
+		private final Set<JID> jids = new HashSet<JID>();
+
+		private String nickname;
+
+		private Role role = Role.none;
+
+		@Override
+		public String toString() {
+			return "[" + nickname + "; " + role + "; " + jid + "; " + jids.toString() + "]";
+		}
+	}
 
 	protected static final Logger log = Logger.getLogger(Room.class.getName());
 
@@ -98,9 +97,9 @@ public class Room implements RoomConfig.RoomConfigListener {
 
 	private final List<RoomListener> listeners = new CopyOnWriteArrayList<RoomListener>();
 
-	private final List<RoomOccupantListener> occupantListeners = new CopyOnWriteArrayList<RoomOccupantListener>();
+	private final List<Room.RoomOccupantListener> occupantListeners = new CopyOnWriteArrayList<Room.RoomOccupantListener>();
 
-	private final Map<String, OccupantEntry> occupants = new ConcurrentHashMap<String, Room.OccupantEntry>();
+	private final Map<String, OccupantEntry> occupants = new ConcurrentHashMap<String, OccupantEntry>();
 
 	protected final PresenceFiltered presenceFiltered;
 
@@ -136,11 +135,12 @@ public class Room implements RoomConfig.RoomConfigListener {
 		fireOnSetAffiliation(jid, affiliation);
 	}
 
-	public void addListener(RoomListener listener) {
+	public void addListener(Room.RoomListener listener) {
 		this.listeners.add(listener);
 	}
 
-	public void addOccupantByJid(JID senderJid, String nickName, Role role, Element pe) throws TigaseStringprepException {
+	public void addOccupantByJid(JID senderJid, String nickName, Role role, Element pe) throws
+																						TigaseStringprepException {
 		OccupantEntry entry = this.occupants.get(nickName);
 		this.presences.update(pe);
 		if (entry == null) {
@@ -164,20 +164,20 @@ public class Room implements RoomConfig.RoomConfigListener {
 		if (log.isLoggable(Level.FINEST)) {
 			log.log(Level.FINEST, "Room {0}. {1} occupant {2} ({3}) to room with role={4}; filtering enabled: {5}",
 					new Object[] { config.getRoomJID(), (added ? "Added" : "Updated"), senderJid, nickName, role,
-							config.isPresenceFilterEnabled() });
+								   config.isPresenceFilterEnabled() });
 		}
 
 		if (added) {
 			if (!config.isPresenceFilterEnabled()
 					|| (config.isPresenceFilterEnabled() && (!config.getPresenceFilteredAffiliations().isEmpty()
-							&& config.getPresenceFilteredAffiliations().contains(getAffiliation(senderJid.getBareJID()))))) {
+					&& config.getPresenceFilteredAffiliations().contains(getAffiliation(senderJid.getBareJID()))))) {
 				fireOnOccupantAdded(senderJid);
 				fireOnOccupantChangedPresence(senderJid, nickName, pe, true);
 			}
 		}
 	}
 
-	public void addOccupantListener(RoomOccupantListener listener) {
+	public void addOccupantListener(Room.RoomOccupantListener listener) {
 		this.occupantListeners.add(listener);
 	}
 
@@ -191,42 +191,42 @@ public class Room implements RoomConfig.RoomConfigListener {
 
 		if (log.isLoggable(Level.FINEST)) {
 			log.finest("Room " + config.getRoomJID() + ". Occupant " + senderJid + " changed nickname from " + oldNickname
-					+ " to " + nickName);
+							   + " to " + nickName);
 		}
 	}
 
 	public void fireOnMessageToOccupants(JID fromJID, Packet msg) {
-		for (RoomListener listener : this.listeners) {
+		for (Room.RoomListener listener : this.listeners) {
 			listener.onMessageToOccupants(this, fromJID, msg);
 		}
 	}
 
 	private void fireOnOccupantAdded(JID occupantJid) {
-		for (RoomOccupantListener listener : this.occupantListeners) {
+		for (Room.RoomOccupantListener listener : this.occupantListeners) {
 			listener.onOccupantAdded(this, occupantJid);
 		}
 	}
 
 	private void fireOnOccupantChangedPresence(JID occupantJid, String nickname, Element cp, boolean newOccupant) {
-		for (RoomOccupantListener listener : this.occupantListeners) {
+		for (Room.RoomOccupantListener listener : this.occupantListeners) {
 			listener.onOccupantChangedPresence(this, occupantJid, nickname, cp, newOccupant);
 		}
 	}
 
 	private void fireOnOccupantRemoved(JID occupantJid) {
-		for (RoomOccupantListener listener : this.occupantListeners) {
+		for (Room.RoomOccupantListener listener : this.occupantListeners) {
 			listener.onOccupantRemoved(this, occupantJid);
 		}
 	}
 
 	private void fireOnSetAffiliation(BareJID jid, Affiliation affiliation) {
-		for (RoomListener listener : this.listeners) {
+		for (Room.RoomListener listener : this.listeners) {
 			listener.onSetAffiliation(this, jid, affiliation);
 		}
 	}
 
 	private void fireOnSetSubject(String nick, String subject, Date changeDate) {
-		for (RoomListener listener : this.listeners) {
+		for (Room.RoomListener listener : this.listeners) {
 			listener.onChangeSubject(this, nick, subject, changeDate);
 		}
 	}
@@ -263,7 +263,7 @@ public class Room implements RoomConfig.RoomConfigListener {
 	}
 
 	private OccupantEntry getBySenderJid(JID sender) {
-		for (Entry<String, OccupantEntry> e : occupants.entrySet()) {
+		for (Map.Entry<String, OccupantEntry> e : occupants.entrySet()) {
 			synchronized (e.getValue().jids) {
 				if (e.getValue().jids.contains(sender)) {
 					return e.getValue();
@@ -288,7 +288,7 @@ public class Room implements RoomConfig.RoomConfigListener {
 	public String getDebugInfoOccupants() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Occupants in room " + config.getRoomJID() + "[" + occupants.entrySet().size() + "]: ");
-		for (Entry<String, OccupantEntry> o : occupants.entrySet()) {
+		for (Map.Entry<String, OccupantEntry> o : occupants.entrySet()) {
 			sb.append(o.getKey()).append('=').append(o.getValue().toString()).append(" ");
 		}
 		return sb.toString();
@@ -349,7 +349,7 @@ public class Room implements RoomConfig.RoomConfigListener {
 	public Collection<String> getOccupantsNicknames(BareJID bareJid) {
 		Set<String> result = new HashSet<String>();
 
-		for (Entry<String, OccupantEntry> e : this.occupants.entrySet()) {
+		for (Map.Entry<String, OccupantEntry> e : this.occupants.entrySet()) {
 			if (e.getValue().jid.equals(bareJid)) {
 				result.add(e.getKey());
 			}
@@ -408,7 +408,7 @@ public class Room implements RoomConfig.RoomConfigListener {
 	public void onInitialRoomConfig(RoomConfig roomConfig) {
 	}
 
-	public void removeListener(RoomListener listener) {
+	public void removeListener(Room.RoomListener listener) {
 		this.listeners.remove(listener);
 	}
 
@@ -510,4 +510,5 @@ public class Room implements RoomConfig.RoomConfigListener {
 
 		fireOnOccupantChangedPresence(jid, nickname, cp, false);
 	}
+
 }

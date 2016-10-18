@@ -21,6 +21,17 @@
  */
 package tigase.muc.repository;
 
+import tigase.component.exceptions.RepositoryException;
+import tigase.db.TigaseDBException;
+import tigase.db.UserNotFoundException;
+import tigase.db.UserRepository;
+import tigase.kernel.beans.Initializable;
+import tigase.kernel.beans.Inject;
+import tigase.muc.*;
+import tigase.muc.exceptions.MUCException;
+import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -28,28 +39,12 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import tigase.component.exceptions.RepositoryException;
-import tigase.db.TigaseDBException;
-import tigase.db.UserNotFoundException;
-import tigase.db.UserRepository;
-import tigase.kernel.beans.Bean;
-import tigase.kernel.beans.Initializable;
-import tigase.kernel.beans.Inject;
-import tigase.muc.Affiliation;
-import tigase.muc.MUCComponent;
-import tigase.muc.MUCConfig;
-import tigase.muc.Room;
-import tigase.muc.RoomConfig;
-import tigase.muc.exceptions.MUCException;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
-
 /**
  * @author bmalkow
  *
  */
-@Bean(name = "muc-dao", parent = MUCComponent.class)
-public class MucDAO implements Initializable {
+public class MucDAOOld
+		implements Initializable {
 
 	private static final String CREATION_DATE_KEY = "creation-date";
 
@@ -234,7 +229,7 @@ public class MucDAO implements Initializable {
 				RoomConfig rc = new RoomConfig(roomJID);
 				rc.read(repository, mucConfig, ROOMS_KEY + roomJID + "/config");
 
-				final Room room = roomFactory.newInstance(rc, date, creatorJID.getBareJID());
+				final Room room = roomFactory.newInstance(null, rc, date, creatorJID.getBareJID());
 
 				String subject = getSubject(roomJID);
 				String subjectCreator = getSubjectCreatorNickname(roomJID);
@@ -267,13 +262,6 @@ public class MucDAO implements Initializable {
 		}
 	}
 
-	/**
-	 * @param roomJID
-	 * @param affiliation
-	 * @param jid
-	 * @param affiliations
-	 * @throws RepositoryException
-	 */
 	public void setAffiliation(BareJID roomJID, BareJID jid, Affiliation affiliation) throws RepositoryException {
 		try {
 			if (affiliation == Affiliation.none) {
@@ -288,12 +276,6 @@ public class MucDAO implements Initializable {
 		}
 	}
 
-	/**
-	 * @param roomJID
-	 * @param changeDate
-	 * @param msg
-	 * @throws RepositoryException
-	 */
 	public void setSubject(BareJID roomJID, String subject, String creatorNickname, Date changeDate)
 			throws RepositoryException {
 		try {

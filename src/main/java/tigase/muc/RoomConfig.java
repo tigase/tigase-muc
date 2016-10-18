@@ -21,20 +21,16 @@
  */
 package tigase.muc;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import tigase.db.TigaseDBException;
 import tigase.db.UserNotFoundException;
 import tigase.db.UserRepository;
 import tigase.form.Field;
 import tigase.form.Field.FieldType;
 import tigase.form.Form;
+import tigase.xml.Element;
 import tigase.xmpp.BareJID;
+
+import java.util.*;
 
 /**
  * @author bmalkow
@@ -186,9 +182,6 @@ public class RoomConfig {
 		copyFrom(configForm, true);
 	}
 
-	/**
-	 * @param form2
-	 */
 	public void copyFrom(Form configForm, boolean fireEvents) {
 		final Set<String> modifiedVars = fireEvents ? equals(configForm) : null;
 		form.copyValuesFrom(configForm);
@@ -201,10 +194,6 @@ public class RoomConfig {
 		copyFrom(c.form, true);
 	}
 
-	/**
-	 * @param defaultRoomConfig
-	 * @param b
-	 */
 	public void copyFrom(RoomConfig c, boolean fireEvents) {
 		copyFrom(c.form, fireEvents);
 	}
@@ -315,6 +304,10 @@ public class RoomConfig {
 	}
 
 	protected void init() {
+	    init(this.form);
+	}
+
+	protected void init(Form form) {
 		form.addField(Field.fieldTextSingle(MUC_ROOMCONFIG_ROOMNAME_KEY, "", "Natural-Language Room Name"));
 		form.addField(Field.fieldTextSingle(MUC_ROOMCONFIG_ROOMDESC_KEY, "", "Short Description of Room"));
 		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_PERSISTENTROOM_KEY, Boolean.FALSE, "Make Room Persistent?"));
@@ -405,6 +398,7 @@ public class RoomConfig {
 		fireConfigChanged(vars, initialConfigUpdate);
 	}
 
+	@Deprecated
 	public void read(final UserRepository repository, final MUCConfig config, final String subnode)
 			throws UserNotFoundException, TigaseDBException {
 		String[] keys = repository.getKeys(config.getServiceName(), subnode);
@@ -455,6 +449,7 @@ public class RoomConfig {
 		}
 	}
 
+	@Deprecated
 	public void write(final UserRepository repo, final MUCConfig config, final String subnode)
 			throws UserNotFoundException, TigaseDBException {
 		List<Field> fields = form.getAllFields();
@@ -473,4 +468,17 @@ public class RoomConfig {
 		}
 	}
 
+	public Element getAsElement() {
+		Form form = new Form("form", null, null);
+		init(form);
+		form.copyValuesFrom(this.form);
+		for (String field : this.blacklist) {
+			form.removeField(field);
+		}
+		return form.getElement();
+	}
+
+	public void readFromElement(Element element) {
+		form.copyValuesFrom(element);
+	}
 }

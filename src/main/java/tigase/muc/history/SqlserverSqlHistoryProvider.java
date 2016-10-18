@@ -40,7 +40,6 @@ import java.util.logging.Logger;
  * @author bmalkow
  *
  */
-@Repository.Meta(supportedUris = { "jdbc:sqlserver:.*", "jdbc:jtds:.*" })
 public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 
 	public static final String ADD_MESSAGE_QUERY_VAL = "insert into muc_history (room_name, event_type, timestamp, sender_jid, sender_nickname, body, public_event, msg) values (?, 1, ?, ?, ?, ?, ?, ?)";

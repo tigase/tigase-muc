@@ -31,7 +31,7 @@ import java.util.logging.Logger;
  * @author bmalkow
  *
  */
-@Bean(name = "mucConfig", parent = MUCComponent.class)
+@Bean(name = "mucConfig", parent = MUCComponent.class, exportable = true)
 public class MUCConfig {
 
 	public static final String LOG_DIR_KEY = "room-log-directory";

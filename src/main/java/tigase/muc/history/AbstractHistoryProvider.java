@@ -45,7 +45,7 @@ public abstract class AbstractHistoryProvider<DS extends DataSource> implements 
 
 	protected final Logger log = Logger.getLogger(this.getClass().getName());
 
-	protected Packet createMessage(BareJID roomJID, JID senderJID, String msgSenderNickname, String originalMessage,
+	public static Packet createMessage(BareJID roomJID, JID senderJID, String msgSenderNickname, String originalMessage,
 			String body, String msgSenderJid, boolean addRealJids, Date msgTimestamp) throws TigaseStringprepException {
 
 		Packet message = null;
