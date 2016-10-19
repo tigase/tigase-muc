@@ -8,18 +8,6 @@
 
 package tigase.muc.cluster;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import tigase.cluster.api.ClusterCommandException;
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
@@ -36,6 +24,10 @@ import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -108,6 +100,8 @@ public class ClusteredRoomStrategyV2 extends AbstractClusteredRoomStrategy {
 					}
 					ClusteredRoomStrategyV2.this.muc.addOutPacket(presenceWrapper.getPacket());
 				}
+
+
 				// should be handled on original node
 //				if (newOccupant) {
 //					presenceModule.sendPresencesToNewOccupant(room, occupantJID);

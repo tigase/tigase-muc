@@ -213,6 +213,13 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	}
 
 	@Override
+	public void onLeaveRoom(Room room) {
+		// Nothing to do - other nodes will be notified that occupant changed presence (left room) and will take care of this
+		// if needed, however as Room instance is used for discovery and in this strategy every room is persistent
+		// then there is no valid point to notify repository and other nodes that room is left (that it is empty now).
+	}
+
+	@Override
 	public void onChangeSubject(Room room, String nick, String newSubject, Date changeDate) {
 //		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 	}

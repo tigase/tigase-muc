@@ -7,18 +7,17 @@
  */
 package tigase.muc.cluster;
 
-import java.util.logging.Level;
-import tigase.component.exceptions.RepositoryException;	
+import tigase.component.exceptions.RepositoryException;
 import tigase.muc.MucContext;
 import tigase.muc.Room;
-import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.MucDAO;
 import tigase.muc.repository.inmemory.InMemoryMucRepository;
-import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.logging.Level;
 
 /**
  *
@@ -30,6 +29,8 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 		void onRoomCreated(Room room);
 		
 		void onRoomDestroyed(Room room, Element destroyElement);
+
+		void onLeaveRoom(Room room);
 	}
 	
 	private RoomListener roomListener;
@@ -82,7 +83,20 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 			addListenersToNewRoom(room);
 		return room;
 	}
-	
+
+	@Override
+	public void leaveRoom(Room room) {
+		super.leaveRoom(room);
+
+		if (roomListener != null) {
+			roomListener.onLeaveRoom(room);
+		}
+	}
+
+	public void leaveRoomWithoutListener(Room room) {
+		super.leaveRoom(room);
+	}
+
 	public void setRoomListener(RoomListener roomListener) {
 		if (log.isLoggable(Level.FINEST)) {
 			log.log(Level.FINEST, "setting room listener to {0}", roomListener);
