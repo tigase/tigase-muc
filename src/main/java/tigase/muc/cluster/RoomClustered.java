@@ -24,14 +24,14 @@ import java.util.concurrent.ConcurrentMap;
  *
  * @author andrzej
  */
-public class RoomClustered extends Room {
+public class RoomClustered<ID> extends RoomWithId<ID> {
 
 	@Bean(name = "roomFactory", parent = MUCComponentClustered.class)
 	public static class RoomFactoryImpl implements RoomFactory {
 
 		@Override
-		public Room newInstance(RoomConfig rc, Date creationDate, BareJID creatorJid) {
-			return new RoomClustered(rc, creationDate, creatorJid);
+		public <T> RoomWithId<T> newInstance(T id, RoomConfig rc, Date creationDate, BareJID creatorJid) {
+			return new RoomClustered(id, rc, creationDate, creatorJid);
 		}
 
 	};
@@ -39,8 +39,8 @@ public class RoomClustered extends Room {
 	private final ConcurrentMap<JID, String> remoteNicknames = new ConcurrentHashMap<JID, String>();
 	private final ConcurrentMap<String, Occupant> remoteOccupants = new ConcurrentHashMap<String, Occupant>();
 
-	protected RoomClustered(RoomConfig rc, Date creationDate, BareJID creatorJid) {
-		super(rc, creationDate, creatorJid);
+	protected RoomClustered(ID id, RoomConfig rc, Date creationDate, BareJID creatorJid) {
+		super(id, rc, creationDate, creatorJid);
 	}
 
 	public Collection<Occupant> getRemoteOccupants() {
