@@ -22,6 +22,7 @@ package tigase.muc.repository.derby;
 
 import tigase.util.Algorithms;
 
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.*;
@@ -30,6 +31,8 @@ import java.sql.*;
  * Created by andrzej on 19.10.2016.
  */
 public class StoredProcedures {
+
+	private static final Charset UTF8 = Charset.forName("UTF-8");
 
 	public static void tigMucCreateRoom(String roomJid, String creatorJid, java.sql.Timestamp creationDate,
 										String roomName, String roomConfig, ResultSet[] data) throws SQLException {
@@ -310,7 +313,7 @@ public class StoredProcedures {
 	protected static String sha1OfLower(String data) throws SQLException {
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-1");
-			byte[] hash = md.digest(data.toLowerCase().getBytes());
+			byte[] hash = md.digest(data.toLowerCase().getBytes(UTF8));
 			return Algorithms.bytesToHex(hash);
 		} catch (NoSuchAlgorithmException e) {
 			throw new SQLException(e);
