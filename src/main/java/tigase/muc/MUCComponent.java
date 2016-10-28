@@ -21,13 +21,6 @@
  */
 package tigase.muc;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.logging.Level;
-
-import javax.script.Bindings;
-
 import tigase.component.AbstractComponent;
 import tigase.component.AbstractContext;
 import tigase.component.exceptions.RepositoryException;
@@ -48,6 +41,12 @@ import tigase.muc.repository.MucDAO;
 import tigase.muc.repository.inmemory.InMemoryMucRepository;
 import tigase.server.Packet;
 import tigase.xmpp.BareJID;
+
+import javax.script.Bindings;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.logging.Level;
 
 public class MUCComponent extends AbstractComponent<MucContext> {
 
@@ -74,6 +73,7 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 	private static final String OWNER_MODULE_VAR = "ownerModule";
 	private static final String PRESENCE_MODULE_VAR = "presenceModule";
 	private static final String MUC_CUSTOM_DISCO_FILTER = "roomFilterClass";
+	private static final String MUC_ADD_ID_TO_MESSAGE_IF_MISSING_KEY = "muc-add-id-to-message-if-missing";
 	protected String chatLoggingDirectory;
 	protected Boolean chatStateAllowed;
 	protected Ghostbuster2 ghostbuster;
@@ -85,6 +85,7 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 	protected Boolean newRoomLocked;
 	protected boolean presenceFilterEnabled;
 	protected boolean searchGhostsEveryMinute = false;
+	protected boolean addMessageIdIfMissing = true;
 
 	public MUCComponent() {
 	}
@@ -346,6 +347,11 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 			this.chatLoggingDirectory = (String) props.get(LOG_DIR_KEY);
 		}
 
+		if (props.containsKey(MUCComponent.MUC_ADD_ID_TO_MESSAGE_IF_MISSING_KEY)) {
+			this.addMessageIdIfMissing = (Boolean) props.get(MUCComponent.MUC_ADD_ID_TO_MESSAGE_IF_MISSING_KEY);
+		}
+		log.config("addMessageIdIfMissing: " + this.addMessageIdIfMissing);
+
 		log.config("Initializing History Provider, props.containsKey(HistoryManagerFactory.DB_CLASS_KEY): "
 				+ props.containsKey(HistoryManagerFactory.DB_CLASS_KEY));
 		HistoryProvider oldHistoryProvider = this.historyProvider;
@@ -501,6 +507,11 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 		@Override
 		public BareJID getServiceName() {
 			return serviceName;
+		}
+
+		@Override
+		public boolean isAddMessageIdIfMissing() {
+			return MUCComponent.this.addMessageIdIfMissing;
 		}
 
 		@Override

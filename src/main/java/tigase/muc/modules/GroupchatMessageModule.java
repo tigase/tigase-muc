@@ -205,7 +205,10 @@ public class GroupchatMessageModule extends AbstractMucModule {
 			Element body = null;
 			Element subject = null;
 			Element delay = null;
-			final String id = packet.getAttributeStaticStr(Packet.ID_ATT);
+			String id = packet.getAttributeStaticStr(Packet.ID_ATT);
+			if (id == null && context.isAddMessageIdIfMissing()) {
+				id = UUID.randomUUID().toString();
+			}
 			ArrayList<Element> content = new ArrayList<Element>();
 			List<Element> ccs = packet.getElement().getChildren();
 

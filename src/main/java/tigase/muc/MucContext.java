@@ -48,6 +48,8 @@ public interface MucContext extends Context {
 
 	BareJID getServiceName();
 
+	boolean isAddMessageIdIfMissing();
+
 	/**
 	 * @return
 	 */
