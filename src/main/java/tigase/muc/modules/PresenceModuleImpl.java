@@ -575,8 +575,9 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		}
 		sendHistoryToUser(room, senderJID, maxchars, maxstanzas, seconds, since);
 		if ((room.getSubject() != null) && (room.getSubjectChangerNick() != null) && (room.getSubjectChangeDate() != null)) {
-			Element message = new Element(Message.ELEM_NAME, new String[] { Packet.TYPE_ATT, Packet.FROM_ATT, Packet.TO_ATT },
-					new String[] { "groupchat", room.getRoomJID() + "/" + room.getSubjectChangerNick(), senderJID.toString() });
+			Element message = new Element(Message.ELEM_NAME, new String[]{Packet.TYPE_ATT, Packet.FROM_ATT, Packet.TO_ATT, Packet.ID_ATT},
+					new String[]{"groupchat", room.getRoomJID() + "/" + room.getSubjectChangerNick(), senderJID.toString(),
+								 GroupchatMessageModule.generateSubjectId(room.getSubjectChangeDate(), room.getSubject())});
 
 			message.addChild(new Element("subject", room.getSubject()));
 

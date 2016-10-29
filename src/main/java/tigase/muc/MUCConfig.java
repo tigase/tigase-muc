@@ -36,6 +36,7 @@ public class MUCConfig {
 
 	public static final String LOG_DIR_KEY = "room-log-directory";
 	public static final String MESSAGE_FILTER_ENABLED_KEY = "message-filter-enabled";
+	public static final String MUC_ADD_ID_TO_MESSAGE_IF_MISSING_KEY = "muc-add-id-to-message-if-missing";
 	public static final String MUC_ALLOW_CHAT_STATES_KEY = "muc-allow-chat-states";
 	public static final String MUC_LOCK_NEW_ROOM_KEY = "muc-lock-new-room";
 	public static final String MUC_MULTI_ITEM_ALLOWED_KEY = "muc-multi-item-allowed";
@@ -60,6 +61,8 @@ public class MUCConfig {
 	private boolean newRoomLocked = true;
 	@ConfigField(desc = "Passing only bare presence", alias = PRESENCE_FILTER_ENABLED_KEY)
 	private boolean presenceFilterEnabled = false;
+	@ConfigField(desc = "Add ID to messages if missing", alias = MUC_ADD_ID_TO_MESSAGE_IF_MISSING_KEY)
+	protected boolean addMessageIdIfMissing = true;
 
 	/**
 	 * @return
@@ -73,6 +76,10 @@ public class MUCConfig {
 	 */
 	public BareJID getServiceName() {
 		return serviceName;
+	}
+
+	public boolean isAddMessageIdIfMissing() {
+		return addMessageIdIfMissing;
 	}
 
 	/**

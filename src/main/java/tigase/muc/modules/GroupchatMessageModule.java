@@ -42,6 +42,9 @@ import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
+import java.nio.charset.Charset;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.logging.Level;
 
@@ -54,6 +57,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 	public static final String ID = "groupchat";
 	private static final Criteria CRIT = ElementCriteria.nameType("message", "groupchat");
 	private static final Criteria CRIT_CHAT_STAT = ElementCriteria.xmlns("http://jabber.org/protocol/chatstates");
+	private static final Charset UTF8 = Charset.forName("UTF-8");
 	private final Set<Criteria> allowedElements = new HashSet<Criteria>();
 
 	@Inject
@@ -213,7 +217,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 			Element body = null;
 			Element subject = null;
 			Element delay = null;
-			final String id = packet.getAttributeStaticStr(Packet.ID_ATT);
+			String id = packet.getAttributeStaticStr(Packet.ID_ATT);
 			ArrayList<Element> content = new ArrayList<Element>();
 			List<Element> ccs = packet.getElement().getChildren();
 
@@ -245,6 +249,14 @@ public class GroupchatMessageModule extends AbstractMucModule {
 
 			final JID senderRoomJID = JID.jidInstance(roomJID, nickName);
 
+			Date sendDate;
+
+			if ((delay != null) && (affiliation == Affiliation.owner)) {
+				sendDate = DateUtil.parse(delay.getAttributeStaticStr("stamp"));
+			} else {
+				sendDate = new Date();
+			}
+
 			if (subject != null) {
 				if (!(room.getConfig().isChangeSubject() && (role == Role.participant)) && !role.isModifySubject()) {
 					if (log.isLoggable(Level.FINE))
@@ -256,15 +268,17 @@ public class GroupchatMessageModule extends AbstractMucModule {
 				String msg = subject.getCData();
 
 				room.setNewSubject(msg, nickName);
+				room.setSubjectChangeDate(sendDate);
 			}
 
-			Date sendDate;
-
-			if ((delay != null) && (affiliation == Affiliation.owner)) {
-				sendDate = DateUtil.parse(delay.getAttributeStaticStr("stamp"));
-			} else {
-				sendDate = new Date();
+			if (id == null && config.isAddMessageIdIfMissing()) {
+				if (subject != null) {
+					id = generateSubjectId(sendDate, subject == null ? "" : subject.getCData());
+				} else {
+					id = UUID.randomUUID().toString();
+				}
 			}
+
 
 			Packet msg = preparePacket(id, xmlLang, content.toArray(new Element[]{}));
 
@@ -297,6 +311,24 @@ public class GroupchatMessageModule extends AbstractMucModule {
 			throws TigaseStringprepException {
 		Packet msg = preparePacket(null, xmlLang, content);
 		sendMessagesToAllOccupants(room, fromJID, msg);
+	}
+
+	public static String generateSubjectId(Date ts, String subject) {
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-1");
+			md.update(String.valueOf(ts.getTime()).getBytes());
+			if (subject != null) {
+				md.update(subject.getBytes());
+			}
+			StringBuilder sb = new StringBuilder();
+			for (byte b : md.digest()) {
+				sb.append(Character.forDigit((b & 0xF0) >> 4, 16));
+				sb.append(Character.forDigit(b & 0xF, 16));
+			}
+			return sb.toString();
+		} catch (NoSuchAlgorithmException ex) {
+			return null;
+		}
 	}
 //
 //	/**
