@@ -221,7 +221,7 @@
             <properties>
                 <maven.javadoc.skip>false</maven.javadoc.skip>
                 <dist_path>.</dist_path>
-                <guide_name>Tigase_Message_Archiving</guide_name>
+                <guide_name>Tigase_MUC</guide_name>
                 <guide_path>${dist_path}/docs/${guide_name}_Guide</guide_path>
                 <guide_filename>index</guide_filename>
             </properties>
