@@ -11,3 +11,4 @@ init.properties
 /scripts
 /init-muc.properties
 derby.log
+/docs/
