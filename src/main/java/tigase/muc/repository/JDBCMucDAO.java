@@ -32,10 +32,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Logger;
 
 /**
@@ -185,7 +182,7 @@ public class JDBCMucDAO
 	}
 
 	@Override
-	public ArrayList<BareJID> getRoomsJIDList() throws RepositoryException {
+	public List<BareJID> getRoomsJIDList() throws RepositoryException {
 		ArrayList<BareJID> jids = new ArrayList<>();
 		try {
 			ResultSet rs = null;

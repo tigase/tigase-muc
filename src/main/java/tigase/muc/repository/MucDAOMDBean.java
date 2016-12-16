@@ -25,32 +25,45 @@ import tigase.db.DBInitException;
 import tigase.db.DataSource;
 import tigase.db.DataSourceHelper;
 import tigase.db.beans.MDRepositoryBean;
+import tigase.db.beans.MDRepositoryBeanWithStatistics;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.config.ConfigField;
 import tigase.muc.Affiliation;
 import tigase.muc.MUCComponent;
 import tigase.muc.RoomConfig;
 import tigase.muc.RoomWithId;
+import tigase.server.BasicComponent;
 import tigase.xmpp.BareJID;
 
-import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Created by andrzej on 16.10.2016.
  */
 @Bean(name = "muc-dao", parent = MUCComponent.class)
 public class MucDAOMDBean
-		extends MDRepositoryBean<IMucDAO>
+		extends MDRepositoryBeanWithStatistics<IMucDAO>
 		implements IMucDAO {
 
 	private static final Logger log = Logger.getLogger(MucDAOMDBean.class.getCanonicalName());
 
 	@ConfigField(desc = "Use domain without component name to lookup for repository", alias = "map-component-to-bare-domain")
 	private boolean mapComponentToBareDomain = false;
+
+	public MucDAOMDBean() {
+		super(IMucDAO.class);
+	}
+
+	@Override
+	public boolean belongsTo(Class<? extends BasicComponent> component) {
+		return MUCComponent.class.isAssignableFrom(component);
+	}
 
 	@Override
 	public Object createRoom(RoomWithId room) throws RepositoryException {
@@ -73,16 +86,17 @@ public class MucDAOMDBean
 	}
 
 	@Override
-	public ArrayList<BareJID> getRoomsJIDList() throws RepositoryException {
-		final ArrayList<BareJID> result = new ArrayList<>();
-		getRepositories().forEach(repo -> {
+	public List<BareJID> getRoomsJIDList() throws RepositoryException {
+		return repositoriesStream().flatMap(repo -> {
+			Stream<BareJID> result = null;
 			try {
-				result.addAll(repo.getRoomsJIDList());
+				result = repo.getRoomsJIDList().stream();
 			} catch (RepositoryException e) {
 				log.log(Level.WARNING, "Failed to retrieve list of room jids from " + repo.toString(), e);
+				result = Stream.empty();
 			}
-		});
-		return result;
+			return result;
+		}).collect(Collectors.toList());
 	}
 
 	@Override

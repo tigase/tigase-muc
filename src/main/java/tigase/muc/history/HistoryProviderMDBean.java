@@ -26,11 +26,13 @@ import tigase.db.DBInitException;
 import tigase.db.DataSource;
 import tigase.db.DataSourceHelper;
 import tigase.db.beans.MDRepositoryBean;
+import tigase.db.beans.MDRepositoryBeanWithStatistics;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.config.ConfigField;
 import tigase.muc.MUCComponent;
 import tigase.muc.Room;
 import tigase.osgi.ModulesManagerImpl;
+import tigase.server.BasicComponent;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
 
@@ -40,10 +42,20 @@ import java.util.Date;
  * Created by andrzej on 25.08.2016.
  */
 @Bean(name = "historyProviderPool", parent = MUCComponent.class)
-public class HistoryProviderMDBean extends MDRepositoryBean<HistoryProvider> implements HistoryProvider {
+public class HistoryProviderMDBean extends MDRepositoryBeanWithStatistics<HistoryProvider>
+		implements HistoryProvider {
 
 	@ConfigField(desc = "Use domain without component name to lookup for repository", alias = "map-component-to-bare-domain")
 	private boolean mapComponentToBareDomain = false;
+
+	public HistoryProviderMDBean() {
+		super(HistoryProvider.class);
+	}
+
+	@Override
+	public boolean belongsTo(Class<? extends BasicComponent> component) {
+		return MUCComponent.class.isAssignableFrom(component);
+	}
 
 	@Override
 	public Class<?> getDefaultBeanClass() {

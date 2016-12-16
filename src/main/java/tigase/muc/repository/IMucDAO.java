@@ -28,8 +28,8 @@ import tigase.muc.RoomConfig;
 import tigase.muc.RoomWithId;
 import tigase.xmpp.BareJID;
 
-import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -45,7 +45,7 @@ public interface IMucDAO<DS extends DataSource, ID> extends DataSourceAware<DS> 
 
 	RoomWithId<ID> getRoom(BareJID roomJID) throws RepositoryException;
 
-	ArrayList<BareJID> getRoomsJIDList() throws RepositoryException;
+	List<BareJID> getRoomsJIDList() throws RepositoryException;
 
 	void setAffiliation(RoomWithId<ID> room, BareJID jid, Affiliation affiliation) throws RepositoryException;
 

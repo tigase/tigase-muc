@@ -251,7 +251,7 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 	@Override
 	public void initialize() {
 		try {
-			ArrayList<BareJID> roomJids = dao.getRoomsJIDList();
+			List<BareJID> roomJids = dao.getRoomsJIDList();
 			if (roomJids != null) {
 				for (BareJID jid : roomJids) {
 					this.allRooms.put(jid, new InternalRoom());
