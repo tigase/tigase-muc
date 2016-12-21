@@ -135,7 +135,7 @@ public abstract class AbstractMucDAOTest<DS extends DataSource> {
 		assertNotNull(room.getId());
 
 		assertEquals(roomJID, room.getRoomJID());
-		assertEquals(creationDate.getTime() / 1000, room.getCreationDate().getTime() / 1000);
+		assertEquals(creationDate.getTime() / 10, room.getCreationDate().getTime() / 10);
 		assertEquals(creatorJID.getBareJID(), room.getCreatorJid());
 
 		assertEquals(Affiliation.owner, room.getAffiliation(creatorJID.getBareJID()));
@@ -177,7 +177,7 @@ public abstract class AbstractMucDAOTest<DS extends DataSource> {
 		room = dao.getRoom(roomJID);
 		assertEquals(subject, room.getSubject());
 		assertEquals(adminJID.getResource(), room.getSubjectChangerNick());
-		assertEquals(changeDate.getTime() / 1000, room.getSubjectChangeDate().getTime() / 1000);
+		assertEquals(changeDate.getTime() / 10, room.getSubjectChangeDate().getTime() / 10);
 	}
 
 	@Test

@@ -351,6 +351,91 @@ END
 -- QUERY END:
 GO
 
+-- QUERY START:
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MUC_MAM_GetMessages')
+	DROP PROCEDURE Tig_MUC_MAM_GetMessages
+-- QUERY END:
+GO
+
+-- QUERY START:
+CREATE PROCEDURE dbo.Tig_MUC_MAM_GetMessages
+    @_roomJid [nvarchar](2049),
+    @_since [datetime],
+    @_to [datetime],
+    @_nickname [nvarchar](1024),
+    @_limit [int],
+    @_offset [int]
+AS
+BEGIN
+    ;WITH results_cte AS (
+        SELECT sender_nickname, ts, sender_jid, body, msg,
+            ROW_NUMBER() OVER (ORDER BY ts) AS row_num
+        FROM dbo.tig_muc_room_history
+        WHERE room_jid_sha1 = HASHBYTES('SHA1', LOWER( @_roomJid ) )
+            AND ( @_since IS NULL OR ts >= @_since )
+            AND ( @_to IS NULL OR ts <= @_to )
+            AND ( @_nickname IS NULL OR sender_nickname = @_nickname )
+    )
+    SELECT sender_nickname, ts, sender_jid, body, msg
+    FROM results_cte
+    WHERE row_num > @_offset
+        AND row_num <= @_offset + @_limit
+    ORDER BY ts ASC;
+END
+-- QUERY END:
+GO
+
+-- QUERY START:
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MUC_MAM_GetMessagePosition')
+	DROP PROCEDURE Tig_MUC_MAM_GetMessagePosition
+-- QUERY END:
+GO
+
+
+-- QUERY START:
+CREATE PROCEDURE dbo.Tig_MUC_MAM_GetMessagePosition
+    @_roomJid [nvarchar](2049),
+    @_since [datetime],
+    @_to [datetime],
+    @_nickname [nvarchar](1024),
+    @_id_ts [datetime]
+AS
+BEGIN
+    SELECT count(1)
+    FROM dbo.tig_muc_room_history
+    WHERE room_jid_sha1 = HASHBYTES('SHA1', LOWER( @_roomJid ) )
+        AND ( @_since IS NULL OR ts >= @_since )
+        AND ( @_to IS NULL OR ts <= @_to )
+        AND ( @_nickname IS NULL OR sender_nickname = @_nickname )
+        AND ts < @_id_ts
+END
+-- QUERY END:
+GO
+
+-- QUERY START:
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MUC_MAM_GetMessagesCount')
+	DROP PROCEDURE Tig_MUC_MAM_GetMessagesCount
+-- QUERY END:
+GO
+
+-- QUERY START:
+CREATE PROCEDURE dbo.Tig_MUC_MAM_GetMessagesCount
+    @_roomJid [nvarchar](2049),
+    @_since [datetime],
+    @_to [datetime],
+    @_nickname [nvarchar](1024)
+AS
+BEGIN
+    SELECT count(1)
+    FROM dbo.tig_muc_room_history
+    WHERE room_jid_sha1 = HASHBYTES('SHA1', LOWER( @_roomJid ) )
+        AND ( @_since IS NULL OR ts >= @_since )
+        AND ( @_to IS NULL OR ts <= @_to )
+        AND ( @_nickname IS NULL OR sender_nickname = @_nickname )
+END
+-- QUERY END:
+GO
+
 -- ---------------------
 -- Converting history to new format
 -- ---------------------

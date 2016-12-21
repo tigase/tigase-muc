@@ -22,9 +22,11 @@
 package tigase.muc.history;
 
 import tigase.component.PacketWriter;
+import tigase.component.exceptions.ComponentException;
 import tigase.db.DBInitException;
 import tigase.db.DataSource;
 import tigase.db.DataSourceHelper;
+import tigase.db.TigaseDBException;
 import tigase.db.beans.MDRepositoryBean;
 import tigase.db.beans.MDRepositoryBeanWithStatistics;
 import tigase.kernel.beans.Bean;
@@ -34,7 +36,11 @@ import tigase.muc.Room;
 import tigase.osgi.ModulesManagerImpl;
 import tigase.server.BasicComponent;
 import tigase.xml.Element;
+import tigase.xmpp.Authorization;
 import tigase.xmpp.JID;
+import tigase.xmpp.mam.MAMRepository;
+import tigase.xmpp.mam.Query;
+import tigase.xmpp.mam.QueryImpl;
 
 import java.util.Date;
 
@@ -43,7 +49,7 @@ import java.util.Date;
  */
 @Bean(name = "historyProviderPool", parent = MUCComponent.class)
 public class HistoryProviderMDBean extends MDRepositoryBeanWithStatistics<HistoryProvider>
-		implements HistoryProvider {
+		implements HistoryProvider, MAMRepository {
 
 	@ConfigField(desc = "Use domain without component name to lookup for repository", alias = "map-component-to-bare-domain")
 	private boolean mapComponentToBareDomain = false;
@@ -111,6 +117,21 @@ public class HistoryProviderMDBean extends MDRepositoryBeanWithStatistics<Histor
 	@Override
 	public void removeHistory(Room room) {
 		getRepository(room).removeHistory(room);
+	}
+
+	@Override
+	public void queryItems(Query query, ItemHandler itemHandler) throws TigaseDBException, ComponentException {
+		HistoryProvider historyProvider = getRepository(query.getComponentJID().getDomain());
+		if (historyProvider instanceof MAMRepository) {
+			((MAMRepository) historyProvider).queryItems(query, itemHandler);
+		} else {
+			throw new ComponentException(Authorization.FEATURE_NOT_IMPLEMENTED);
+		}
+	}
+
+	@Override
+	public Query newQuery() {
+		return new QueryImpl();
 	}
 
 	protected HistoryProvider getRepository(Room room) {

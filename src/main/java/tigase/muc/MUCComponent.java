@@ -35,6 +35,8 @@ import tigase.kernel.core.Kernel;
 import tigase.muc.modules.*;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
+import tigase.xmpp.mam.MAMItemHandler;
+import tigase.xmpp.mam.MAMQueryParser;
 
 import javax.script.Bindings;
 import java.util.HashMap;
@@ -147,6 +149,9 @@ public class MUCComponent extends AbstractKernelBasedComponent {
 		kernel.registerBean(UniqueRoomNameModule.class).exec();
 		kernel.registerBean(AdHocCommandModule.class).exec();
 
+		kernel.registerBean(MAMItemHandler.class).exec();
+		kernel.registerBean(MAMQueryParser.class).exec();
+		kernel.registerBean(MAMQueryModule.class).exec();
 		//kernel.registerBean(MUCConfig.class).exec();
 
 //		kernel.registerBean(IMucRepository.ID).asClass(InMemoryMucRepository.class).exec();

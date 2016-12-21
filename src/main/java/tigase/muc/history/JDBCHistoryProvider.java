@@ -21,8 +21,10 @@
 package tigase.muc.history;
 
 import tigase.component.PacketWriter;
+import tigase.component.exceptions.ComponentException;
 import tigase.db.DataRepository;
 import tigase.db.Repository;
+import tigase.db.TigaseDBException;
 import tigase.kernel.beans.config.ConfigField;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
@@ -30,7 +32,11 @@ import tigase.muc.RoomConfig;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
+import tigase.xmpp.Authorization;
 import tigase.xmpp.JID;
+import tigase.xmpp.mam.MAMRepository;
+import tigase.xmpp.mam.Query;
+import tigase.xmpp.mam.QueryImpl;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -44,7 +50,7 @@ import java.util.logging.Logger;
  * Created by andrzej on 17.10.2016.
  */
 @Repository.Meta(supportedUris = {"jdbc:.*" })
-public class JDBCHistoryProvider implements HistoryProvider<DataRepository> {
+public class JDBCHistoryProvider implements HistoryProvider<DataRepository>, MAMRepository {
 
 	private static final Logger log = Logger.getLogger(JDBCHistoryProvider.class.getCanonicalName());
 
@@ -54,6 +60,12 @@ public class JDBCHistoryProvider implements HistoryProvider<DataRepository> {
 	private String deleteMessagesQuery = "{ call Tig_MUC_DeleteMessages(?) }";
 	@ConfigField(desc = "Retrieve messages from history", alias = "get-messages-query")
 	private String getMessagesQuery = "{ call Tig_MUC_GetMessages(?,?,?) }";
+	@ConfigField(desc = "Retrieve messages from archive", alias = "mam-get-messages-query")
+	private String mamGetMessagesQuery = "{ call Tig_MUC_MAM_GetMessages(?,?,?,?,?,?) }";
+	@ConfigField(desc = "Retrieve position of message in archive", alias = "mam-get-message-position-query")
+	private String mamGetMessagePositionQuery = "{ call Tig_MUC_MAM_GetMessagePosition(?,?,?,?,?) }";
+	@ConfigField(desc = "Retrieve messages from archive", alias = "mam-get-messages-count-query")
+	private String mamGetMessagesCountQuery = "{ call Tig_MUC_MAM_GetMessagesCount(?,?,?,?) }";
 
 	protected DataRepository data_repo;
 
@@ -169,6 +181,155 @@ public class JDBCHistoryProvider implements HistoryProvider<DataRepository> {
 		}
 	}
 
+	private int setStatementParamsForMAM(PreparedStatement st, Query query) throws SQLException {
+		int i = 1;
+		st.setString(i++, query.getComponentJID().getBareJID().toString());
+		if (query.getStart() != null) {
+			st.setTimestamp(i++, new Timestamp(query.getStart().getTime()));
+		} else {
+			st.setObject(i++, null);
+		}
+		if (query.getEnd() != null) {
+			st.setTimestamp(i++, new Timestamp(query.getEnd().getTime()));
+		} else {
+			st.setObject(i++, null);
+		}
+		if (query.getWith() != null) {
+			st.setString(i++, query.getWith().toString());
+		} else {
+			st.setObject(i++, null);
+		}
+		return i;
+	}
+
+	private Integer countItems(Query query) throws TigaseDBException {
+		try {
+			PreparedStatement st = this.data_repo.getPreparedStatement(query.getQuestionerJID().getBareJID(),
+																	   mamGetMessagesCountQuery);
+			synchronized (st) {
+				ResultSet rs = null;
+				try {
+					setStatementParamsForMAM(st, query);
+
+					rs = st.executeQuery();
+					if (rs.next()) {
+						return rs.getInt(1);
+					} else {
+						return null;
+					}
+				} finally {
+					data_repo.release(null, rs);
+				}
+			}
+		} catch (SQLException ex) {
+			throw new TigaseDBException("Failed to retrieve number of messages for room " + query.getComponentJID(),
+										ex);
+		}
+	}
+
+	private Integer getItemPosition(String msgId, Query query) throws TigaseDBException, ComponentException {
+		if (msgId == null) {
+			return null;
+		}
+
+		try {
+			java.sql.Timestamp ts = new Timestamp(Long.parseLong(msgId));
+
+			PreparedStatement st = this.data_repo.getPreparedStatement(query.getQuestionerJID().getBareJID(),
+																	   mamGetMessagePositionQuery);
+			synchronized (st) {
+				ResultSet rs = null;
+				try {
+					int i = setStatementParamsForMAM(st, query);
+					st.setTimestamp(i++, ts);
+
+					rs = st.executeQuery();
+					if (rs.next()) {
+						return rs.getInt(1);
+					} else {
+						return null;
+					}
+				} finally {
+					data_repo.release(null, rs);
+				}
+			}
+		} catch (NumberFormatException ex) {
+			throw new ComponentException(Authorization.ITEM_NOT_FOUND, "Not found message with id = " + msgId);
+		} catch (SQLException ex) {
+			throw new TigaseDBException("Can't find position for message with id " + msgId + " in archive for room " +
+												query.getComponentJID(), ex);
+		}
+	}
+
+	@Override
+	public void queryItems(Query query, ItemHandler itemHandler) throws TigaseDBException, ComponentException {
+		try {
+			Integer count = countItems(query);
+			if (count == null) {
+				count = 0;
+			}
+
+			Integer after = getItemPosition(query.getRsm().getAfter(), query);
+			Integer before = getItemPosition(query.getRsm().getBefore(), query);
+
+			AbstractHistoryProvider.calculateOffsetAndPosition(query, count, before, after);
+
+			PreparedStatement st = data_repo.getPreparedStatement(query.getQuestionerJID().getBareJID(),
+																  mamGetMessagesQuery);
+
+			synchronized (st) {
+				ResultSet rs = null;
+				try {
+					int i = setStatementParamsForMAM(st, query);
+					st.setInt(i++, query.getRsm().getMax());
+					st.setInt(i++, query.getRsm().getIndex());
+
+					rs = st.executeQuery();
+
+					while (rs.next()) {
+						String msgSenderNickname = rs.getString("sender_nickname");
+						Date msgTimestamp = rs.getTimestamp("ts");
+						String msgSenderJid = rs.getString("sender_jid");
+						String body = rs.getString("body");
+						String msg = rs.getString("msg");
+
+						Element msgEl = AbstractHistoryProvider.createMessageElement(
+								query.getComponentJID().getBareJID(), query.getQuestionerJID(), msgSenderNickname, msg,
+								body);
+
+						Item item = new Item() {
+							@Override
+							public String getId() {
+								return String.valueOf(msgTimestamp.getTime());
+							}
+
+							@Override
+							public Element getMessage() {
+								return msgEl;
+							}
+
+							@Override
+							public Date getTimestamp() {
+								return msgTimestamp;
+							}
+						};
+						itemHandler.itemFound(query, item);
+					}
+				} finally {
+					data_repo.release(null, rs);
+				}
+			}
+		} catch (SQLException|TigaseStringprepException ex) {
+			throw new TigaseDBException("Cound not retrieve items", ex);
+		}
+
+	}
+
+	@Override
+	public Query newQuery() {
+		return new QueryImpl();
+	}
+
 	protected void getMessagesSince(Room room, JID senderJID, int maxMessages, Timestamp since,
 									PacketWriter writer) throws SQLException, TigaseStringprepException {
 		PreparedStatement st = data_repo.getPreparedStatement(senderJID.getBareJID(), getMessagesQuery);
@@ -204,8 +365,8 @@ public class JDBCHistoryProvider implements HistoryProvider<DataRepository> {
 			String body = rs.getString("body");
 			String msg = rs.getString("msg");
 
-			Packet m = AbstractHistoryProvider.createMessage(room.getRoomJID(), senderJID, msgSenderNickname, msg, body, msgSenderJid, addRealJids,
-															 msgTimestamp);
+			Packet m = AbstractHistoryProvider.createMessage(room.getRoomJID(), senderJID, msgSenderNickname, msg, body,
+															 msgSenderJid, addRealJids, msgTimestamp);
 			writer.write(m);
 		}
 	}
@@ -223,6 +384,9 @@ public class JDBCHistoryProvider implements HistoryProvider<DataRepository> {
 		repo.initPreparedStatement(addMessageQuery, addMessageQuery);
 		repo.initPreparedStatement(deleteMessagesQuery, deleteMessagesQuery);
 		repo.initPreparedStatement(getMessagesQuery, getMessagesQuery);
+		repo.initPreparedStatement(mamGetMessagesQuery, mamGetMessagesQuery);
+		repo.initPreparedStatement(mamGetMessagesCountQuery, mamGetMessagesCountQuery);
+		repo.initPreparedStatement(mamGetMessagePositionQuery, mamGetMessagePositionQuery);
 	}
 
 }

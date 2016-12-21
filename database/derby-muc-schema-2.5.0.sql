@@ -174,3 +174,30 @@ create procedure Tig_MUC_GetMessages(roomJid varchar(2049), maxMessages int, "si
     DYNAMIC RESULT SETS 1
     EXTERNAL NAME 'tigase.muc.repository.derby.StoredProcedures.tigMucGetMessages';
 -- QUERY END:
+
+-- QUERY START:
+create procedure Tig_MUC_MAM_GetMessages(roomJid varchar(2049), "since" timestamp, "to" timestamp, "nickname" varchar(1024), "limit" int, "offset" int)
+    PARAMETER STYLE JAVA
+    LANGUAGE JAVA
+    READS SQL DATA
+    DYNAMIC RESULT SETS 1
+    EXTERNAL NAME 'tigase.muc.repository.derby.StoredProcedures.tigMucMamGetMessages';
+-- QUERY END:
+
+-- QUERY START:
+create procedure Tig_MUC_MAM_GetMessagePosition(roomJid varchar(2049), "since" timestamp, "to" timestamp, "nickname" varchar(1024), "id_ts" timestamp)
+    PARAMETER STYLE JAVA
+    LANGUAGE JAVA
+    READS SQL DATA
+    DYNAMIC RESULT SETS 1
+    EXTERNAL NAME 'tigase.muc.repository.derby.StoredProcedures.tigMucMamGetMessagePosition';
+-- QUERY END:
+
+-- QUERY START:
+create procedure Tig_MUC_MAM_GetMessagesCount(roomJid varchar(2049), "since" timestamp, "to" timestamp, "nickname" varchar(1024))
+    PARAMETER STYLE JAVA
+    LANGUAGE JAVA
+    READS SQL DATA
+    DYNAMIC RESULT SETS 1
+    EXTERNAL NAME 'tigase.muc.repository.derby.StoredProcedures.tigMucMamGetMessagesCount';
+-- QUERY END:

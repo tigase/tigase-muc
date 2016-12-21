@@ -39,3 +39,6 @@ Windows::
 ----
 database/muc-db-migrate.cmd -in 'jdbc:mysql://localhost/database1' -out 'jdbc:mysql://localhost/database2'
 ----
+
+=== Support for MAM
+In this version we added support for http://xmpp.org/extensions/xep-0313.html:[XEP-0313: Message Archive Management] protocol which allows any MAM compatible XMPP client with MUC support to retrieve room chat history using MAM and more advanced queries than retrieval of last X messages or messages since particular date supported by MUC

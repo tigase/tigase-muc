@@ -30,6 +30,8 @@ import tigase.xml.SimpleParser;
 import tigase.xml.SingletonFactory;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+import tigase.xmpp.RSM;
+import tigase.xmpp.mam.Query;
 
 import java.util.Date;
 import java.util.Queue;
@@ -45,33 +47,38 @@ public abstract class AbstractHistoryProvider<DS extends DataSource> implements 
 
 	protected final Logger log = Logger.getLogger(this.getClass().getName());
 
-	public static Packet createMessage(BareJID roomJID, JID senderJID, String msgSenderNickname, String originalMessage,
-			String body, String msgSenderJid, boolean addRealJids, Date msgTimestamp) throws TigaseStringprepException {
-
-		Packet message = null;
-
+	public static Element createMessageElement(BareJID roomJID, JID senderJID, String msgSenderNickname,
+											   String originalMessage, String body)
+			throws TigaseStringprepException {
+		Element message = null;
 		if (originalMessage != null) {
 			DomBuilderHandler domHandler = new DomBuilderHandler();
 			parser.parse(domHandler, originalMessage.toCharArray(), 0, originalMessage.length());
 			Queue<Element> queue = domHandler.getParsedElements();
 
-			Element m = queue.poll();
-			if (m != null) {
-				m.setAttribute("type", "groupchat");
-				m.setAttribute("from", JID.jidInstance(roomJID, msgSenderNickname).toString());
-				m.setAttribute("to", senderJID.toString());
+			message = queue.poll();
+			if (message != null) {
+				message.setAttribute("type", "groupchat");
+				message.setAttribute("from", JID.jidInstance(roomJID, msgSenderNickname).toString());
+				message.setAttribute("to", senderJID.toString());
 
-				message = Packet.packetInstance(m);
 				message.setXMLNS(Packet.CLIENT_XMLNS);
 			}
 		}
 
 		if (message == null) {
-			message = Packet.packetInstance(new Element("message", new String[] { "type", "from", "to" }, new String[] {
-					"groupchat", JID.jidInstance(roomJID, msgSenderNickname).toString(), senderJID.toString() }));
-			message.setXMLNS(Packet.CLIENT_XMLNS);
-			message.getElement().addChild(new Element("body", body));
+			message = new Element("message", new String[] { "type", "from", "to", "xmlns" }, new String[] {
+					"groupchat", JID.jidInstance(roomJID, msgSenderNickname).toString(), senderJID.toString(), Packet.CLIENT_XMLNS });
+			message.addChild(new Element("body", body));
 		}
+
+		return message;
+	}
+
+	public static Packet createMessage(BareJID roomJID, JID senderJID, String msgSenderNickname, String originalMessage,
+			String body, String msgSenderJid, boolean addRealJids, Date msgTimestamp) throws TigaseStringprepException {
+
+		Packet message = Packet.packetInstance(createMessageElement(roomJID, senderJID, msgSenderNickname, originalMessage, body));
 
 		// The 'from' attribute MUST be set to the JID of the room itself.
 		Element delay = new Element("delay", new String[] { "xmlns", "from", "stamp" },
@@ -79,6 +86,33 @@ public abstract class AbstractHistoryProvider<DS extends DataSource> implements 
 		message.getElement().addChild(delay);
 
 		return message;
+	}
+
+	protected static <Q extends Query> void calculateOffsetAndPosition(Q query, int count, Integer before, Integer after) {
+		RSM rsm = query.getRsm();
+		int index = rsm.getIndex() == null ? 0 : rsm.getIndex();
+		int limit = rsm.getMax();
+
+		if (after != null) {
+			// it is ok, if we go out of range we will return empty result
+			index = after + 1;
+		} else if (before != null) {
+			index = before - rsm.getMax();
+			// if we go out of range we need to set index to 0 and reduce limit
+			// to return proper results
+			if (index < 0) {
+				index = 0;
+				limit = before;
+			}
+		} else if (rsm.hasBefore()) {
+			index = count - rsm.getMax();
+			if (index < 0) {
+				index = 0;
+			}
+		}
+		rsm.setIndex(index);
+		rsm.setMax(limit);
+		rsm.setCount(count);
 	}
 
 }

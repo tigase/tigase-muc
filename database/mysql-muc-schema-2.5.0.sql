@@ -23,10 +23,10 @@ create table if not exists tig_muc_rooms (
 	name varchar(1024),
 	config text,
 	creator varchar(2049) not null,
-	creation_date timestamp not null,
+	creation_date timestamp(6) not null,
     subject text,
     subject_creator_nick varchar(1024),
-    subject_date timestamp,
+    subject_date timestamp(6) null default null,
 
 	primary key ( room_id ),
 	index using hash ( jid(255) ),
@@ -57,7 +57,7 @@ create table if not exists tig_muc_room_history (
 	room_jid varchar(2049) not null,
 	room_jid_sha1 char(40) not null,
     event_type int,
-    ts datetime not null,
+    ts timestamp(6) not null,
     sender_jid varchar(3074),
     sender_nickname varchar(1024),
 	body text,
@@ -120,13 +120,25 @@ drop procedure if exists Tig_MUC_GetMessages;
 -- QUERY END:
 
 -- QUERY START:
+drop procedure if exists Tig_MUC_MAM_GetMessages;
+-- QUERY END:
+
+-- QUERY START:
+drop procedure if exists Tig_MUC_MAM_GetMessagePosition;
+-- QUERY END:
+
+-- QUERY START:
+drop procedure if exists Tig_MUC_MAM_GetMessagesCount;
+-- QUERY END:
+
+-- QUERY START:
 drop procedure if exists TigExecuteIf;
 -- QUERY END:
 
 delimiter //
 
 -- QUERY START:
-create procedure Tig_MUC_CreateRoom(_roomJid varchar(2049), _creatorJid varchar(2049), _creationDate timestamp, _roomName varchar(1024), _roomConfig text)
+create procedure Tig_MUC_CreateRoom(_roomJid varchar(2049), _creatorJid varchar(2049), _creationDate timestamp(6), _roomName varchar(1024), _roomConfig text)
 begin
 	declare _roomId bigint;
 	declare _roomJidSha1 char(40);
@@ -208,7 +220,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MUC_SetRoomSubject(_roomId bigint, _subject text, _creator varchar(1024), _changeDate datetime)
+create procedure Tig_MUC_SetRoomSubject(_roomId bigint, _subject text, _creator varchar(1024), _changeDate timestamp(6))
 begin
     update tig_muc_rooms set subject = _subject, subject_creator_nick = _creator, subject_date = _changeDate where room_id = _roomId;
 end //
@@ -222,7 +234,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MUC_AddMessage(_roomJid varchar(2049), _ts datetime, _senderJid varchar(3074), _senderNick varchar(1024), _body text, _publicEvent boolean, _msg text)
+create procedure Tig_MUC_AddMessage(_roomJid varchar(2049), _ts timestamp(6), _senderJid varchar(3074), _senderNick varchar(1024), _body text, _publicEvent boolean, _msg text)
 begin
 	declare _roomJidSha1 char(40);
 
@@ -240,7 +252,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MUC_GetMessages(_roomJid varchar(2049), _maxMessages int, _since datetime)
+create procedure Tig_MUC_GetMessages(_roomJid varchar(2049), _maxMessages int, _since timestamp(6))
 begin
     declare _roomJidSha1 char(40);
 
@@ -253,6 +265,57 @@ begin
                 and (_since is null or h.ts >= _since)
             order by h.ts desc limit _maxMessages
     ) AS t order by t.ts asc;
+end //
+-- QUERY END:
+
+-- QUERY START:
+create procedure Tig_MUC_MAM_GetMessages(_roomJid varchar(2049), _since timestamp(6), _to timestamp(6), _nickname varchar(1024), _limit int, _offset int)
+begin
+    declare _roomJidSha1 char(40);
+
+    select SHA1( LOWER( _roomJid ) ) into _roomJidSha1;
+
+    select h.sender_nickname, h.ts, h.sender_jid, h.body, h.msg
+        from tig_muc_room_history h
+        where h.room_jid_sha1 = _roomJidSha1
+            and (_since is null or h.ts >= _since)
+            and (_to is null or h.ts <= _to)
+            and (_nickname is null or h.sender_nickname = _nickname)
+        order by h.ts asc limit _limit offset _offset;
+end //
+-- QUERY END:
+
+-- QUERY START:
+create procedure Tig_MUC_MAM_GetMessagePosition(_roomJid varchar(2049), _since timestamp(6), _to timestamp(6), _nickname varchar(1024), _id_ts timestamp(6))
+begin
+    declare _roomJidSha1 char(40);
+
+    select SHA1( LOWER( _roomJid ) ) into _roomJidSha1;
+
+    select count(1) from (
+        select h.sender_nickname, h.ts, h.sender_jid, h.body, h.msg
+            from tig_muc_room_history h
+            where h.room_jid_sha1 = _roomJidSha1
+                and (_since is null or h.ts >= _since)
+                and (_to is null or h.ts <= _to)
+                and (_nickname is null or h.sender_nickname = _nickname)
+        ) as t
+        where t.ts < _id_ts;
+end //
+-- QUERY END:
+
+-- QUERY START:
+create procedure Tig_MUC_MAM_GetMessagesCount(_roomJid varchar(2049), _since timestamp(6), _to timestamp(6), _nickname varchar(1024))
+begin
+    declare _roomJidSha1 char(40);
+
+    select SHA1( LOWER( _roomJid ) ) into _roomJidSha1;
+
+    select count(1) from tig_muc_room_history h
+        where h.room_jid_sha1 = _roomJidSha1
+            and (_since is null or h.ts >= _since)
+            and (_to is null or h.ts <= _to)
+            and (_nickname is null or h.sender_nickname = _nickname);
 end //
 -- QUERY END:
 
@@ -273,6 +336,24 @@ end //
 
 delimiter ;
 
+-- QUERY START:
+call TigExecuteIf((select count(1) from information_schema.COLUMNS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_muc_rooms' AND COLUMN_NAME = 'creation_date' AND DATA_TYPE = 'timestamp' AND DATETIME_PRECISION <> 6),
+	'alter table tig_muc_rooms modify `creation_date` timestamp(6) not null'
+);
+-- QUERY END:
+
+-- QUERY START:
+call TigExecuteIf((select count(1) from information_schema.COLUMNS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_muc_rooms' AND COLUMN_NAME = 'subject_date' AND DATA_TYPE = 'timestamp' AND DATETIME_PRECISION <> 6),
+	'alter table tig_muc_rooms modify `subject_date` timestamp(6) null default null'
+);
+-- QUERY END:
+
+-- QUERY START:
+call TigExecuteIf((select count(1) from information_schema.COLUMNS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_muc_room_history' AND COLUMN_NAME = 'ts' AND (DATA_TYPE = 'datetime' OR (DATA_TYPE = 'timestamp' AND DATETIME_PRECISION <> 6))),
+	'alter table tig_muc_room_history modify `ts` timestamp(6) not null'
+);
+-- QUERY END:
+
 -- ---------------------
 -- Converting history to new format
 -- ---------------------
@@ -284,4 +365,3 @@ call TigExecuteIf((select count(1) from information_schema.STATISTICS where TABL
         from muc_history;
     rename muc_history to muc_history_old;');
 -- QUERY END:
-

@@ -219,6 +219,50 @@ end;
 $$ LANGUAGE 'plpgsql';
 -- QUERY END:
 
+-- QUERY START:
+create or replace function Tig_MUC_MAM_GetMessages(_roomJid varchar(2049), _since timestamp, _to timestamp, _nickname varchar(1024), _limit int, _offset int) returns table(
+    "sender_nickname" varchar(1024), "ts" timestamp, "sender_jid" varchar(3074), "body" text, "msg" text
+) as $$
+begin
+    return query select h.sender_nickname, h.ts, h.sender_jid, h.body, h.msg
+        from tig_muc_room_history h
+        where lower(h.room_jid) = lower(_roomJid)
+            and (_since is null or h.ts >= _since)
+            and (_to is null or h.ts <= _to)
+            and (_nickname is null or h.sender_nickname = _nickname)
+        order by h.ts asc
+        limit _limit offset _offset;
+end;
+$$ LANGUAGE 'plpgsql';
+-- QUERY END:
+
+create or replace function Tig_MUC_MAM_GetMessagePosition(_roomJid varchar(2049), _since timestamp, _to timestamp, _nickname varchar(1024), _id_ts timestamp) returns table(
+    "position" bigint
+) as $$
+begin
+    return query select count(1) from tig_muc_room_history h
+        where lower(h.room_jid) = lower(_roomJid)
+            and (_since is null or h.ts >= _since)
+            and (_to is null or h.ts <= _to)
+            and (_nickname is null or h.sender_nickname = _nickname)
+            and t.ts < _id_ts;
+end;
+$$ LANGUAGE 'plpgsql';
+
+-- QUERY START:
+create or replace function Tig_MUC_MAM_GetMessagesCount(_roomJid varchar(2049), _since timestamp, _to timestamp, _nickname varchar(1024)) returns table(
+	"count" bigint
+) as $$
+begin
+    return query select count(1)
+        from tig_muc_room_history h
+        where lower(h.room_jid) = lower(_roomJid)
+            and (_since is null or h.ts >= _since)
+            and (_to is null or h.ts <= _to)
+            and (_nickname is null or h.sender_nickname = _nickname);
+end;
+$$ LANGUAGE 'plpgsql';
+-- QUERY END:
 
 -- ---------------------
 -- Converting history to new format

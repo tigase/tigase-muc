@@ -26,12 +26,10 @@ import org.junit.runner.Description;
 import org.junit.runners.MethodSorters;
 import org.junit.runners.model.Statement;
 import tigase.component.PacketWriter;
+import tigase.component.exceptions.ComponentException;
 import tigase.component.exceptions.RepositoryException;
 import tigase.component.responses.AsyncCallback;
-import tigase.db.DBInitException;
-import tigase.db.DataSource;
-import tigase.db.DataSourceHelper;
-import tigase.db.RepositoryFactory;
+import tigase.db.*;
 import tigase.kernel.core.Kernel;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
@@ -40,8 +38,11 @@ import tigase.server.Packet;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+import tigase.xmpp.mam.MAMRepository;
+import tigase.xmpp.mam.Query;
 
 import java.util.*;
+import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -180,6 +181,107 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 			assertEquals(msg.getStanzaFrom().getResource(), item.nick);
 		}
 	}
+
+	@Test
+	public void test4_mam_retrieveAll() throws RepositoryException, ComponentException, TigaseDBException {
+		if (historyProvider instanceof MAMRepository) {
+			MAMRepository mamRepository = (MAMRepository) historyProvider;
+			Query query = mamRepository.newQuery();
+
+			query.setComponentJID(JID.jidInstance(roomJID));
+			query.setQuestionerJID(creatorJID);
+
+			List<MAMRepository.Item> items = new ArrayList<>();
+
+			mamRepository.queryItems(query, (query1, item) -> {
+				items.add(item);
+			});
+
+			assertEquals(savedMessages.size(), items.size());
+			assertEquals(savedMessages.size(), query.getRsm().getCount().intValue());
+
+			IntStream.range(0, savedMessages.size()-1).forEach(pos -> {
+				assertEquals(savedMessages.get(pos).body,
+							 items.get(pos).getMessage().getChildCData(new String[]{"message", "body"}));
+			});
+		}
+	}
+
+	@Test
+	public void test4_mam_retrieveBetween() throws RepositoryException, ComponentException, TigaseDBException {
+		if (historyProvider instanceof MAMRepository) {
+			Date since = savedMessages.get(4).ts;
+			Date until = savedMessages.get(8).ts;
+			MAMRepository mamRepository = (MAMRepository) historyProvider;
+			Query query = mamRepository.newQuery();
+
+			query.setComponentJID(JID.jidInstance(roomJID));
+			query.setQuestionerJID(creatorJID);
+			query.setStart(since);
+			query.setEnd(until);
+			query.getRsm().setMax(2);
+
+			List<MAMRepository.Item> items = new ArrayList<>();
+
+			mamRepository.queryItems(query, (query1, item) -> {
+				items.add(item);
+			});
+
+			assertEquals(2, items.size());
+			assertEquals(5, query.getRsm().getCount().intValue());
+
+			Arrays.asList(0,1).stream().forEach(pos -> {
+				assertEquals(savedMessages.get(4 + pos).body,
+							 items.get(pos).getMessage().getChildCData(new String[]{"message", "body"}));
+			});
+		}
+	}
+
+	@Test
+	public void test4_mam_retrieveAfter() throws RepositoryException, ComponentException, TigaseDBException {
+		if (historyProvider instanceof MAMRepository) {
+			Date since = savedMessages.get(4).ts;
+			Date until = savedMessages.get(8).ts;
+			MAMRepository mamRepository = (MAMRepository) historyProvider;
+			Query query = mamRepository.newQuery();
+
+			query.setComponentJID(JID.jidInstance(roomJID));
+			query.setQuestionerJID(creatorJID);
+			query.setStart(since);
+			query.setEnd(until);
+			query.getRsm().setMax(2);
+
+			List<MAMRepository.Item> items = new ArrayList<>();
+
+			mamRepository.queryItems(query, (query1, item) -> {
+				items.add(item);
+			});
+
+			assertEquals(2, items.size());
+			assertEquals(5, query.getRsm().getCount().intValue());
+			assertEquals(0, query.getRsm().getIndex().intValue());
+
+			Arrays.asList(0,1).stream().forEach(pos -> {
+				assertEquals(savedMessages.get(4 + pos).body,
+							 items.get(pos).getMessage().getChildCData(new String[]{"message", "body"}));
+			});
+
+			String id = items.get(0).getId();
+			String expId = items.get(1).getId();
+			items.clear();
+			query.getRsm().setAfter(id);
+			mamRepository.queryItems(query, (query1, item) -> {
+				items.add(item);
+			});
+
+			assertEquals(2, items.size());
+			assertEquals(5, query.getRsm().getCount().intValue());
+			assertEquals(1, query.getRsm().getIndex().intValue());
+
+			assertEquals(expId, items.get(0).getId());
+		}
+	}
+
 
 	@Test
 	public void test5_deleteMessages() throws RepositoryException {

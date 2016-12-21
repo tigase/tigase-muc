@@ -4,3 +4,4 @@
 :date: 2016-11-12 11:38
 
 Tigase MUC Component is implementation of http://xmpp.org/extensions/xep-0045.html:[XEP-0045: Multi-User Chat] which provides support for multi user chats to Tigase XMPP Server.
+This component also supports http://xmpp.org/extensions/xep-0313.html:[XEP-0313: Message Archive Management] protocol for easier retrieval of MUC room chat history.
