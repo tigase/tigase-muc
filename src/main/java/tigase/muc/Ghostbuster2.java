@@ -46,7 +46,7 @@ import tigase.xmpp.JID;
  */
 public class Ghostbuster2 {
 
-	private class MonitoredObject {
+	protected class MonitoredObject {
 
 		private long lastActivity;
 
@@ -70,10 +70,12 @@ public class Ghostbuster2 {
 		{
 			add("gone");
 			add("item-not-found");
+			add("policy-violation");
 			add("recipient-unavailable");
 			add("redirect");
 			add("remote-server-not-found");
 			add("remote-server-timeout");
+			add("service-unavailable");
 		}
 	};
 
