@@ -255,7 +255,10 @@ public class RoomConfigurationModule extends AbstractMucModule {
 						if (log.isLoggable(Level.FINE)) {
 							log.fine("Room " + room.getRoomJID() + " is now unlocked");
 						}
-						sendMucMessage(room, room.getOccupantsNickname(senderJID), "Room is now unlocked");
+						String nickname = room.getOccupantsNickname(senderJID);
+						if (nickname != null) {
+							sendMucMessage(room,nickname, "Room is now unlocked");
+						}
 					}
 					room.getConfig().copyFrom(form);
 
