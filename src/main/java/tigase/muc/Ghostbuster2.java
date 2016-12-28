@@ -47,7 +47,7 @@ import java.util.logging.Logger;
 @Bean(name = "ghostbuster", parent = MUCComponent.class)
 public class Ghostbuster2 extends ScheduledTask {
 
-	private class MonitoredObject {
+	protected class MonitoredObject {
 
 		private long lastActivity;
 
@@ -72,10 +72,12 @@ public class Ghostbuster2 extends ScheduledTask {
 		{
 			add("gone");
 			add("item-not-found");
+			add("policy-violation");
 			add("recipient-unavailable");
 			add("redirect");
 			add("remote-server-not-found");
 			add("remote-server-timeout");
+			add("service-unavailable");
 		}
 	};
 
