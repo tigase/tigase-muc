@@ -23,10 +23,10 @@ package tigase.muc.history;
 
 import tigase.component.PacketWriter;
 import tigase.component.exceptions.ComponentException;
+import tigase.component.exceptions.RepositoryException;
 import tigase.db.DBInitException;
 import tigase.db.DataSource;
 import tigase.db.DataSourceHelper;
-import tigase.db.TigaseDBException;
 import tigase.db.beans.MDRepositoryBean;
 import tigase.db.beans.MDRepositoryBeanWithStatistics;
 import tigase.kernel.beans.Bean;
@@ -120,7 +120,7 @@ public class HistoryProviderMDBean extends MDRepositoryBeanWithStatistics<Histor
 	}
 
 	@Override
-	public void queryItems(Query query, ItemHandler itemHandler) throws TigaseDBException, ComponentException {
+	public void queryItems(Query query, ItemHandler itemHandler) throws RepositoryException, ComponentException {
 		HistoryProvider historyProvider = getRepository(query.getComponentJID().getDomain());
 		if (historyProvider instanceof MAMRepository) {
 			((MAMRepository) historyProvider).queryItems(query, itemHandler);
