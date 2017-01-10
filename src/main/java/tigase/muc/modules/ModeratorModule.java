@@ -22,9 +22,6 @@
 
 package tigase.muc.modules;
 
-import java.util.*;
-import java.util.logging.Level;
-
 import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
@@ -44,6 +41,9 @@ import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
+
+import java.util.*;
+import java.util.logging.Level;
 
 /**
  * @author bmalkow
@@ -150,8 +150,10 @@ public class ModeratorModule extends AbstractMucModule {
 		if (item.getAttributeStaticStr("nick") != null) {
 			occupantNicknames.add(item.getAttributeStaticStr("nick"));
 		}
-		if (item.getAttributeStaticStr("jid") != null) {
+		else if (item.getAttributeStaticStr("jid") != null) {
 			occupantNicknames.addAll(room.getOccupantsNicknames(BareJID.bareJIDInstance(item.getAttributeStaticStr("jid"))));
+		} else {
+			throw new MUCException(Authorization.BAD_REQUEST);
 		}
 		for (String occupantNickname : occupantNicknames) {
 			final Affiliation occupantAffiliation = room.getAffiliation(occupantNickname);
@@ -402,7 +404,6 @@ public class ModeratorModule extends AbstractMucModule {
 			for (Element item : items) {
 				checkItem(room, item, nickName, senderAffiliation, senderRole);
 			}
-			write(element.okResult((Element) null, 0));
 			for (Element item : items) {
 				final Role newRole = getRole(item);
 				final Affiliation newAffiliation = getAffiliation(item);
@@ -417,6 +418,7 @@ public class ModeratorModule extends AbstractMucModule {
 					processSetRole(room, occupantNick, newRole, reason, actor);
 				}
 			}
+			write(element.okResult((Element) null, 0));
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (Exception e) {
