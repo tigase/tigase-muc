@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class RoomClustered<ID> extends RoomWithId<ID> {
 
-	@Bean(name = "roomFactory", parent = MUCComponentClustered.class)
+	@Bean(name = "roomFactory", parent = MUCComponentClustered.class, exportable = true)
 	public static class RoomFactoryImpl implements RoomFactory {
 
 		@Override
