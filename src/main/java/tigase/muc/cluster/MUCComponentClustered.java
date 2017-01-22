@@ -18,6 +18,7 @@ import tigase.licence.LicenceChecker;
 import tigase.muc.MUCComponent;
 import tigase.server.ComponentInfo;
 import tigase.server.Packet;
+import tigase.sys.TigaseRuntime;
 import tigase.xmpp.JID;
 
 import java.util.List;
@@ -48,10 +49,13 @@ public class MUCComponentClustered extends MUCComponent implements ClusteredComp
 
 		String clusterProperty = System.getProperty( "cluster-mode" );
 		if ( clusterProperty == null || !Boolean.parseBoolean( clusterProperty ) ){
-			log.severe( "You've tried using Clustered version of the component but cluster-mode is disabled" );
-			log.severe( "Shutting down system!" );
-			System.exit( 1 );
+			TigaseRuntime.getTigaseRuntime()
+					.shutdownTigase(new String[]{
+							"You've tried using Clustered version of the component but cluster-mode is disabled",
+							"Shutting down system!"});
 		}
+
+		// FIXME - restore this check! strategy is configured as a bean inside SM, how to access it?
 //		String strategyProp = System.getProperty( "sm-cluster-strategy-class" );
 //		if ( strategyProp == null || !"tigase.server.cluster.strategy.OnlineUsersCachingStrategy".equals( strategyProp) ){
 //			log.severe( "You've tried using Clustered version of the component but ACS is disabled" );

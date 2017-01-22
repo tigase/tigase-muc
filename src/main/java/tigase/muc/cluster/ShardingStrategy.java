@@ -41,6 +41,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private static final String RESPONSE_SYNC_CMD = "muc-sync-response";
 	private static final String ROOM_CREATED_CMD = "muc-room-created-cmd";
 	private static final String ROOM_DESTROYED_CMD = "muc-room-destroyed-cmd";
+	private static final String ROOM_LEFT_CMD = "muc-room-left-cmd";
 	private static final int SYNC_MAX_BATCH_SIZE = 1000;
 	private final ConcurrentMap<BareJID, JID> roomsPerNode =
 			new ConcurrentHashMap<BareJID, JID>();
@@ -147,7 +148,33 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		List<JID> toNodes = getNodesConnected();	
 		cl_controller.sendToNodes(NODE_SHUTDOWN_CMD, localNodeJid, toNodes.toArray(new JID[toNodes.size()]));
 	}
-	
+
+	@Override
+	public void onLeaveRoom(Room room) {
+		roomsPerNode.remove(room.getRoomJID());
+		occupantsPerRoom.remove(room.getRoomJID());
+
+		List<JID> toNodes = getNodesConnected();
+
+		Map<String, String> data = new HashMap<String, String>();
+		data.put("room", room.getRoomJID().toString());
+
+		if (log.isLoggable(Level.FINEST)) {
+			StringBuilder buf = new StringBuilder(100);
+			for (JID node : toNodes) {
+				if (buf.length() > 0) {
+					buf.append(",");
+				}
+				buf.append(node.toString());
+			}
+			log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] that room is left",
+					new Object[] { room.getRoomJID(), buf });
+		}
+
+		cl_controller.sendToNodes(ROOM_LEFT_CMD, data, localNodeJid,
+								  toNodes.toArray(new JID[toNodes.size()]));
+	}
+
 	@Override
 	public void onRoomCreated(Room room) {
 		roomsPerNode.put(room.getRoomJID(), localNodeJid);
@@ -286,7 +313,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 
 		@Inject
 		private ShardingStrategy strategy;
-
+		
 		public NodeShutdownCmd() {
 			super(NODE_SHUTDOWN_CMD, Priority.HIGH);
 		}
@@ -307,7 +334,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		
 	}
 
-	@Bean(name = RESPONSE_SYNC_CMD, parent = ShardingStrategy.class)
+	@Bean(name = REQUEST_SYNC_CMD, parent = ShardingStrategy.class)
 	public static class RequestSyncCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -370,9 +397,13 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 			}
 		}
 	}
-	
-	private class ResponseSyncCmd extends CommandListenerAbstract {
-		
+
+	@Bean(name = RESPONSE_SYNC_CMD, parent = ShardingStrategy.class)
+	public static class ResponseSyncCmd extends CommandListenerAbstract {
+
+		@Inject
+		private ShardingStrategy strategy;
+
 		public ResponseSyncCmd() {
 			super(RESPONSE_SYNC_CMD, Priority.HIGH);
 		}
@@ -385,7 +416,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 					if (roomEl.getName() == "room") {
 						BareJID roomJid = BareJID.bareJIDInstanceNS(
 								roomEl.getAttributeStaticStr("jid"));						
-						JID oldValue = roomsPerNode.put(roomJid, fromNode);
+						JID oldValue = strategy.roomsPerNode.put(roomJid, fromNode);
 						
 						if (oldValue != null && !fromNode.equals(oldValue)) {
 							log.log(Level.SEVERE, "received info about a room {0} on "
@@ -398,7 +429,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 							for (Element occupantEl : occupantsElList) {
 								JID occupantJid = JID.jidInstanceNS(occupantEl.getCData());
 								String nickname = occupantEl.getAttributeStaticStr("nickname");
-								addOccupant(fromNode.getBareJID(), roomJid, occupantJid, nickname);
+								strategy.addOccupant(fromNode.getBareJID(), roomJid, occupantJid, nickname);
 							}
 						}
 					}
@@ -406,5 +437,27 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 			}
 		}
 		
+	}
+
+	@Bean(name = ROOM_LEFT_CMD, parent = ShardingStrategy.class)
+	public static class RoomLeftCmd extends CommandListenerAbstract {
+
+		@Inject
+		private ShardingStrategy strategy;
+
+		public RoomLeftCmd() {
+			super(ROOM_LEFT_CMD, Priority.HIGH);
+		}
+
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
+								   Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
+			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
+			strategy.roomsPerNode.remove(roomJid, fromNode);
+			strategy.occupantsPerRoom.remove(roomJid);
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "room = {0}, received notification that room {1} was left at node {2}",
+						new Object[]{roomJid, roomJid, fromNode});
+			}
+		}
 	}
 }

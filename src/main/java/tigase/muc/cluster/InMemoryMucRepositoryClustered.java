@@ -73,6 +73,19 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 		return room;
 	}
 
+	@Override
+	public void leaveRoom(Room room) {
+		super.leaveRoom(room);
+
+		if (roomListener != null) {
+			roomListener.onLeaveRoom(room);
+		}
+	}
+
+	public void leaveRoomWithoutListener(Room room) {
+		super.leaveRoom(room);
+	}
+	
 	public void setRoomListener(RoomListener roomListener) {
 		if (log.isLoggable(Level.FINEST)) {
 			log.log(Level.FINEST, "setting room listener to {0}", roomListener);
@@ -100,6 +113,8 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 	}
 
 	public interface RoomListener {
+		void onLeaveRoom(Room room);
+
 		void onRoomCreated(Room room);
 
 		void onRoomDestroyed(Room room, Element destroyElement);

@@ -187,6 +187,8 @@ public class ClusteredRoomStrategyV2 extends AbstractClusteredRoomStrategy {
 					}
 					mucComponentClustered.addOutPacket(presenceWrapper.getPacket());
 				}
+
+
 				// should be handled on original node
 				// if (newOccupant) {
 				// presenceModule.sendPresencesToNewOccupant(room, occupantJID);
