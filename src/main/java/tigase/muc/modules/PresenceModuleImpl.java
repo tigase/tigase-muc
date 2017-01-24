@@ -735,7 +735,9 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		} else {
 			presence = room.getLastPresenceCopyByJid(senderJID.getBareJID());
 		}
-		sendPresenceToAllOccupants(presence, room, senderJID, newRoomCreated, newNickName);
+		if (presence != null) {
+			sendPresenceToAllOccupants(presence, room, senderJID, newRoomCreated, newNickName);
+		}
 	}
 
 	@Override

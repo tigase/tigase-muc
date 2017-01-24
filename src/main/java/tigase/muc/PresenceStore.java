@@ -163,7 +163,12 @@ public class PresenceStore {
 	 */
 	public Element getBestPresence(final BareJID jid) {
 		Presence p = getBestPresenceInt(jid);
-
+		if (p == null) {
+			Map<String, Presence> set = presencesMapByBareJid.get(jid);
+			if (set != null && !set.isEmpty()) {
+				return set.values().iterator().next().element;
+			}
+		}
 		return (p == null) ? null : p.element;
 	}
 
