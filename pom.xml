@@ -1,5 +1,4 @@
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.build.timestamp.format>yyyy-MM-dd/HH:mm:ss</maven.build.timestamp.format>
@@ -9,14 +8,14 @@
 		<sign-storepass>storepass</sign-storepass>
 		<sign-keypass>keypass</sign-keypass>
 		<sign-skip>true</sign-skip>
-		<tsa-uri></tsa-uri>
+		<tsa-uri />
 		<verbose-log>false</verbose-log>
 	</properties>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>tigase</groupId>
 	<artifactId>tigase-muc</artifactId>
 	<name>Tigase MUC</name>
-	<version>2.4.0-SNAPSHOT</version>
+	<version>2.4.0</version>
 	<packaging>bundle</packaging>
 	<description>Multi User Chat component for Tigase</description>
 	<url>https://projects.tigase.org/projects/tigase-muc</url>
@@ -48,7 +47,7 @@
 		<connection>scm:git:https://repository.tigase.org/git/tigase-muc.git</connection>
 		<developerConnection>scm:git:https://repository.tigase.org/git/tigase-muc.git</developerConnection>
 		<url>https://projects.tigase.org/projects/tigase-muc/repository</url>
-	  <tag>HEAD</tag>
+	  <tag>tigase-muc-2.4.0</tag>
   </scm>
 	<organization>
 		<name>Tigase</name>
@@ -212,7 +211,7 @@
 		<dependency>
 			<groupId>tigase</groupId>
 			<artifactId>tigase-testsuite</artifactId>
-			<version>2.3.0-SNAPSHOT</version>
+			<version>2.3.0</version>
 			<scope>test</scope>
 			<exclusions>
 				<exclusion>
@@ -224,7 +223,7 @@
 		<dependency>
 			<groupId>tigase</groupId>
 			<artifactId>tigase-server</artifactId>
-			<version>7.1.0-SNAPSHOT</version>
+			<version>7.1.0</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
