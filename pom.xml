@@ -15,7 +15,7 @@
 	<groupId>tigase</groupId>
 	<artifactId>tigase-acs-muc</artifactId>
 	<name>Tigase ACS - MUC Component</name>
-	<version>1.2.0-SNAPSHOT</version>
+	<version>1.2.0</version>
 	<packaging>bundle</packaging>
 	<description>Tigase Advanced Clustering Strategy - MUC Component</description>
 	<url>https://projects.tigase.org/projects/tigase-acs-muc</url>
@@ -42,7 +42,7 @@
 		<connection>scm:git:https://repository.tigase.org/git/tigase-acs-muc.git</connection>
 		<developerConnection>scm:git:https://repository.tigase.org/git/tigase-acs-muc.git</developerConnection>
 		<url>https://projects.tigase.org/projects/tigase-acs-muc/repository</url>
-	  <tag>HEAD</tag>
+	  <tag>tigase-acs-muc-1.2.0</tag>
   </scm>
 	<organization>
 		<name>Tigase</name>
@@ -249,7 +249,7 @@
 		<dependency>
 			<groupId>tigase</groupId>
 			<artifactId>tigase-server</artifactId>
-			<version>7.1.0-SNAPSHOT</version>
+			<version>7.1.0</version>
 			<scope>compile</scope>
 		</dependency>
         <dependency>
@@ -262,13 +262,13 @@
 		<dependency>
 			<groupId>tigase</groupId>
 			<artifactId>licence-lib</artifactId>
-			<version>1.2.0-SNAPSHOT</version>
+			<version>1.2.0</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>${project.groupId}</groupId>
 			<artifactId>tigase-muc</artifactId>
-			<version>2.4.0-SNAPSHOT</version>
+			<version>2.4.0</version>
 			<scope>compile</scope>
 			<optional>true</optional>
 		</dependency>
