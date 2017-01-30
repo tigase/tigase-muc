@@ -23,6 +23,7 @@ package tigase.muc;
 
 import tigase.component.AbstractComponent;
 import tigase.component.AbstractContext;
+import tigase.component.exceptions.ComponentException;
 import tigase.component.exceptions.RepositoryException;
 import tigase.component.modules.Module;
 import tigase.component.modules.impl.AdHocCommandModule;
@@ -279,6 +280,34 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 		if (historyProvider != null) {
 			historyProvider.destroy();
 			historyProvider = null;
+		}
+	}
+
+	protected void sendException(final Packet packet, final ComponentException e) {
+		try {
+			final String t = packet.getElement().getAttributeStaticStr(Packet.TYPE_ATT);
+
+			if ((t != null) && (t == "error")) {
+				if (log.isLoggable(Level.FINER)) {
+					log.finer(packet.getElemName() + " stanza already with type='error' ignored");
+				}
+
+				return;
+			}
+
+			Packet result = e.makeElement(packet, true);
+			// Why do we need this? Make error should return proper from/to values
+//			Element el = result.getElement();
+//
+//			el.setAttribute("from", BareJID.bareJIDInstance(el.getAttributeStaticStr(Packet.FROM_ATT)).toString());
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "Sending back: " + result.toString());
+			}
+			context.getWriter().write(result);
+		} catch (Exception e1) {
+			if (log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING, "Problem during generate error response", e1);
+			}
 		}
 	}
 
