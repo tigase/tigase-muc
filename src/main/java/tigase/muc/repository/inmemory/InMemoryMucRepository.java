@@ -166,7 +166,7 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 		room.getConfig().addListener(roomConfigListener);
 		room.addListener(roomListener);
 		this.rooms.put(roomJID, room);
-		this.allRooms.put(roomJID, new InternalRoom());
+		addToAllRooms(roomJID, new InternalRoom());
 
 		// if (rc.isPersistentRoom()) {
 		// dao.createRoom( room );
@@ -181,7 +181,7 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 		if (log.isLoggable(Level.FINE))
 			log.fine("Destroying room '" + roomJID);
 		this.rooms.remove(roomJID);
-		this.allRooms.remove(roomJID);
+		removeFromAllRooms(roomJID);
 		dao.destroyRoom(roomJID);
 		fireDestroyRoom(room);
 	}
@@ -254,7 +254,7 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 			List<BareJID> roomJids = dao.getRoomsJIDList();
 			if (roomJids != null) {
 				for (BareJID jid : roomJids) {
-					this.allRooms.put(jid, new InternalRoom());
+					addToAllRooms(jid, new InternalRoom());
 				}
 			}
 		} catch (Exception e) {
@@ -280,7 +280,7 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 			log.fine("Removing room '" + roomJID + "' from memory");
 		this.rooms.remove(roomJID);
 		if (!room.getConfig().isPersistentRoom()) {
-			this.allRooms.remove(roomJID);
+			removeFromAllRooms(roomJID);
 		}
 		fireDestroyRoom(room);
 	}
@@ -301,7 +301,15 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 		}
 	}
 
-	private class InternalRoom {
+	protected void addToAllRooms(BareJID roomJid, InternalRoom internalRoom) {
+		allRooms.put(roomJid, internalRoom);
+	}
+
+	protected void removeFromAllRooms(BareJID roomJid) {
+		allRooms.remove(roomJid);
+	}
+
+	public static class InternalRoom {
 		boolean listPublic = true;
 	}
 }

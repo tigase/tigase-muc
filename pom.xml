@@ -52,17 +52,6 @@
 		<name>Tigase</name>
 		<url>http://www.tigase.org</url>
 	</organization>
-    <profiles>
-        <profile>
-            <id>disable-java8-doclint</id>
-            <activation>
-                <jdk>[1.8,)</jdk>
-            </activation>
-            <properties>
-                <additionalparam>-Xdoclint:none</additionalparam>
-            </properties>
-        </profile>
-    </profiles>		
 	<build>
 		<plugins>
 			<plugin>
@@ -220,7 +209,16 @@
 		</resources>
 	</build>
     <profiles>
-        <profile>
+		<profile>
+			<id>disable-java8-doclint</id>
+			<activation>
+				<jdk>[1.8,)</jdk>
+			</activation>
+			<properties>
+				<additionalparam>-Xdoclint:none</additionalparam>
+			</properties>
+		</profile>
+		<profile>
             <id>dist</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
