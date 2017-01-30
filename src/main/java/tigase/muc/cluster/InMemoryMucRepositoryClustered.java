@@ -30,6 +30,11 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 	private Room.RoomOccupantListener roomOccupantListener;
 
 	@Override
+	protected void addToAllRooms(BareJID roomJid, InternalRoom internalRoom) {
+		super.addToAllRooms(roomJid, internalRoom);
+	}
+
+	@Override
 	public Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException {
 		Room room = super.createNewRoom(roomJID, senderJid);
 		addListenersToNewRoom(room);
@@ -80,6 +85,11 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 		if (roomListener != null) {
 			roomListener.onLeaveRoom(room);
 		}
+	}
+
+	@Override
+	protected void removeFromAllRooms(BareJID roomJid) {
+		super.removeFromAllRooms(roomJid);
 	}
 
 	public void leaveRoomWithoutListener(Room room) {

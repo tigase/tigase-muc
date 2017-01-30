@@ -12,6 +12,7 @@ import tigase.cluster.api.CommandListenerAbstract;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.muc.Room;
+import tigase.muc.repository.inmemory.InMemoryMucRepository;
 import tigase.server.Packet;
 import tigase.server.Priority;
 import tigase.xml.Element;
@@ -158,6 +159,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
+		data.put("persistent", String.valueOf(room.getConfig().isPersistentRoom()));
 
 		if (log.isLoggable(Level.FINEST)) {
 			StringBuilder buf = new StringBuilder(100);
@@ -278,6 +280,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			strategy.roomsPerNode.put(roomJid, fromNode);
+			strategy.mucRepository.addToAllRooms(roomJid, new InMemoryMucRepository.InternalRoom());
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST, "room = {0}, received notification that room {1} was created at node {2}", 
 						new Object[]{ roomJid, roomJid, fromNode});
@@ -301,6 +304,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			strategy.roomsPerNode.remove(roomJid, fromNode);
 			strategy.occupantsPerRoom.remove(roomJid);
+			strategy.mucRepository.removeFromAllRooms(roomJid);
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST, "room = {0}, received notification that room {1} was destroyed at node {2}", 
 						new Object[]{ roomJid, roomJid, fromNode});
@@ -454,6 +458,10 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			strategy.roomsPerNode.remove(roomJid, fromNode);
 			strategy.occupantsPerRoom.remove(roomJid);
+			boolean notPersistent = "false".equals(data.get("persistent"));
+			if (notPersistent) {
+				strategy.mucRepository.removeFromAllRooms(roomJid);
+			}
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST, "room = {0}, received notification that room {1} was left at node {2}",
 						new Object[]{roomJid, roomJid, fromNode});
