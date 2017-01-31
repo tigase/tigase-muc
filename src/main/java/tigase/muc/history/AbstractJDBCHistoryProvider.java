@@ -61,15 +61,6 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 	 */
 	public AbstractJDBCHistoryProvider() {
 	}
-	
-	@Override
-	public void initRepository(String resource_uri, Map<String, String> params) throws DBInitException {
-		try {
-			dataRepository = RepositoryFactory.getDataRepository(null, resource_uri, params);
-		} catch (Exception ex) {
-			throw new DBInitException("Error during initialization of repository", ex);
-		}
-	}
 
 	/** {@inheritDoc} */
 	@Override
@@ -102,27 +93,32 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 		// we have nothing to release as we use DataRepository instance which is
 		// cached by RepositoryFactory and may be used in other places
 	}
-	
+
 	/** {@inheritDoc} */
 	@Override
 	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
 			PacketWriter writer) {
-		ResultSet rs = null;
 		final String roomJID = room.getRoomJID().toString();
 
 		int maxMessages = room.getConfig().getMaxHistory();
 		try {
+			ResultSet rs = null;
 			if (since != null) {
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest("Using SINCE selector: roomJID=" + roomJID + ", since=" + since.getTime() + " (" + since + ")");
 				}
-				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(), GET_MESSAGES_SINCE_QUERY_KEY);
+				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
+						GET_MESSAGES_SINCE_QUERY_KEY);
 				synchronized (st) {
-					st.setString(1, roomJID);
-					st.setLong(2, since.getTime());
-					st.setInt(3, maxMessages);
-					rs = st.executeQuery();
-					processResultSet(room, senderJID, writer, rs);
+					try {
+						st.setString(1, roomJID);
+						st.setLong(2, since.getTime());
+						st.setInt(3, maxMessages);
+						rs = st.executeQuery();
+						processResultSet(room, senderJID, writer, rs);
+					} finally {
+						dataRepository.release(null, rs);
+					}
 				}
 			} else if (maxstanzas != null) {
 				if (log.isLoggable(Level.FINEST)) {
@@ -131,22 +127,31 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
 						GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
 				synchronized (st) {
-					st.setString(1, roomJID);
-					st.setInt(2, Math.min(maxstanzas, maxMessages));
-					rs = st.executeQuery();
-					processResultSet(room, senderJID, writer, rs);
+					try {
+						st.setString(1, roomJID);
+						st.setInt(2, Math.min(maxstanzas, maxMessages));
+						rs = st.executeQuery();
+						processResultSet(room, senderJID, writer, rs);
+					} finally {
+						dataRepository.release(null, rs);
+					}
 				}
 			} else if (seconds != null) {
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest("Using SECONDS selector: roomJID=" + roomJID + ", seconds=" + seconds);
 				}
-				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(), GET_MESSAGES_SINCE_QUERY_KEY);
+				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
+						GET_MESSAGES_SINCE_QUERY_KEY);
 				synchronized (st) {
-					st.setString(1, roomJID);
-					st.setLong(2, new Date().getTime() - seconds * 1000);
-					st.setInt(3, maxMessages);
-					rs = st.executeQuery();
-					processResultSet(room, senderJID, writer, rs);
+					try {
+						st.setString(1, roomJID);
+						st.setLong(2, new Date().getTime() - seconds * 1000);
+						st.setInt(3, maxMessages);
+						rs = st.executeQuery();
+						processResultSet(room, senderJID, writer, rs);
+					} finally {
+						dataRepository.release(null, rs);
+					}
 				}
 			} else {
 				if (log.isLoggable(Level.FINEST)) {
@@ -155,10 +160,14 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
 						GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
 				synchronized (st) {
-					st.setString(1, roomJID);
-					st.setInt(2, maxMessages);
-					rs = st.executeQuery();
-					processResultSet(room, senderJID, writer, rs);
+					try {
+						st.setString(1, roomJID);
+						st.setInt(2, maxMessages);
+						rs = st.executeQuery();
+						processResultSet(room, senderJID, writer, rs);
+					} finally {
+						dataRepository.release(null, rs);
+					}
 				}
 			}
 
@@ -166,8 +175,15 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 			if (log.isLoggable(Level.SEVERE))
 				log.log(Level.SEVERE, "Can't get history", e);
 			throw new RuntimeException(e);
-		} finally {
-			dataRepository.release(null, rs);
+		}
+	}
+
+	@Override
+	public void initRepository(String resource_uri, Map<String, String> params) throws DBInitException {
+		try {
+			dataRepository = RepositoryFactory.getDataRepository(null, resource_uri, params);
+		} catch (Exception ex) {
+			throw new DBInitException("Error during initialization of repository", ex);
 		}
 	}
 
@@ -176,8 +192,8 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 		return true;
 	}
 
-	protected void processResultSet(Room room, JID senderJID, PacketWriter writer, ResultSet rs) throws SQLException,
-			TigaseStringprepException {
+	protected void processResultSet(Room room, JID senderJID, PacketWriter writer, ResultSet rs)
+			throws SQLException, TigaseStringprepException {
 		if (log.isLoggable(Level.FINEST)) {
 			log.finest("Select messages for " + senderJID + " from room " + room.getRoomJID());
 		}
@@ -185,7 +201,7 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 		Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID());
 		boolean addRealJids = room.getConfig().getRoomAnonymity() == Anonymity.nonanonymous
 				|| room.getConfig().getRoomAnonymity() == Anonymity.semianonymous
-				&& (recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
+						&& (recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
 
 		while (rs.next()) {
 			String msgSenderNickname = rs.getString("sender_nickname");
@@ -208,6 +224,11 @@ public abstract class AbstractJDBCHistoryProvider extends AbstractHistoryProvide
 
 			synchronized (st) {
 				st.setString(1, room.getRoomJID().toString());
+
+				if (log.isLoggable(Level.FINE))
+					log.fine("Removing history of room " + room.getRoomJID() + " from database.");
+				if (log.isLoggable(Level.FINEST))
+					log.finest("Executing " + st.toString());
 
 				st.executeUpdate();
 			}

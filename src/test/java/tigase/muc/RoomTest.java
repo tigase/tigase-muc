@@ -21,15 +21,8 @@
  */
 package tigase.muc;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.Assert;
 import org.junit.Before;
-
 import tigase.component.PacketWriter;
 import tigase.component.exceptions.RepositoryException;
 import tigase.component.responses.AsyncCallback;
@@ -41,41 +34,18 @@ import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * @author bmalkow
- * 
  */
 public class RoomTest extends XMPPTestCase {
 
-	private final class ArrayWriter implements PacketWriter {
-
-		private final ArrayList<Element> elements = new ArrayList<Element>();
-
-		public void clear() {
-			elements.clear();
-		}
-
-		@Override
-		public void write(Collection<Packet> elements) {
-			for (Packet packet : elements) {
-				this.elements.add(packet.getElement());
-			}
-		}
-
-		@Override
-		public void write(Packet element) {
-			this.elements.add(element.getElement());
-		}
-
-		@Override
-		public void write(Packet packet, AsyncCallback callback) {
-			write(packet);
-		}
-
-	}
-
 	private MUCComponent pubsub;
-
 	private JUnitXMLIO xmlio;
 
 	@Before
@@ -147,10 +117,10 @@ public class RoomTest extends XMPPTestCase {
 		test("src/test/scripts/hidden-room-problem.cor", xmlio);
 	}
 
-	// @org.junit.Test
-	// public void test_presences() {
-	// test("src/test/scripts/processPresence-empty.cor", xmlio);
-	// }
+	@org.junit.Test
+	public void test_messages() {
+		test("src/test/scripts/messagesGroupchat.cor", xmlio);
+	}
 
 	@org.junit.Test
 	public void test_nonpersistentRoomProblem() {
@@ -169,6 +139,12 @@ public class RoomTest extends XMPPTestCase {
 		test("src/test/scripts/ping.cor", xmlio);
 	}
 
+// Changing nickname is not supported yet!
+//	@org.junit.Test
+//	public void test_presences() {
+//		test("src/test/scripts/processPresence-empty.cor", xmlio);
+//	}
+
 	@org.junit.Test
 	public void test_presences2() {
 		test("src/test/scripts/processPresence2.cor", xmlio);
@@ -177,5 +153,32 @@ public class RoomTest extends XMPPTestCase {
 	@org.junit.Test
 	public void test_presences2_non_anonymous() {
 		test("src/test/scripts/processPresence2-nonanonymous.cor", xmlio);
+	}
+
+	private final class ArrayWriter implements PacketWriter {
+
+		private final ArrayList<Element> elements = new ArrayList<Element>();
+
+		public void clear() {
+			elements.clear();
+		}
+
+		@Override
+		public void write(Collection<Packet> elements) {
+			for (Packet packet : elements) {
+				this.elements.add(packet.getElement());
+			}
+		}
+
+		@Override
+		public void write(Packet element) {
+			this.elements.add(element.getElement());
+		}
+
+		@Override
+		public void write(Packet packet, AsyncCallback callback) {
+			write(packet);
+		}
+
 	}
 }

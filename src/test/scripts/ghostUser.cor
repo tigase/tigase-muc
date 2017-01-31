@@ -134,7 +134,7 @@ expect all: {
 	from="darkcave@macbeth.shakespeare.lit/thirdwitch" 
 	type="unavailable">
 	<x xmlns="http://jabber.org/protocol/muc#user">
-		<item role="participant" 
+		<item role="none"
 			nick="thirdwitch" 
 			affiliation="none"/>
 		<status code="110"/>
@@ -164,7 +164,7 @@ expect strict: {
 	from="darkcave@macbeth.shakespeare.lit/thirdwitch" 
 	type="unavailable">
 	<x xmlns="http://jabber.org/protocol/muc#user">
-		<item role="participant" 
+		<item role="none"
 			nick="thirdwitch" 
 			affiliation="none"/>
 		<status code="110"/>
@@ -176,7 +176,7 @@ expect strict: {
 	<x xmlns="http://jabber.org/protocol/muc#user">
 		<item affiliation="none" 
 			nick="thirdwitch" 
-			role="participant" 
+			role="none"
 			jid="hag66@shakespeare.lit/pda"/>
 	</x>
  </presence>

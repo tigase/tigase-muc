@@ -25,18 +25,12 @@ package tigase.muc;
 //~--- non-JDK imports --------------------------------------------------------
 
 import tigase.server.Packet;
-
+import tigase.util.TigaseStringprepException;
+import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
-import tigase.util.TigaseStringprepException;
-import tigase.xml.Element;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -163,8 +157,13 @@ public class PresenceStore {
 	 * @return
 	 */
 	public Element getBestPresence(final BareJID jid) {
-		Presence p = getBestPresenceInt( jid );
-
+		Presence p = getBestPresenceInt(jid);
+		if (p == null) {
+			Map<String, Presence> set = presencesMapByBareJid.get(jid);
+			if (set != null && !set.isEmpty()) {
+				return set.values().iterator().next().element;
+			}
+		}
 		return (p == null) ? null : p.element;
 	}
 	

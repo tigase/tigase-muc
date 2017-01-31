@@ -1,8 +1,8 @@
 /*
  * RoomConfigurationModule.java
  *
- * Tigase Jabber/XMPP Server
- * Copyright (C) 2004-2012 "Artur Hefczyc" <artur.hefczyc@tigase.org>
+ * Tigase Workgroup Queues Component
+ * Copyright (C) 2011-2016 "Tigase, Inc." <office@tigase.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -21,8 +21,6 @@
  */
 
 package tigase.muc.modules;
-
-import java.util.logging.Level;
 
 import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
@@ -43,18 +41,21 @@ import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
 
-/**
- * @author bmalkow
- *
- */
+import java.util.logging.Level;
+
 public class RoomConfigurationModule extends AbstractMucModule {
 
+	public static final String ID = "owner";
 	private static final Criteria CRIT = ElementCriteria.name("iq").add(
 			ElementCriteria.name("query", "http://jabber.org/protocol/muc#owner"));
-
-	public static final String ID = "owner";
-
 	private GroupchatMessageModule messageModule;
+
+	public static Element createRoomCreatedEvent(Room room) {
+		Element event = new Element("RoomCreated", new String[]{"xmlns"}, new String[]{"tigase:events:muc"});
+		event.addChild(new Element("room", room.getRoomJID().toString()));
+		event.addChild(new Element("creatorJID", room.getCreatorJid().toString()));
+		return event;
+	}
 
 	@Override
 	public void afterRegistration() {
@@ -84,21 +85,26 @@ public class RoomConfigurationModule extends AbstractMucModule {
 		// XXX TODO
 		// throw new
 		// MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
+
+		if (log.isLoggable(Level.FINE))
+			log.fine("Destroying room " + room.getRoomJID());
 		context.getMucRepository().destroyRoom(room, destroyElement);
+
 		HistoryProvider historyProvider = context.getHistoryProvider();
 		if (historyProvider != null) {
+			if (log.isLoggable(Level.FINE))
+				log.fine("Removing history of room " + room.getRoomJID());
 			historyProvider.removeHistory(room);
-		}
+		} else if (log.isLoggable(Level.FINE))
+			log.fine("Cannot remove history of room " + room.getRoomJID() + " because history provider is not available.");
 	}
 
 	/**
 	 * Method description
 	 *
-	 *
 	 * @param room
 	 * @param jid
 	 * @param reason
-	 *
 	 * @throws RepositoryException
 	 * @throws TigaseStringprepException
 	 */
@@ -114,12 +120,8 @@ public class RoomConfigurationModule extends AbstractMucModule {
 		destroy(room, destroy);
 	}
 
-	// ~--- get methods
-	// ----------------------------------------------------------
-
 	/**
 	 * Method description
-	 *
 	 *
 	 * @return
 	 */
@@ -131,7 +133,6 @@ public class RoomConfigurationModule extends AbstractMucModule {
 	/**
 	 * Method description
 	 *
-	 *
 	 * @return
 	 */
 	@Override
@@ -139,12 +140,9 @@ public class RoomConfigurationModule extends AbstractMucModule {
 		return CRIT;
 	}
 
-	// ~--- methods
-	// --------------------------------------------------------------
-
 	private Element makeConfigFormIq(final Element request, final RoomConfig roomConfig) {
 		final Element response = createResultIQ(request);
-		Element query = new Element("query", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#owner" });
+		Element query = new Element("query", new String[]{"xmlns"}, new String[]{"http://jabber.org/protocol/muc#owner"});
 
 		response.addChild(query);
 		query.addChild(roomConfig.getConfigForm().getElement());
@@ -155,9 +153,7 @@ public class RoomConfigurationModule extends AbstractMucModule {
 	/**
 	 * Method description
 	 *
-	 *
 	 * @param element
-	 *
 	 * @throws MUCException
 	 */
 	@Override
@@ -191,8 +187,8 @@ public class RoomConfigurationModule extends AbstractMucModule {
 			Room room = context.getMucRepository().getRoom(roomJID);
 
 			if (room == null) {
-				Packet p = Packet.packetInstance(makeConfigFormIq(element.getElement(),
-						context.getMucRepository().getDefaultRoomConfig()));
+				Packet p = Packet.packetInstance(
+						makeConfigFormIq(element.getElement(), context.getMucRepository().getDefaultRoomConfig()));
 				p.setXMLNS(Packet.CLIENT_XMLNS);
 				write(p);
 			} else {
@@ -218,8 +214,11 @@ public class RoomConfigurationModule extends AbstractMucModule {
 			final Element query = element.getElement().getChild("query", "http://jabber.org/protocol/muc#owner");
 			Room room = context.getMucRepository().getRoom(roomJID.getBareJID());
 
+			boolean roomCreated = false;
 			if (room == null) {
+				roomCreated = true;
 				room = context.getMucRepository().createNewRoom(roomJID.getBareJID(), senderJID);
+				room.addAffiliationByJid(senderJID.getBareJID(), Affiliation.owner);
 			}
 
 			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
@@ -256,23 +255,34 @@ public class RoomConfigurationModule extends AbstractMucModule {
 						if (log.isLoggable(Level.FINE)) {
 							log.fine("Room " + room.getRoomJID() + " is now unlocked");
 						}
-						sendMucMessage(room, room.getOccupantsNickname(senderJID), "Room is now unlocked");
+						String nickname = room.getOccupantsNickname(senderJID);
+						if (nickname != null) {
+							sendMucMessage(room,nickname, "Room is now unlocked");
+						}
 					}
 					room.getConfig().copyFrom(form);
-					room.addAffiliationByJid(senderJID.getBareJID(), Affiliation.owner);
+
+					String[] admins = form.getAsStrings("muc#roomconfig_roomadmins");
+					if (admins != null) {
+						for (String admin : admins) {
+							room.addAffiliationByJid(BareJID.bareJIDInstance(admin), Affiliation.admin);
+						}
+					}
 
 					String[] compareResult = room.getConfig().compareTo(oldConfig);
 
 					if (compareResult != null) {
-						Element z = new Element("x", new String[] { "xmlns" },
-								new String[] { "http://jabber.org/protocol/muc#user" });
+						Element z = new Element("x", new String[]{"xmlns"},
+								new String[]{"http://jabber.org/protocol/muc#user"});
 
 						for (String code : compareResult) {
-							z.addChild(new Element("status", new String[] { "code" }, new String[] { code }));
+							z.addChild(new Element("status", new String[]{"code"}, new String[]{code}));
 						}
 						this.messageModule.sendMessagesToAllOccupants(room, roomJID, z);
 					}
 				}
+				if (roomCreated)
+					fireEvent(createRoomCreatedEvent(room));
 			} else {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
@@ -282,5 +292,3 @@ public class RoomConfigurationModule extends AbstractMucModule {
 	}
 
 }
-
-// ~ Formatted in Tigase Code Convention on 13/02/20

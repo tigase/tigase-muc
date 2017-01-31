@@ -29,16 +29,22 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tigase.component.exceptions.RepositoryException;
+
 import tigase.db.TigaseDBException;
 import tigase.db.UserNotFoundException;
 import tigase.db.UserRepository;
+
 import tigase.muc.Affiliation;
 import tigase.muc.MucContext;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
+
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import tigase.muc.MUCComponent;
+
 
 /**
  * @author bmalkow
@@ -218,7 +224,7 @@ public class MucDAO {
 				JID creatorJID = JID.jidInstance(creatorJid);
 
 				Date date = new Date(Long.valueOf(tmpDate));
-				RoomConfig rc = new RoomConfig(roomJID, mucConfig.isPublicLoggingEnabled());
+				RoomConfig rc = new RoomConfig(roomJID);
 				rc.read(repository, mucConfig, ROOMS_KEY + roomJID + "/config");
 
 				final Room room = Room.newInstance(rc, date, creatorJID.getBareJID());
@@ -316,7 +322,11 @@ public class MucDAO {
 	 */
 	public void updateRoomConfig(RoomConfig roomConfig) throws RepositoryException {
 		try {
-			roomConfig.write(repository, mucConfig, ROOMS_KEY + roomConfig.getRoomJID() + "/config");
+			String roomJID = roomConfig.getRoomJID() != null ? roomConfig.getRoomJID().toString() : null ;
+			if (roomJID == null ) {
+				roomJID = MUCComponent.DEFAULT_ROOM_CONFIG_KEY;
+			}
+			roomConfig.write(repository, mucConfig, ROOMS_KEY + roomJID + "/config");
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RepositoryException("Room config writing error", e);

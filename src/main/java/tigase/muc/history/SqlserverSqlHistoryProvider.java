@@ -48,14 +48,16 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 
 	private static final String CREATE_MUC_HISTORY_TABLE_VAL = "create table muc_history ("
 			+ "room_name nvarchar(128) NOT NULL,\n" + "event_type int, \n" + "timestamp bigint,\n"
-			+ "sender_jid nvarchar(2049),\n" + "sender_nickname nvarchar(128),\n" + "body text,\n" + "public_event bit,\n "
-			+ "msg text " + ")";
+			+ "sender_jid nvarchar(2049),\n" + "sender_nickname nvarchar(128),\n" + "body nvarchar(max),\n" + "public_event bit,\n "
+			+ "msg nvarchar(max) " + ")";
 
 	public static final String DELETE_MESSAGES_QUERY_VAL = "delete from muc_history where room_name=?";
 
 	public static final String GET_MESSAGES_MAXSTANZAS_QUERY_VAL = "select room_name, event_type, timestamp, sender_jid, sender_nickname, body, msg from (select top (?) * from muc_history where room_name=? order by timestamp desc  ) AS t order by t.timestamp";
 
 	public static final String GET_MESSAGES_SINCE_QUERY_VAL = "select room_name, event_type, timestamp, sender_jid, sender_nickname, body, msg from (select top (?) * from muc_history where room_name= ? and timestamp >= ? order by timestamp desc  ) AS t order by t.timestamp";
+
+	public static final String CHECK_TEXT_FIELD_INVALID_TYPES = "select 1 from [INFORMATION_SCHEMA].[COLUMNS] where [TABLE_NAME] = 'muc_history' and ([COLUMN_NAME] = 'body' or [COLUMN_NAME] = 'msg') and [DATA_TYPE] = 'TEXT' and [TABLE_CATALOG] = DB_NAME()";
 
 	private Logger log = Logger.getLogger(this.getClass().getName());
 
@@ -90,22 +92,26 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 	@Override
 	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
 			PacketWriter writer) {
-		ResultSet rs = null;
 		final String roomJID = room.getRoomJID().toString();
 
 		int maxMessages = room.getConfig().getMaxHistory();
 		try {
+			ResultSet rs = null;
 			if (since != null) {
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest("Using SINCE selector: roomJID=" + roomJID + ", since=" + since.getTime() + " (" + since + ")");
 				}
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(), GET_MESSAGES_SINCE_QUERY_KEY);
 				synchronized (st) {
-					st.setInt(1, maxMessages);
-					st.setString(2, roomJID);
-					st.setLong(3, since.getTime());
-					rs = st.executeQuery();
-					processResultSet(room, senderJID, writer, rs);
+					try {
+						st.setInt(1, maxMessages);
+						st.setString(2, roomJID);
+						st.setLong(3, since.getTime());
+						rs = st.executeQuery();
+						processResultSet(room, senderJID, writer, rs);
+					} finally {
+						dataRepository.release(null, rs);
+					}
 				}
 			} else if (maxstanzas != null) {
 				if (log.isLoggable(Level.FINEST)) {
@@ -114,11 +120,15 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
 						GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
 				synchronized (st) {
-					st.setInt(1, Math.min(maxstanzas, maxMessages));
-					st.setString(2, roomJID);
-					System.out.println("getHistoryMessages: " + st + " || \t " + GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
-					rs = st.executeQuery();
-					processResultSet(room, senderJID, writer, rs);
+					try {
+						st.setInt(1, Math.min(maxstanzas, maxMessages));
+						st.setString(2, roomJID);
+						System.out.println("getHistoryMessages: " + st + " || \t " + GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
+						rs = st.executeQuery();
+						processResultSet(room, senderJID, writer, rs);
+					} finally {
+						dataRepository.release(null, rs);
+					}
 				}
 			} else if (seconds != null) {
 				if (log.isLoggable(Level.FINEST)) {
@@ -126,11 +136,15 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 				}
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(), GET_MESSAGES_SINCE_QUERY_KEY);
 				synchronized (st) {
-					st.setInt(1, maxMessages);
-					st.setString(2, roomJID);
-					st.setLong(3, new Date().getTime() - seconds * 1000);
-					rs = st.executeQuery();
-					processResultSet(room, senderJID, writer, rs);
+					try {
+						st.setInt(1, maxMessages);
+						st.setString(2, roomJID);
+						st.setLong(3, new Date().getTime() - seconds * 1000);
+						rs = st.executeQuery();
+						processResultSet(room, senderJID, writer, rs);
+					} finally {
+						dataRepository.release(null, rs);
+					}
 				}
 			} else {
 				if (log.isLoggable(Level.FINEST)) {
@@ -139,12 +153,16 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
 						GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
 				synchronized (st) {
-					st.setInt(1, maxMessages);
-					st.setString(2, roomJID);
-					System.out.println("getHistoryMessages: " + st.toString() + " max " + maxMessages + " roomJID " + roomJID
-							+ " || \t " + GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
-					rs = st.executeQuery();
-					processResultSet(room, senderJID, writer, rs);
+					try {
+						st.setInt(1, maxMessages);
+						st.setString(2, roomJID);
+						System.out.println("getHistoryMessages: " + st.toString() + " max " + maxMessages + " roomJID " + roomJID
+								+ " || \t " + GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
+						rs = st.executeQuery();
+						processResultSet(room, senderJID, writer, rs);
+					} finally {
+						dataRepository.release(null, rs);
+					}
 				}
 			}
 
@@ -152,8 +170,6 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 			if (log.isLoggable(Level.SEVERE))
 				log.log(Level.SEVERE, "Can't get history", e);
 			throw new RuntimeException(e);
-		} finally {
-			dataRepository.release(null, rs);
 		}
 	}
 
@@ -184,6 +200,23 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 	}
 
 	private void internalInit() throws SQLException {
+		Statement stmt = this.dataRepository.createStatement(null);
+		ResultSet rs = null;
+		try {
+			rs = stmt.executeQuery(CHECK_TEXT_FIELD_INVALID_TYPES);
+			if (rs.next()) {
+				rs.close();
+				rs = null;
+				stmt.execute("alter table [dbo].[muc_history] alter column msg nvarchar(MAX)");
+				stmt.execute("alter table [dbo].[muc_history] alter column body nvarchar(MAX)");
+			}
+		} finally {
+			if (rs != null)
+				rs.close();
+			if (stmt != null)
+				stmt.close();
+		}
+
 		this.dataRepository.initPreparedStatement(ADD_MESSAGE_QUERY_KEY, ADD_MESSAGE_QUERY_VAL);
 		this.dataRepository.initPreparedStatement(DELETE_MESSAGES_QUERY_KEY, DELETE_MESSAGES_QUERY_VAL);
 		this.dataRepository.initPreparedStatement(GET_MESSAGES_SINCE_QUERY_KEY, GET_MESSAGES_SINCE_QUERY_VAL);

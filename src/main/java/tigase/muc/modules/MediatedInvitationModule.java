@@ -96,7 +96,7 @@ public class MediatedInvitationModule extends AbstractMucModule {
 			throw new MUCException(Authorization.ITEM_NOT_FOUND);
 
 		if (!senderRole.isInviteOtherUsers())
-			throw new MUCException(Authorization.NOT_ALLOWED);
+			throw new MUCException(Authorization.NOT_ALLOWED, "Your role is '" + senderRole + "'. You can't invite others.");
 
 		if (room.getConfig().isRoomMembersOnly() && !senderAffiliation.isEditMemberList())
 			throw new MUCException(Authorization.FORBIDDEN);

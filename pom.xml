@@ -2,12 +2,20 @@
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<maven.build.timestamp.format>yyyy-MM-dd/HH:mm:ss</maven.build.timestamp.format>
+
+		<sign-keystore>/path/to/jks.keystore</sign-keystore>
+		<sign-alias>alias</sign-alias>
+		<sign-storepass>storepass</sign-storepass>
+		<sign-keypass>keypass</sign-keypass>
+		<sign-skip>true</sign-skip>
+		<tsa-uri />
+		<verbose-log>false</verbose-log>
 	</properties>
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>tigase</groupId>
 	<artifactId>tigase-muc</artifactId>
 	<name>Tigase MUC</name>
-	<version>2.3.0</version>
+	<version>2.4.1-SNAPSHOT</version>
 	<packaging>bundle</packaging>
 	<description>Multi User Chat component for Tigase</description>
 	<url>https://projects.tigase.org/projects/tigase-muc</url>
@@ -39,12 +47,23 @@
 		<connection>scm:git:https://repository.tigase.org/git/tigase-muc.git</connection>
 		<developerConnection>scm:git:https://repository.tigase.org/git/tigase-muc.git</developerConnection>
 		<url>https://projects.tigase.org/projects/tigase-muc/repository</url>
-	  <tag>tigase-muc-2.3.0</tag>
+	  <tag>HEAD</tag>
   </scm>
 	<organization>
 		<name>Tigase</name>
 		<url>http://www.tigase.org</url>
 	</organization>
+    <profiles>
+        <profile>
+            <id>disable-java8-doclint</id>
+            <activation>
+                <jdk>[1.8,)</jdk>
+            </activation>
+            <properties>
+                <additionalparam>-Xdoclint:none</additionalparam>
+            </properties>
+        </profile>
+    </profiles>		
 	<build>
 		<plugins>
 			<plugin>
@@ -111,8 +130,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>2.5.1</version>
 				<configuration>
-					<source>1.7</source>
-					<target>1.7</target>
+					<source>1.8</source>
+					<target>1.8</target>
 					<encoding>UTF-8</encoding>
 					<showDeprecation>false</showDeprecation>
 				</configuration>
@@ -147,9 +166,36 @@
                     </execution>
                 </executions>
             </plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-jarsigner-plugin</artifactId>
+				<version>1.4</version>
+				<executions>
+					<execution>
+						<id>sign</id>
+						<goals>
+							<goal>sign</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<archiveDirectory>${project.basedir}</archiveDirectory>
+					<includes>
+						<include>target/tigase*.?ar</include>
+						<include>jars/tigase*.?ar</include>
+					</includes>
+					<processMainArtifact>false</processMainArtifact>
+					<processAttachedArtifacts>false</processAttachedArtifacts>
+					<tsa>${tsa-uri}</tsa>
+					<skip>${sign-skip}</skip>
 
-
-		</plugins>
+					<keystore>${sign-keystore}</keystore>
+					<alias>${sign-alias}</alias>
+					<storepass>${sign-storepass}</storepass>
+					<keypass>${sign-keypass}</keypass>
+					<verbose>${verbose-log}</verbose>
+				</configuration>
+			</plugin>		</plugins>
 
 
 		<resources>
@@ -160,31 +206,24 @@
         </includes>
 			</resource>
 		</resources>
-
-		<extensions>
-			<extension>
-				<groupId>org.apache.maven.wagon</groupId>
-				<artifactId>wagon-ssh-external</artifactId>
-				<version>2.2</version>
-			</extension>
-			<extension>
-				<groupId>org.apache.maven.wagon</groupId>
-				<artifactId>wagon-ssh</artifactId>
-				<version>2.2</version>
-			</extension>
-		</extensions>
 	</build>
 	<dependencies>
 		<dependency>
 			<groupId>tigase</groupId>
 			<artifactId>tigase-testsuite</artifactId>
-			<version>2.2.1</version>
+			<version>2.3.0</version>
 			<scope>test</scope>
+			<exclusions>
+				<exclusion>
+					<groupId>tigase</groupId>
+					<artifactId>*</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>tigase</groupId>
 			<artifactId>tigase-server</artifactId>
-			<version>7.0.0</version>
+			<version>7.1.0</version>
 			<scope>compile</scope>
 		</dependency>
 		<dependency>
@@ -192,19 +231,18 @@
 			<artifactId>org.osgi.core</artifactId>
 			<version>1.4.0</version>
 			<scope>provided</scope>
-			<type>bundle</type>
 		</dependency>
 	</dependencies>
 	<repositories>
 		<repository>
 			<id>tigase</id>
 			<name>Tigase repository</name>
-			<url>http://maven.tigase.org</url>
+			<url>http://maven-repo.tigase.org/repository/release</url>
 		</repository>
 		<repository>
 			<id>tigase-snapshot</id>
 			<name>Tigase repository</name>
-			<url>http://build.xmpp-test.net/maven/</url>
+			<url>http://maven-repo.tigase.org/repository/snapshot</url>
 			<snapshots>
 				<enabled>true</enabled>
 			</snapshots>
@@ -214,12 +252,12 @@
 		<repository>
 			<id>tigase</id>
 			<name>Tigase repository</name>
-			<url>scp://maven.tigase.org:/home/webapp/maven-repository</url>
+			<url>http://maven-repo.tigase.org/repository/release</url>
 		</repository>
 		<snapshotRepository>
 			<id>tigase-snapshot</id>
 			<name>Tigase snapshot repository</name>
-			<url>scp://build.xmpp-test.net:/home/maven/repository</url>
+			<url>http://maven-repo.tigase.org/repository/snapshot</url>
 		</snapshotRepository>
 	</distributionManagement>
 	<reporting>

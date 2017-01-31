@@ -308,7 +308,7 @@ expect all: {
 	to="hag66@shakespeare.lit/pda" 
 	from="darkcave@macbeth.shakespeare.lit/thirdwitch">
   <x xmlns="http://jabber.org/protocol/muc#user">
-    <item role="participant" nick="thirdwitch" jid="hag66@shakespeare.lit/pda" affiliation="none"/>
+    <item role="none" nick="thirdwitch" jid="hag66@shakespeare.lit/pda" affiliation="none"/>
     <status code="110"/>
     <status code="100"/>
   </x>
@@ -319,7 +319,7 @@ expect all: {
 	to="hag66@shakespeare.lit/laptop">
   <show>dnd</show>
   <x xmlns="http://jabber.org/protocol/muc#user">
-    <item jid="hag66@shakespeare.lit/laptop" role="participant" affiliation="none" nick="thirdwitch"/>
+    <item jid="hag66@shakespeare.lit/laptop" role="none" affiliation="none" nick="thirdwitch"/>
     <status code="110"/>
     <status code="100"/>
   </x>
@@ -329,7 +329,7 @@ expect all: {
 	to="crone1@shakespeare.lit/desktop">
   <show>dnd</show>
   <x xmlns="http://jabber.org/protocol/muc#user">
-    <item jid="hag66@shakespeare.lit/laptop" role="participant" affiliation="none" nick="thirdwitch"/>
+    <item jid="hag66@shakespeare.lit/laptop" role="none" affiliation="none" nick="thirdwitch"/>
   </x>
 </presence>
 <presence 
@@ -337,7 +337,7 @@ expect all: {
 	to="wiccarocks@shakespeare.lit/laptop">
   <show>dnd</show>
   <x xmlns="http://jabber.org/protocol/muc#user">
-    <item jid="hag66@shakespeare.lit/laptop" role="participant" affiliation="none" nick="thirdwitch"/>
+    <item jid="hag66@shakespeare.lit/laptop" role="none" affiliation="none" nick="thirdwitch"/>
   </x>
 </presence>
 }
