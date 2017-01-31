@@ -39,7 +39,12 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 	public InMemoryMucRepositoryClustered(final MucContext mucConfig, final MucDAO dao) throws RepositoryException {
 		super(mucConfig, dao);
 	}
-		
+
+	@Override
+	protected void addToAllRooms(BareJID roomJid, InternalRoom internalRoom) {
+		super.addToAllRooms(roomJid, internalRoom);
+	}
+
 	@Override
 	public Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException {
 		Room room = super.createNewRoom(roomJID, senderJid);		
@@ -91,6 +96,11 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 		if (roomListener != null) {
 			roomListener.onLeaveRoom(room);
 		}
+	}
+
+	@Override
+	protected void removeFromAllRooms(BareJID roomJid) {
+		super.removeFromAllRooms(roomJid);
 	}
 
 	public void leaveRoomWithoutListener(Room room) {
