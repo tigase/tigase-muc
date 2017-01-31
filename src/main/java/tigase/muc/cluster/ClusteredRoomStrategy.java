@@ -37,6 +37,7 @@ import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
 import java.util.Arrays;
+import tigase.server.Priority;
 
 /**
  *
@@ -53,7 +54,7 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 	private class OccupantChangedPresenceCmd extends CommandListenerAbstract {
 
 		public OccupantChangedPresenceCmd() {
-			super(OCCUPANT_PRESENCE_CMD);
+			super(OCCUPANT_PRESENCE_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -115,8 +116,7 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 
 	@Override
 	public void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence, boolean newOccupant) {
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);
+		List<JID> toNodes = getNodesConnected();
 		if (occupantJid != null && presence == null) {
 			presence = new Element("presence", new String[] { "type", "xmlns" }, new String[] { "unavailable", Packet.CLIENT_XMLNS });
 		}

@@ -94,6 +94,11 @@ public class RoomClustered extends Room {
 	}
 	
 	@Override
+	public int getOccupantsCount() {
+		return super.getOccupantsCount() + remoteOccupants.size();
+	}
+	
+	@Override
 	public Collection<JID> getOccupantsJidsByNickname(String nickname) {
 		Collection<JID> jids = super.getOccupantsJidsByNickname(nickname);
 		if (jids.isEmpty()) {

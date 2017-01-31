@@ -24,7 +24,7 @@ public interface StrategyIfc {
 	 * @param nodeJid 
 	 * @return true - if new node was added
 	 */
-	boolean nodeConnected(JID nodeJid);
+	void nodeConnected(JID nodeJid);
 	
 	/**
 	 * Method called when node was disconnected
@@ -57,12 +57,20 @@ public interface StrategyIfc {
 	boolean processPacket(Packet packet);
 
 	/**
-	 * The method returns all cluster nodes currently connected to the cluster.
+	 * The method returns cluster nodes currently connected to the cluster node.
 	 *
-	 * @return List of all cluster nodes currently connected to the cluster.
+	 * @return List of cluster nodes currently connected to the cluster node.
 	 */
-	List<JID> getAllNodes();
+	List<JID> getNodesConnected();
 
+	/**
+	 * The method returns cluster nodes currently connected to the cluster 
+	 * including jid of this cluster node.
+	 *
+	 * @return List of cluster nodes currently connected to the cluster.
+	 */
+	List<JID> getNodesConnectedWithLocal();	
+	
 //	/**
 //	 * Retrieve JID of node which is hosting this room
 //	 * 

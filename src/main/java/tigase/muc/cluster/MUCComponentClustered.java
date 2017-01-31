@@ -42,6 +42,19 @@ public class MUCComponentClustered extends MUCComponent
 	public MUCComponentClustered() {
 		licenceChecker = LicenceChecker.getLicenceChecker( "acs" );
 		RoomClustered.initialize();
+
+		String clusterProperty = System.getProperty( "cluster-mode" );
+		if ( clusterProperty == null || !Boolean.parseBoolean( clusterProperty ) ){
+			log.severe( "You've tried using Clustered version of the component but cluster-mode is disabled" );
+			log.severe( "Shutting down system!" );
+			System.exit( 1 );
+		}
+		String strategyProp = System.getProperty( "sm-cluster-strategy-class" );
+		if ( strategyProp == null || !"tigase.server.cluster.strategy.OnlineUsersCachingStrategy".equals( strategyProp) ){
+			log.severe( "You've tried using Clustered version of the component but ACS is disabled" );
+			log.severe( "Shutting down system!" );
+			System.exit( 1 );
+		}
 	}
 
 	@Override
@@ -57,14 +70,14 @@ public class MUCComponentClustered extends MUCComponent
 	}
 
 	@Override
-	public void nodeConnected(String node) {
-		JID jid = JID.jidInstanceNS(getName(), node, null);
+	protected void onNodeConnected(JID jid) {
+		super.onNodeConnected(jid);
 		strategy.nodeConnected(jid);
 	}
 
 	@Override
-	public void nodeDisconnected(String node) {
-		JID jid = JID.jidInstanceNS(getName(), node, null);
+	public void onNodeDisconnected(JID jid) {
+		super.onNodeDisconnected(jid);
 		strategy.nodeDisconnected(jid);
 	}
 
@@ -79,6 +92,7 @@ public class MUCComponentClustered extends MUCComponent
 
 	@Override
 	public void setClusterController(ClusterControllerIfc cl_controller) {
+		super.setClusterController(cl_controller);
 		this.cl_controller = cl_controller;
 		if (strategy != null) {
 			strategy.setClusterController(cl_controller);

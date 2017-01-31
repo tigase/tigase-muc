@@ -7,31 +7,21 @@
  */
 package tigase.muc.cluster;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import tigase.cluster.api.ClusterCommandException;
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
-import tigase.component.exceptions.RepositoryException;
 import tigase.muc.Room;
 import tigase.server.Packet;
-import tigase.server.Presence;
-import tigase.util.TigaseStringprepException;
+import tigase.server.Priority;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * ShardingStrategy implements clustering strategy in which each room has assigned
@@ -49,12 +39,14 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private static final String RESPONSE_SYNC_CMD = "muc-sync-response";
 	private static final String ROOM_CREATED_CMD = "muc-room-created-cmd";
 	private static final String ROOM_DESTROYED_CMD = "muc-room-destroyed-cmd";
+	private static final String ROOM_LEFT_CMD = "muc-room-left-cmd";
 	private static final int SYNC_MAX_BATCH_SIZE = 1000;
 	private final NodeShutdownCmd nodeShutdownCmd = new NodeShutdownCmd();
 	private final RequestSyncCmd requestSyncCmd = new RequestSyncCmd();
 	private final ResponseSyncCmd responseSyncCmd = new ResponseSyncCmd();
 	private final RoomCreatedCmd roomCreatedCmd = new RoomCreatedCmd();
 	private final RoomDestroyedCmd roomDestroyedCmd = new RoomDestroyedCmd();
+	private final RoomLeftCmd roomLeftCmd = new RoomLeftCmd();
 	private final ConcurrentMap<BareJID, JID> roomsPerNode =
 			new ConcurrentHashMap<BareJID, JID>();
 	private final ConcurrentMap<BareJID, Set<JID>> occupantsPerRoom =
@@ -68,8 +60,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	 */
 	@Override
 	public void nodeDisconnected(JID nodeJid) {
-		super.nodeDisconnected(nodeJid);
-		
+		List<JID> connectedNodes = getNodesConnectedWithLocal();
 		int localNodeIdx = connectedNodes.indexOf(localNodeJid);
 		// we need to properly handle disconnect!
 		Iterator<Map.Entry<BareJID,JID>> iter = roomsPerNode.entrySet().iterator();
@@ -101,6 +92,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		if (this.cl_controller != null) {
 			this.cl_controller.removeCommandListener(roomCreatedCmd);
 			this.cl_controller.removeCommandListener(roomDestroyedCmd);
+			this.cl_controller.removeCommandListener(roomLeftCmd);
 			this.cl_controller.removeCommandListener(requestSyncCmd);
 			this.cl_controller.removeCommandListener(responseSyncCmd);
 			this.cl_controller.removeCommandListener(nodeShutdownCmd);
@@ -108,6 +100,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		super.setClusterController(cl_controller);
 		this.cl_controller.setCommandListener(roomCreatedCmd);
 		this.cl_controller.setCommandListener(roomDestroyedCmd);
+		this.cl_controller.setCommandListener(roomLeftCmd);
 		this.cl_controller.setCommandListener(requestSyncCmd);
 		this.cl_controller.setCommandListener(responseSyncCmd);
 		this.cl_controller.setCommandListener(nodeShutdownCmd);
@@ -137,6 +130,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 				log.log(Level.FINEST, "room = {0}, not created on any node", roomJid);
 			}
 			int hash = roomJid.hashCode();
+			List<JID> connectedNodes = getNodesConnectedWithLocal();
 			nodeJid = connectedNodes.get(Math.abs(hash) % connectedNodes.size());
 			if (log.isLoggable(Level.FINEST)) {
 				StringBuilder nodes = new StringBuilder(100);
@@ -174,26 +168,42 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		// if we are stopping this node, we need to notify other nodes that we 
 		// will send informations about destroying/going offline of rooms 
 		// hosted by this node
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);		
+		List<JID> toNodes = getNodesConnected();	
 		cl_controller.sendToNodes(NODE_SHUTDOWN_CMD, localNodeJid, toNodes.toArray(new JID[toNodes.size()]));
 	}
-	
-	private void sort(List<JID> list) {
-		JID[] array = list.toArray(new JID[list.size()]);
 
-		Arrays.sort(array);
-		list.clear();
-		list.addAll(Arrays.asList(array));
+	@Override
+	public void onLeaveRoom(Room room) {
+		roomsPerNode.remove(room.getRoomJID());
+		occupantsPerRoom.remove(room.getRoomJID());
+
+		List<JID> toNodes = getNodesConnected();
+
+		Map<String, String> data = new HashMap<String, String>();
+		data.put("room", room.getRoomJID().toString());
+
+		if (log.isLoggable(Level.FINEST)) {
+			StringBuilder buf = new StringBuilder(100);
+			for (JID node : toNodes) {
+				if (buf.length() > 0) {
+					buf.append(",");
+				}
+				buf.append(node.toString());
+			}
+			log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] that room is left",
+					new Object[] { room.getRoomJID(), buf });
+		}
+
+		cl_controller.sendToNodes(ROOM_LEFT_CMD, data, localNodeJid,
+								  toNodes.toArray(new JID[toNodes.size()]));
 	}
-	
+
 	@Override
 	public void onRoomCreated(Room room) {
 		roomsPerNode.put(room.getRoomJID(), localNodeJid);
 		// notify other nodes about newly created room and it's location on 
 		// node in cluster
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);
+		List<JID> toNodes = getNodesConnected();
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
@@ -223,8 +233,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		// now we should notify other nodes that following occupants where removed
 		// hmm, maybe info sent before about room removal is enought?
 
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);
+		List<JID> toNodes = getNodesConnected();
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
@@ -280,7 +289,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private class RoomCreatedCmd extends CommandListenerAbstract {
 
 		public RoomCreatedCmd() {
-			super(ROOM_CREATED_CMD);
+			super(ROOM_CREATED_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -298,7 +307,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private class RoomDestroyedCmd extends CommandListenerAbstract {
 
 		public RoomDestroyedCmd() {
-			super(ROOM_DESTROYED_CMD);
+			super(ROOM_DESTROYED_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -313,11 +322,29 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 			}
 		}
 	}
+
+	private class RoomLeftCmd extends CommandListenerAbstract {
+
+		public RoomLeftCmd() {
+			super(ROOM_LEFT_CMD, Priority.HIGH);
+		}
+
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
+								   Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
+			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
+			roomsPerNode.remove(roomJid, fromNode);
+			occupantsPerRoom.remove(roomJid);
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "room = {0}, received notification that room {1} was left at node {2}",
+						new Object[]{roomJid, roomJid, fromNode});
+			}
+		}
+	}
 	
 	private class NodeShutdownCmd extends CommandListenerAbstract {
 
 		public NodeShutdownCmd() {
-			super(NODE_SHUTDOWN_CMD);
+			super(NODE_SHUTDOWN_CMD, Priority.HIGH);
 		}
 		
 		@Override
@@ -339,7 +366,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private class RequestSyncCmd extends CommandListenerAbstract {
 		
 		public RequestSyncCmd() {
-			super(REQUEST_SYNC_CMD);
+			super(REQUEST_SYNC_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -399,7 +426,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private class ResponseSyncCmd extends CommandListenerAbstract {
 		
 		public ResponseSyncCmd() {
-			super(RESPONSE_SYNC_CMD);
+			super(RESPONSE_SYNC_CMD, Priority.HIGH);
 		}
 
 		@Override

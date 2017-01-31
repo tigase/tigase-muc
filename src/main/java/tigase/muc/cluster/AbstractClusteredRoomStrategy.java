@@ -8,20 +8,6 @@
 
 package tigase.muc.cluster;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import tigase.cluster.api.ClusterCommandException;
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
@@ -32,14 +18,19 @@ import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.modules.GroupchatMessageModule;
-import tigase.muc.modules.PresenceModule;
 import tigase.muc.modules.PresenceModule.PresenceWrapper;
-import tigase.muc.modules.PresenceModuleImpl;
 import tigase.server.Packet;
+import tigase.server.Priority;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * AbstractClusteredRoomStrategy implements strategy which allows to create rooms with
@@ -77,14 +68,13 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	
 	@Override
 	public void nodeDisconnected(JID nodeJid) {
-		super.nodeDisconnected(nodeJid);
-		
 		ConcurrentMap<JID,ConcurrentMap<BareJID,String>> nodeOccupants = occupantsPerNode.remove(nodeJid.getBareJID());
 		if (nodeOccupants == null)
 			return;
 		
-		int localNodeIdx = connectedNodes.indexOf(localNodeJid);
-		int nodesCount = connectedNodes.size();
+		List<JID> allNodes = getNodesConnectedWithLocal();
+		int localNodeIdx = allNodes.indexOf(localNodeJid);
+		int nodesCount = allNodes.size();
 		for (Map.Entry<JID,ConcurrentMap<BareJID,String>> e : nodeOccupants.entrySet()) {
 			JID occupant = e.getKey();
 			// send removal if occupant is not local and if it's hashcode matches this node
@@ -173,8 +163,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	
 	@Override
 	public void onRoomCreated(Room room) {
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);
+		List<JID> toNodes = getNodesConnected();
 		
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
@@ -200,8 +189,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 
 	@Override
 	public void onRoomDestroyed(Room room, Element destroyElement) {
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);
+		List<JID> toNodes = getNodesConnected();
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
@@ -225,17 +213,20 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	}
 
 	@Override
+	public void onLeaveRoom(Room room) {
+		// Nothing to do - other nodes will be notified that occupant changed presence (left room) and will take care of this
+		// if needed, however as Room instance is used for discovery and in this strategy every room is persistent
+		// then there is no valid point to notify repository and other nodes that room is left (that it is empty now).
+	}
+
+	@Override
 	public void onChangeSubject(Room room, String nick, String newSubject, Date changeDate) {
 //		throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
 	}
 
 	@Override
 	public void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation) {
-
-
-
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);
+		List<JID> toNodes = getNodesConnected();
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
@@ -258,18 +249,17 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	}
 
 	@Override
-	public void onMessageToOccupants(Room room, JID from, Element[] contents) {
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);
+	public void onMessageToOccupants(Room room, JID from, Packet packet) {
+		List<JID> toNodes = getNodesConnected();
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
 		data.put("userId", from.toString());
 		
-		Element message = new Element("message");
-		for (Element content : contents) {
-			message.addChild(content);
-		}
+		Element message = packet.getElement().clone();
+		// this should not be needed but I'm adding it just in case
+		message.removeAttribute("from");
+		message.removeAttribute("to");
 
 		if (log.isLoggable(Level.FINEST)) {
 			StringBuilder buf = new StringBuilder(100);
@@ -346,6 +336,8 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			// if we have assigned node with this jid then reuse it
 			Map<JID,ConcurrentMap<BareJID,String>> nodeOccupants = occupantsPerNode.get(node);
 			if (nodeOccupants.containsKey(jid)) {
+				if (node.equals(localNodeJid.getBareJID()))
+					return null;
 				return node;
 			}
 		}
@@ -357,7 +349,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	private class RoomCreatedCmd extends CommandListenerAbstract {
 
 		public RoomCreatedCmd() {
-			super(ROOM_CREATED_CMD);
+			super(ROOM_CREATED_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -380,7 +372,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	private class RoomDestroyedCmd extends CommandListenerAbstract {
 
 		public RoomDestroyedCmd() {
-			super(ROOM_DESTROYED_CMD);
+			super(ROOM_DESTROYED_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -420,7 +412,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	private class RoomMessageCmd extends CommandListenerAbstract {
 
 		public RoomMessageCmd() {
-			super(ROOM_MESSAGE_CMD);
+			super(ROOM_MESSAGE_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -436,8 +428,8 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 				Room room = AbstractClusteredRoomStrategy.this.muc.getMucRepository().getRoom(roomJid);
 				GroupchatMessageModule groupchatModule = AbstractClusteredRoomStrategy.this.muc.getModule(GroupchatMessageModule.ID);
 				Element message = packets.poll();
-				List<Element> children = message.getChildren();
-				groupchatModule.sendMessagesToAllOccupantsJids(room, from, children.toArray(new Element[children.size()]));
+				Packet packet = Packet.packetInstance(message);
+				groupchatModule.sendMessagesToAllOccupantsJids(room, from, packet);
 			} catch (RepositoryException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
 			} catch (MUCException ex) {
@@ -452,7 +444,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	private class RequestSyncCmd extends CommandListenerAbstract {
 		
 		public RequestSyncCmd() {
-			super(REQUEST_SYNC_CMD);
+			super(REQUEST_SYNC_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -497,7 +489,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	private class ResponseSyncCmd extends CommandListenerAbstract {
 		
 		public ResponseSyncCmd() {
-			super(RESPONSE_SYNC_CMD);
+			super(RESPONSE_SYNC_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -532,7 +524,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 	private class RoomAffiliationCmd extends CommandListenerAbstract {
 
 		public RoomAffiliationCmd() {
-			super(ROOM_AFFILIATION_CMD);
+			super(ROOM_AFFILIATION_CMD, Priority.HIGH);
 		}
 
 		@Override

@@ -8,18 +8,6 @@
 
 package tigase.muc.cluster;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import tigase.cluster.api.ClusterCommandException;
 import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.CommandListenerAbstract;
@@ -31,10 +19,15 @@ import tigase.muc.exceptions.MUCException;
 import tigase.muc.modules.PresenceModule;
 import tigase.muc.modules.PresenceModuleImpl;
 import tigase.server.Packet;
+import tigase.server.Priority;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -54,7 +47,7 @@ public class ClusteredRoomStrategyV2 extends AbstractClusteredRoomStrategy {
 	private class OccupantChangedPresenceCmd extends CommandListenerAbstract {
 
 		public OccupantChangedPresenceCmd() {
-			super(OCCUPANT_PRESENCE_CMD);
+			super(OCCUPANT_PRESENCE_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -107,6 +100,8 @@ public class ClusteredRoomStrategyV2 extends AbstractClusteredRoomStrategy {
 					}
 					ClusteredRoomStrategyV2.this.muc.addOutPacket(presenceWrapper.getPacket());
 				}
+
+
 				// should be handled on original node
 //				if (newOccupant) {
 //					presenceModule.sendPresencesToNewOccupant(room, occupantJID);
@@ -124,7 +119,7 @@ public class ClusteredRoomStrategyV2 extends AbstractClusteredRoomStrategy {
 	private class OccupantsSyncRequestCmd extends CommandListenerAbstract {
 
 		public OccupantsSyncRequestCmd() {
-			super(OCCUPANTS_SYNC_REQUEST_CMD);
+			super(OCCUPANTS_SYNC_REQUEST_CMD, Priority.HIGH);
 		}
 
 		@Override
@@ -162,8 +157,7 @@ public class ClusteredRoomStrategyV2 extends AbstractClusteredRoomStrategy {
 
 	@Override
 	public void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence, boolean newOccupant) {
-		List<JID> toNodes = getAllNodes();
-		toNodes.remove(localNodeJid);
+		List<JID> toNodes = getNodesConnected();
 		if (occupantJid != null && presence == null) {
 			presence = new Element("presence", new String[] { "type", "xmlns" }, new String[] { "unavailable", Packet.CLIENT_XMLNS });
 		}
