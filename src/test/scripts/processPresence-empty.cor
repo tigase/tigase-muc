@@ -2,7 +2,7 @@
 # creating room                              #
 # ------------------------------------------ #
 send: {
-<presence 
+<presence id="create01"
     from='crone1@shakespeare.lit/desktop'
     to='darkcave@macbeth.shakespeare.lit/firstwitch'>
   <x xmlns='http://jabber.org/protocol/muc'/>
@@ -15,7 +15,7 @@ expect: {
     to='crone1@shakespeare.lit/desktop'>
   <x xmlns='http://jabber.org/protocol/muc#user'>
     <item affiliation='owner'
-          jid="crone1@shakespeare.lit/desktop" 
+          jid="crone1@shakespeare.lit" 
           nick="firstwitch"
           role='moderator'/>
     <status code='201'/>
@@ -29,7 +29,7 @@ expect: {
 # User try to enter to locked room           #
 # ------------------------------------------ #
 send: {
-<presence
+<presence id="locked01"
     from='hag66@shakespeare.lit/pda'
     to='darkcave@macbeth.shakespeare.lit/thirdwitch'/>
       
@@ -40,7 +40,6 @@ expect: {
     from='darkcave@macbeth.shakespeare.lit'
     to='hag66@shakespeare.lit/pda'
     type='error'>
-  <text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas">Room is locked</text>
   <error code='404' type='cancel'>
     <item-not-found xmlns='urn:ietf:params:xml:ns:xmpp-stanzas'/>
   </error>
@@ -70,7 +69,7 @@ expect: {
 # Entering a Room                            #
 # ------------------------------------------ #
 send(Extering): {
-<presence
+<presence id="enter01"
     from='hag66@shakespeare.lit/pda'
     to='darkcave@macbeth.shakespeare.lit/thirdwitch'>
   <x xmlns='http://jabber.org/protocol/muc'/>
@@ -110,7 +109,7 @@ expect all: {
 # ------------------------------------------ #
 
 send:{
-<message
+<message id="msg01"
     from='hag66@shakespeare.lit/pda'
     to='darkcave@macbeth.shakespeare.lit'
     type='groupchat'>
@@ -138,7 +137,7 @@ expect all: {
 # Changing nickname                          #
 # ------------------------------------------ #
 send: {
-<presence
+<presence id='change1'
     from='hag66@shakespeare.lit/pda'
     to='darkcave@macbeth.shakespeare.lit/oldhag'>
       <x xmlns='http://jabber.org/protocol/muc'/>
@@ -152,7 +151,7 @@ expect all: {
     type='unavailable'>
   <x xmlns='http://jabber.org/protocol/muc#user'>
     <item affiliation='none'
-          jid='hag66@shakespeare.lit/pda'
+          jid='hag66@shakespeare.lit'
           nick='oldhag'
           role='participant'/>
     <status code='303'/>
@@ -177,7 +176,7 @@ expect all: {
   <x xmlns='http://jabber.org/protocol/muc#user'>
     <item affiliation='none'
  		  nick='oldhag'
-          jid='hag66@shakespeare.lit/pda'
+          jid='hag66@shakespeare.lit'
           role='participant'/>
   </x>
 </presence>
@@ -199,7 +198,7 @@ expect all: {
 # Changing nickname                          #
 # ------------------------------------------ #
 send: {
-<presence
+<presence id='change2'
     from='hag66@shakespeare.lit/pda'
     to='darkcave@macbeth.shakespeare.lit/ZERO'>
       <x xmlns='http://jabber.org/protocol/muc'/>
@@ -213,7 +212,7 @@ expect all: {
     type='unavailable'>
   <x xmlns='http://jabber.org/protocol/muc#user'>
     <item affiliation='none'
-          jid='hag66@shakespeare.lit/pda'
+          jid='hag66@shakespeare.lit'
           nick='ZERO'
           role='participant'/>
     <status code='303'/>
@@ -238,7 +237,7 @@ expect all: {
   <x xmlns='http://jabber.org/protocol/muc#user'>
     <item affiliation='none'
  		  nick='ZERO'
-          jid='hag66@shakespeare.lit/pda'
+          jid='hag66@shakespeare.lit'
           role='participant'/>
   </x>
 </presence>
@@ -259,7 +258,7 @@ expect all: {
 # ------------------------------------------ #
 
 send:{
-<message
+<message id="msg02"
     from='hag66@shakespeare.lit/pda'
     to='darkcave@macbeth.shakespeare.lit'
     type='groupchat'>

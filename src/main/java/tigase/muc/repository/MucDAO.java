@@ -3,15 +3,15 @@
  * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program. Look for COPYING file in the top folder.
  * If not, see http://www.gnu.org/licenses/.
  *
@@ -29,13 +29,15 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import tigase.component.exceptions.RepositoryException;
 import tigase.db.TigaseDBException;
 import tigase.db.UserNotFoundException;
 import tigase.db.UserRepository;
 import tigase.muc.Affiliation;
-import tigase.muc.MucConfig;
+import tigase.muc.MucContext;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
+import tigase.muc.exceptions.MUCException;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
@@ -51,7 +53,7 @@ public class MucDAO {
 
 	private static final String LAST_ACCESS_DATE_KEY = "last-access-date";
 
-	private static final String ROOMS_KEY = "rooms/";
+	public static final String ROOMS_KEY = "rooms/";
 
 	private static final String SUBJECT_CREATOR_NICK_KEY = "creator";
 
@@ -61,11 +63,11 @@ public class MucDAO {
 
 	protected Logger log = Logger.getLogger(this.getClass().getName());
 
-	private final MucConfig mucConfig;
+	private final MucContext mucConfig;
 
 	private final UserRepository repository;
 
-	public MucDAO(final MucConfig config, final UserRepository repository) throws RepositoryException {
+	public MucDAO(final MucContext config, final UserRepository repository) throws RepositoryException {
 		this.mucConfig = config;
 		this.repository = repository;
 
@@ -77,11 +79,13 @@ public class MucDAO {
 				this.repository.setData(this.mucConfig.getServiceBareJID(), "last-start",
 						String.valueOf(System.currentTimeMillis()));
 			} catch (Exception e1) {
-				log.log(Level.SEVERE, "MUC repository initialization problem", e1);
+				if (log.isLoggable(Level.SEVERE))
+					log.log(Level.SEVERE, "MUC repository initialization problem", e1);
 				throw new RepositoryException("Cannot initialize MUC repository", e);
 			}
 		} catch (TigaseDBException e) {
-			log.log(Level.SEVERE, "MUC repository initialization problem", e);
+			if (log.isLoggable(Level.SEVERE))
+				log.log(Level.SEVERE, "MUC repository initialization problem", e);
 			throw new RepositoryException("Cannot initialize MUC repository", e);
 		}
 
@@ -89,10 +93,11 @@ public class MucDAO {
 
 	public void createRoom(Room room) throws RepositoryException {
 		try {
-			repository.setData(mucConfig.getServiceBareJID(), ROOMS_KEY + room.getRoomJID(), CREATION_DATE_KEY,
+			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + room.getRoomJID(), CREATION_DATE_KEY,
 					String.valueOf(room.getCreationDate().getTime()));
-			repository.setData(mucConfig.getServiceBareJID(), ROOMS_KEY + room.getRoomJID(), CREATOR_JID_KEY, room.getCreatorJid().toString());
-			repository.setData(mucConfig.getServiceBareJID(), ROOMS_KEY + room.getRoomJID(), LAST_ACCESS_DATE_KEY,
+			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + room.getRoomJID(), CREATOR_JID_KEY,
+					room.getCreatorJid().toString());
+			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + room.getRoomJID(), LAST_ACCESS_DATE_KEY,
 					String.valueOf((new Date()).getTime()));
 
 			room.getConfig().write(repository, mucConfig, ROOMS_KEY + room.getRoomJID() + "/config");
@@ -114,7 +119,7 @@ public class MucDAO {
 	 */
 	public void destroyRoom(BareJID roomJID) throws RepositoryException {
 		try {
-			repository.removeSubnode(mucConfig.getServiceBareJID(), ROOMS_KEY + roomJID);
+			repository.removeSubnode(mucConfig.getServiceName(), ROOMS_KEY + roomJID);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RepositoryException("Room destroing error", e);
@@ -123,7 +128,7 @@ public class MucDAO {
 
 	public Date getCreationDate(BareJID roomJID) throws RepositoryException {
 		try {
-			String creationDate = repository.getData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomJID, CREATION_DATE_KEY);
+			String creationDate = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomJID, CREATION_DATE_KEY);
 			if (creationDate == null)
 				return null;
 			Date r = new Date(Long.valueOf(creationDate));
@@ -132,6 +137,10 @@ public class MucDAO {
 			throw new RepositoryException("Creation Date reading error", e);
 		}
 
+	}
+
+	public UserRepository getRepository() {
+		return repository;
 	}
 
 	/**
@@ -155,11 +164,11 @@ public class MucDAO {
 	 */
 	public ArrayList<BareJID> getRoomsJIDList() throws RepositoryException {
 		ArrayList<BareJID> jids = new ArrayList<BareJID>();
-		BareJID serviceBareJID = mucConfig.getServiceBareJID();
+		BareJID serviceName = mucConfig.getServiceName();
 		try {
-			String[] ids = repository.getSubnodes(serviceBareJID, ROOMS_KEY);
-			if(ids != null) {
-				for(String id: ids) {
+			String[] ids = repository.getSubnodes(serviceName, ROOMS_KEY);
+			if (ids != null) {
+				for (String id : ids) {
 					jids.add(BareJID.bareJIDInstance(id));
 				}
 			}
@@ -172,7 +181,7 @@ public class MucDAO {
 
 	public String getSubject(BareJID roomJID) throws RepositoryException {
 		try {
-			return repository.getData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomJID + "/subject", SUBJECT_KEY);
+			return repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/subject", SUBJECT_KEY);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RepositoryException("Subject saving error", e);
@@ -181,7 +190,7 @@ public class MucDAO {
 
 	public Date getSubjectCreationDate(BareJID roomJID) throws RepositoryException {
 		try {
-			String tmp = repository.getData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomJID + "/subject", SUBJECT_DATE_KEY);
+			String tmp = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/subject", SUBJECT_DATE_KEY);
 			return tmp == null ? null : new Date(Long.valueOf(tmp));
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -191,28 +200,29 @@ public class MucDAO {
 
 	public String getSubjectCreatorNickname(BareJID roomJID) throws RepositoryException {
 		try {
-			return repository.getData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomJID + "/subject", SUBJECT_CREATOR_NICK_KEY);
+			return repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/subject", SUBJECT_CREATOR_NICK_KEY);
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RepositoryException("Subject saving error", e);
 		}
 	}
 
-	public Room readRoom(BareJID roomJID) throws RepositoryException {
+	public Room readRoom(BareJID roomJID) throws RepositoryException, MUCException {
+
 		try {
-			final String tmpDate = repository.getData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomJID, CREATION_DATE_KEY);
-			
-			final String creatorJid = repository.getData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomJID, CREATOR_JID_KEY);
+			final String tmpDate = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomJID, CREATION_DATE_KEY);
+
+			final String creatorJid = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomJID, CREATOR_JID_KEY);
 
 			if (tmpDate != null && creatorJid != null) {
-				
+
 				JID creatorJID = JID.jidInstance(creatorJid);
-				
+
 				Date date = new Date(Long.valueOf(tmpDate));
-				RoomConfig rc = new RoomConfig(roomJID);
+				RoomConfig rc = new RoomConfig(roomJID, mucConfig.isPublicLoggingEnabled());
 				rc.read(repository, mucConfig, ROOMS_KEY + roomJID + "/config");
 
-				final Room room = new Room(rc, date, creatorJID.getBareJID());
+				final Room room = Room.newInstance(rc, date, creatorJID.getBareJID());
 
 				String subject = getSubject(roomJID);
 				String subjectCreator = getSubjectCreatorNickname(roomJID);
@@ -223,10 +233,10 @@ public class MucDAO {
 
 				Map<BareJID, Affiliation> affiliations = new HashMap<BareJID, Affiliation>();
 
-				String[] affJids = repository.getKeys(mucConfig.getServiceBareJID(), ROOMS_KEY + roomJID + "/affiliations");
+				String[] affJids = repository.getKeys(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/affiliations");
 				if (affJids != null)
 					for (final String jid : affJids) {
-						String t = repository.getData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomJID + "/affiliations", jid);
+						String t = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/affiliations", jid);
 
 						Affiliation affiliation = Affiliation.valueOf(t);
 						affiliations.put(JID.jidInstance(jid).getBareJID(), affiliation);
@@ -239,7 +249,8 @@ public class MucDAO {
 			}
 			return null;
 		} catch (Exception e) {
-			e.printStackTrace();
+			if (log.isLoggable(Level.WARNING))
+				log.log(Level.WARNING, "Room reading error", e);
 			throw new RepositoryException("Room reading error", e);
 		}
 	}
@@ -254,9 +265,10 @@ public class MucDAO {
 	public void setAffiliation(BareJID roomJID, BareJID jid, Affiliation affiliation) throws RepositoryException {
 		try {
 			if (affiliation == Affiliation.none) {
-				repository.removeData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomJID + "/affiliations", jid.toString());
+				repository.removeData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/affiliations", jid.toString());
 			} else {
-				repository.setData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomJID + "/affiliations", jid.toString(), affiliation.name());
+				repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/affiliations", jid.toString(),
+						affiliation.name());
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -272,10 +284,10 @@ public class MucDAO {
 	 */
 	public void setSubject(BareJID roomJID, String subject, String creatorNickname, Date changeDate) throws RepositoryException {
 		try {
-			repository.setData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomJID + "/subject", SUBJECT_CREATOR_NICK_KEY,
+			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/subject", SUBJECT_CREATOR_NICK_KEY,
 					creatorNickname);
-			repository.setData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomJID + "/subject", SUBJECT_KEY, subject);
-			repository.setData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomJID + "/subject", SUBJECT_DATE_KEY,
+			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/subject", SUBJECT_KEY, subject);
+			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/subject", SUBJECT_DATE_KEY,
 					String.valueOf(changeDate.getTime()));
 			// TODO Auto-generated method stub
 		} catch (Exception e) {
@@ -291,7 +303,7 @@ public class MucDAO {
 	 */
 	public void updateLastAccessDate(BareJID roomJID) throws RepositoryException {
 		try {
-			repository.setData(mucConfig.getServiceBareJID(), ROOMS_KEY + roomJID, LAST_ACCESS_DATE_KEY,
+			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID, LAST_ACCESS_DATE_KEY,
 					String.valueOf((new Date()).getTime()));
 		} catch (Exception e) {
 			e.printStackTrace();

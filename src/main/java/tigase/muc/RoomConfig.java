@@ -3,15 +3,15 @@
  * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program. Look for COPYING file in the top folder.
  * If not, see http://www.gnu.org/licenses/.
  *
@@ -21,20 +21,22 @@
  */
 package tigase.muc;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import tigase.db.TigaseDBException;
 import tigase.db.UserNotFoundException;
 import tigase.db.UserRepository;
-import tigase.form.Field;
-import tigase.form.Form;
-import tigase.form.Field.FieldType;
-import tigase.util.TigaseStringprepException;
+
 import tigase.xmpp.BareJID;
+
+import tigase.form.Field;
+import tigase.form.Field.FieldType;
+import tigase.form.Form;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author bmalkow
@@ -91,6 +93,8 @@ public class RoomConfig {
 
 	public static final String MUC_ROOMCONFIG_ENABLELOGGING_KEY = "muc#roomconfig_enablelogging";
 
+	public static final String MUC_ROOMCONFIG_MAXHISTORY_KEY = "muc#maxhistoryfetch";
+
 	public static final String MUC_ROOMCONFIG_MEMBERSONLY_KEY = "muc#roomconfig_membersonly";
 
 	public static final String MUC_ROOMCONFIG_MODERATEDROOM_KEY = "muc#roomconfig_moderatedroom";
@@ -107,6 +111,12 @@ public class RoomConfig {
 
 	public static final String MUC_ROOMCONFIG_ROOMSECRET_KEY = "muc#roomconfig_roomsecret";
 
+	public static final String TIGASE_ROOMCONFIG_PRESENCE_FILTERING = "tigase#presence_filtering";
+
+	public static final String TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS = "tigase#presence_filtered_affiliations";
+
+	public static final String TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC = "tigase#presence_delivery_logic";
+
 	protected static String[] asStringTable(Enum<?>[] values) {
 		String[] result = new String[values.length];
 		int i = 0;
@@ -116,20 +126,36 @@ public class RoomConfig {
 		return result;
 	}
 
+	protected static <T extends Enum<T>> List<T> asEnum( Class<T> clazz, String[] values, Enum<?>[] defaultValues ) {
+		List<T> list = new ArrayList<>();
+		if ( values != null && values.length > 0 ){
+			for ( String val : values ) {
+				list.add( Enum.valueOf( clazz, val ) );
+			}
+		} else if ( null != defaultValues ){
+			list.addAll( (Collection<? extends T>) Arrays.asList( defaultValues ) );
+		}
+		return list;
+	}
+
 	protected final Set<String> blacklist = new HashSet<String>();
 
 	protected final Form form = new Form("form", null, null);
 
 	private final ArrayList<RoomConfigListener> listeners = new ArrayList<RoomConfigListener>();
 
+	private final boolean publicLoggingAvailable;
+
 	private final BareJID roomJID;
 
 	/**
 	 * @param roomJID
 	 */
-	public RoomConfig(BareJID roomJID) {
+	public RoomConfig(BareJID roomJID, boolean publicLoggingAvailable) {
 		this.roomJID = roomJID;
+		this.publicLoggingAvailable = publicLoggingAvailable;
 		init();
+
 	}
 
 	public void addListener(RoomConfigListener listener) {
@@ -146,7 +172,7 @@ public class RoomConfig {
 
 	@Override
 	public RoomConfig clone() {
-		final RoomConfig rc = new RoomConfig(getRoomJID());
+		final RoomConfig rc = new RoomConfig(getRoomJID(), this.publicLoggingAvailable);
 		rc.blacklist.addAll(this.blacklist);
 		rc.form.copyValuesFrom(form);
 		return rc;
@@ -250,8 +276,27 @@ public class RoomConfig {
 		}
 	}
 
+	public Integer getMaxHistory() {
+		try {
+			return form.getAsInteger(MUC_ROOMCONFIG_MAXHISTORY_KEY);
+		} catch (Exception e) {
+			return 50;
+		}
+	}
+
 	public String getPassword() {
 		return asString(form.getAsString(MUC_ROOMCONFIG_ROOMSECRET_KEY), "");
+	}
+
+	public PresenceStore.PresenceDeliveryLogic getPresenceDeliveryLogic() {
+		String PDLasString = form.getAsString( TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC );
+		PresenceStore.PresenceDeliveryLogic pdl = PresenceStore.PresenceDeliveryLogic.valueOf( PDLasString );
+		return pdl;
+	}
+
+	public Collection<Affiliation> getPresenceFilteredAffiliations() {
+		String[] presenceFrom = form.getAsStrings(TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS );
+		return asEnum( Affiliation.class, presenceFrom, null );
 	}
 
 	public Anonymity getRoomAnonymity() {
@@ -290,9 +335,28 @@ public class RoomConfig {
 				new String[] { Anonymity.nonanonymous.name(), Anonymity.semianonymous.name(), Anonymity.fullanonymous.name() }));
 		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_CHANGESUBJECT_KEY, Boolean.FALSE, "Allow Occupants to Change Subject?"));
 
-		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_ENABLELOGGING_KEY, Boolean.FALSE, "Enable Public Logging?"));
-		form.addField(Field.fieldListSingle(LOGGING_FORMAT_KEY, LogFormat.html.name(), "Logging format:", new String[] {
-				"HTML", "Plain text" }, new String[] { LogFormat.html.name(), LogFormat.plain.name() }));
+		if (publicLoggingAvailable) {
+			form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_ENABLELOGGING_KEY, Boolean.FALSE, "Enable Public Logging?"));
+			form.addField(Field.fieldListSingle(LOGGING_FORMAT_KEY, LogFormat.html.name(), "Logging format:", new String[] {
+					"HTML", "Plain text" }, new String[] { LogFormat.html.name(), LogFormat.plain.name() }));
+		}
+
+		form.addField(Field.fieldTextSingle(MUC_ROOMCONFIG_MAXHISTORY_KEY, "50",
+				"Maximum Number of History Messages Returned by Room"));
+		
+
+		form.addField( Field.fieldListSingle(TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC,
+																				 PresenceStore.PresenceDeliveryLogic.PREFERE_PRIORITY.toString(),
+																				 "Presence delivery logic",
+																				 asStringTable( PresenceStore.PresenceDeliveryLogic.values() ),
+																				 asStringTable( PresenceStore.PresenceDeliveryLogic.values() ) ) );
+
+		form.addField(Field.fieldBoolean(TIGASE_ROOMCONFIG_PRESENCE_FILTERING, Boolean.FALSE,
+				"Enable filtering of presence (broadcasting presence only between selected groups"));
+
+		form.addField( Field.fieldListMulti( TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS,
+																				 null, "Affiliations for which presence should be delivered",
+																				 asStringTable( Affiliation.values() ), asStringTable( Affiliation.values() ) ) );
 
 	}
 
@@ -312,6 +376,10 @@ public class RoomConfig {
 		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_PERSISTENTROOM_KEY), false);
 	}
 
+	public boolean isPresenceFilterEnabled() {
+		return asBoolean(form.getAsBoolean(TIGASE_ROOMCONFIG_PRESENCE_FILTERING), false);
+	}
+
 	/**
 	 * Make Room Publicly Searchable
 	 * 
@@ -329,7 +397,18 @@ public class RoomConfig {
 		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_MODERATEDROOM_KEY), false);
 	}
 
-	public void read(final UserRepository repository, final MucConfig config, final String subnode)
+	/**
+	 * 
+	 */
+	public void notifyConfigUpdate() {
+		HashSet<String> vars = new HashSet<String>();
+		for (Field f : form.getAllFields()) {
+			vars.add(f.getVar());
+		}
+		fireConfigChanged(vars);
+	}
+
+	public void read(final UserRepository repository, final MucContext config, final String subnode)
 			throws UserNotFoundException, TigaseDBException {
 		String[] keys = repository.getKeys(config.getServiceBareJID(), subnode);
 		if (keys != null)
@@ -343,7 +422,7 @@ public class RoomConfig {
 		this.listeners.remove(listener);
 	}
 
-	private void setValue(String var, Object data) {
+	public void setValue(String var, Object data) {
 		Field f = form.get(var);
 
 		if (f == null) {
@@ -352,8 +431,9 @@ public class RoomConfig {
 			f.setValues(new String[] {});
 		} else if (data instanceof String) {
 			String str = (String) data;
-			if (f.getType() == FieldType.bool && !"0".equals(str) && !"1".equals(str))
-				throw new RuntimeException("Boolean fields allows only '1' or '0' values");
+			if (f.getType() == FieldType.bool && !"0".equals(str) && !"1".equals(str) && !"true".equalsIgnoreCase(str)
+					&& !"false".equalsIgnoreCase(str))
+				throw new RuntimeException("Boolean fields allows only '1', 'true', '0', 'false' values");
 			f.setValues(new String[] { str });
 		} else if (data instanceof Boolean && f.getType() == FieldType.bool) {
 			boolean b = ((Boolean) data).booleanValue();
@@ -378,7 +458,7 @@ public class RoomConfig {
 		}
 	}
 
-	public void write(final UserRepository repo, final MucConfig config, final String subnode) throws UserNotFoundException,
+	public void write(final UserRepository repo, final MucContext config, final String subnode) throws UserNotFoundException,
 			TigaseDBException {
 		List<Field> fields = form.getAllFields();
 		for (Field field : fields) {

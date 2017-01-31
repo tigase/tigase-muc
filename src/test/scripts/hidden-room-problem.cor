@@ -1,0 +1,311 @@
+# ****************************************** #
+# * SCENARIO ONE                           * #
+# * muc#roomconfig_publicroom = 0          * #
+# ****************************************** #
+
+
+# ------------------------------------------ #
+# creating room                              #
+# ------------------------------------------ #
+send(Create room): {
+<presence
+    from='crone1@shakespeare.lit/desktop'
+    to='darkcave@macbeth.shakespeare.lit/firstwitch'>
+  <x xmlns='http://jabber.org/protocol/muc'/>
+</presence>
+}
+
+expect: {
+<presence 
+    from='darkcave@macbeth.shakespeare.lit/firstwitch'
+    to='crone1@shakespeare.lit/desktop'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='owner'
+          jid="crone1@shakespeare.lit/desktop" 
+          nick="firstwitch"
+          role='moderator'/>
+    <status code='201'/>
+    <status code="110"/>      
+  </x>
+</presence>
+}
+
+# ------------------------------------------ #
+# owner unloks room                          #
+# ------------------------------------------ #
+send(unlocking): {
+<iq from='crone1@shakespeare.lit/desktop'
+    id='create1'
+    to='darkcave@macbeth.shakespeare.lit'
+    type='set'>
+  <query xmlns='http://jabber.org/protocol/muc#owner'>
+    <x xmlns='jabber:x:data' type='submit'>
+	  <field var='FORM_TYPE'>
+	    <value>http://jabber.org/protocol/muc#register</value>
+	  </field>
+	<field label='Make Room Publicly Searchable?' var='muc#roomconfig_publicroom' type='boolean'>
+	  <value>0</value>
+	</field>
+    </x>
+  </query>
+</iq>
+}
+
+expect: {
+<iq from ='darkcave@macbeth.shakespeare.lit' to='crone1@shakespeare.lit/desktop' type='result' id='create1'/>
+}
+
+# ------------------------------------------ #
+# Checking items by someone else             #
+# ------------------------------------------ #
+send: {
+<iq from='hag66@shakespeare.lit/pda'
+    to='macbeth.shakespeare.lit'
+    id='items2'
+    type='get'>
+  <query xmlns='http://jabber.org/protocol/disco#items'/>
+</iq>
+}
+
+expect: {
+<iq from='macbeth.shakespeare.lit'
+    id='items2'
+    to='hag66@shakespeare.lit/pda'
+    type='result'>
+  <query xmlns='http://jabber.org/protocol/disco#items'>
+  </query>
+</iq>
+}
+
+
+# ------------------------------------------ #
+# Checking items by owner                    #
+# ------------------------------------------ #
+send: {
+<iq from='crone1@shakespeare.lit/desktop'
+    to='macbeth.shakespeare.lit'
+    id='items1'
+    type='get'>
+  <query xmlns='http://jabber.org/protocol/disco#items'/>
+</iq>
+}
+
+expect: {
+<iq from='macbeth.shakespeare.lit'
+    id='items1'
+    to='crone1@shakespeare.lit/desktop'
+    type='result'>
+  <query xmlns='http://jabber.org/protocol/disco#items'>
+  </query>
+</iq>
+}
+
+# ****************************************** #
+# * SCENARIO ONE                           * #
+# * muc#roomconfig_publicroom = 1          * #
+# ****************************************** #
+
+
+# ------------------------------------------ #
+# creating room                              #
+# ------------------------------------------ #
+send(Create room): {
+<presence
+    from='crone1@shakespeare.lit/desktop'
+    to='other@macbeth.shakespeare.lit/firstwitch'>
+  <x xmlns='http://jabber.org/protocol/muc'/>
+</presence>
+}
+
+expect: {
+<presence 
+    from='other@macbeth.shakespeare.lit/firstwitch'
+    to='crone1@shakespeare.lit/desktop'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='owner'
+          jid="crone1@shakespeare.lit/desktop" 
+          nick="firstwitch"
+          role='moderator'/>
+    <status code='201'/>
+    <status code="110"/>      
+  </x>
+</presence>
+}
+
+# ------------------------------------------ #
+# owner unloks room                          #
+# ------------------------------------------ #
+send(unlocking): {
+<iq from='crone1@shakespeare.lit/desktop'
+    id='create21'
+    to='other@macbeth.shakespeare.lit'
+    type='set'>
+  <query xmlns='http://jabber.org/protocol/muc#owner'>
+    <x xmlns='jabber:x:data' type='submit'>
+	  <field var='FORM_TYPE'>
+	    <value>http://jabber.org/protocol/muc#register</value>
+	  </field>
+	<field label='Make Room Publicly Searchable?' var='muc#roomconfig_publicroom' type='boolean'>
+	  <value>1</value>
+	</field>
+    </x>
+  </query>
+</iq>
+}
+
+expect: {
+<iq from ='other@macbeth.shakespeare.lit' to='crone1@shakespeare.lit/desktop' type='result' id='create21'/>
+}
+
+# ------------------------------------------ #
+# Checking items by someone else             #
+# ------------------------------------------ #
+send: {
+<iq from='hag66@shakespeare.lit/pda'
+    to='macbeth.shakespeare.lit'
+    id='items22'
+    type='get'>
+  <query xmlns='http://jabber.org/protocol/disco#items'/>
+</iq>
+}
+
+expect: {
+<iq from='macbeth.shakespeare.lit'
+    id='items22'
+    to='hag66@shakespeare.lit/pda'
+    type='result'>
+  <query xmlns='http://jabber.org/protocol/disco#items'>
+  <item jid='other@macbeth.shakespeare.lit'
+          name='other'/>
+  </query>
+</iq>
+}
+
+
+# ------------------------------------------ #
+# Checking items by owner                    #
+# ------------------------------------------ #
+send: {
+<iq from='crone1@shakespeare.lit/desktop'
+    to='macbeth.shakespeare.lit'
+    id='items21'
+    type='get'>
+  <query xmlns='http://jabber.org/protocol/disco#items'/>
+</iq>
+}
+
+expect: {
+<iq from='macbeth.shakespeare.lit'
+    id='items21'
+    to='crone1@shakespeare.lit/desktop'
+    type='result'>
+  <query xmlns='http://jabber.org/protocol/disco#items'>
+  <item jid='other@macbeth.shakespeare.lit'
+          name='other'/>
+  </query>
+</iq>
+}
+
+# ****************************************** #
+# * SCENARIO ONE                           * #
+# * default                                * #
+# ****************************************** #
+
+
+# ------------------------------------------ #
+# creating room                              #
+# ------------------------------------------ #
+send(Create room): {
+<presence
+    from='crone1@shakespeare.lit/desktop'
+    to='onemore@macbeth.shakespeare.lit/firstwitch'>
+  <x xmlns='http://jabber.org/protocol/muc'/>
+</presence>
+}
+
+expect: {
+<presence 
+    from='onemore@macbeth.shakespeare.lit/firstwitch'
+    to='crone1@shakespeare.lit/desktop'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='owner'
+          jid="crone1@shakespeare.lit/desktop" 
+          nick="firstwitch"
+          role='moderator'/>
+    <status code='201'/>
+    <status code="110"/>      
+  </x>
+</presence>
+}
+
+# ------------------------------------------ #
+# owner unloks room                          #
+# ------------------------------------------ #
+send(unlocking): {
+<iq from='crone1@shakespeare.lit/desktop'
+    id='create31'
+    to='onemore@macbeth.shakespeare.lit'
+    type='set'>
+  <query xmlns='http://jabber.org/protocol/muc#owner'>
+    <x xmlns='jabber:x:data' type='submit'/>
+  </query>
+</iq>
+}
+
+expect: {
+<iq from ='onemore@macbeth.shakespeare.lit' to='crone1@shakespeare.lit/desktop' type='result' id='create31'/>
+}
+
+# ------------------------------------------ #
+# Checking items by someone else             #
+# ------------------------------------------ #
+send: {
+<iq from='hag66@shakespeare.lit/pda'
+    to='macbeth.shakespeare.lit'
+    id='items32'
+    type='get'>
+  <query xmlns='http://jabber.org/protocol/disco#items'/>
+</iq>
+}
+
+expect: {
+<iq from='macbeth.shakespeare.lit'
+    id='items32'
+    to='hag66@shakespeare.lit/pda'
+    type='result'>
+  <query xmlns='http://jabber.org/protocol/disco#items'>
+  <item jid='onemore@macbeth.shakespeare.lit'
+          name='onemore'/>
+  <item jid='other@macbeth.shakespeare.lit'
+          name='other'/>
+  </query>
+</iq>
+}
+
+
+# ------------------------------------------ #
+# Checking items by owner                    #
+# ------------------------------------------ #
+send: {
+<iq from='crone1@shakespeare.lit/desktop'
+    to='macbeth.shakespeare.lit'
+    id='items31'
+    type='get'>
+  <query xmlns='http://jabber.org/protocol/disco#items'/>
+</iq>
+}
+
+expect: {
+<iq from='macbeth.shakespeare.lit'
+    id='items31'
+    to='crone1@shakespeare.lit/desktop'
+    type='result'>
+  <query xmlns='http://jabber.org/protocol/disco#items'>
+  <item jid='onemore@macbeth.shakespeare.lit'
+          name='onemore'/>
+  <item jid='other@macbeth.shakespeare.lit'
+          name='other'/>
+  </query>
+</iq>
+}
+

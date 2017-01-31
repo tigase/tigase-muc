@@ -3,15 +3,15 @@
  * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
+ * it under the terms of the GNU Affero General Public License as published by
  * the Free Software Foundation, either version 3 of the License.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program. Look for COPYING file in the top folder.
  * If not, see http://www.gnu.org/licenses/.
  *
@@ -19,7 +19,7 @@
  * Last modified by $Author$
  * $Date$
  */
-package tigase.muc;
+package tigase.muc.logger;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -28,14 +28,17 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
 
-import tigase.muc.RoomConfig.LogFormat;
+import tigase.muc.MucContext;
+import tigase.muc.Room;
+import tigase.muc.RoomConfig;
 import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 /**
  * @author bmalkow
  * 
  */
-public class RoomChatLogger implements IChatRoomLogger {
+public class RoomChatLogger implements MucLogger {
 
 	private static class Item {
 		final String data;
@@ -93,24 +96,14 @@ public class RoomChatLogger implements IChatRoomLogger {
 
 	private final static String SUBJECT_PLAIN_FORMAT = "[%1$s] %2$s has set the subject to: %3$s\n";
 
-	public static void main(String[] args) throws IOException {
-		LinkedList<String> a = new LinkedList<String>();
-		a.add("1");
-		a.add("2");
-		a.add("3");
-		a.add("4");
-	}
-
-	private final MucConfig config;
+	private MucContext context;
 
 	private final Worker worker = new Worker();
 
 	/**
 	 * @param config2
 	 */
-	public RoomChatLogger(MucConfig config2) {
-		this.config = config2;
-		this.worker.start();
+	public RoomChatLogger() {
 	}
 
 	/*
@@ -120,10 +113,10 @@ public class RoomChatLogger implements IChatRoomLogger {
 	 * java.lang.String, java.util.Date, java.lang.String)
 	 */
 	@Override
-	public void addJoin(LogFormat logFormat, BareJID roomJID, Date date, String nickName) {
+	public void addJoinEvent(Room room, Date date, JID senderJID, String nickName) {
 
 		String pattern;
-		switch (logFormat) {
+		switch (room.getConfig().getLoggingFormat()) {
 		case html:
 			pattern = JOIN_HTML_FORMAT;
 			break;
@@ -134,9 +127,9 @@ public class RoomChatLogger implements IChatRoomLogger {
 			pattern = JOIN_PLAIN_FORMAT;
 			break;
 		default:
-			throw new RuntimeException("Unsupported log format: " + logFormat.name());
+			throw new RuntimeException("Unsupported log format: " + room.getConfig().getLoggingFormat());
 		}
-		addLine(pattern, logFormat, roomJID, date, nickName, null);
+		addLine(pattern, room.getConfig().getLoggingFormat(), room.getRoomJID(), date, nickName, null);
 	}
 
 	/*
@@ -146,10 +139,10 @@ public class RoomChatLogger implements IChatRoomLogger {
 	 * java.lang.String, java.util.Date, java.lang.String)
 	 */
 	@Override
-	public void addLeave(LogFormat logFormat, BareJID roomJID, Date date, String nickName) {
+	public void addLeaveEvent(Room room, Date date, JID senderJID, String nickName) {
 
 		String pattern;
-		switch (logFormat) {
+		switch (room.getConfig().getLoggingFormat()) {
 		case html:
 			pattern = LEAVE_HTML_FORMAT;
 			break;
@@ -160,12 +153,13 @@ public class RoomChatLogger implements IChatRoomLogger {
 			pattern = LEAVE_PLAIN_FORMAT;
 			break;
 		default:
-			throw new RuntimeException("Unsupported log format: " + logFormat.name());
+			throw new RuntimeException("Unsupported log format: " + room.getConfig().getLoggingFormat());
 		}
-		addLine(pattern, logFormat, roomJID, date, nickName, null);
+		addLine(pattern, room.getConfig().getLoggingFormat(), room.getRoomJID(), date, nickName, null);
 	}
 
-	private void addLine(String pattern, RoomConfig.LogFormat logFormat, BareJID roomJID, Date date, String nickName, String text) {
+	private void addLine(String pattern, RoomConfig.LogFormat logFormat, BareJID roomJID, Date date, String nickName,
+			String text) {
 
 		String d = sdf.format(date);
 		Object[] values = new String[] { d, nickName, text };
@@ -186,7 +180,7 @@ public class RoomChatLogger implements IChatRoomLogger {
 			throw new RuntimeException("Unsupported log format: " + logFormat.name());
 		}
 
-		Item it = new Item(new File(config.getLogDirectory() + "/" + roomJID + ext), line);
+		Item it = new Item(new File(context.getChatLoggingDirectory() + "/" + roomJID + ext), line);
 		this.worker.items.add(it);
 	}
 
@@ -197,10 +191,11 @@ public class RoomChatLogger implements IChatRoomLogger {
 	 * tigase.muc.IChatRoomLogger#addMessage(tigase.muc.RoomConfig.LogFormat,
 	 * java.lang.String, java.util.Date, java.lang.String, java.lang.String)
 	 */
-	public void addMessage(RoomConfig.LogFormat logFormat, BareJID roomJID, Date date, String nickName, String message) {
+	@Override
+	public void addMessage(Room room, String message, JID senderJid, String senderNickname, Date time) {
 
 		String pattern;
-		switch (logFormat) {
+		switch (room.getConfig().getLoggingFormat()) {
 		case html:
 			pattern = MESSAGE_HTML_FORMAT;
 			break;
@@ -211,9 +206,9 @@ public class RoomChatLogger implements IChatRoomLogger {
 			pattern = MESSAGE_PLAIN_FORMAT;
 			break;
 		default:
-			throw new RuntimeException("Unsupported log format: " + logFormat.name());
+			throw new RuntimeException("Unsupported log format: " + room.getConfig().getLoggingFormat());
 		}
-		addLine(pattern, logFormat, roomJID, date, nickName, message);
+		addLine(pattern, room.getConfig().getLoggingFormat(), room.getRoomJID(), time, senderNickname, message);
 	}
 
 	/*
@@ -224,10 +219,10 @@ public class RoomChatLogger implements IChatRoomLogger {
 	 * java.lang.String, java.util.Date, java.lang.String, java.lang.String)
 	 */
 	@Override
-	public void addSubject(LogFormat logFormat, BareJID roomJID, Date date, String nickName, String subject) {
+	public void addSubjectChange(Room room, String message, JID senderJid, String senderNickname, Date time) {
 
 		String pattern;
-		switch (logFormat) {
+		switch (room.getConfig().getLoggingFormat()) {
 		case html:
 			pattern = SUBJECT_HTML_FORMAT;
 			break;
@@ -238,9 +233,19 @@ public class RoomChatLogger implements IChatRoomLogger {
 			pattern = SUBJECT_PLAIN_FORMAT;
 			break;
 		default:
-			throw new RuntimeException("Unsupported log format: " + logFormat.name());
+			throw new RuntimeException("Unsupported log format: " + room.getConfig().getLoggingFormat());
 		}
-		addLine(pattern, logFormat, roomJID, date, nickName, subject);
+		addLine(pattern, room.getConfig().getLoggingFormat(), room.getRoomJID(), time, senderNickname, message);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see tigase.muc.logger.MucLogger#init(java.util.Map)
+	 */
+	@Override
+	public void init(MucContext context) {
+		this.context = context;
+		this.worker.start();
+	}
 }

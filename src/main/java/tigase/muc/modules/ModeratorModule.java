@@ -1,193 +1,221 @@
 /*
- * Tigase Jabber/XMPP Multi-User Chat Component
- * Copyright (C) 2008 "Bartosz M. Małkowski" <bartosz.malkowski@tigase.org>
+ * ModeratorModule.java
+ *
+ * Tigase Jabber/XMPP Server
+ * Copyright (C) 2004-2012 "Artur Hefczyc" <artur.hefczyc@tigase.org>
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License.
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
+ * GNU Affero General Public License for more details.
  *
- * You should have received a copy of the GNU General Public License
+ * You should have received a copy of the GNU Affero General Public License
  * along with this program. Look for COPYING file in the top folder.
  * If not, see http://www.gnu.org/licenses/.
  *
- * $Rev$
- * Last modified by $Author$
- * $Date$
  */
+
 package tigase.muc.modules;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.logging.Level;
 
+import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.muc.Affiliation;
-import tigase.muc.MucConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
 import tigase.muc.exceptions.MUCException;
-import tigase.muc.repository.IMucRepository;
-import tigase.muc.repository.RepositoryException;
+import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+import tigase.xmpp.StanzaType;
 
 /**
  * @author bmalkow
  * 
  */
-public class ModeratorModule extends AbstractModule {
+public class ModeratorModule extends AbstractMucModule {
 
-	private static final Criteria CRIT = ElementCriteria.name("iq").add(
+	protected static final Criteria CRIT = ElementCriteria.name("iq").add(
 			ElementCriteria.name("query", "http://jabber.org/protocol/muc#admin"));
 
-	private static Affiliation getAffiliation(Element item) {
-		String tmp = item.getAttribute("affiliation");
-		return tmp == null ? null : Affiliation.valueOf(tmp);
-	}
+	public static final String ID = "admin";
 
-	private static Collection<JID> getOccupantJidsFromItem(Room room, Element item) {
-		final String nick = item.getAttribute("nick");
+	protected static Affiliation getAffiliation(Element item) throws MUCException {
+		String tmp = item.getAttributeStaticStr("affiliation");
+
 		try {
-			JID jid = JID.jidInstance(item.getAttribute("jid"));
-
-			Collection<JID> resultJids = new ArrayList<JID>();
-			if (nick != null) {
-				resultJids = room.getOccupantsJidsByNickname(nick);
-			} else if (jid != null) {
-				String tmpNick = room.getOccupantsNicknameByBareJid(jid.getBareJID());
-				resultJids = room.getOccupantsJidsByNickname(tmpNick);
-			}
-			return resultJids;
-		} catch (TigaseStringprepException e) {
-			return new ArrayList<JID>();
+			return (tmp == null) ? null : Affiliation.valueOf(tmp);
+		} catch (IllegalArgumentException e) {
+			throw new MUCException(Authorization.BAD_REQUEST, "Unknown affiliation value: " + tmp);
 		}
 	}
 
-	private static String getReason(Element item) {
+	protected static String getReason(Element item) {
 		Element r = item.getChild("reason");
-		return r == null ? null : r.getCData();
+
+		return (r == null) ? null : r.getCData();
 	}
 
-	private static Role getRole(Element item) {
-		String tmp = item.getAttribute("role");
-		return tmp == null ? null : Role.valueOf(tmp);
+	protected static Role getRole(Element item) {
+		String tmp = item.getAttributeStaticStr("role");
+
+		return (tmp == null) ? null : Role.valueOf(tmp);
 	}
 
-	public ModeratorModule(MucConfig config, IMucRepository mucRepository) {
-		super(config, mucRepository);
-	}
-
-	private void checkItem(final Room room, final Element item, final Affiliation senderaAffiliation, final Role senderRole)
-			throws MUCException {
-		
-		// FIXME: check barejid only...
-		
+	protected void checkItem(final Room room, final Element item, final String senderNickname,
+			final Affiliation senderaAffiliation, final Role senderRole) throws MUCException, TigaseStringprepException {
 		final Role newRole = getRole(item);
 		final Affiliation newAffiliation = getAffiliation(item);
-		final Collection<JID> occupantJids = getOccupantJidsFromItem(room, item);
-		
-		for(JID occupantJid: occupantJids) {
-			final Affiliation occupantAffiliation = room.getAffiliation(occupantJid.getBareJID());
-			final Role occupantRole = room.getRoleByJid(occupantJid);
+		HashSet<String> occupantNicknames = new HashSet<String>();
 
-			if (newRole != null && newAffiliation == null) {
-				if (newRole == Role.none && !senderRole.isKickParticipantsAndVisitors()) {
+		if (item.getAttributeStaticStr("nick") != null) {
+			occupantNicknames.add(item.getAttributeStaticStr("nick"));
+		}
+		if (item.getAttributeStaticStr("jid") != null) {
+			occupantNicknames.addAll(room.getOccupantsNicknames(BareJID.bareJIDInstance(item.getAttributeStaticStr("jid"))));
+		}
+		for (String occupantNickname : occupantNicknames) {
+			final Affiliation occupantAffiliation = room.getAffiliation(occupantNickname);
+
+			if ((newRole != null) && (newAffiliation == null)) {
+				if ((newRole == Role.none) && !senderRole.isKickParticipantsAndVisitors()) {
+					if (log.isLoggable(Level.FINEST))
+						log.finest("User " + senderNickname + " (a:" + senderaAffiliation + "; r:" + senderRole
+								+ ") is not allowed to kick user " + occupantNickname + " (a:" + occupantAffiliation + ")");
 					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot kick");
-				} else if (newRole == Role.none && occupantAffiliation.getWeight() >= senderaAffiliation.getWeight()) {
+				} else if ((newRole == Role.none) && (occupantAffiliation.getWeight() > senderaAffiliation.getWeight())) {
+					if (log.isLoggable(Level.FINEST))
+						log.finest("User " + senderNickname + " (a:" + senderaAffiliation + "; r:" + senderRole
+								+ ") is not allowed to kick user " + occupantNickname + " (a:" + occupantAffiliation
+								+ ") because of lower affiliation.");
 					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot kick occupant with higher affiliation");
 				}
-
-				if (newRole == Role.participant && !senderRole.isGrantVoice()) {
+				if ((newRole == Role.participant) && !senderRole.isGrantVoice()) {
+					if (log.isLoggable(Level.FINEST))
+						log.finest("User " + senderNickname + " (a:" + senderaAffiliation + "; r:" + senderRole
+								+ ") is not allowed to grant voice to user " + occupantNickname + " (a:" + occupantAffiliation
+								+ ") because of lower affiliation.");
 					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant voice");
 				}
-
-				if (newRole == Role.visitor && !senderRole.isRevokeVoice()) {
+				if ((newRole == Role.visitor) && !senderRole.isRevokeVoice()) {
 					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot revoke voice");
-				} else if (newRole == Role.visitor && occupantAffiliation.getWeight() >= senderaAffiliation.getWeight()) {
+				} else if ((newRole == Role.visitor) && (occupantAffiliation.getWeight() >= senderaAffiliation.getWeight())) {
 					throw new MUCException(Authorization.NOT_ALLOWED, "You revoke voice occupant with higher affiliation");
 				}
-
-				if (newRole == Role.moderator && !senderaAffiliation.isEditModeratorList()) {
+				if ((newRole == Role.moderator) && !senderaAffiliation.isEditModeratorList()) {
 					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant moderator provileges");
 				}
-
-			} else if (newRole == null && newAffiliation != null) {
-				if (item.getAttribute("jid") == null) {
+			} else if ((newRole == null) && (newAffiliation != null)) {
+				if (item.getAttributeStaticStr("jid") == null) {
 					throw new MUCException(Authorization.BAD_REQUEST);
 				}
-
-				if (newAffiliation == Affiliation.outcast && !senderaAffiliation.isBanMembersAndUnaffiliatedUsers()) {
+				if ((newAffiliation == Affiliation.outcast) && !senderaAffiliation.isBanMembersAndUnaffiliatedUsers()) {
 					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot ban");
-				} else if (newAffiliation == Affiliation.outcast && occupantAffiliation.getWeight() >= senderaAffiliation.getWeight()) {
+				} else if ((newAffiliation == Affiliation.outcast)
+						&& (occupantAffiliation.getWeight() >= senderaAffiliation.getWeight())) {
 					throw new MUCException(Authorization.NOT_ALLOWED, "You ban occupant with higher affiliation");
 				}
-
-				if (newAffiliation == Affiliation.member && !senderaAffiliation.isEditMemberList()) {
+				if ((newAffiliation == Affiliation.member) && !senderaAffiliation.isEditMemberList()) {
 					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant membership");
 				}
-
-				if (newAffiliation == Affiliation.admin && !senderaAffiliation.isEditAdminList()) {
+				if ((newAffiliation == Affiliation.admin) && !senderaAffiliation.isEditAdminList()) {
 					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant admin provileges");
 				}
-
-				if (newAffiliation == Affiliation.owner && !senderaAffiliation.isEditOwnerList()) {
+				if ((newAffiliation == Affiliation.owner) && !senderaAffiliation.isEditOwnerList()) {
 					throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant owner provileges");
 				}
-
-				if (newAffiliation == Affiliation.none && occupantAffiliation.getWeight() >= senderaAffiliation.getWeight()) {
-					throw new MUCException(Authorization.NOT_ALLOWED, "You remove affiliation occupant with higher affiliation");
+				if ((newAffiliation == Affiliation.none) && (occupantAffiliation.getWeight() > senderaAffiliation.getWeight())) {
+					throw new MUCException(Authorization.NOT_ALLOWED,
+							"You cannot remove affiliation occupant with higher affiliation");
 				}
-
 			} else {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 		}
 	}
 
+	/**
+	 * Method description
+	 * 
+	 * 
+	 * @return
+	 */
 	@Override
 	public String[] getFeatures() {
 		return null;
 	}
 
+	/**
+	 * Method description
+	 * 
+	 * 
+	 * @return
+	 */
 	@Override
 	public Criteria getModuleCriteria() {
 		return CRIT;
 	}
 
-	private Element makePresence(final JID destinationJid,
-			final BareJID roomJID, final Room room, final JID occupantJid,
-			boolean unavailable, Affiliation affiliation, Role role,
-			String nick, String reason, String actor, String... codes) {
-		
-		Element presence = unavailable ? new Element("presence",
-				new String[] { "type" }, new String[] { "unavailable" }) : room
-				.getLastPresenceCopyByJid(occupantJid);
+	/**
+	 * Kicking user without sending presence to all other occupant. Used only to
+	 * inform occupants that component is stopping.
+	 */
+	public void kickWithoutBroadcast(Room room, String occupantNick, String reason, String actor)
+			throws TigaseStringprepException {
+		List<String> codes = new ArrayList<String>();
+		final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNick);
+		final Affiliation occupantAffiliation = room.getAffiliation(occupantJid);
+
+		codes.add("307");
+		boolean isUnavailable = true;
+
+		final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(occupantNick);
+
+		for (JID jid : occupantJids) {
+			Packet occupantKickPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
+					occupantAffiliation, Role.none, occupantNick, reason, actor, codes.toArray(new String[] {}));
+
+			write(occupantKickPresence);
+		}
+		room.removeOccupant(occupantNick);
+	}
+
+	protected Packet makePresence(final JID destinationJid, final BareJID roomJID, final Room room, final BareJID occupantJid,
+			boolean unavailable, Affiliation affiliation, Role role, String nick, String reason, String actor, String... codes)
+			throws TigaseStringprepException {
+		Element presence = unavailable ? new Element("presence", new String[] { "type" }, new String[] { "unavailable" })
+				: room.getLastPresenceCopyByJid(occupantJid);
 
 		try {
 			presence.setAttribute("from", JID.jidInstance(roomJID, nick).toString());
 		} catch (TigaseStringprepException e) {
 			presence.setAttribute("from", roomJID.toString() + "/" + nick);
 		}
-		
 		presence.setAttribute("to", destinationJid.toString());
 
-		Element x = new Element("x", new String[] { "xmlns" },
-				new String[] { "http://jabber.org/protocol/muc#user" });
+		Element x = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
+
 		presence.addChild(x);
 
 		Element item = new Element("item");
-		x.addChild(item);
 
+		x.addChild(item);
 		if (role != null) {
 			item.setAttribute("role", role.name());
 		}
@@ -197,40 +225,48 @@ public class ModeratorModule extends AbstractModule {
 		if (nick != null) {
 			item.setAttribute("nick", nick);
 		}
-		// TODO jid
 
+		// TODO jid
 		if (actor != null) {
-			x.addChild(new Element("actor", new String[] { "jid" },
-					new String[] { actor }));
+			item.addChild(new Element("actor", new String[] { "jid" }, new String[] { actor }));
 		}
 		if (reason != null) {
-			x.addChild(new Element("reason", reason));
+			item.addChild(new Element("reason", reason));
 		}
-
 		if (codes != null) {
 			for (String code : codes) {
-				if (code != null)
-					x.addChild(new Element("status", new String[] { "code" },
-							new String[] { code }));
+				if (code != null) {
+					x.addChild(new Element("status", new String[] { "code" }, new String[] { code }));
+				}
 			}
 		}
 
-		return presence;
+		Packet result = Packet.packetInstance(presence);
+		result.setXMLNS(Packet.CLIENT_XMLNS);
+
+		return result;
 	}
 
+	/**
+	 * Method description
+	 * 
+	 * 
+	 * @param element
+	 * 
+	 * @throws MUCException
+	 */
 	@Override
-	public List<Element> process(Element element) throws MUCException {
+	public void process(Packet element) throws MUCException {
 		try {
-			final String type = element.getAttribute("type");
+			final StanzaType type = element.getType();
 
-			if (getNicknameFromJid(JID.jidInstance(element.getAttribute("to"))) != null) {
+			if (getNicknameFromJid(element.getTo()) != null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
-
-			if ("set".equals(type)) {
-				return processSet(element);
-			} else if ("get".equals(type)) {
-				return processGet(element);
+			if (type == StanzaType.set) {
+				processSet(element);
+			} else if (type == StanzaType.get) {
+				processGet(element);
 			} else {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
@@ -238,188 +274,250 @@ public class ModeratorModule extends AbstractModule {
 			throw e1;
 		} catch (Exception e) {
 			e.printStackTrace();
+
 			throw new RuntimeException(e);
 		}
 	}
 
-	private List<Element> processGet(Element element) throws RepositoryException, MUCException {
-		
-		Element response = createResultIQ(element);
-		
+	protected void processGet(Packet element) throws RepositoryException, MUCException {
 		try {
-			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
+			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
+			Room room = context.getMucRepository().getRoom(roomJID);
 
-			Room room = repository.getRoom(roomJID);
 			if (room == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
 
-			final Element query = element.getChild("query");
+			final Element query = element.getElement().getChild("query");
 			final Element item = query.getChild("item");
-			
-			JID senderJID = JID.jidInstance(element.getAttribute("from"));
-			
-			final Role senderRole = room.getRoleByJid(senderJID);
+			final JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
+			final String senderNickname = room.getOccupantsNickname(senderJID);
 			final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID());
-
-			if (senderAffiliation != Affiliation.admin && senderAffiliation != Affiliation.owner) {
-				throw new MUCException(Authorization.FORBIDDEN);
-			}
+			final Role senderRole = room.getRole(senderNickname);
 
 			final Role filterRole = getRole(item);
 			final Affiliation filterAffiliation = getAffiliation(item);
 
+			boolean allowed = false;
+			allowed = allowed || senderAffiliation == Affiliation.admin;
+			allowed = allowed || senderAffiliation == Affiliation.owner;
+			allowed = allowed
+					|| (room.getConfig().getRoomAnonymity() == Anonymity.nonanonymous && senderRole.isPresentInRoom());
 
-			Element responseQuery = new Element("query", new String[] { "xmlns" },
-					new String[] { "http://jabber.org/protocol/muc#admin" });
-			response.addChild(responseQuery);
+			if (!allowed)
+				throw new MUCException(Authorization.FORBIDDEN);
 
-			if (filterAffiliation != null && filterRole == null) {
-				for (BareJID jid : room.getAffiliations()) {
-					final Affiliation affiliation = room.getAffiliation(jid);
-					if (affiliation == filterAffiliation) {
-						final String nickName = room.getOccupantsNicknameByBareJid(jid);
-						final Collection<JID> fullJids = room.getOccupantsJidsByNickname(nickName);
-						for(JID fullJid: fullJids) {
-							final Role role = room.getRoleByJid(fullJid);
-							Element ir = new Element("item", new String[] { "affiliation", "jid" }, new String[] { affiliation.name(), jid.toString() });
-							if (nickName != null) {
-								ir.setAttribute("nick", nickName);
-								ir.setAttribute("role", role.name());
-							}
-							responseQuery.addChild(ir);
-						}
-					}
-				}
-			} else if (filterAffiliation == null && filterRole != null) {
-				for (JID jid : room.getOccupantsJids()) {
-					final Role role = room.getRoleByJid(jid);
-					if (role == filterRole) {
-						final Affiliation affiliation = room.getAffiliation(jid.getBareJID());
-						final String nick = room.getOccupantsNickname(jid);
-						Element ir = new Element("item", new String[] { "affiliation", "nick", "role" }, new String[] {
-								affiliation.name(), nick, role.name() });
-						if (room.getConfig().getRoomAnonymity() != Anonymity.fullanonymous) {
-							ir.setAttribute("jid", jid.toString());
-						}
-						responseQuery.addChild(ir);
-					}
-				}
+			if ((filterAffiliation != null) && (filterRole == null)) {
+				processGetAffiliations(element, room, filterAffiliation);
+			} else if ((filterAffiliation == null) && (filterRole != null)) {
+				processGetRoles(element, room, filterRole);
 			} else {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
-			
-		} catch (TigaseStringprepException e) {
-			// TODO Auto-generated catch block
+		} catch (MUCException e1) {
+			throw e1;
+		} catch (Exception e) {
 			e.printStackTrace();
-		}
 
-		return makeArray(response);
+			throw new RuntimeException(e);
+		}
 	}
 
-	private List<Element> processSet(Element element) throws RepositoryException, MUCException {
-		
-		final List<Element> result = makeArray(createResultIQ(element));
-		
+	protected void processGetAffiliations(final Packet iq, final Room room, final Affiliation filter)
+			throws RepositoryException, MUCException {
+		Element responseQuery = new Element("query", new String[] { "xmlns" },
+				new String[] { "http://jabber.org/protocol/muc#admin" });
+
+		for (BareJID jid : room.getAffiliations()) {
+			final Affiliation affiliation = room.getAffiliation(jid);
+
+			if (affiliation == filter) {
+				Element ir = new Element("item", new String[] { "affiliation", "jid" }, new String[] { affiliation.name(),
+						jid.toString() });
+
+				responseQuery.addChild(ir);
+			}
+		}
+		write(iq.okResult(responseQuery, 0));
+	}
+
+	protected void processGetRoles(final Packet iq, final Room room, final Role filterRole) throws RepositoryException,
+			MUCException {
+		Element responseQuery = new Element("query", new String[] { "xmlns" },
+				new String[] { "http://jabber.org/protocol/muc#admin" });
+
+		for (String occupantNickname : room.getOccupantsNicknames()) {
+			final Role role = room.getRole(occupantNickname);
+			final BareJID occupantBareJid = room.getOccupantsJidByNickname(occupantNickname);
+
+			if (role == filterRole) {
+				final Affiliation affiliation = room.getAffiliation(occupantBareJid);
+				Element ir = new Element("item", new String[] { "affiliation", "nick", "role" }, new String[] {
+						affiliation.name(), occupantNickname, role.name() });
+
+				if (room.getConfig().getRoomAnonymity() != Anonymity.fullanonymous) {
+					ir.setAttribute("jid", occupantBareJid.toString());
+				}
+				responseQuery.addChild(ir);
+			}
+		}
+		write(iq.okResult(responseQuery, 0));
+	}
+
+	protected void processSet(Packet element) throws RepositoryException, MUCException {
 		try {
-			
-			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
-			final Room room = repository.getRoom(roomJID);
+			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
+			final Room room = context.getMucRepository().getRoom(roomJID);
+
 			if (room == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
-			
-			JID senderJid = JID.jidInstance(element.getAttribute("from"));
-			
-			final Affiliation senderAffiliation = room.getAffiliation(senderJid.getBareJID());
-			final Role senderRole = room.getRoleByJid(senderJid);
 
-			final Element query = element.getChild("query");
+			JID senderJid = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
+			final String nickName = room.getOccupantsNickname(senderJid);
+			final Affiliation senderAffiliation = room.getAffiliation(senderJid.getBareJID());
+
+			final Role senderRole = room.getRole(nickName);
+			final Element query = element.getElement().getChild("query");
 			final List<Element> items = query.getChildren();
 
 			for (Element item : items) {
-				checkItem(room, item, senderAffiliation, senderRole);
+				checkItem(room, item, nickName, senderAffiliation, senderRole);
 			}
-
+			write(element.okResult((Element) null, 0));
 			for (Element item : items) {
 				final Role newRole = getRole(item);
 				final Affiliation newAffiliation = getAffiliation(item);
 				final String reason = getReason(item);
-
 				final String actor = senderJid.toString();
 
 				if (newAffiliation != null) {
-					final BareJID occupantBareJid = JID.jidInstance(item.getAttribute("jid")).getBareJID();
-					final Affiliation previousAffiliation = room.getAffiliation(occupantBareJid);
-
-					room.addAffiliationByJid(occupantBareJid, newAffiliation);
-					JID[] realOccupantJids = room.getRealJidsByBareJid(occupantBareJid);
-
-					for (JID realJID : realOccupantJids) {
-						final String occupantNick = room.getOccupantsNickname(realJID);
-						final Role currentRole = room.getRoleByJid(realJID);
-						List<String> codes = new ArrayList<String>();
-						boolean isUnavailable = false;
-						if (newAffiliation == Affiliation.outcast) {
-							codes.add("301");
-							isUnavailable = true;
-							Element occupantKickPresence = makePresence(realJID, roomJID, room, realJID, isUnavailable,
-									newAffiliation, newRole, occupantNick, reason, actor, codes.toArray(new String[] {}));
-							room.removeAllOccupantsByBareJid(realJID.getBareJID());
-							result.add(occupantKickPresence);
-						}
-
-						if (newAffiliation.isViewOccupantsJid() != previousAffiliation.isViewOccupantsJid()) {
-							// TODO send all occupant presences to this occupant?
-						}
-
-						// sending presence to all occupants
-						for (JID jid : room.getOccupantsJids()) {
-							Element occupantPresence = makePresence(jid, roomJID, room, realJID, isUnavailable, newAffiliation,
-									currentRole, occupantNick, reason, null, codes.toArray(new String[] {}));
-							result.add(occupantPresence);
-						}
-
-					}
-
+					processSetAffiliation(room, item, newAffiliation, newRole, reason, actor);
 				}
-
 				if (newRole != null) {
-					final Collection<JID> occupantJids = getOccupantJidsFromItem(room, item);
-					for(JID occupantJid: occupantJids) {
-					
-						final String occupantNick = room.getOccupantsNickname(occupantJid);
-						final Affiliation occupantAffiliation = room.getAffiliation(occupantJid.getBareJID());
-						boolean isUnavailable = false;
-
-						List<String> codes = new ArrayList<String>();
-
-						if (newRole == Role.none) {
-							codes.add("307");
-							isUnavailable = true;
-
-							Element occupantKickPresence = makePresence(occupantJid, roomJID, room, occupantJid, isUnavailable,
-									occupantAffiliation, newRole, occupantNick, reason, actor, codes.toArray(new String[] {}));
-							room.removeAllOccupantsByBareJid(occupantJid.getBareJID());
-							result.add(occupantKickPresence);
-						} else {
-							room.setNewRole(occupantJid.getBareJID(), newRole);
-						}
-
-						// sending presence to all occupants
-						for (JID jid : room.getOccupantsJids()) {
-							Element occupantPresence = makePresence(jid, roomJID, room, occupantJid, isUnavailable, occupantAffiliation,
-									newRole, occupantNick, reason, null, codes.toArray(new String[] {}));
-							result.add(occupantPresence);
-						}
-					}
+					String occupantNick = item.getAttributeStaticStr("nick");
+					processSetRole(room, occupantNick, newRole, reason, actor);
 				}
+			} else {
+				throw new MUCException(Authorization.BAD_REQUEST);
 			}
-		} catch (TigaseStringprepException e) {
-			throw new MUCException(Authorization.ITEM_NOT_FOUND);
+		} catch (MUCException e1) {
+			throw e1;
+		} catch (Exception e) {
+			e.printStackTrace();
+
+			throw new RuntimeException(e);
 		}
-		
-		return result;
 	}
 
+	protected void processSetAffiliation(Room room, Element item, Affiliation newAffiliation, Role newRole, String reason,
+			String actor) throws RepositoryException, TigaseStringprepException {
+		final BareJID occupantBareJid = JID.jidInstance(item.getAttributeStaticStr("jid")).getBareJID();
+		final Affiliation previousAffiliation = room.getAffiliation(occupantBareJid);
+
+		if (room.getConfig().isRoomMembersOnly() && (previousAffiliation.getWeight() <= Affiliation.none.getWeight())
+				&& (newAffiliation.getWeight() >= Affiliation.member.getWeight())) {
+			sendInvitation(room, occupantBareJid, actor);
+		}
+		room.addAffiliationByJid(occupantBareJid, newAffiliation);
+
+		boolean isUnavailable = false;
+		Set<String> codes = new HashSet<String>();
+		Collection<String> occupantsNicknames = room.getOccupantsNicknames(occupantBareJid);
+
+		for (String occupantNick : occupantsNicknames) {
+			if (newAffiliation == Affiliation.outcast) {
+				codes.add("301");
+				isUnavailable = true;
+
+				final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(occupantNick);
+
+				for (JID jid : occupantJids) {
+					Packet occupantKickPresence = makePresence(jid, room.getRoomJID(), room, occupantBareJid, isUnavailable,
+							newAffiliation, newRole, occupantNick, reason, actor, codes.toArray(new String[] {}));
+
+					write(occupantKickPresence);
+				}
+				room.removeOccupant(occupantNick);
+				context.getGhostbuster().remove(occupantJids, room);
+
+			for (Element item : items) {
+				checkItem(room, item, senderAffiliation, senderRole);
+			}
+		}
+		for (String nickname : room.getOccupantsNicknames()) {
+			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
+
+			for (JID jid : occupantJids) {
+				for (String removed : occupantsNicknames) {
+					final Role currentRole = room.getRole(removed);
+					Packet occupantPresence = makePresence(jid, room.getRoomJID(), room, occupantBareJid, isUnavailable,
+							newAffiliation, currentRole, removed, reason, null, codes.toArray(new String[] {}));
+
+					write(occupantPresence);
+				}
+			}
+		}
+	}
+
+	protected void processSetRole(Room room, String occupantNick, Role newRole, String reason, String actor)
+			throws TigaseStringprepException {
+		final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNick);
+		final Affiliation occupantAffiliation = room.getAffiliation(occupantJid);
+		boolean isUnavailable = false;
+		List<String> codes = new ArrayList<String>();
+
+		if (newRole == Role.none) {
+			codes.add("307");
+			isUnavailable = true;
+
+			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(occupantNick);
+
+			for (JID jid : occupantJids) {
+				Packet occupantKickPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
+						occupantAffiliation, newRole, occupantNick, reason, actor, codes.toArray(new String[] {}));
+
+				write(occupantKickPresence);
+			}
+			room.removeOccupant(occupantNick);
+			context.getGhostbuster().remove(occupantJids, room);
+		} else {
+			room.setNewRole(occupantNick, newRole);
+		}
+
+		// sending presence to all occupants
+		for (String nickname : room.getOccupantsNicknames()) {
+			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
+
+			for (JID jid : occupantJids) {
+				Packet occupantPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
+						occupantAffiliation, newRole, occupantNick, reason, null, codes.toArray(new String[] {}));
+
+				write(occupantPresence);
+			}
+		}
+	}
+
+	/**
+	 * @param room
+	 * @param occupantBareJid
+	 * @throws TigaseStringprepException
+	 */
+	protected void sendInvitation(Room room, BareJID occupantBareJid, String actor) throws TigaseStringprepException {
+		Packet message = Packet.packetInstance(new Element("message", new String[] { Packet.FROM_ATT, Packet.TO_ATT },
+				new String[] { room.getRoomJID().toString(), occupantBareJid.toString() }));
+		message.setXMLNS(Packet.CLIENT_XMLNS);
+
+		final Element x = new Element("x", new String[] { "xmlns" }, new String[] { "http://jabber.org/protocol/muc#user" });
+
+		message.getElement().addChild(x);
+
+		final Element invite = new Element("invite", new String[] { "from" }, new String[] { actor });
+
+		x.addChild(invite);
+		if (room.getConfig().isPasswordProtectedRoom()) {
+			x.addChild(new Element("password", room.getConfig().getPassword()));
+		}
+		write(message);
+	}
 }

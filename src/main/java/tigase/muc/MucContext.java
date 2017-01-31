@@ -21,19 +21,54 @@
  */
 package tigase.muc;
 
-import java.util.List;
+import tigase.component.Context;
+import tigase.muc.history.HistoryProvider;
+import tigase.muc.logger.MucLogger;
+import tigase.muc.repository.IMucRepository;
+import tigase.xmpp.BareJID;
 
-import tigase.criteria.Criteria;
-import tigase.muc.exceptions.MUCException;
-import tigase.xml.Element;
+/**
+ * @author bmalkow
+ * 
+ */
+public interface MucContext extends Context {
 
-public interface Module {
+	/**
+	 * @return
+	 */
+	String getChatLoggingDirectory();
 
-	String[] getFeatures();
+	Ghostbuster2 getGhostbuster();
 
-	Criteria getModuleCriteria();
+	HistoryProvider getHistoryProvider();
 
-	boolean isProcessedByModule(final Element element);
+	MucLogger getMucLogger();
 
-	List<Element> process(final Element element) throws MUCException;
+	IMucRepository getMucRepository();
+
+	BareJID getServiceName();
+
+	/**
+	 * @return
+	 */
+	boolean isChatStateAllowed();
+
+	boolean isMessageFilterEnabled();
+
+	boolean isMultiItemMode();
+
+	/**
+	 * @return
+	 */
+	boolean isNewRoomLocked();
+
+	/**
+	 * @return
+	 */
+	boolean isPresenceFilterEnabled();
+
+	/**
+	 * @return
+	 */
+	boolean isPublicLoggingEnabled();
 }

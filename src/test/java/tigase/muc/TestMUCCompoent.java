@@ -21,39 +21,18 @@
  */
 package tigase.muc;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.TimeZone;
+import tigase.component.PacketWriter;
+import tigase.muc.repository.IMucRepository;
 
 /**
  * @author bmalkow
  * 
  */
-public class XMPPDateTimeFormatter {
+public class TestMUCCompoent extends MUCComponent {
 
-	public final static String FORMAT = "%1$tY-%1$tm-%1$tdT%1$tH:%1$tM:%1$tSZ";
-
-	public XMPPDateTimeFormatter() {
-	}
-
-	public String format(final Date date) {
-		Calendar now = Calendar.getInstance();
-		now.setTimeZone(TimeZone.getTimeZone("GMT"));
-		now.setTime(date);
-		return String.format("%1$tY-%1$tm-%1$tdT%1$tH:%1$tM:%1$tSZ", now);
-	}
-
-	/**
-	 * Used only in jabber:x:delivery
-	 * 
-	 * @param date
-	 * @return
-	 */
-	public String formatOld(final Date date) {
-		Calendar now = Calendar.getInstance();
-		now.setTimeZone(TimeZone.getTimeZone("GMT"));
-		now.setTime(date);
-		return String.format("%1$tY%1$tm%1$tdT%1$tH:%1$tM:%1$tS", now);
+	public TestMUCCompoent(PacketWriter writer, IMucRepository mockMucRepository) {
+		this.writer = writer;
+		this.mucRepository = mockMucRepository;
 	}
 
 }

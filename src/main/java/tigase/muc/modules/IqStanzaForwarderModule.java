@@ -21,92 +21,122 @@
  */
 package tigase.muc.modules;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import tigase.server.Packet;
 
-import tigase.criteria.Criteria;
-import tigase.criteria.ElementCriteria;
-import tigase.muc.MucConfig;
-import tigase.muc.Role;
-import tigase.muc.Room;
-import tigase.muc.exceptions.MUCException;
-import tigase.muc.repository.IMucRepository;
-import tigase.util.TigaseStringprepException;
-import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import tigase.component.exceptions.ComponentException;
+import tigase.criteria.Criteria;
+import tigase.muc.Role;
+import tigase.muc.Room;
+import tigase.muc.exceptions.MUCException;
+import tigase.util.TigaseStringprepException;
+import tigase.xml.Element;
+
+import java.util.Collection;
+import java.util.logging.Level;
 
 /**
  * @author bmalkow
  * 
  */
-public class IqStanzaForwarderModule extends AbstractModule {
+public class IqStanzaForwarderModule extends AbstractMucModule {
 
-	private static final Criteria CRIT = ElementCriteria.name("iq");
+	public static final String ID = "iqforwarder";
 
-	public IqStanzaForwarderModule(MucConfig config, IMucRepository mucRepository) {
-		super(config, mucRepository);
-	}
+	private final Criteria crit = new Criteria() {
 
-	@Override
-	public String[] getFeatures() {
-		return null;
-	}
+		@Override
+		public Criteria add(Criteria criteria) {
+			return null;
+		}
 
-	@Override
-	public Criteria getModuleCriteria() {
-		return CRIT;
-	}
+		@Override
+		public boolean match(Element element) {
+			return checkIfProcessed(element);
+		}
+	};
 
-	@Override
-	public boolean isProcessedByModule(Element element) {
+	protected boolean checkIfProcessed(Element element) {
+		if (element.getName() != "iq")
+			return false;
 		try {
-			return getNicknameFromJid(JID.jidInstance(element.getAttribute("to"))) != null;
+			return getNicknameFromJid(JID.jidInstance(element.getAttributeStaticStr("to"))) != null;
 		} catch (TigaseStringprepException e) {
 			return false;
 		}
 	}
 
 	@Override
-	public List<Element> process(Element element) throws MUCException {
+	public String[] getFeatures() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see tigase.component.modules.Module#getModuleCriteria()
+	 */
+	@Override
+	public Criteria getModuleCriteria() {
+		return crit;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see tigase.component.modules.Module#process(tigase.server.Packet)
+	 */
+	@Override
+	public void process(Packet packet) throws ComponentException, TigaseStringprepException {
 		try {
-			final JID senderJID = JID.jidInstance(element.getAttribute("from"));
-			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttribute("to"));
-			final String recipientNickname = getNicknameFromJid(JID.jidInstance(element.getAttribute("to")));
+			final JID senderJID = packet.getStanzaFrom();
+			final BareJID roomJID = packet.getStanzaTo().getBareJID();
+			final String recipientNickname = getNicknameFromJid(packet.getStanzaTo());
 
 			if (recipientNickname == null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
 			}
 
-			final Room room = repository.getRoom(roomJID);
+			final Room room = context.getMucRepository().getRoom(roomJID);
 			if (room == null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
 
-			final Role senderRole = room.getRoleByJid(senderJID);
-			if (!senderRole.isSendPrivateMessages()) {
-				throw new MUCException(Authorization.NOT_ALLOWED);
+			final String senderNickname = room.getOccupantsNickname( senderJID );
+			final Role senderRole = room.getRole(senderNickname);
+
+			if ( log.isLoggable( Level.FINEST ) ){
+				log.log( Level.FINEST,
+						 "Processing IQ stanza, from: {0}, to: {1}, recipientNickname: {2}, senderNickname: {3}, senderRole: {4} ",
+						 new Object[] { senderJID, roomJID, recipientNickname, senderNickname, senderRole } );
 			}
+
+			if (!senderRole.isSendPrivateMessages()) {
+				throw new MUCException(Authorization.NOT_ALLOWED, "Role is not allowed to send private messages");
+			}
+			if (room.getOccupantsJidsByNickname(senderNickname).size() > 1)
+				throw new MUCException(Authorization.NOT_ALLOWED, "Many source resources detected.");
 
 			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);
-			if (recipientJids == null) {
+			if (recipientJids == null || recipientJids.isEmpty())
 				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
-			}
-			
-			List<Element> result = new ArrayList<Element>();
-			for(JID recipientJid: recipientJids) {
-				final String senderNickname = room.getOccupantsNickname(senderJID);
 
-				final Element iq = element.clone();
-				iq.setAttribute("from", roomJID.toString() + "/" + senderNickname);
-				iq.setAttribute("to", recipientJid.toString());
-				
-				result.addAll(makeArray(iq));
-				
-			}
-			return result;
+			if (recipientJids.size() > 1)
+				throw new MUCException(Authorization.NOT_ALLOWED, "Many destination resources detected.");
+
+			JID recipientJid = recipientJids.iterator().next();
+
+			final Element iq = packet.getElement().clone();
+			iq.setAttribute("from", roomJID.toString() + "/" + senderNickname);
+			iq.setAttribute("to", recipientJid.toString());
+
+			Packet p = Packet.packetInstance(iq);
+			p.setXMLNS(Packet.CLIENT_XMLNS);
+			write(p);
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (TigaseStringprepException e) {
