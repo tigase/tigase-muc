@@ -204,11 +204,32 @@
 
         <resources>
             <resource>
+                <directory>database</directory>
+                <targetPath>database</targetPath>
+                <includes>
+                    <include>**/*.sql</include>
+                    <include>**/*.sh</include>
+                    <include>**/*.cmd</include>
+                    <include>**/*.txt</include>
+                </includes>
+            </resource>
+
+            <resource>
                 <directory>src/main/groovy/muc</directory>
                 <includes>
                     <include>**/*.groovy</include>
                 </includes>
             </resource>
+
+            <resource>
+                <directory>src/main/asciidoc</directory>
+                <targetPath>documentation</targetPath>
+                <includes>
+                    <include>**/*.asciidoc</include>
+                    <include>**/*.css</include>
+                </includes>
+            </resource>
+
         </resources>
     </build>
     <profiles>
