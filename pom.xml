@@ -245,7 +245,7 @@
         <profile>
             <id>dist</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <activeByDefault>false</activeByDefault>
                 <property>
                     <name>dist</name>
                 </property>
