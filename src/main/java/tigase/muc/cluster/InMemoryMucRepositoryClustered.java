@@ -10,13 +10,16 @@ package tigase.muc.cluster;
 import tigase.component.exceptions.RepositoryException;
 import tigase.kernel.beans.Bean;
 import tigase.muc.Room;
-import tigase.muc.exceptions.MUCException;
+import tigase.muc.RoomConfig;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.inmemory.InMemoryMucRepository;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 
 /**
@@ -70,7 +73,7 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 	}
 
 	@Override
-	public Room getRoom(BareJID roomJID) throws RepositoryException, MUCException {
+	public Room getRoom(BareJID roomJID) throws RepositoryException {
 		boolean isNewInstance = !this.getActiveRooms().containsKey(roomJID);
 		Room room = super.getRoom(roomJID);
 		if (isNewInstance && room != null)
@@ -84,6 +87,15 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 
 		if (roomListener != null) {
 			roomListener.onLeaveRoom(room);
+		}
+	}
+
+	protected void removeFromAllRooms(BareJID roomJid, Predicate<InternalRoom> predicate) {
+		InternalRoom ir = allRooms.get(roomJid);
+		if (ir != null) {
+			if (predicate.test(ir)) {
+				allRooms.remove(roomJid, ir);
+			}
 		}
 	}
 
@@ -110,6 +122,39 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 		this.roomOccupantListener = roomOccupantListener;
 	}
 
+	protected void roomConfigChanged(RoomConfig roomConfig, Set<String> modifiedVars) {
+		super.roomConfigChanged(roomConfig, modifiedVars);
+		this.roomListener.onRoomChanged(roomConfig, modifiedVars);
+	}
+
+	protected void roomConfigChanged(BareJID roomJid, Map<String, String> values) {
+		InternalRoom ir = allRooms.get(roomJid);
+		if (ir != null) {
+			if (values.containsKey(RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY)) {
+				String val = values.get(RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY);
+				ir.isPublic = "1".equals(val) || "true".equals(val);
+			}
+			if (values.containsKey(RoomConfig.MUC_ROOMCONFIG_ROOMNAME_KEY)) {
+				ir.name = values.get(RoomConfig.MUC_ROOMCONFIG_ROOMNAME_KEY);
+			}
+			if (values.containsKey(RoomConfig.MUC_ROOMCONFIG_PERSISTENTROOM_KEY)) {
+				String val = values.get(RoomConfig.MUC_ROOMCONFIG_PERSISTENTROOM_KEY);
+				ir.isPersistent = "1".equals(val) || "true".equals(val);
+			}
+		}
+
+		Room room = rooms.get(roomJid);
+		if (room != null) {
+			for (Map.Entry<String,String> e : values.entrySet()) {
+				String[] val = null;
+				if (e.getValue() != null) {
+					val = e.getValue().split("\\|");
+				}
+				room.getConfig().setValues(e.getKey(), val);
+			}
+		}
+	}
+
 	private void addListenersToNewRoom(Room room) {
 		if (roomOccupantListener != null) {
 			if (log.isLoggable(Level.FINEST)) {
@@ -124,6 +169,8 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 
 	public interface RoomListener {
 		void onLeaveRoom(Room room);
+
+		void onRoomChanged(RoomConfig roomConfig, Set<String> modifiedVars);
 
 		void onRoomCreated(Room room);
 

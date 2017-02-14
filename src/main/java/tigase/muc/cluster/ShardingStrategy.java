@@ -12,6 +12,7 @@ import tigase.cluster.api.CommandListenerAbstract;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.muc.Room;
+import tigase.muc.RoomConfig;
 import tigase.muc.repository.inmemory.InMemoryMucRepository;
 import tigase.server.Packet;
 import tigase.server.Priority;
@@ -40,10 +41,14 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	private static final Logger log = Logger.getLogger(ShardingStrategy.class.getCanonicalName());
 	private static final String NODE_SHUTDOWN_CMD = "muc-node-shutdown-cmd";
 	private static final String RESPONSE_SYNC_CMD = "muc-sync-response";
+	private static final String ROOM_CHANGED_CMD = "muc-room-changed-cmd";
 	private static final String ROOM_CREATED_CMD = "muc-room-created-cmd";
 	private static final String ROOM_DESTROYED_CMD = "muc-room-destroyed-cmd";
 	private static final String ROOM_LEFT_CMD = "muc-room-left-cmd";
 	private static final int SYNC_MAX_BATCH_SIZE = 1000;
+	private static final String[] ROOM_CONFIG_FIELDS_SYNC = {RoomConfig.MUC_ROOMCONFIG_ROOMNAME_KEY,
+															 RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY,
+															 RoomConfig.MUC_ROOMCONFIG_PERSISTENTROOM_KEY};
 	private final ConcurrentMap<BareJID, JID> roomsPerNode =
 			new ConcurrentHashMap<BareJID, JID>();
 	private final ConcurrentMap<BareJID, Set<JID>> occupantsPerRoom =
@@ -67,7 +72,10 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 				continue;
 				
 			iter.remove();
-			BareJID roomJid = entry.getKey();			
+			BareJID roomJid = entry.getKey();
+
+			mucRepository.removeFromAllRooms(roomJid, (ir) -> !ir.isPersistent);
+
 			Set<JID> occupants = occupantsPerRoom.remove(roomJid);
 			
 			// spliting between nodes - we send kicks for room if only if we should
@@ -178,6 +186,30 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 	}
 
 	@Override
+	public void onRoomChanged(RoomConfig roomConfig, Set<String> modifiedVars) {
+		if (!modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_ROOMNAME_KEY) &&
+				!modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY) &&
+				!modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PERSISTENTROOM_KEY)) {
+			return;
+		}
+		
+		List<JID> toNodes = getNodesConnected();
+
+		Map<String, String> data = new HashMap<String, String>();
+		data.put("room", roomConfig.getRoomJID().toString());
+
+		for (String key : ROOM_CONFIG_FIELDS_SYNC) {
+			if (!modifiedVars.contains(key))
+				continue;
+
+			String val = roomConfig.getConfigForm().getAsString(key);
+			data.put(key, val);
+		}
+
+		cl_controller.sendToNodes(ROOM_CHANGED_CMD, data, localNodeJid, toNodes.toArray(new JID[toNodes.size()]));
+	}
+
+	@Override
 	public void onRoomCreated(Room room) {
 		roomsPerNode.put(room.getRoomJID(), localNodeJid);
 		// notify other nodes about newly created room and it's location on 
@@ -186,6 +218,8 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
+		data.put("public", String.valueOf(room.getConfig().isRoomconfigPublicroom()));
+		data.put("persistent", String.valueOf(room.getConfig().isPersistentRoom()));
 		
 		if (log.isLoggable(Level.FINEST)) {
 			StringBuilder buf = new StringBuilder(100);
@@ -265,6 +299,28 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		}
 	}
 
+	@Bean(name = ROOM_CHANGED_CMD, parent = ShardingStrategy.class)
+	public static class RoomChangedCmd extends CommandListenerAbstract {
+
+		@Inject
+		private ShardingStrategy strategy;
+
+		public RoomChangedCmd() {
+			super(ROOM_CHANGED_CMD, Priority.HIGH);
+		}
+
+		@Override
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
+								   Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
+			BareJID roomJid = BareJID.bareJIDInstanceNS(data.remove("room"));
+			strategy.mucRepository.roomConfigChanged(roomJid, data);
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "room = {0}, received notification that room {1} was modified at node {2}",
+						new Object[]{ roomJid, roomJid, fromNode});
+			}
+		}
+	}
+
 	@Bean(name = ROOM_CREATED_CMD, parent = ShardingStrategy.class)
 	public static class RoomCreatedCmd extends CommandListenerAbstract {
 
@@ -280,7 +336,10 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 				Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			strategy.roomsPerNode.put(roomJid, fromNode);
-			strategy.mucRepository.addToAllRooms(roomJid, new InMemoryMucRepository.InternalRoom());
+			InMemoryMucRepository.InternalRoom ir = new InMemoryMucRepository.InternalRoom();
+			ir.isPublic = !"false".equals(data.get("public"));
+			ir.isPersistent = !"false".equals(data.get("persistent"));
+			strategy.mucRepository.addToAllRooms(roomJid, ir);
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST, "room = {0}, received notification that room {1} was created at node {2}", 
 						new Object[]{ roomJid, roomJid, fromNode});
@@ -364,6 +423,11 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 				try {
 					// all it's occupants
 					Room room = strategy.mucRepository.getRoom(entry.getKey());
+					if (room != null) {
+						roomEl.setAttribute("name", room.getConfig().getRoomName());
+						roomEl.setAttribute("public", String.valueOf(room.getConfig().isRoomconfigPublicroom()));
+						roomEl.setAttribute("persistent", String.valueOf(room.getConfig().isPersistentRoom()));
+					}
 					Set<JID> occupants = strategy.occupantsPerRoom.get(entry.getKey());
 					if (occupants != null && !occupants.isEmpty()) {
 						synchronized (occupants) {
@@ -419,13 +483,23 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 				for (Element roomEl : packets) {
 					if (roomEl.getName() == "room") {
 						BareJID roomJid = BareJID.bareJIDInstanceNS(
-								roomEl.getAttributeStaticStr("jid"));						
+								roomEl.getAttributeStaticStr("jid"));
+						String name = roomEl.getAttributeStaticStr("name");
+						boolean isPublic = !"false".equals(roomEl.getAttributeStaticStr("public"));
+						boolean isPersistent = !"false".equals(roomEl.getAttributeStaticStr("persistent"));
 						JID oldValue = strategy.roomsPerNode.put(roomJid, fromNode);
-						
+
 						if (oldValue != null && !fromNode.equals(oldValue)) {
 							log.log(Level.SEVERE, "received info about a room {0} on "
 									+ "{1} but we had info about this room on node {2}", 
 									new Object[] { roomJid, fromNode, oldValue });
+						}
+						if (oldValue == null) {
+							InMemoryMucRepository.InternalRoom internalRoom = new InMemoryMucRepository.InternalRoom();
+							internalRoom.name = name;
+							internalRoom.isPublic = isPublic;
+							internalRoom.isPersistent = isPersistent;
+							strategy.mucRepository.addToAllRooms(roomJid, internalRoom);
 						}
 						
 						List<Element> occupantsElList = roomEl.getChildren();

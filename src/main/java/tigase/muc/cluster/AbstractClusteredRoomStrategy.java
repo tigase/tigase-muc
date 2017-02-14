@@ -17,7 +17,6 @@ import tigase.muc.Affiliation;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
-import tigase.muc.exceptions.MUCException;
 import tigase.muc.modules.GroupchatMessageModule;
 import tigase.muc.modules.PresenceModule.PresenceWrapper;
 import tigase.server.Packet;
@@ -32,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * AbstractClusteredRoomStrategy implements strategy which allows to create
@@ -48,8 +48,8 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 		implements StrategyIfc, InMemoryMucRepositoryClustered.RoomListener, Room.RoomListener {
 
 	private static final Logger log = Logger.getLogger(AbstractClusteredRoomStrategy.class.getCanonicalName());
-
 	private static final String RESPONSE_SYNC_CMD = "muc-sync-response";
+	private static final String ROOM_CHANGED_CMD = "muc-room-changed-cmd";
 	private static final String ROOM_CREATED_CMD = "muc-room-created-cmd";
 	private static final String ROOM_DESTROYED_CMD = "muc-room-destroyed-cmd";
 	private static final String ROOM_MESSAGE_CMD = "muc-room-message-cmd";
@@ -132,6 +132,35 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 
 	@Override
 	public void stop() {
+	}
+
+	@Override
+	public void onRoomChanged(RoomConfig roomConfig, Set<String> modifiedVars) {
+		if (modifiedVars.isEmpty()) {
+			return;
+		}
+
+		List<JID> toNodes = getNodesConnected();
+
+		Map<String, String> data = new HashMap<String, String>();
+		data.put("room", roomConfig.getRoomJID().toString());
+
+		for (String key : modifiedVars) {
+			String[] val = roomConfig.getConfigForm().getAsStrings(key);
+			if (val != null) {
+				if (val.length == 1) {
+					data.put(key, val[0]);
+				} else if (val.length > 1) {
+					data.put(key, Arrays.stream(val).collect(Collectors.joining("|")));
+				} else {
+					data.put(key, null);
+				}
+			} else {
+				data.put(key, null);
+			}
+		}
+
+		cl_controller.sendToNodes(ROOM_CHANGED_CMD, data, localNodeJid, toNodes.toArray(new JID[toNodes.size()]));
 	}
 
 	@Override
@@ -320,6 +349,29 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 		return null;
 	}
 
+
+	@Bean(name = ROOM_CHANGED_CMD, parent = AbstractClusteredRoomStrategy.class)
+	public static class RoomChangedCmd extends CommandListenerAbstract {
+
+		@Inject
+		private InMemoryMucRepositoryClustered mucRepository;
+
+		public RoomChangedCmd() {
+			super(ROOM_CHANGED_CMD, Priority.HIGH);
+		}
+
+		@Override
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
+								   Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
+			BareJID roomJid = BareJID.bareJIDInstanceNS(data.remove("room"));
+			mucRepository.roomConfigChanged(roomJid, data);
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "room = {0}, received notification that room {1} was modified at node {2}",
+						new Object[]{ roomJid, roomJid, fromNode});
+			}
+		}
+	}
+
 	@Bean(name = ROOM_CREATED_CMD, parent = AbstractClusteredRoomStrategy.class)
 	public static class RoomCreatedCmd extends CommandListenerAbstract {
 
@@ -383,8 +435,6 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 				mucRepository.destroyRoomWithoutListener(room, destroyElement);
 			} catch (RepositoryException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
-			} catch (MUCException ex) {
-				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
 			} catch (TigaseStringprepException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
 			}
@@ -418,8 +468,6 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 				Packet packet = Packet.packetInstance(message);
 				groupchatModule.sendMessagesToAllOccupantsJids(room, from, packet);
 			} catch (RepositoryException ex) {
-				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
-			} catch (MUCException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
 			} catch (TigaseStringprepException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
@@ -537,7 +585,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 			try {
 				Room room = mucRepository.getRoom(roomJid);
 				room.setNewAffiliation(from, newAffiliation);
-			} catch (RepositoryException | MUCException ex) {
+			} catch (RepositoryException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
 			}
 

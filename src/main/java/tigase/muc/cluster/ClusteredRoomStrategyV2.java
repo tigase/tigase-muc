@@ -16,7 +16,6 @@ import tigase.kernel.beans.Inject;
 import tigase.muc.Affiliation;
 import tigase.muc.Role;
 import tigase.muc.Room;
-import tigase.muc.exceptions.MUCException;
 import tigase.muc.modules.PresenceModule;
 import tigase.muc.modules.PresenceModuleImpl;
 import tigase.server.Packet;
@@ -194,8 +193,6 @@ public class ClusteredRoomStrategyV2 extends AbstractClusteredRoomStrategy {
 				// presenceModule.sendPresencesToNewOccupant(room, occupantJID);
 				// }
 			} catch (RepositoryException ex) {
-				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
-			} catch (MUCException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
 			} catch (TigaseStringprepException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
