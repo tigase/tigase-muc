@@ -21,22 +21,16 @@
  */
 package tigase.muc;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.logging.Logger;
-
 import tigase.component.exceptions.RepositoryException;
 import tigase.muc.RoomConfig.RoomConfigListener;
 import tigase.muc.repository.IMucRepository;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.logging.Logger;
 
 /**
  * @author bmalkow
@@ -45,7 +39,7 @@ import tigase.xmpp.JID;
 public class MockMucRepository implements IMucRepository {
 
 	private class InternalRoom {
-		boolean listPublic = true;
+		boolean isPublic = true;
 	}
 
 	private final Map<BareJID, InternalRoom> allRooms = new HashMap<BareJID, InternalRoom>();
@@ -67,7 +61,7 @@ public class MockMucRepository implements IMucRepository {
 					if (modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY)) {
 						InternalRoom ir = allRooms.get(roomConfig.getRoomJID());
 						if (ir != null) {
-							ir.listPublic = roomConfig.isRoomconfigPublicroom();
+							ir.isPublic = roomConfig.isRoomconfigPublicroom();
 						}
 					}
 
@@ -95,7 +89,7 @@ public class MockMucRepository implements IMucRepository {
 					if ( roomConfig.isRoomconfigPublicroom() ){
 						InternalRoom ir = allRooms.get( roomConfig.getRoomJID() );
 						if ( ir != null ){
-							ir.listPublic = roomConfig.isRoomconfigPublicroom();
+							ir.isPublic = roomConfig.isRoomconfigPublicroom();
 						}
 					}
 
@@ -163,11 +157,31 @@ public class MockMucRepository implements IMucRepository {
 	public BareJID[] getPublicVisibleRoomsIdList() throws RepositoryException {
 		List<BareJID> result = new ArrayList<BareJID>();
 		for (Entry<BareJID, InternalRoom> entry : this.allRooms.entrySet()) {
-			if (entry.getValue().listPublic) {
+			if (entry.getValue().isPublic) {
 				result.add(entry.getKey());
 			}
 		}
 		return result.toArray(new BareJID[] {});
+	}
+
+	@Override
+	public Map<BareJID, String> getPublicVisibleRooms(String domain) throws RepositoryException {
+		Map<BareJID, String> result = new HashMap<>();
+		for (Entry<BareJID, InternalRoom> entry : this.allRooms.entrySet()) {
+			if (entry.getValue().isPublic) {
+				BareJID jid = entry.getKey();
+				Room room = getRoom(jid);
+				String name = room != null ? room.getConfig().getRoomName() : null;
+				if (name != null && name.isEmpty()) {
+					name = null;
+				}
+				if (name == null) {
+					name = jid.getLocalpart();
+				}
+				result.put(jid, name);
+			}
+		}
+		return result;
 	}
 
 	/*

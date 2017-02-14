@@ -21,8 +21,6 @@
  */
 package tigase.muc.repository;
 
-import java.util.Map;
-
 import tigase.component.exceptions.RepositoryException;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
@@ -30,6 +28,8 @@ import tigase.muc.exceptions.MUCException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
+
+import java.util.Map;
 
 /**
  * @author bmalkow
@@ -45,7 +45,10 @@ public interface IMucRepository {
 
 	RoomConfig getDefaultRoomConfig() throws RepositoryException;
 
+	@Deprecated
 	BareJID[] getPublicVisibleRoomsIdList() throws RepositoryException;
+
+	Map<BareJID, String> getPublicVisibleRooms(String domain) throws RepositoryException;
 
 	Room getRoom(BareJID roomJID) throws RepositoryException, MUCException;
 

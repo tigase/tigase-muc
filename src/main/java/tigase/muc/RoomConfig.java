@@ -395,7 +395,7 @@ public class RoomConfig {
     }
 
 
-    private void setValues(String var, String[] data) {
+    public void setValues(String var, String[] data) {
         if (data == null || data.length > 1) {
             setValue(var, data);
         } else if (data.length == 0) {
