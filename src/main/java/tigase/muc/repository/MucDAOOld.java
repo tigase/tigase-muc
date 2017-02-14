@@ -214,7 +214,7 @@ public class MucDAOOld
 
 	}
 
-	public Room readRoom(BareJID roomJID) throws RepositoryException, MUCException {
+	public Room readRoom(BareJID roomJID) throws RepositoryException {
 
 		try {
 			final String tmpDate = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomJID, CREATION_DATE_KEY);

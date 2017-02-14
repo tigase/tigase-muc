@@ -34,7 +34,6 @@ import tigase.kernel.core.Kernel;
 import tigase.muc.MUCConfig;
 import tigase.muc.Room;
 import tigase.muc.RoomWithId;
-import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucDAO;
 import tigase.muc.repository.MucDAOOld;
 
@@ -126,7 +125,7 @@ public class Converter {
 				}
 
 				oldRepo.destroyRoom(roomJid);
-			} catch (RepositoryException | MUCException e) {
+			} catch (RepositoryException e) {
 				throw new RuntimeException("Repository conversion failed", e);
 			}
 		});

@@ -30,9 +30,8 @@ import tigase.kernel.beans.Inject;
 import tigase.muc.*;
 import tigase.muc.Room.RoomListener;
 import tigase.muc.RoomConfig.RoomConfigListener;
-import tigase.muc.exceptions.MUCException;
-import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.IMucDAO;
+import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
@@ -52,7 +51,7 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 
 	private static final String ROOMS_KEY = "rooms/";
 
-	private final Map<BareJID, InternalRoom> allRooms = new ConcurrentHashMap<BareJID, InternalRoom>();
+	protected final Map<BareJID, InternalRoom> allRooms = new ConcurrentHashMap<BareJID, InternalRoom>();
 
 	@Inject(nullAllowed = false)
 	private IMucDAO dao;
@@ -72,7 +71,7 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 
 	private final RoomConfigListener roomConfigListener;
 	private final RoomListener roomListener;
-	private final Map<BareJID, RoomWithId> rooms = new ConcurrentHashMap<>();
+	protected final Map<BareJID, RoomWithId> rooms = new ConcurrentHashMap<>();
 
 	@Inject
 	private UserRepository userRepository;
@@ -98,8 +97,12 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 			@Override
 			public void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation) {
 				try {
-					if (room.getConfig().isPersistentRoom())
-						dao.setAffiliation((RoomWithId) room, jid, newAffiliation);
+					if (room.getConfig().isPersistentRoom()) {
+						RoomWithId roomWithId = (RoomWithId) room;
+						if (roomWithId.getId() != null) {
+							dao.setAffiliation(roomWithId, jid, newAffiliation);
+						}
+					}
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}
@@ -110,27 +113,7 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 
 			@Override
 			public void onConfigChanged(final RoomConfig roomConfig, final Set<String> modifiedVars) {
-				try {
-					if (modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY)) {
-						InternalRoom ir = allRooms.get(roomConfig.getRoomJID());
-						if (ir != null) {
-							ir.listPublic = roomConfig.isRoomconfigPublicroom();
-						}
-					}
-
-					if (modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PERSISTENTROOM_KEY)) {
-						if (roomConfig.isPersistentRoom()) {
-							final Room room = getRoom(roomConfig.getRoomJID());
-							dao.createRoom((RoomWithId) room);
-						} else {
-							dao.destroyRoom(roomConfig.getRoomJID());
-						}
-					} else if (roomConfig.isPersistentRoom()) {
-						dao.updateRoomConfig(roomConfig);
-					}
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
+				roomConfigChanged(roomConfig, modifiedVars);
 			}
 
 			@Override
@@ -166,7 +149,10 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 		room.getConfig().addListener(roomConfigListener);
 		room.addListener(roomListener);
 		this.rooms.put(roomJID, room);
-		addToAllRooms(roomJID, new InternalRoom());
+		InternalRoom ir = new InternalRoom();
+		ir.isPersistent = room.getConfig().isPersistentRoom();
+		ir.isPublic = room.getConfig().isRoomconfigPublicroom();
+		addToAllRooms(roomJID, ir);
 
 		// if (rc.isPersistentRoom()) {
 		// dao.createRoom( room );
@@ -212,16 +198,40 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 		return defaultConfig;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see tigase.muc.repository.IMucRepository#getRoomsIdList()
-	 */
+	@Override
+	public Map<BareJID, String> getPublicVisibleRooms(String domain) throws RepositoryException {
+		Map<BareJID, String> result = new HashMap<>();
+		for (Map.Entry<BareJID, InternalRoom> entry : this.allRooms.entrySet()) {
+			if (entry.getValue().isPublic) {
+				BareJID jid = entry.getKey();
+				if (!domain.equals(jid.getDomain())) {
+					continue;
+				}
+				
+				String name = entry.getValue().name;
+				if (name == null) {
+					Room room = getRoom(jid);
+					if (room != null) {
+						name = room.getConfig().getRoomName();
+						if (name != null && name.isEmpty()) {
+							name = null;
+						}
+					}
+				}
+				if (name == null) {
+					name = jid.getLocalpart();
+				}
+				result.put(jid, name);
+			}
+		}
+		return result;
+	}
+
 	@Override
 	public BareJID[] getPublicVisibleRoomsIdList() throws RepositoryException {
 		List<BareJID> result = new ArrayList<BareJID>();
 		for (Map.Entry<BareJID, InternalRoom> entry : this.allRooms.entrySet()) {
-			if (entry.getValue().listPublic) {
+			if (entry.getValue().isPublic) {
 				result.add(entry.getKey());
 			}
 		}
@@ -234,7 +244,7 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 	 * @see tigase.muc.repository.IMucRepository#getRoom()
 	 */
 	@Override
-	public Room getRoom(final BareJID roomJID) throws RepositoryException, MUCException {
+	public Room getRoom(final BareJID roomJID) throws RepositoryException {
 		RoomWithId room = this.rooms.get(roomJID);
 		if (room == null) {
 			room = dao.getRoom(roomJID);
@@ -309,7 +319,49 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 		allRooms.remove(roomJid);
 	}
 
+	protected void roomConfigChanged(RoomConfig roomConfig, Set<String> modifiedVars) {
+		try {
+			if (modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY)) {
+				InternalRoom ir = allRooms.get(roomConfig.getRoomJID());
+				if (ir != null) {
+					ir.isPublic = roomConfig.isRoomconfigPublicroom();
+				}
+			}
+			if (modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_ROOMNAME_KEY)) {
+				InternalRoom ir = allRooms.get(roomConfig.getRoomJID());
+				if (ir != null) {
+					String name = roomConfig.getRoomName();
+					if (name != null && name.isEmpty()) {
+						name = null;
+					}
+					System.out.println("setting room name '" + name + "'");
+					ir.name = name;
+				}
+			}
+
+			if (modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PERSISTENTROOM_KEY)) {
+				if (roomConfig.isPersistentRoom()) {
+					final Room room = getRoom(roomConfig.getRoomJID());
+					dao.createRoom((RoomWithId) room);
+				} else {
+					dao.destroyRoom(roomConfig.getRoomJID());
+				}
+				InternalRoom ir = allRooms.get(roomConfig.getRoomJID());
+				if (ir != null) {
+					ir.isPersistent = roomConfig.isPersistentRoom();
+				}
+			} else if (roomConfig.isPersistentRoom()) {
+				dao.updateRoomConfig(roomConfig);
+			}
+
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
 	public static class InternalRoom {
-		boolean listPublic = true;
+		public boolean isPublic = true;
+		public boolean isPersistent = false;
+		public String name;
 	}
 }

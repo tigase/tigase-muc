@@ -46,7 +46,10 @@ public interface IMucRepository {
 
 	RoomConfig getDefaultRoomConfig() throws RepositoryException;
 
+	@Deprecated
 	BareJID[] getPublicVisibleRoomsIdList() throws RepositoryException;
+
+	Map<BareJID, String> getPublicVisibleRooms(String domain) throws RepositoryException;
 
 	Room getRoom(BareJID roomJID) throws RepositoryException, MUCException;
 

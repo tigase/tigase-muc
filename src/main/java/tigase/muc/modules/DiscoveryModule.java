@@ -34,6 +34,7 @@ import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
+import java.util.Map;
 import java.util.logging.Level;
 
 /**
@@ -47,7 +48,7 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 	private IMucRepository repository;
 
 	private final DateTimeFormatter dtf = new DateTimeFormatter();
-	private DiscoItemsFilter filter = new DefaultDiscoItemsFilter();
+	private DiscoItemsFilter filter = null;//new DefaultDiscoItemsFilter();
 
 	private static void addFeature(Element query, String feature) {
 		query.addChild(new Element("feature", new String[] { "var" }, new String[] { feature }));
@@ -269,16 +270,13 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 
 			// discovering rooms
 			// (http://xmpp.org/extensions/xep-0045.html#disco-rooms)
-			BareJID[] roomsId = repository.getPublicVisibleRoomsIdList();
+			Map<BareJID, String> publicRooms = repository.getPublicVisibleRooms(requestedJID.getDomain());
 
-			for (final BareJID jid : roomsId) {
-				if (jid.getDomain().equals(requestedJID.getDomain())) {
+			for (Map.Entry<BareJID, String> e : publicRooms.entrySet()) {
+				BareJID jid = e.getKey();
+				String name = e.getValue();
+				if (filter != null) {
 					final Room room = repository.getRoom(jid);
-
-					if (log.isLoggable(Level.FINEST) && filter != null) {
-						boolean fa = filter.allowed(senderJID, room);
-						log.finest("Using filter " + filter + "; result(" + senderJID + ", " + room.getRoomJID() + ")=" + fa);
-					}
 
 					if (room == null) {
 						log.warning("Room " + jid + " is not available!");
@@ -286,18 +284,53 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 					} else if (room.getConfig() == null) {
 						log.warning("Room " + jid + " hasn't configuration!");
 						continue;
-					} else if (filter != null && !filter.allowed(senderJID, room)) {
-						log.fine("Room " + jid + " is filtered off");
-						continue;
+					} else {
+						boolean fa = filter.allowed(senderJID, room);
+						log.finest("Using filter " + filter + "; result(" + senderJID + ", " + room.getRoomJID() + ")=" +
+										   fa);
+						if (!fa) {
+							log.fine("Room " + jid + " is filtered off");
+							continue;
+						}
 					}
-
-					String name = room.getConfig().getRoomName();
-					if (log.isLoggable(Level.FINER))
-						log.finer("Room " + jid + " is added to response.");
-					resultQuery.addChild(new Element("item", new String[] { "jid", "name" },
-							new String[] { jid.toString(), (name != null && !name.isEmpty()) ? name : jid.getLocalpart() }));
 				}
+				if (log.isLoggable(Level.FINER))
+					log.finer("Room " + jid + " is added to response.");
+
+				resultQuery.addChild(new Element("item", new String[] { "jid", "name" },
+												 new String[] { jid.toString(), (name != null) ? name : jid.getLocalpart() }));
 			}
+
+//			BareJID[] roomsId = context.getMucRepository().getPublicVisibleRoomsIdList();
+//
+//			for (final BareJID jid : roomsId) {
+//				if (jid.getDomain().equals(requestedJID.getDomain())) {
+//					final String name = context.getMucRepository().getRoomName(jid.toString());
+//
+//					final Room room = context.getMucRepository().getRoom(jid);
+//
+//					if (log.isLoggable(Level.FINEST) && filter != null) {
+//						boolean fa = filter.allowed(senderJID, room);
+//						log.finest("Using filter " + filter + "; result(" + senderJID + ", " + room.getRoomJID() + ")=" + fa);
+//					}
+//
+//					if (room == null) {
+//						log.warning("Room " + jid + " is not available!");
+//						continue;
+//					} else if (room.getConfig() == null) {
+//						log.warning("Room " + jid + " hasn't configuration!");
+//						continue;
+//					} else if (filter != null && !filter.allowed(senderJID, room)) {
+//						log.fine("Room " + jid + " is filtered off");
+//						continue;
+//					}
+//
+//					if (log.isLoggable(Level.FINER))
+//						log.finer("Room " + jid + " is added to response.");
+//					resultQuery.addChild(new Element("item", new String[] { "jid", "name" },
+//							new String[] { jid.toString(), (name != null) ? name : jid.getLocalpart() }));
+//				}
+//			}
 		} else if ((node == null) && (requestedJID.getLocalpart() != null) && (requestedJID.getResource() == null)) {
 			// querying for Room Items
 			// (http://xmpp.org/extensions/xep-0045.html#disco-roomitems)
