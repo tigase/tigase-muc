@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 /**
  * AbstractClusteredRoomStrategy implements strategy which allows to create rooms with
@@ -49,13 +50,15 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 
 	private static final Logger log = Logger.getLogger(AbstractClusteredRoomStrategy.class.getCanonicalName());
 	
-	private static final String RESPONSE_SYNC_CMD = "muc-sync-response";	
+	private static final String RESPONSE_SYNC_CMD = "muc-sync-response";
+	private static final String ROOM_CHANGED_CMD = "muc-room-changed-cmd";
 	private static final String ROOM_CREATED_CMD = "muc-room-created-cmd";
 	private static final String ROOM_DESTROYED_CMD = "muc-room-destroyed-cmd";
 	private static final String ROOM_MESSAGE_CMD = "muc-room-message-cmd";
 	private static final String ROOM_AFFILIATION_CMD = "muc-room-affiliation-cmd";
 	private static final int SYNC_MAX_BATCH_SIZE = 1000;
-	
+
+	private final RoomChangedCmd roomChangedCmd = new RoomChangedCmd();
 	private final RoomCreatedCmd roomCreatedCmd = new RoomCreatedCmd();
 	private final RoomDestroyedCmd roomDestroyedCmd = new RoomDestroyedCmd();
 	private final RoomMessageCmd roomMessageCmd = new RoomMessageCmd();
@@ -146,6 +149,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			this.cl_controller.removeCommandListener(requestSyncCmd);
 			this.cl_controller.removeCommandListener(responseSyncCmd);
 			this.cl_controller.removeCommandListener(roomCreatedCmd);
+			this.cl_controller.removeCommandListener(roomChangedCmd);
 			this.cl_controller.removeCommandListener(roomDestroyedCmd);
 			this.cl_controller.removeCommandListener(roomMessageCmd);
 			this.cl_controller.removeCommandListener(roomAffiliationCmd);
@@ -155,12 +159,42 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 			cl_controller.setCommandListener(requestSyncCmd);
 			cl_controller.setCommandListener(responseSyncCmd);
 			cl_controller.setCommandListener(roomCreatedCmd);
+			cl_controller.setCommandListener(roomChangedCmd);
 			cl_controller.setCommandListener(roomDestroyedCmd);
 			cl_controller.setCommandListener(roomMessageCmd);
 			cl_controller.setCommandListener(roomAffiliationCmd);
 		}
 	}
-	
+
+	@Override
+	public void onRoomChanged(RoomConfig roomConfig, Set<String> modifiedVars) {
+		if (modifiedVars.isEmpty()) {
+			return;
+		}
+
+		List<JID> toNodes = getNodesConnected();
+
+		Map<String, String> data = new HashMap<String, String>();
+		data.put("room", roomConfig.getRoomJID().toString());
+
+		for (String key : modifiedVars) {
+			String[] val = roomConfig.getConfigForm().getAsStrings(key);
+			if (val != null) {
+				if (val.length == 1) {
+					data.put(key, val[0]);
+				} else if (val.length > 1) {
+					data.put(key, Arrays.stream(val).collect(Collectors.joining("|")));
+				} else {
+					data.put(key, null);
+				}
+			} else {
+				data.put(key, null);
+			}
+		}
+
+		cl_controller.sendToNodes(ROOM_CHANGED_CMD, data, localNodeJid, toNodes.toArray(new JID[toNodes.size()]));
+	}
+
 	@Override
 	public void onRoomCreated(Room room) {
 		List<JID> toNodes = getNodesConnected();
@@ -345,7 +379,25 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy imp
 		// if no node was assigned then use local node
 		return null;
 	}
-		
+
+	private class RoomChangedCmd extends CommandListenerAbstract {
+
+		public RoomChangedCmd() {
+			super(ROOM_CHANGED_CMD, Priority.HIGH);
+		}
+
+		@Override
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes,
+								   Map<String, String> data, Queue<Element> packets) throws ClusterCommandException {
+			BareJID roomJid = BareJID.bareJIDInstanceNS(data.remove("room"));
+			mucRepository.roomConfigChanged(roomJid, data);
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "room = {0}, received notification that room {1} was modified at node {2}",
+						new Object[]{ roomJid, roomJid, fromNode});
+			}
+		}
+	}
+	
 	private class RoomCreatedCmd extends CommandListenerAbstract {
 
 		public RoomCreatedCmd() {
