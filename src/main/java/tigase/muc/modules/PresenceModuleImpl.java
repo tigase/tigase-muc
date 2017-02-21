@@ -86,7 +86,7 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		}
 	}
 
-	private static Role getDefaultRole(final RoomConfig config, final Affiliation affiliation) {
+	public static Role getDefaultRole(final RoomConfig config, final Affiliation affiliation) {
 		Role newRole;
 
 		if (config.isRoomModerated() && (affiliation == Affiliation.none)) {
@@ -214,6 +214,12 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 	@Override
 	public void doQuit(final Room room, final JID senderJID) throws TigaseStringprepException {
 		final String leavingNickname = room.getOccupantsNickname(senderJID);
+		if (leavingNickname == null) {
+			if (log.isLoggable(Level.FINE)) {
+				log.fine("JID " + senderJID + " has no name. It is not occupant of room " + room.getRoomJID());
+			}
+			return;
+		}
 		final Affiliation leavingAffiliation = room.getAffiliation(leavingNickname);
 		final Role leavingRole = room.getRole(leavingNickname);
 		Element presenceElement = new Element("presence");
@@ -264,6 +270,9 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 			occupantJIDs = new ArrayList<JID>(room.getOccupantsJidsByNickname(leavingNickname));
 
 			Element pe = room.getLastPresenceCopy(senderJID.getBareJID(), leavingNickname);
+			if (pe == null) {
+				pe = new Element("presence", new String[]{"type"}, new String[]{"unavailable"});
+			}
 			for (String occupantNickname : room.getOccupantsNicknames()) {
 				for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
 					if (config.isMultiItemMode()) {
@@ -644,9 +653,9 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		final String leavingNickname = room.getOccupantsNickname(senderJID);
 
 		if (leavingNickname == null) {
-			// do it quietly
-			// throw new MUCException(Authorization.ITEM_NOT_FOUND,
-			// "Unkown occupant");
+			if (log.isLoggable(Level.FINE)) {
+				log.fine("JID " + senderJID + " has no name. It is not occupant of room " + room.getRoomJID());
+			}
 			return;
 		}
 		doQuit(room, senderJID);

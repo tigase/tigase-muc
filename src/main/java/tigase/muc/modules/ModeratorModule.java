@@ -83,24 +83,24 @@ public class ModeratorModule extends AbstractMucModule {
 	}
 
 	void checkItem(Element item, String occupantNickname, Affiliation occupantAffiliation, Role newRole,
-			Affiliation newAffiliation, String senderNickname, Role senderRole, Affiliation senderaAffiliation)
+			Affiliation newAffiliation, JID senderJid, Role senderRole, Affiliation senderaAffiliation)
 					throws MUCException {
 		if ((newRole != null) && (newAffiliation == null)) {
 			if ((newRole == Role.none) && !senderRole.isKickParticipantsAndVisitors()) {
 				if (log.isLoggable(Level.FINEST))
-					log.finest("User " + senderNickname + " (a:" + senderaAffiliation + "; r:" + senderRole
+					log.finest("User " + senderJid + " (a:" + senderaAffiliation + "; r:" + senderRole
 							+ ") is not allowed to kick user " + occupantNickname + " (a:" + occupantAffiliation + ")");
 				throw new MUCException(Authorization.NOT_ALLOWED, "You cannot kick");
 			} else if ((newRole == Role.none) && (occupantAffiliation.getWeight() > senderaAffiliation.getWeight())) {
 				if (log.isLoggable(Level.FINEST))
-					log.finest("User " + senderNickname + " (a:" + senderaAffiliation + "; r:" + senderRole
+					log.finest("User " + senderJid + " (a:" + senderaAffiliation + "; r:" + senderRole
 							+ ") is not allowed to kick user " + occupantNickname + " (a:" + occupantAffiliation
 							+ ") because of lower affiliation.");
 				throw new MUCException(Authorization.NOT_ALLOWED, "You cannot kick occupant with higher affiliation");
 			}
 			if ((newRole == Role.participant) && !senderRole.isGrantVoice()) {
 				if (log.isLoggable(Level.FINEST))
-					log.finest("User " + senderNickname + " (a:" + senderaAffiliation + "; r:" + senderRole
+					log.finest("User " + senderJid + " (a:" + senderaAffiliation + "; r:" + senderRole
 							+ ") is not allowed to grant voice to user " + occupantNickname + " (a:" + occupantAffiliation
 							+ ") because of lower affiliation.");
 				throw new MUCException(Authorization.NOT_ALLOWED, "You cannot grant voice");
@@ -141,23 +141,23 @@ public class ModeratorModule extends AbstractMucModule {
 		}
 	}
 
-	protected void checkItem(final Room room, final Element item, final String senderNickname,
-			final Affiliation senderaAffiliation, final Role senderRole) throws MUCException, TigaseStringprepException {
+	protected void checkItem(final Room room, final Element item, JID senderJid,
+							 final Affiliation senderaAffiliation, final Role senderRole) throws MUCException, TigaseStringprepException {
 		final Role newRole = getRole(item);
 		final Affiliation newAffiliation = getAffiliation(item);
 		HashSet<String> occupantNicknames = new HashSet<String>();
 
 		if (item.getAttributeStaticStr("nick") != null) {
 			occupantNicknames.add(item.getAttributeStaticStr("nick"));
-		}
-		else if (item.getAttributeStaticStr("jid") != null) {
-			occupantNicknames.addAll(room.getOccupantsNicknames(BareJID.bareJIDInstance(item.getAttributeStaticStr("jid"))));
+		} else if (item.getAttributeStaticStr("jid") != null) {
+			occupantNicknames.addAll(
+					room.getOccupantsNicknames(BareJID.bareJIDInstance(item.getAttributeStaticStr("jid"))));
 		} else {
 			throw new MUCException(Authorization.BAD_REQUEST);
 		}
 		for (String occupantNickname : occupantNicknames) {
 			final Affiliation occupantAffiliation = room.getAffiliation(occupantNickname);
-			checkItem(item, occupantNickname, occupantAffiliation, newRole, newAffiliation, senderNickname, senderRole,
+			checkItem(item, occupantNickname, occupantAffiliation, newRole, newAffiliation, senderJid, senderRole,
 					senderaAffiliation);
 		}
 	}
@@ -393,7 +393,9 @@ public class ModeratorModule extends AbstractMucModule {
 			final String nickName = room.getOccupantsNickname(senderJid);
 			final Affiliation senderAffiliation = room.getAffiliation(senderJid.getBareJID());
 
-			final Role senderRole = room.getRole(nickName);
+			final Role senderRole = nickName == null
+									? PresenceModuleImpl.getDefaultRole(room.getConfig(), senderAffiliation)
+									: room.getRole(nickName);
 			final Element query = element.getElement().getChild("query");
 			final List<Element> items = query.getChildren();
 
@@ -402,7 +404,7 @@ public class ModeratorModule extends AbstractMucModule {
 			}
 
 			for (Element item : items) {
-				checkItem(room, item, nickName, senderAffiliation, senderRole);
+				checkItem(room, item, senderJid, senderAffiliation, senderRole);
 			}
 			for (Element item : items) {
 				final Role newRole = getRole(item);

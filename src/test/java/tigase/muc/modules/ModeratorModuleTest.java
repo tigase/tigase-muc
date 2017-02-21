@@ -8,6 +8,7 @@ import tigase.muc.Role;
 import tigase.muc.exceptions.MUCException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.JID;
 
 public class ModeratorModuleTest {
 
@@ -19,21 +20,21 @@ public class ModeratorModuleTest {
 
 		try {
 			// A:OWNER changes affiliation: none->admin
-			m.checkItem(item, "occupant", Affiliation.none, null, Affiliation.admin, "sender", Role.none, Affiliation.owner);
+			m.checkItem(item, "occupant", Affiliation.none, null, Affiliation.admin, JID.jidInstanceNS("sender@b.c/res"), Role.none, Affiliation.owner);
 		} catch (MUCException e) {
 			Assert.fail("Invalid result: " + e.getMessage());
 		}
 
 		try {
 			// A:ADMIN changes affiliation: none->member
-			m.checkItem(item, "occupant", Affiliation.none, null, Affiliation.member, "sender", Role.none, Affiliation.admin);
+			m.checkItem(item, "occupant", Affiliation.none, null, Affiliation.member, JID.jidInstanceNS("sender@b.c/res"), Role.none, Affiliation.admin);
 		} catch (MUCException e) {
 			Assert.fail("Invalid result: " + e.getMessage());
 		}
 
 		try {
 			// A:ADMIN tries to change affiliation: none->admin
-			m.checkItem(item, "occupant", Affiliation.none, null, Affiliation.admin, "sender", Role.none, Affiliation.admin);
+			m.checkItem(item, "occupant", Affiliation.none, null, Affiliation.admin, JID.jidInstanceNS("sender@b.c/res"), Role.none, Affiliation.admin);
 			Assert.fail();
 		} catch (MUCException e) {
 			Assert.assertEquals(Authorization.NOT_ALLOWED, e.getErrorCondition());
@@ -42,7 +43,7 @@ public class ModeratorModuleTest {
 
 		try {
 			// A:NONE tries to change affiliation: none->admin
-			m.checkItem(item, "occupant", Affiliation.none, null, Affiliation.admin, "sender", Role.none, Affiliation.none);
+			m.checkItem(item, "occupant", Affiliation.none, null, Affiliation.admin, JID.jidInstanceNS("sender@b.c/res"), Role.none, Affiliation.none);
 			Assert.fail();
 		} catch (MUCException e) {
 			Assert.assertEquals(Authorization.NOT_ALLOWED, e.getErrorCondition());
@@ -51,7 +52,7 @@ public class ModeratorModuleTest {
 
 		try {
 			// A:NONE tries to set role to: moderator
-			m.checkItem(item, "occupant", Affiliation.none, Role.moderator, null, "sender", Role.none, Affiliation.none);
+			m.checkItem(item, "occupant", Affiliation.none, Role.moderator, null, JID.jidInstanceNS("sender@b.c/res"), Role.none, Affiliation.none);
 			Assert.fail();
 		} catch (MUCException e) {
 			Assert.assertEquals(Authorization.NOT_ALLOWED, e.getErrorCondition());
