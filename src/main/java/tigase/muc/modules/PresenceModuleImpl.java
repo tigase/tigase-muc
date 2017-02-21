@@ -82,7 +82,7 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 		}
 	}
 
-	private static Role getDefaultRole(final RoomConfig config, final Affiliation affiliation) {
+	public static Role getDefaultRole(final RoomConfig config, final Affiliation affiliation) {
 		Role newRole;
 
 		if (config.isRoomModerated() && (affiliation == Affiliation.none)) {
