@@ -313,15 +313,17 @@ public class Room implements RoomConfig.RoomConfigListener {
 
 	public BareJID getOccupantsJidByNickname(String nickname) {
 		OccupantEntry entry = this.occupants.get(nickname);
-		if (entry == null)
+		if (entry == null) {
 			return null;
-
-		synchronized (entry.jids) {
-			if (!entry.jids.isEmpty()) {
-				return entry.jids.iterator().next().getBareJID();
-			}
 		}
-		return null;
+
+		return entry.jid;
+//		synchronized (entry.jids) {
+//			if (!entry.jids.isEmpty()) {
+//				return entry.jids.iterator().next().getBareJID();
+//			}
+//		}
+//		return null;
 	}
 
 	public Collection<JID> getOccupantsJidsByNickname(final String nickname) {
