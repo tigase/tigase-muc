@@ -18,28 +18,20 @@
  */
 package tigase.muc;
 
+import tigase.component.exceptions.RepositoryException;
+import tigase.server.Packet;
+import tigase.util.TigaseStringprepException;
+import tigase.xml.Element;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
-import tigase.component.exceptions.RepositoryException;
-import tigase.util.TigaseStringprepException;
-import tigase.xml.Element;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import tigase.server.Packet;
 
 public class Room implements RoomConfig.RoomConfigListener {
 
@@ -330,15 +322,17 @@ public class Room implements RoomConfig.RoomConfigListener {
 
 	public BareJID getOccupantsJidByNickname(String nickname) {
 		OccupantEntry entry = this.occupants.get(nickname);
-		if (entry == null)
+		if (entry == null) {
 			return null;
-
-		synchronized (entry.jids) {
-			if (!entry.jids.isEmpty()) {
-				return entry.jids.iterator().next().getBareJID();
-			}
 		}
-		return null;
+
+		return entry.jid;
+//		synchronized (entry.jids) {
+//			if (!entry.jids.isEmpty()) {
+//				return entry.jids.iterator().next().getBareJID();
+//			}
+//		}
+//		return null;
 	}
 
 	public Collection<JID> getOccupantsJidsByNickname(final String nickname) {

@@ -648,7 +648,7 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 			log.finest("Processing stanza " + presenceElement.toString());
 		}
 		if (room == null) {
-			throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unkown room");
+			throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown room");
 		}
 
 		final String leavingNickname = room.getOccupantsNickname(senderJID);
@@ -768,6 +768,12 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 
 		for (String occupantNickname : room.getOccupantsNicknames()) {
 			final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNickname);
+
+			if (occupantJid == null) {
+				// why the hell occupantJid is null?
+				continue;
+			}
+
 			// we don't include current user in occupants presence broadcast
 			if (currentOccupantJid != null && currentOccupantJid.equals(occupantJid)) {
 				continue;
@@ -784,6 +790,10 @@ public class PresenceModuleImpl extends AbstractMucModule implements PresenceMod
 			}
 
 			Element op = room.getLastPresenceCopyByJid(occupantJid);
+
+			if (op == null) {
+				continue;
+			}
 
 			final Collection<JID> occupantJIDs = room.getOccupantsJidsByNickname(occupantNickname);
 			final BareJID occupantBareJID = room.getOccupantsJidByNickname(occupantNickname);

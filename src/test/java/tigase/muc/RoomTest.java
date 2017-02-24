@@ -33,6 +33,7 @@ import tigase.test.junit.XMPPTestCase;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.BareJID;
+import tigase.xmpp.JID;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -148,6 +149,24 @@ public class RoomTest extends XMPPTestCase {
 	@org.junit.Test
 	public void test_presences2() {
 		test("src/test/scripts/processPresence2.cor", xmlio);
+	}
+
+	@org.junit.Test
+	public void test_presences2_exiting() throws Exception {
+		test("src/test/scripts/processPresence2-exiting.cor", xmlio);
+		Room room = pubsub.getMucRepository().getRoom(BareJID.bareJIDInstanceNS("darkcave@macbeth.shakespeare.lit"));
+		Assert.assertNotNull(room);
+
+		Collection<String> nicknames = room.getOccupantsNicknames();
+		Assert.assertEquals(1, nicknames.size());
+		Assert.assertTrue(nicknames.contains("firstwitch"));
+
+		Assert.assertEquals("firstwitch",
+							room.getOccupantsNickname(JID.jidInstanceNS("crone1@shakespeare.lit/desktop")));
+
+		Assert.assertEquals(BareJID.bareJIDInstance("crone1@shakespeare.lit"),
+							room.getOccupantsJidByNickname("firstwitch"));
+
 	}
 
 	@org.junit.Test
