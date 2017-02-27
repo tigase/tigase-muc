@@ -54,7 +54,7 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 		query.addChild(new Element("feature", new String[] { "var" }, new String[] { feature }));
 	}
 
-	private void addField(Element form, String type, String var, String label, Object... value) {
+	private void addField(Element form, String var, String type, String label, Object... value) {
 		if (value == null)
 			return;
 		Element f = new Element("field");
