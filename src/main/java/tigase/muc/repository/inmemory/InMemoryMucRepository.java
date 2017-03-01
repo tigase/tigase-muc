@@ -202,6 +202,17 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 	public Map<BareJID, String> getPublicVisibleRooms(String domain) throws RepositoryException {
 		Map<BareJID, String> result = new HashMap<>();
 		for (Map.Entry<BareJID, InternalRoom> entry : this.allRooms.entrySet()) {
+			if (entry.getValue().isPublic == null) {
+				InternalRoom ir = entry.getValue();
+				try {
+					Room room = dao.getRoom(entry.getKey());
+					synchronized (ir) {
+						ir.isPublic = room == null ? false : room.getConfig().isRoomconfigPublicroom();
+					}
+				} catch (RepositoryException ex) {
+					entry.getValue().isPublic = false;
+				}
+			}
 			if (entry.getValue().isPublic) {
 				BareJID jid = entry.getKey();
 				if (!domain.equals(jid.getDomain())) {
@@ -231,6 +242,17 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 	public BareJID[] getPublicVisibleRoomsIdList() throws RepositoryException {
 		List<BareJID> result = new ArrayList<BareJID>();
 		for (Map.Entry<BareJID, InternalRoom> entry : this.allRooms.entrySet()) {
+			if (entry.getValue().isPublic == null) {
+				InternalRoom ir = entry.getValue();
+				try {
+					Room room = dao.getRoom(entry.getKey());
+					synchronized (ir) {
+						ir.isPublic = room == null ? false : room.getConfig().isRoomconfigPublicroom();
+					}
+				} catch (RepositoryException ex) {
+					entry.getValue().isPublic = false;
+				}
+			}
 			if (entry.getValue().isPublic) {
 				result.add(entry.getKey());
 			}
@@ -360,7 +382,7 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 	}
 	
 	public static class InternalRoom {
-		public boolean isPublic = true;
+		public Boolean isPublic = null;
 		public boolean isPersistent = false;
 		public String name;
 	}
