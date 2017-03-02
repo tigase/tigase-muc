@@ -46,7 +46,7 @@ import java.util.stream.Stream;
 /**
  * Created by andrzej on 16.10.2016.
  */
-@Bean(name = "muc-dao", parent = MUCComponent.class)
+@Bean(name = "muc-dao", parent = MUCComponent.class, active = true)
 public class MucDAOMDBean
 		extends MDRepositoryBeanWithStatistics<IMucDAO>
 		implements IMucDAO {

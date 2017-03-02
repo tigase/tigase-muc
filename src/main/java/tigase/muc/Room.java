@@ -57,7 +57,7 @@ public class Room implements RoomConfig.RoomConfigListener {
 		void onOccupantRemoved(Room room, JID occupantJid);
 	}
 
-	@Bean(name = "roomFactory", parent = MUCComponent.class, exportable = true)
+	@Bean(name = "roomFactory", parent = MUCComponent.class, active = true, exportable = true)
 	public static class RoomFactoryImpl implements RoomFactory {
 
 		@Override

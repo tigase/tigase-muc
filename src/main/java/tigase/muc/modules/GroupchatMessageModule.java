@@ -51,7 +51,7 @@ import java.util.logging.Level;
 /**
  * @author bmalkow
  */
-@Bean(name = GroupchatMessageModule.ID)
+@Bean(name = GroupchatMessageModule.ID, active = true)
 public class GroupchatMessageModule extends AbstractMucModule {
 
 	public static final String ID = "groupchat";

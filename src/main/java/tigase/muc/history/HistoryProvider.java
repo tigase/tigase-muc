@@ -35,7 +35,7 @@ import java.util.Date;
  * @author bmalkow
  *
  */
-@Bean(name = "history-provider")
+@Bean(name = "history-provider", active = true)
 public interface HistoryProvider<DS extends DataSource> extends DataSourceAware<DS> {
 
 	/**

@@ -44,7 +44,7 @@ import java.util.logging.Logger;
  * @author bmalkow
  *
  */
-@Bean(name = "ghostbuster", parent = MUCComponent.class)
+@Bean(name = "ghostbuster", parent = MUCComponent.class, active = true)
 public class Ghostbuster2 extends ScheduledTask {
 
 	protected class MonitoredObject {

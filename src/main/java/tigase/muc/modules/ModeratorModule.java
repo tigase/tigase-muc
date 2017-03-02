@@ -49,7 +49,7 @@ import java.util.logging.Level;
  * @author bmalkow
  *
  */
-@Bean(name = ModeratorModule.ID)
+@Bean(name = ModeratorModule.ID, active = true)
 public class ModeratorModule extends AbstractMucModule {
 
 	public static final String ID = "admin";

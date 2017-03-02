@@ -50,7 +50,7 @@ import java.util.logging.Level;
  * @author bmalkow
  *
  */
-@Bean(name = RoomConfigurationModule.ID)
+@Bean(name = RoomConfigurationModule.ID, active = true)
 public class RoomConfigurationModule extends AbstractMucModule {
 
 	public static final String ID = "ownerModule";

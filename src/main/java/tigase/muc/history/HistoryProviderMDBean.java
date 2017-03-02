@@ -47,7 +47,7 @@ import java.util.Date;
 /**
  * Created by andrzej on 25.08.2016.
  */
-@Bean(name = "historyProviderPool", parent = MUCComponent.class)
+@Bean(name = "historyProviderPool", parent = MUCComponent.class, active = true)
 public class HistoryProviderMDBean extends MDRepositoryBeanWithStatistics<HistoryProvider>
 		implements HistoryProvider, MAMRepository {
 

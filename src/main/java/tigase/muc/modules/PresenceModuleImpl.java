@@ -47,7 +47,7 @@ import java.util.logging.Logger;
 /**
  * @author bmalkow
  */
-@Bean(name = PresenceModuleImpl.ID, parent = MUCComponent.class)
+@Bean(name = PresenceModuleImpl.ID, parent = MUCComponent.class, active = true)
 public class PresenceModuleImpl extends AbstractMucModule implements PresenceModule {
 	/**
 	 * Field description

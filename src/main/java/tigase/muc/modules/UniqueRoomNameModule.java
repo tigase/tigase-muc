@@ -22,8 +22,6 @@
 
 package tigase.muc.modules;
 
-import java.security.SecureRandom;
-
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.kernel.beans.Bean;
@@ -35,13 +33,15 @@ import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.JID;
 
+import java.security.SecureRandom;
+
 //~--- JDK imports ------------------------------------------------------------
 
 /**
  * @author bmalkow
  *
  */
-@Bean(name = UniqueRoomNameModule.ID)
+@Bean(name = UniqueRoomNameModule.ID, active = true)
 public class UniqueRoomNameModule extends AbstractMucModule {
 
 	private final static String CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";

@@ -22,26 +22,22 @@
 
 package tigase.muc.modules;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
-import tigase.muc.Affiliation;
-import tigase.muc.Ghostbuster2;
-import tigase.muc.MUCConfig;
-import tigase.muc.Role;
-import tigase.muc.Room;
+import tigase.muc.*;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.repository.IMucRepository;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.JID;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Class for MucPresenceModule that strips down generated presence stanzas to
@@ -50,7 +46,7 @@ import tigase.xmpp.JID;
  *
  * @author wojtek
  */
-@Bean(name = PresenceModuleNoBroadcast.ID)
+@Bean(name = PresenceModuleNoBroadcast.ID, active = true)
 public class PresenceModuleNoBroadcast extends PresenceModuleImpl {
 
 	private static final Criteria CRIT = ElementCriteria.name("presence");

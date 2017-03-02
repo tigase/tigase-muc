@@ -21,9 +21,6 @@
  */
 package tigase.muc.modules;
 
-import java.util.Collection;
-import java.util.logging.Level;
-
 import tigase.component.exceptions.ComponentException;
 import tigase.criteria.Criteria;
 import tigase.kernel.beans.Bean;
@@ -39,11 +36,14 @@ import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
+import java.util.Collection;
+import java.util.logging.Level;
+
 /**
  * @author bmalkow
  *
  */
-@Bean(name = IqStanzaForwarderModule.ID)
+@Bean(name = IqStanzaForwarderModule.ID, active = true)
 public class IqStanzaForwarderModule extends AbstractMucModule {
 
 	public static final String ID = "iqforwarder";

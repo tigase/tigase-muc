@@ -26,7 +26,7 @@ import tigase.muc.Affiliation;
 import tigase.muc.Room;
 import tigase.xmpp.JID;
 
-@Bean(name = "discoItemsFilter")
+@Bean(name = "discoItemsFilter", active = true)
 public class DefaultDiscoItemsFilter implements DiscoItemsFilter {
 
 	@Override

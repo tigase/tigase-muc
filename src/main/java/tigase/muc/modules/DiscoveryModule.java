@@ -41,7 +41,7 @@ import java.util.logging.Level;
  * @author bmalkow
  *
  */
-@Bean(name = DiscoveryModule.ID, parent = MUCComponent.class)
+@Bean(name = DiscoveryModule.ID, parent = MUCComponent.class, active = true)
 public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModule {
 
 	@Inject

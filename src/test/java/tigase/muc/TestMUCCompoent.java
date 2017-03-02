@@ -55,7 +55,7 @@ public class TestMUCCompoent extends MUCComponent {
 		super.registerModules(kernel);
 	}
 
-	@Bean(name = "historyProviderPool", parent = TestMUCCompoent.class)
+	@Bean(name = "historyProviderPool", parent = TestMUCCompoent.class, active = true)
 	public static class TestHistoryProviderBean extends HistoryProviderMDBean {
 
 		private HistoryProvider provider = new MemoryHistoryProvider();

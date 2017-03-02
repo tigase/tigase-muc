@@ -46,7 +46,7 @@ import java.util.logging.Logger;
  * @author bmalkow
  *
  */
-@Bean(name = IMucRepository.ID, parent = MUCComponent.class)
+@Bean(name = IMucRepository.ID, parent = MUCComponent.class, active = true)
 public class InMemoryMucRepository implements IMucRepository, Initializable {
 
 	private static final String ROOMS_KEY = "rooms/";

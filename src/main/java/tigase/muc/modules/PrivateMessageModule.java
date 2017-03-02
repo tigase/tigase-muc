@@ -21,8 +21,6 @@
  */
 package tigase.muc.modules;
 
-import java.util.Collection;
-
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.kernel.beans.Bean;
@@ -38,11 +36,13 @@ import tigase.xmpp.Authorization;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
+import java.util.Collection;
+
 /**
  * @author bmalkow
  *
  */
-@Bean(name = PrivateMessageModule.ID)
+@Bean(name = PrivateMessageModule.ID, active = true)
 public class PrivateMessageModule extends AbstractMucModule {
 
 	private static final Criteria CRIT = ElementCriteria.nameType("message", "chat");

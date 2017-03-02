@@ -21,8 +21,6 @@
  */
 package tigase.muc.modules;
 
-import java.util.List;
-
 import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
@@ -42,11 +40,13 @@ import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
 
+import java.util.List;
+
 /**
  * @author bmalkow
  *
  */
-@Bean(name = MediatedInvitationModule.ID)
+@Bean(name = MediatedInvitationModule.ID, active = true)
 public class MediatedInvitationModule extends AbstractMucModule {
 
 	private static final Criteria CRIT = ElementCriteria.name("message").add(
