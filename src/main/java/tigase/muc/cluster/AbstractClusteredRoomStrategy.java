@@ -350,7 +350,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 	}
 
 
-	@Bean(name = ROOM_CHANGED_CMD, parent = AbstractClusteredRoomStrategy.class)
+	@Bean(name = ROOM_CHANGED_CMD, parent = AbstractClusteredRoomStrategy.class, active = true)
 	public static class RoomChangedCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -372,7 +372,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 		}
 	}
 
-	@Bean(name = ROOM_CREATED_CMD, parent = AbstractClusteredRoomStrategy.class)
+	@Bean(name = ROOM_CREATED_CMD, parent = AbstractClusteredRoomStrategy.class, active = true)
 	public static class RoomCreatedCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -399,7 +399,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 		}
 	}
 
-	@Bean(name = ROOM_DESTROYED_CMD, parent = AbstractClusteredRoomStrategy.class)
+	@Bean(name = ROOM_DESTROYED_CMD, parent = AbstractClusteredRoomStrategy.class, active = true)
 	public static class RoomDestroyedCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -441,7 +441,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 		}
 	}
 
-	@Bean(name = ROOM_MESSAGE_CMD, parent = AbstractClusteredRoomStrategy.class)
+	@Bean(name = ROOM_MESSAGE_CMD, parent = AbstractClusteredRoomStrategy.class, active = true)
 	public static class RoomMessageCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -476,7 +476,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 		}
 	}
 
-	@Bean(name = REQUEST_SYNC_CMD, parent = AbstractClusteredRoomStrategy.class)
+	@Bean(name = REQUEST_SYNC_CMD, parent = AbstractClusteredRoomStrategy.class, active = true)
 	public static class RequestSyncCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -522,7 +522,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 		}
 	}
 
-	@Bean(name = RESPONSE_SYNC_CMD, parent = AbstractClusteredRoomStrategy.class)
+	@Bean(name = RESPONSE_SYNC_CMD, parent = AbstractClusteredRoomStrategy.class, active = true)
 	public static class ResponseSyncCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -560,7 +560,7 @@ public abstract class AbstractClusteredRoomStrategy extends AbstractStrategy
 		}
 	}
 
-	@Bean(name = ROOM_AFFILIATION_CMD, parent = AbstractClusteredRoomStrategy.class)
+	@Bean(name = ROOM_AFFILIATION_CMD, parent = AbstractClusteredRoomStrategy.class, active = true)
 	public static class RoomAffiliationCmd extends CommandListenerAbstract {
 
 		@Inject

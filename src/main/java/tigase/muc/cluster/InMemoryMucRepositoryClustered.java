@@ -26,7 +26,7 @@ import java.util.logging.Level;
  *
  * @author andrzej
  */
-@Bean(name = IMucRepository.ID, parent = MUCComponentClustered.class)
+@Bean(name = IMucRepository.ID, parent = MUCComponentClustered.class, active = true)
 public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 
 	private RoomListener roomListener;

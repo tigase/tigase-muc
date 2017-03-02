@@ -107,7 +107,7 @@ public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrate
 		occupants.remove(occupantNick);
 	}
 
-	@Bean(name = OCCUPANT_PRESENCE_CMD, parent = ClusteredRoomStrategyNoPresence.class)
+	@Bean(name = OCCUPANT_PRESENCE_CMD, parent = ClusteredRoomStrategyNoPresence.class, active = true)
 	public static class OccupantChangedPresenceCmd extends CommandListenerAbstract {
 
 		public OccupantChangedPresenceCmd() {
@@ -133,7 +133,7 @@ public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrate
 		}
 	}
 
-	@Bean(name = OCCUPANTS_SYNC_REQUEST_CMD, parent = ClusteredRoomStrategyNoPresence.class)
+	@Bean(name = OCCUPANTS_SYNC_REQUEST_CMD, parent = ClusteredRoomStrategyNoPresence.class, active = true)
 	public static class OccupantsSyncRequestCmd extends CommandListenerAbstract {
 
 		@Inject

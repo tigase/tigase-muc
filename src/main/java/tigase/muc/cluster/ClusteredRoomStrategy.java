@@ -76,7 +76,7 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 		// localNodeJid, null, toNodes.toArray(new JID[toNodes.size()]));
 	}
 
-	@Bean(name = OCCUPANT_PRESENCE_CMD, parent = ClusteredRoomStrategy.class)
+	@Bean(name = OCCUPANT_PRESENCE_CMD, parent = ClusteredRoomStrategy.class, active = true)
 	public static class OccupantChangedPresenceCmd extends CommandListenerAbstract {
 
 		@Inject

@@ -119,7 +119,7 @@ public class ClusteredRoomStrategyV2 extends AbstractClusteredRoomStrategy {
 		mucComponentClustered.addOutPacket(presenceWrapper.getPacket());
 	}
 
-	@Bean(name = OCCUPANT_PRESENCE_CMD, parent = ClusteredRoomStrategyV2.class)
+	@Bean(name = OCCUPANT_PRESENCE_CMD, parent = ClusteredRoomStrategyV2.class, active = true)
 	public static class OccupantChangedPresenceCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -200,7 +200,7 @@ public class ClusteredRoomStrategyV2 extends AbstractClusteredRoomStrategy {
 		}
 	}
 
-	@Bean(name = OCCUPANTS_SYNC_REQUEST_CMD, parent = ClusteredRoomStrategyV2.class)
+	@Bean(name = OCCUPANTS_SYNC_REQUEST_CMD, parent = ClusteredRoomStrategyV2.class, active = true)
 	public static class OccupantsSyncRequestCmd extends CommandListenerAbstract {
 
 		@Inject

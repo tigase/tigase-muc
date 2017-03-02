@@ -192,7 +192,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		cl_controller.sendToNodes(REQUEST_SYNC_CMD, localNodeJid, nodeJid);
 	}
 
-	@Bean(name = OCCUPANT_ADDED_CMD, parent = AbstractStrategy.class)
+	@Bean(name = OCCUPANT_ADDED_CMD, parent = AbstractStrategy.class, active = true)
 	public static class OccupantAddedCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -216,7 +216,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		}
 	}
 
-	@Bean(name = OCCUPANT_REMOVED_CMD, parent = AbstractStrategy.class)
+	@Bean(name = OCCUPANT_REMOVED_CMD, parent = AbstractStrategy.class, active = true)
 	public static class OccupantRemovedCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -239,7 +239,7 @@ public abstract class AbstractStrategy implements StrategyIfc, Room.RoomOccupant
 		}
 	}
 
-	@Bean(name = PACKET_FORWARD_CMD, parent = AbstractStrategy.class)
+	@Bean(name = PACKET_FORWARD_CMD, parent = AbstractStrategy.class, active = true)
 	public static class PacketForwardCmd extends CommandListenerAbstract {
 
 		@Inject

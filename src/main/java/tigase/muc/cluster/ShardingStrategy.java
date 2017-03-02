@@ -34,7 +34,7 @@ import java.util.logging.Logger;
  * 
  * @author andrzej
  */
-@Bean(name = "strategy", parent = MUCComponentClustered.class)
+@Bean(name = "strategy", parent = MUCComponentClustered.class, active = true)
 public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, Room.RoomOccupantListener,
 		InMemoryMucRepositoryClustered.RoomListener {
 
@@ -299,7 +299,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		}
 	}
 
-	@Bean(name = ROOM_CHANGED_CMD, parent = ShardingStrategy.class)
+	@Bean(name = ROOM_CHANGED_CMD, parent = ShardingStrategy.class, active = true)
 	public static class RoomChangedCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -321,7 +321,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		}
 	}
 
-	@Bean(name = ROOM_CREATED_CMD, parent = ShardingStrategy.class)
+	@Bean(name = ROOM_CREATED_CMD, parent = ShardingStrategy.class, active = true)
 	public static class RoomCreatedCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -347,7 +347,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		}
 	}
 
-	@Bean(name = ROOM_DESTROYED_CMD, parent = ShardingStrategy.class)
+	@Bean(name = ROOM_DESTROYED_CMD, parent = ShardingStrategy.class, active = true)
 	public static class RoomDestroyedCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -371,7 +371,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		}
 	}
 
-	@Bean(name = NODE_SHUTDOWN_CMD, parent = ShardingStrategy.class)
+	@Bean(name = NODE_SHUTDOWN_CMD, parent = ShardingStrategy.class, active = true)
 	public static class NodeShutdownCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -397,7 +397,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		
 	}
 
-	@Bean(name = REQUEST_SYNC_CMD, parent = ShardingStrategy.class)
+	@Bean(name = REQUEST_SYNC_CMD, parent = ShardingStrategy.class, active = true)
 	public static class RequestSyncCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -466,7 +466,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		}
 	}
 
-	@Bean(name = RESPONSE_SYNC_CMD, parent = ShardingStrategy.class)
+	@Bean(name = RESPONSE_SYNC_CMD, parent = ShardingStrategy.class, active = true)
 	public static class ResponseSyncCmd extends CommandListenerAbstract {
 
 		@Inject
@@ -517,7 +517,7 @@ public class ShardingStrategy extends AbstractStrategy implements StrategyIfc, R
 		
 	}
 
-	@Bean(name = ROOM_LEFT_CMD, parent = ShardingStrategy.class)
+	@Bean(name = ROOM_LEFT_CMD, parent = ShardingStrategy.class, active = true)
 	public static class RoomLeftCmd extends CommandListenerAbstract {
 
 		@Inject
