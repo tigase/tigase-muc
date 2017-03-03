@@ -22,6 +22,7 @@ import tigase.osgi.ModulesManager;
  */
 public class Activator implements BundleActivator, ServiceListener {
 
+	
 	private static final Logger log = Logger.getLogger(Activator.class.getCanonicalName());
 	private BundleContext context = null;
 	private Class<MUCComponentClustered> mucComponentCls = null;
