@@ -45,7 +45,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 
-@Bean(name = "muc", parent = Kernel.class, active = false, selectors = {BeanSelector.NonClusterMode.class})
+@Bean(name = "muc", parent = Kernel.class, active = true, selectors = {BeanSelector.NonClusterMode.class})
 public class MUCComponent extends AbstractKernelBasedComponent {
 
 	public static final String DEFAULT_ROOM_CONFIG_KEY = "default_room_config";
