@@ -29,7 +29,7 @@ import java.util.logging.Logger;
  *
  * @author andrzej
  */
-@Bean(name = "muc", parent = Kernel.class, active = false, selectors = {BeanSelector.ClusterMode.class})
+@Bean(name = "muc", parent = Kernel.class, active = true, selectors = {BeanSelector.ClusterMode.class})
 public class MUCComponentClustered extends MUCComponent implements ClusteredComponentIfc {
 
 	private static final Logger log = Logger.getLogger(MUCComponentClustered.class.getCanonicalName());
