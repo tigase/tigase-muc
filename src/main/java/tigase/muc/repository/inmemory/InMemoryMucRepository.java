@@ -254,9 +254,13 @@ public class InMemoryMucRepository implements IMucRepository {
 	 * @see tigase.muc.repository.IMucRepository#getRoom()
 	 */
 	@Override
-	public Room getRoom(final BareJID roomJID) throws RepositoryException {
+	public Room getRoom(BareJID roomJID) throws RepositoryException {
 		Room room = this.rooms.get(roomJID);
 		if (room == null) {
+			InternalRoom ir = allRooms.get(roomJID);
+			if (ir != null) {
+				roomJID = ir.roomJid;
+			}
 			room = dao.readRoom(roomJID);
 			if (room != null) {
 				room.getConfig().addListener(roomConfigListener);
@@ -274,11 +278,16 @@ public class InMemoryMucRepository implements IMucRepository {
 	 */
 	@Override
 	public String getRoomName(String jid) throws RepositoryException {
-		Room r = rooms.get(BareJID.bareJIDInstanceNS(jid));
+		BareJID roomJID = BareJID.bareJIDInstanceNS(jid);
+		Room r = rooms.get(roomJID);
 		if (r != null) {
 			return r.getConfig().getRoomName();
 		} else {
-			return dao.getRoomName(jid);
+			InternalRoom ir = allRooms.get(roomJID);
+			if (ir != null) {
+				roomJID = ir.roomJid;
+			}
+			return dao.getRoomName(roomJID.toString());
 		}
 	}
 
@@ -290,7 +299,7 @@ public class InMemoryMucRepository implements IMucRepository {
 	 */
 	@Override
 	public boolean isRoomIdExists(String newRoomName) {
-		return this.allRooms.containsKey(newRoomName);
+		return this.allRooms.containsKey(BareJID.bareJIDInstanceNS(newRoomName));
 	}
 
 	@Override
@@ -313,6 +322,7 @@ public class InMemoryMucRepository implements IMucRepository {
 	}
 
 	protected void addToAllRooms(BareJID roomJid, InternalRoom internalRoom) {
+		internalRoom.roomJid = roomJid;
 		allRooms.put(roomJid, internalRoom);
 	}
 
@@ -364,5 +374,6 @@ public class InMemoryMucRepository implements IMucRepository {
 		public Boolean isPublic = null;
 		public boolean isPersistent = false;
 		public String name;
+		private BareJID roomJid;
 	}
 }
