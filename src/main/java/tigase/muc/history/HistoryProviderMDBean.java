@@ -55,7 +55,7 @@ public class HistoryProviderMDBean extends MDRepositoryBeanWithStatistics<Histor
 	private boolean mapComponentToBareDomain = false;
 
 	public HistoryProviderMDBean() {
-		super(HistoryProvider.class);
+		super(HistoryProvider.class, MAMRepository.class);
 	}
 
 	@Override
