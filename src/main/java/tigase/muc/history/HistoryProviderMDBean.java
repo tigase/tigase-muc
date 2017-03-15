@@ -176,7 +176,7 @@ public class HistoryProviderMDBean extends MDRepositoryBeanWithStatistics<Histor
 				case "none":
 					return NoneHistoryProvider.class;
 				case "default":
-					return JDBCHistoryProvider.class;
+					return super.getRepositoryClassName();
 				default:
 					return ModulesManagerImpl.getInstance().forName(cls);
 
