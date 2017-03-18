@@ -90,7 +90,7 @@ public class Ghostbuster2 extends ScheduledTask {
 
 	protected final Map<JID, MonitoredObject> monitoredObjects = new ConcurrentHashMap<JID, MonitoredObject>();
 
-	@Inject(bean = "component", nullAllowed = false)
+	@Inject
 	private MUCComponent mucComponent;
 
 	private final ReceiverTimeoutHandler pingHandler;
