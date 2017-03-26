@@ -20,11 +20,11 @@ create table if not exists tig_muc_rooms (
 	room_id bigint not null auto_increment,
 	jid varchar(2049) not null,
 	jid_sha1 char(40) not null,
-	name varchar(1024),
-	config text,
+	name varchar(1024) character set utf8mb4 collate utf8mb4_bin,
+	config text character set utf8mb4 collate utf8mb4_bin,
 	creator varchar(2049) not null,
 	creation_date timestamp(6) not null,
-    subject text,
+    subject text character set utf8mb4 collate utf8mb4_bin,
     subject_creator_nick varchar(1024),
     subject_date timestamp(6) null default null,
 
@@ -60,9 +60,9 @@ create table if not exists tig_muc_room_history (
     ts timestamp(6) not null,
     sender_jid varchar(3074),
     sender_nickname varchar(1024),
-	body text,
+	body text character set utf8mb4 collate utf8mb4_bin,
 	public_event boolean,
-	msg text,
+	msg text character set utf8mb4 collate utf8mb4_bin,
 
 	index using hash ( room_jid_sha1 ),
 	index using hash ( room_jid_sha1, ts ),
@@ -138,7 +138,7 @@ drop procedure if exists TigExecuteIf;
 delimiter //
 
 -- QUERY START:
-create procedure Tig_MUC_CreateRoom(_roomJid varchar(2049), _creatorJid varchar(2049), _creationDate timestamp(6), _roomName varchar(1024), _roomConfig text)
+create procedure Tig_MUC_CreateRoom(_roomJid varchar(2049), _creatorJid varchar(2049), _creationDate timestamp(6), _roomName varchar(1024) charset utf8mb4 collate utf8mb4_bin, _roomConfig text charset utf8mb4 collate utf8mb4_bin)
 begin
 	declare _roomId bigint;
 	declare _roomJidSha1 char(40);
@@ -220,21 +220,21 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MUC_SetRoomSubject(_roomId bigint, _subject text, _creator varchar(1024), _changeDate timestamp(6))
+create procedure Tig_MUC_SetRoomSubject(_roomId bigint, _subject text charset utf8mb4 collate utf8mb4_bin, _creator varchar(1024), _changeDate timestamp(6))
 begin
     update tig_muc_rooms set subject = _subject, subject_creator_nick = _creator, subject_date = _changeDate where room_id = _roomId;
 end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MUC_SetRoomConfig(_roomJid varchar(2049), _name varchar(1024), _config text)
+create procedure Tig_MUC_SetRoomConfig(_roomJid varchar(2049), _name varchar(1024) charset utf8mb4 collate utf8mb4_bin, _config text charset utf8mb4 collate utf8mb4_bin)
 begin
     update tig_muc_rooms set name = _name, config = _config where jid_sha1 = SHA1( LOWER( _roomJid ) );
 end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MUC_AddMessage(_roomJid varchar(2049), _ts timestamp(6), _senderJid varchar(3074), _senderNick varchar(1024), _body text, _publicEvent boolean, _msg text)
+create procedure Tig_MUC_AddMessage(_roomJid varchar(2049), _ts timestamp(6), _senderJid varchar(3074), _senderNick varchar(1024), _body text charset utf8mb4 collate utf8mb4_bin, _publicEvent boolean, _msg text charset utf8mb4 collate utf8mb4_bin)
 begin
 	declare _roomJidSha1 char(40);
 
@@ -351,6 +351,36 @@ call TigExecuteIf((select count(1) from information_schema.COLUMNS where TABLE_S
 -- QUERY START:
 call TigExecuteIf((select count(1) from information_schema.COLUMNS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_muc_room_history' AND COLUMN_NAME = 'ts' AND (DATA_TYPE = 'datetime' OR (DATA_TYPE = 'timestamp' AND DATETIME_PRECISION <> 6))),
 	'alter table tig_muc_room_history modify `ts` timestamp(6) not null'
+);
+-- QUERY END:
+
+-- QUERY START:
+call TigExecuteIf((select count(1) from information_schema.COLUMNS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_muc_rooms' AND COLUMN_NAME = 'name' AND DATA_TYPE = 'text' and CHARACTER_SET_NAME = 'utf8'),
+	'alter table tig_muc_rooms modify `name` varchar(1024) character set utf8mb4 collate utf8mb4_bin'
+);
+-- QUERY END:
+
+-- QUERY START:
+call TigExecuteIf((select count(1) from information_schema.COLUMNS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_muc_rooms' AND COLUMN_NAME = 'config' AND DATA_TYPE = 'text' and CHARACTER_SET_NAME = 'utf8'),
+	'alter table tig_muc_rooms modify `config` text character set utf8mb4 collate utf8mb4_bin'
+);
+-- QUERY END:
+
+-- QUERY START:
+call TigExecuteIf((select count(1) from information_schema.COLUMNS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_muc_rooms' AND COLUMN_NAME = 'subject' AND DATA_TYPE = 'text' and CHARACTER_SET_NAME = 'utf8'),
+	'alter table tig_muc_rooms modify `subject` text character set utf8mb4 collate utf8mb4_bin'
+);
+-- QUERY END:
+
+-- QUERY START:
+call TigExecuteIf((select count(1) from information_schema.COLUMNS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_muc_room_history' AND COLUMN_NAME = 'body' AND DATA_TYPE = 'text' and CHARACTER_SET_NAME = 'utf8'),
+	'alter table tig_muc_room_history modify `body` text character set utf8mb4 collate utf8mb4_bin'
+);
+-- QUERY END:
+
+-- QUERY START:
+call TigExecuteIf((select count(1) from information_schema.COLUMNS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tig_muc_room_history' AND COLUMN_NAME = 'msg' AND DATA_TYPE = 'text' and CHARACTER_SET_NAME = 'utf8'),
+	'alter table tig_muc_room_history modify `msg` text character set utf8mb4 collate utf8mb4_bin'
 );
 -- QUERY END:
 

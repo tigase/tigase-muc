@@ -54,7 +54,8 @@ import static org.junit.Assert.assertNotNull;
 public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 
 	protected static String uri = System.getProperty("testDbUri");
-
+	protected static String emoji = "\uD83D\uDE97\uD83D\uDCA9\uD83D\uDE21";
+	
 	@ClassRule
 	public static TestRule rule = new TestRule() {
 		@Override
@@ -71,6 +72,7 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 		}
 	};
 
+	protected boolean checkEmoji = true;
 	protected DS dataSource;
 	protected HistoryProvider historyProvider;
 	protected Kernel kernel;
@@ -125,7 +127,7 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 	@Test
 	public void test2_appendMessages() throws RepositoryException, InterruptedException {
 		for (int i=0; i<10; i++) {
-			Item item = new Item();
+			Item item = new Item(checkEmoji ? emoji : "");
 			historyProvider.addMessage(room, item.getMessage(room.getRoomJID()), item.body, item.sender, item.nick, item.ts);
 			savedMessages.add(item);
 			Thread.sleep(1000);
@@ -300,12 +302,14 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 
 	public static class Item {
 
-		public final String body = UUID.randomUUID().toString();
+		public final String body;
 		public final JID sender = JID.jidInstanceNS(UUID.randomUUID().toString(), "test.local", UUID.randomUUID().toString());
 		public final String nick = UUID.randomUUID().toString();
 		public final Date ts = new Date();
 
-		public Item() {}
+		public Item(String suffix) {
+			body = UUID.randomUUID().toString() + suffix;
+		}
 
 		public Element getMessage(BareJID roomJID) {
 			Element message = new Element("message", new String[] { "type", "to", "from" }, new String[] { "groupchat", roomJID.toString(), sender.toString() });

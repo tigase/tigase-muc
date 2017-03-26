@@ -50,6 +50,8 @@ public abstract class AbstractMucDAOTest<DS extends DataSource> {
 
 	protected static String uri = System.getProperty("testDbUri");
 
+	protected static String emoji = "\uD83D\uDE97\uD83D\uDCA9\uD83D\uDE21";
+
 	@ClassRule
 	public static TestRule rule = new TestRule() {
 		@Override
@@ -65,7 +67,8 @@ public abstract class AbstractMucDAOTest<DS extends DataSource> {
 			return stmnt;
 		}
 	};
-
+	
+	protected boolean checkEmoji = true;
 	protected DS dataSource;
 	protected IMucDAO dao;
 	protected Kernel kernel;
@@ -110,6 +113,11 @@ public abstract class AbstractMucDAOTest<DS extends DataSource> {
 	public void test1_createRoomWithAffiliation() throws RepositoryException {
 		RoomConfig rc = new RoomConfig(roomJID);
 		rc.setValue(RoomConfig.MUC_ROOMCONFIG_PERSISTENTROOM_KEY, Boolean.TRUE);
+		String roomName = roomJID.getLocalpart();
+		if (checkEmoji) {
+			roomName = roomName + emoji;
+		}
+		rc.setValue(RoomConfig.MUC_ROOMCONFIG_ROOMNAME_KEY, roomName);
 		creationDate = new Date();
 		RoomWithId room = roomFactory.newInstance(null, rc, creationDate, creatorJID.getBareJID());
 		room.addAffiliationByJid(creatorJID.getBareJID(), Affiliation.owner);
@@ -133,7 +141,9 @@ public abstract class AbstractMucDAOTest<DS extends DataSource> {
 		room.setAffiliations(dao.getAffiliations(room));
 		assertNotNull(room);
 		assertNotNull(room.getId());
-
+		if (checkEmoji) {
+			assertTrue(room.getConfig().getRoomName().contains(emoji));
+		}
 		assertEquals(roomJID, room.getRoomJID());
 		assertEquals(creationDate.getTime() / 10, room.getCreationDate().getTime() / 10);
 		assertEquals(creatorJID.getBareJID(), room.getCreatorJid());
@@ -171,6 +181,9 @@ public abstract class AbstractMucDAOTest<DS extends DataSource> {
 	public void test5_setRoomSubject() throws RepositoryException {
 		RoomWithId room = dao.getRoom(roomJID);
 		String subject = UUID.randomUUID().toString();
+		if (checkEmoji) {
+			subject += emoji;
+		}
 		Date changeDate = new Date();
 		dao.setSubject(room, subject, adminJID.getResource(), changeDate);
 
@@ -186,12 +199,18 @@ public abstract class AbstractMucDAOTest<DS extends DataSource> {
 		RoomConfig roomConfig = room.getConfig();
 		assertNull(roomConfig.getMaxUsers());
 		roomConfig.setValue(RoomConfig.MUC_ROOMCONFIG_MAXUSERS_KEY, "10");
+		String roomName = roomJID.getLocalpart().toUpperCase();
+		if (checkEmoji) {
+			roomName += emoji;
+		}
+		roomConfig.setValue(RoomConfig.MUC_ROOMCONFIG_ROOMNAME_KEY, roomName);
 
 		dao.updateRoomConfig(roomConfig);
 
 		room = dao.getRoom(roomJID);
 
 		assertEquals((Integer) 10, room.getConfig().getMaxUsers());
+		assertEquals(roomName, room.getConfig().getRoomName());
 	}
 
 	@Test
