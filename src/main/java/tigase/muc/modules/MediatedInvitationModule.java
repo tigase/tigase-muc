@@ -21,8 +21,6 @@
  */
 package tigase.muc.modules;
 
-import java.util.List;
-
 import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
@@ -39,9 +37,11 @@ import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
 
+import java.util.List;
+
 /**
  * @author bmalkow
- * 
+ *
  */
 public class MediatedInvitationModule extends AbstractMucModule {
 
@@ -55,7 +55,7 @@ public class MediatedInvitationModule extends AbstractMucModule {
 	 * @param senderJID
 	 * @param roomJID
 	 * @throws TigaseStringprepException
-	 * 
+	 *
 	 */
 	private void doDecline(Element decline, BareJID roomJID, JID senderJID) throws TigaseStringprepException {
 		final Element reason = decline.getChild("reason");
@@ -87,7 +87,7 @@ public class MediatedInvitationModule extends AbstractMucModule {
 	 * @throws TigaseStringprepException
 	 * @throws RepositoryException
 	 * @throws MUCException
-	 * 
+	 *
 	 */
 	private void doInvite(Packet message, Element invite, Room room, BareJID roomJID, JID senderJID, Role senderRole,
 			Affiliation senderAffiliation) throws RepositoryException, TigaseStringprepException, MUCException {
@@ -140,8 +140,8 @@ public class MediatedInvitationModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @return
 	 */
 	@Override
@@ -151,8 +151,8 @@ public class MediatedInvitationModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @return
 	 */
 	@Override
@@ -162,10 +162,10 @@ public class MediatedInvitationModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
+	 *
 	 * @param element
-	 * 
+	 *
 	 * @throws MUCException
 	 */
 	@Override
@@ -179,6 +179,10 @@ public class MediatedInvitationModule extends AbstractMucModule {
 			}
 
 			final Room room = context.getMucRepository().getRoom(roomJID);
+			if (room == null) {
+				throw new MUCException(Authorization.ITEM_NOT_FOUND,
+									   "Room " + roomJID + " does not exists on this server.");
+			}
 
 			final String nickName = room.getOccupantsNickname(senderJID);
 			final Role senderRole = room.getRole(nickName);
