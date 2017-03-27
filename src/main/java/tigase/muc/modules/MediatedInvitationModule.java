@@ -186,6 +186,10 @@ public class MediatedInvitationModule extends AbstractMucModule {
 			}
 
 			final Room room = repository.getRoom(roomJID);
+			if (room == null) {
+				throw new MUCException(Authorization.ITEM_NOT_FOUND,
+									   "Room " + roomJID + " does not exists on this server.");
+			}
 
 			final String nickName = room.getOccupantsNickname(senderJID);
 			final Role senderRole = room.getRole(nickName);
