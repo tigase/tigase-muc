@@ -24,7 +24,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import tigase.db.DataRepository;
-import tigase.util.SchemaLoader;
+import tigase.db.util.SchemaLoader;
 
 import java.io.File;
 import java.sql.Connection;
