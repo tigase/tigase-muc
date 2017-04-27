@@ -11,8 +11,10 @@ import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.ClusteredComponentIfc;
 import tigase.cluster.api.CommandListener;
 import tigase.kernel.beans.Bean;
-import tigase.kernel.beans.BeanSelector;
 import tigase.kernel.beans.Inject;
+import tigase.kernel.beans.selector.ClusterModeRequired;
+import tigase.kernel.beans.selector.ConfigType;
+import tigase.kernel.beans.selector.ConfigTypeEnum;
 import tigase.kernel.core.Kernel;
 import tigase.licence.LicenceChecker;
 import tigase.muc.MUCComponent;
@@ -29,7 +31,9 @@ import java.util.logging.Logger;
  *
  * @author andrzej
  */
-@Bean(name = "muc", parent = Kernel.class, active = true, selectors = {BeanSelector.ClusterMode.class})
+@Bean(name = "muc", parent = Kernel.class, active = true)
+@ConfigType(ConfigTypeEnum.DefaultMode)
+@ClusterModeRequired(active = true)
 public class MUCComponentClustered extends MUCComponent implements ClusteredComponentIfc {
 
 	private static final Logger log = Logger.getLogger(MUCComponentClustered.class.getCanonicalName());
