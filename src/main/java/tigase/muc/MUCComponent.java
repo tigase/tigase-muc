@@ -28,9 +28,11 @@ import tigase.component.modules.impl.JabberVersionModule;
 import tigase.component.modules.impl.XmppPingModule;
 import tigase.form.Field;
 import tigase.kernel.beans.Bean;
-import tigase.kernel.beans.BeanSelector;
 import tigase.kernel.beans.Inject;
 import tigase.kernel.beans.config.ConfigField;
+import tigase.kernel.beans.selector.ClusterModeRequired;
+import tigase.kernel.beans.selector.ConfigType;
+import tigase.kernel.beans.selector.ConfigTypeEnum;
 import tigase.kernel.core.Kernel;
 import tigase.muc.modules.*;
 import tigase.muc.repository.IMucRepository;
@@ -45,7 +47,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 
-@Bean(name = "muc", parent = Kernel.class, active = true, selectors = {BeanSelector.NonClusterMode.class})
+@Bean(name = "muc", parent = Kernel.class, active = true)
+@ConfigType(ConfigTypeEnum.DefaultMode)
+@ClusterModeRequired(active = false)
 public class MUCComponent extends AbstractKernelBasedComponent {
 
 	public static final String DEFAULT_ROOM_CONFIG_KEY = "default_room_config";
