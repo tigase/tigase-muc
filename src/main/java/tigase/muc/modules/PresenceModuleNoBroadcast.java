@@ -75,6 +75,7 @@ public class PresenceModuleNoBroadcast extends PresenceModuleImpl {
 		presenceElement.setAttribute("type", "unavailable");
 
 		Collection<JID> occupantJIDs = new ArrayList<JID>(room.getOccupantsJidsByNickname(leavingNickname));
+		room.removeOccupant(senderJID);
 		ghostbuster.remove(senderJID, room);
 
 		room.updatePresenceByJid(senderJID, leavingNickname, null);
