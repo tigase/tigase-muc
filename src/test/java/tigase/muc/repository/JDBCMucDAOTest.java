@@ -31,7 +31,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.Properties;
 
 /**
  * Created by andrzej on 15.10.2016.
@@ -44,95 +43,15 @@ public class JDBCMucDAOTest extends AbstractMucDAOTest<DataRepository> {
 	@BeforeClass
 	public static void loadSchema() {
 		if (uri.startsWith("jdbc:")) {
-			String dbType;
-			String dbName = null;
-			String dbHostname = null;
-			String dbUser = null;
-			String dbPass = null;
-
-			int idx = uri.indexOf(":", 5);
-			dbType = uri.substring(5, idx);
-			if ("jtds".equals(dbType)) dbType = "sqlserver";
-
-			String rest = null;
-			switch (dbType) {
-				case "derby":
-					dbName = uri.substring(idx+1, uri.indexOf(";"));
-					break;
-				case "sqlserver":
-					idx = uri.indexOf("//", idx) + 2;
-					rest = uri.substring(idx);
-					for (String x : rest.split(";")) {
-						if (!x.contains("=")) {
-							dbHostname = x;
-						} else {
-							String p[] = x.split("=");
-							switch (p[0]) {
-								case "databaseName":
-									dbName = p[1];
-									break;
-								case "user":
-									dbUser = p[1];
-									break;
-								case "password":
-									dbPass = p[1];
-									break;
-								default:
-									// unknown setting
-									break;
-							}
-						}
-					}
-					break;
-				default:
-					idx = uri.indexOf("//", idx) + 2;
-					rest = uri.substring(idx);
-					idx = rest.indexOf("/");
-					dbHostname = rest.substring(0, idx);
-					rest = rest.substring(idx+1);
-					idx = rest.indexOf("?");
-					dbName = rest.substring(0, idx);
-					rest = rest.substring(idx + 1);
-					for (String x : rest.split("&")) {
-						String p[] = x.split("=");
-						if (p.length < 2)
-							continue;
-						switch (p[0]) {
-							case "user":
-								dbUser = p[1];
-								break;
-							case "password":
-								dbPass = p[1];
-								break;
-							default:
-								break;
-						}
-					}
-					break;
-			}
-
-			Properties props = new Properties();
-			if (dbType != null)
-				props.put("dbType", dbType);
-			if (dbName != null)
-				props.put("dbName", dbName);
-			if (dbHostname != null)
-				props.put("dbHostname", dbHostname);
-			if (dbUser != null)
-				props.put("rootUser", dbUser);
-			if (dbPass != null)
-				props.put("rootPass", dbPass);
-			if (dbUser != null)
-				props.put("dbUser", dbUser);
-			if (dbPass != null)
-				props.put("dbPass", dbPass);
-
-			SchemaLoader loader = SchemaLoader.newInstance(props);
-			loader.validateDBConnection(props);
-			loader.validateDBExists(props);
-			props.put("file", "database/" + dbType + "-" + PROJECT_ID + "-schema-" + VERSION + ".sql");
-			Assert.assertEquals(SchemaLoader.Result.ok, loader.loadSchemaFile(props));
-			loader.shutdown(props);
+			SchemaLoader loader = SchemaLoader.newInstance("jdbc");
+			SchemaLoader.Parameters params = loader.createParameters();
+			params.parseUri(uri);
+			params.setDbRootCredentials(null, null);
+			loader.init(params);
+			loader.validateDBConnection();
+			loader.validateDBExists();
+			Assert.assertEquals(SchemaLoader.Result.ok, loader.loadSchema(PROJECT_ID, VERSION));
+			loader.shutdown();
 		}
 	}
 

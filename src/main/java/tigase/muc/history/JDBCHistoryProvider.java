@@ -29,6 +29,7 @@ import tigase.kernel.beans.config.ConfigField;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
+import tigase.muc.repository.Schema;
 import tigase.server.Packet;
 import tigase.util.TigaseStringprepException;
 import tigase.xml.Element;
@@ -50,6 +51,7 @@ import java.util.logging.Logger;
  * Created by andrzej on 17.10.2016.
  */
 @Repository.Meta(supportedUris = {"jdbc:.*" })
+@Repository.SchemaId(id = Schema.MUC_SCHEMA_ID, name = Schema.MUC_SCHEMA_NAME)
 public class JDBCHistoryProvider implements HistoryProvider<DataRepository>, MAMRepository {
 
 	private static final Logger log = Logger.getLogger(JDBCHistoryProvider.class.getCanonicalName());

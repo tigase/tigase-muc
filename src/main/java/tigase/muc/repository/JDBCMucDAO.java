@@ -39,6 +39,7 @@ import java.util.logging.Logger;
  * @author bmalkow
  */
 @Repository.Meta(supportedUris = {"jdbc:.*" }, isDefault = true)
+@Repository.SchemaId(id = Schema.MUC_SCHEMA_ID, name = Schema.MUC_SCHEMA_NAME)
 public class JDBCMucDAO
 		extends AbstractMucDAO<DataRepository, Long> {
 
