@@ -43,7 +43,6 @@ import tigase.xmpp.mam.modules.GetFormModule;
 
 import javax.script.Bindings;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 
@@ -58,7 +57,7 @@ public class MUCComponent extends AbstractKernelBasedComponent {
 	private Ghostbuster2 ghostbuster;
 
 	@ConfigField(alias = DEFAULT_ROOM_CONFIG_KEY, desc = "Default room configuration", allowAliasFromParent = false)
-	private Map<String, String> defaultRoomConfig = new HashMap<>();
+	private HashMap<String, String> defaultRoomConfig = new HashMap<>();
 
 	public MUCComponent() {
 	}
