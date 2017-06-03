@@ -117,6 +117,7 @@ CREATE PROCEDURE dbo.Tig_MUC_CreateRoom
     @_roomConfig [nvarchar](MAX)
 AS
 BEGIN
+    SET NOCOUNT ON;
     DECLARE @_roomId [bigint];
     DECLARE @_roomJidSha1 [varbinary](40)
 
@@ -125,6 +126,7 @@ BEGIN
 		    VALUES (@_roomJid, @_roomJidSha1, @_roomName, @_roomConfig, @_creatorJid, @_creationDate);
 
     SELECT @@IDENTITY as room_id;
+    SET NOCOUNT OFF;
 END
 -- QUERY END:
 GO
@@ -140,6 +142,7 @@ CREATE PROCEDURE dbo.Tig_MUC_DestroyRoom
     @_roomJid [nvarchar](2049)
 AS
 BEGIN
+    SET NOCOUNT ON;
     DECLARE @_roomId [bigint];
     DECLARE @_roomJidSha1 [varbinary](40)
 
@@ -151,6 +154,7 @@ BEGIN
         DELETE FROM dbo.tig_muc_room_affiliations WHERE room_id = @_roomId;
         DELETE FROM dbo.tig_muc_rooms WHERE room_id = @_roomId;
     END
+    SET NOCOUNT OFF;
 END
 -- QUERY END:
 GO
@@ -222,6 +226,7 @@ CREATE PROCEDURE dbo.Tig_MUC_SetRoomAffiliation
     @_affiliation [nvarchar](20)
 AS
 BEGIN
+    SET NOCOUNT ON;
     DECLARE @_jidSha1 [varbinary](40);
 
     SET @_jidSha1 = HASHBYTES('SHA1', LOWER( @_jid ) )
@@ -239,6 +244,7 @@ BEGIN
             INSERT INTO dbo.tig_muc_room_affiliations (room_id, jid, jid_sha1, affiliation)
                 VALUES (@_roomId, @_jid, @_jidSha1, @_affiliation);
     END
+    SET NOCOUNT OFF;
 END
 -- QUERY END:
 GO
@@ -297,11 +303,13 @@ CREATE PROCEDURE dbo.Tig_MUC_AddMessage
     @_msg [nvarchar](MAX)
 AS
 BEGIN
+    SET NOCOUNT ON;
     DECLARE @_roomJidSha1 [varbinary](40);
 
     SET @_roomJidSha1 = HASHBYTES('SHA1', LOWER( @_roomJid ) );
     INSERT INTO tig_muc_room_history (room_jid, room_jid_sha1, event_type, ts, sender_jid, sender_nickname, body, public_event, msg)
         VALUES (@_roomJid, @_roomJidSha1, 1, @_ts, @_senderJid, @_senderNick, @_body, @_publicEvent, @_msg);
+    SET NOCOUNT OFF;
 END
 -- QUERY END:
 GO

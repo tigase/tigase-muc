@@ -316,7 +316,7 @@ public class GroupchatMessageModule extends AbstractMucModule {
 	public static String generateSubjectId(Date ts, String subject) {
 		try {
 			MessageDigest md = MessageDigest.getInstance("SHA-1");
-			md.update(String.valueOf(ts.getTime()).getBytes());
+			md.update(String.valueOf(ts.getTime()/100).getBytes());
 			if (subject != null) {
 				md.update(subject.getBytes());
 			}
