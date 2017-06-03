@@ -236,6 +236,7 @@ end;
 $$ LANGUAGE 'plpgsql';
 -- QUERY END:
 
+-- QUERY START:
 create or replace function Tig_MUC_MAM_GetMessagePosition(_roomJid varchar(2049), _since timestamp, _to timestamp, _nickname varchar(1024), _id_ts timestamp) returns table(
     "position" bigint
 ) as $$
@@ -245,9 +246,10 @@ begin
             and (_since is null or h.ts >= _since)
             and (_to is null or h.ts <= _to)
             and (_nickname is null or h.sender_nickname = _nickname)
-            and t.ts < _id_ts;
+            and h.ts < _id_ts;
 end;
 $$ LANGUAGE 'plpgsql';
+-- QUERY END:
 
 -- QUERY START:
 create or replace function Tig_MUC_MAM_GetMessagesCount(_roomJid varchar(2049), _since timestamp, _to timestamp, _nickname varchar(1024)) returns table(
