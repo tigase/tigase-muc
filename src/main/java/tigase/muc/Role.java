@@ -23,7 +23,6 @@ package tigase.muc;
 
 /**
  * @author bmalkow
- * 
  */
 public enum Role {
 
@@ -61,9 +60,9 @@ public enum Role {
 	private final int weight;
 
 	private Role(int weight, boolean presentInRoom, boolean receiveMessages, boolean receiveOccupantPresence,
-			boolean presenceBroadcastedToRoom, boolean changeAvailabilityStatus, boolean changeRoomNickname,
-			boolean sendPrivateMessages, boolean inviteOtherUsers, boolean sendMessagesToAll, boolean modifySubject,
-			boolean kickParticipantsAndVisitors, boolean grantVoice, boolean revokeVoice) {
+				 boolean presenceBroadcastedToRoom, boolean changeAvailabilityStatus, boolean changeRoomNickname,
+				 boolean sendPrivateMessages, boolean inviteOtherUsers, boolean sendMessagesToAll,
+				 boolean modifySubject, boolean kickParticipantsAndVisitors, boolean grantVoice, boolean revokeVoice) {
 		this.weight = weight;
 		this.presentInRoom = presentInRoom;
 		this.receiveMessages = receiveMessages;
@@ -82,6 +81,10 @@ public enum Role {
 
 	public int getWeight() {
 		return weight;
+	}
+
+	public boolean higherThan(Role role) {
+		return this.weight > role.weight;
 	}
 
 	public boolean isChangeAvailabilityStatus() {
@@ -134,5 +137,9 @@ public enum Role {
 
 	public boolean isSendPrivateMessages() {
 		return sendPrivateMessages;
+	}
+
+	public boolean lowerThan(Role role) {
+		return this.weight < role.weight;
 	}
 }

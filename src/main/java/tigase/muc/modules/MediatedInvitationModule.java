@@ -62,11 +62,11 @@ public class MediatedInvitationModule extends AbstractMucModule {
 		final JID recipient = JID.jidInstance(decline.getAttributeStaticStr(Packet.TO_ATT));
 
 		Packet resultMessage = Packet.packetInstance(new Element("message", new String[] { Packet.FROM_ATT, Packet.TO_ATT },
-				new String[] { roomJID.toString(), recipient.toString() }));
+																 new String[] { roomJID.toString(), recipient.toString() }));
 		resultMessage.setXMLNS(Packet.CLIENT_XMLNS);
 
 		final Element resultX = new Element("x", new String[] { Packet.XMLNS_ATT },
-				new String[] { "http://jabber.org/protocol/muc#user" });
+											new String[] { "http://jabber.org/protocol/muc#user" });
 		resultMessage.getElement().addChild(resultX);
 		final Element resultDecline = new Element("decline", new String[] { "from" }, new String[] { senderJID.toString() });
 		resultX.addChild(resultDecline);
@@ -90,30 +90,41 @@ public class MediatedInvitationModule extends AbstractMucModule {
 	 *
 	 */
 	private void doInvite(Packet message, Element invite, Room room, BareJID roomJID, JID senderJID, Role senderRole,
-			Affiliation senderAffiliation) throws RepositoryException, TigaseStringprepException, MUCException {
+						  Affiliation senderAffiliation) throws RepositoryException, TigaseStringprepException, MUCException {
 
-		if (room == null)
+
+		if (room == null) {
 			throw new MUCException(Authorization.ITEM_NOT_FOUND);
+		}
 
-		if (!senderRole.isInviteOtherUsers())
-			throw new MUCException(Authorization.NOT_ALLOWED, "Your role is '" + senderRole + "'. You can't invite others.");
+		if (!room.getConfig().isInvitingAllowed() && senderAffiliation.lowerThan(Affiliation.admin)) {
+			throw new MUCException(Authorization.FORBIDDEN, "Occupants are not allowed to invite others");
+		}
 
-		if (room.getConfig().isRoomMembersOnly() && !senderAffiliation.isEditMemberList())
-			throw new MUCException(Authorization.FORBIDDEN);
+		if (!senderRole.isInviteOtherUsers()) {
+			throw new MUCException(Authorization.FORBIDDEN,
+								   "Your role is '" + senderRole + "'. You cannot invite others.");
+		}
 
 		final Element reason = invite.getChild("reason");
 		final Element cont = invite.getChild("continue");
 		final JID recipient = JID.jidInstance(invite.getAttributeStaticStr(Packet.TO_ATT));
 
 		Packet resultMessage = Packet.packetInstance(new Element("message", new String[] { Packet.FROM_ATT, Packet.TO_ATT },
-				new String[] { roomJID.toString(), recipient.toString() }));
+																 new String[] { roomJID.toString(), recipient.toString() }));
 		resultMessage.setXMLNS(Packet.CLIENT_XMLNS);
 
+		final String id = message.getAttributeStaticStr("id");
+		if (id != null) {
+			resultMessage.getElement().addAttribute("id", id);
+		}
+
 		final Element resultX = new Element("x", new String[] { Packet.XMLNS_ATT },
-				new String[] { "http://jabber.org/protocol/muc#user" });
+											new String[] { "http://jabber.org/protocol/muc#user" });
 
 		resultMessage.getElement().addChild(resultX);
-		if (room.getConfig().isRoomMembersOnly() && senderAffiliation.isEditMemberList()) {
+		if (room.getConfig().isRoomMembersOnly() &&
+				(senderAffiliation.isEditMemberList() || room.getConfig().isInvitingAllowed())) {
 			room.addAffiliationByJid(recipient.getBareJID(), Affiliation.member);
 		}
 
@@ -214,11 +225,11 @@ public class MediatedInvitationModule extends AbstractMucModule {
 		final JID recipient = JID.jidInstance(invite.getAttributeStaticStr(Packet.FROM_ATT));
 
 		Packet resultMessage = Packet.packetInstance(new Element("message", new String[] { Packet.FROM_ATT, Packet.TO_ATT },
-				new String[] { roomJID.toString(), recipient.toString() }));
+																 new String[] { roomJID.toString(), recipient.toString() }));
 		resultMessage.setXMLNS(Packet.CLIENT_XMLNS);
 
 		final Element resultX = new Element("x", new String[] { Packet.XMLNS_ATT },
-				new String[] { "http://jabber.org/protocol/muc#user" });
+											new String[] { "http://jabber.org/protocol/muc#user" });
 		resultMessage.getElement().addChild(resultX);
 		final Element resultDecline = new Element("decline", new String[] { "from" }, new String[] { senderJID.toString() });
 		resultX.addChild(resultDecline);

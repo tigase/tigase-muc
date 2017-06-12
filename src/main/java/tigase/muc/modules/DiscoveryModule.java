@@ -97,10 +97,10 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 		// text-single Current Discussion Topic
 		addField(form, "muc#roominfo_subject", null, "Current discussion topic", room.getSubject());
 		// boolean Whether to Allow Occupants to Invite Others
-		addField(form, "muc#roomconfig_allowinvites", null, "Whether occupants allowed to invite others", true);
+		addField(form, "muc#roomconfig_allowinvites", null, "Whether occupants allowed to invite others", config.isInvitingAllowed());
 		// boolean Whether to Allow Occupants to Change Subject
 		addField(form, "muc#roomconfig_changesubject", null, "Whether occupants may change the subject",
-				config.isChangeSubject());
+				 config.isChangeSubject());
 		// boolean Whether to Enable Logging of Room Conversations
 		addField(form, "muc#roomconfig_enablelogging", null, "Whether logging is enabled", config.isLoggingEnabled());
 		// text-single Natural Language for Room Discussions
@@ -113,25 +113,25 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 		addField(form, "muc#roomconfig_moderatedroom", null, "Whether room is moderated", config.isRoomModerated());
 		// boolean Whether a Password is Required to Enter
 		addField(form, "muc#roomconfig_passwordprotectedroom", null, "Whether a password is required to enter",
-				config.isPasswordProtectedRoom());
+				 config.isPasswordProtectedRoom());
 		// boolean Whether to Make Room Persistent
 		addField(form, "muc#roomconfig_persistentroom", null, "Whether room is persistent", config.isPersistentRoom());
 		// list-multi Roles for which Presence is Broadcast
 		addField(form, "muc#roomconfig_presencebroadcast", null, "Roles for which presence is broadcast", Role.moderator.name(),
-				Role.participant.name(), Role.visitor.name());
+				 Role.participant.name(), Role.visitor.name());
 		// boolean Whether to Allow Public Searching for Room
 		addField(form, "muc#roomconfig_publicroom", null, "Whether room is publicly searchable",
-				config.isRoomconfigPublicroom());
+				 config.isRoomconfigPublicroom());
 		// jid-multi Full List of Room Admins
 		addField(form, "muc#roomconfig_roomadmins", null, "Full list of room admins",
-				room.getAffiliations().stream().filter(jid -> room.getAffiliation(jid) == Affiliation.admin).toArray());
+				 room.getAffiliations().stream().filter(jid -> room.getAffiliation(jid) == Affiliation.admin).toArray());
 		// text-single Short Description of Room
 		addField(form, "muc#roomconfig_roomdesc", null, "Short description of room", config.getRoomDesc());
 		// text-single Natural-Language Room Name
 		addField(form, "muc#roomconfig_roomname", null, "Natural language room name", config.getRoomName());
 		// jid-multi Full List of Room Owners
 		addField(form, "muc#roomconfig_roomowners", null, "Full list of room owners",
-				room.getAffiliations().stream().filter(jid -> room.getAffiliation(jid) == Affiliation.owner).toArray());
+				 room.getAffiliations().stream().filter(jid -> room.getAffiliation(jid) == Affiliation.owner).toArray());
 		// text-private The Room Password
 		if (allowedToViewAll && config.isPasswordProtectedRoom())
 			addField(form, "muc#roomconfig_roomsecret", null, "The room password", config.getPassword());
@@ -140,13 +140,13 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 		RoomConfig.Anonymity anonymity = config.getRoomAnonymity();
 		Object[] whois;
 		switch (anonymity) {
-		case nonanonymous:
-			whois = new String[] { Affiliation.owner.name(), Affiliation.admin.name(), Affiliation.member.name(),
-					Affiliation.none.name() };
-		case semianonymous:
-			whois = new String[] { Affiliation.owner.name(), Affiliation.admin.name() };
-		default:
-			whois = null;
+			case nonanonymous:
+				whois = new String[] { Affiliation.owner.name(), Affiliation.admin.name(), Affiliation.member.name(),
+									   Affiliation.none.name() };
+			case semianonymous:
+				whois = new String[] { Affiliation.owner.name(), Affiliation.admin.name() };
+			default:
+				whois = null;
 		}
 		addField(form, "muc#roomconfig_whois", null, "Affiliations that may discover real jIDs of occupants", whois);
 
@@ -183,7 +183,7 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 				log.finer("Requested room " + requestedJID.getBareJID() + " info");
 
 			Element resultQuery = new Element("query", new String[] { "xmlns" },
-					new String[] { "http://jabber.org/protocol/disco#info" });
+											  new String[] { "http://jabber.org/protocol/disco#info" });
 
 			Room room = context.getMucRepository().getRoom(requestedJID.getBareJID());
 
@@ -193,25 +193,25 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 
 			String roomName = room.getConfig().getRoomName();
 			Element resultIdentity = new Element("identity", new String[] { "category", "name", "type" },
-					new String[] { "conference", (roomName == null) ? "" : roomName, "text" });
+												 new String[] { "conference", (roomName == null) ? "" : roomName, "text" });
 
 			resultQuery.addChild(resultIdentity);
 			addFeature(resultQuery, "http://jabber.org/protocol/muc");
 			switch (room.getConfig().getRoomAnonymity()) {
-			case fullanonymous:
-				addFeature(resultQuery, "muc_fullyanonymous");
+				case fullanonymous:
+					addFeature(resultQuery, "muc_fullyanonymous");
 
-				break;
+					break;
 
-			case semianonymous:
-				addFeature(resultQuery, "muc_semianonymous");
+				case semianonymous:
+					addFeature(resultQuery, "muc_semianonymous");
 
-				break;
+					break;
 
-			case nonanonymous:
-				addFeature(resultQuery, "muc_nonanonymous");
+				case nonanonymous:
+					addFeature(resultQuery, "muc_nonanonymous");
 
-				break;
+					break;
 			}
 			if (room.getConfig().isRoomModerated()) {
 				addFeature(resultQuery, "muc_moderated");
@@ -341,7 +341,7 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 			}
 			for (String nick : room.getOccupantsNicknames()) {
 				resultQuery.addChild(new Element("item", new String[] { "jid", "name" },
-						new String[] { room.getRoomJID() + "/" + nick, nick }));
+												 new String[] { room.getRoomJID() + "/" + nick, nick }));
 			}
 		} else if ((node == null) && (requestedJID.getLocalpart() != null) && (requestedJID.getResource() != null)) {
 			// Querying a Room Occupant

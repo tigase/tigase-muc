@@ -23,7 +23,6 @@ package tigase.muc;
 
 /**
  * @author bmalkow
- * 
  */
 public enum Affiliation {
 	admin(30, true, true, true, true, true, true, true, false, false, false, false, true),
@@ -33,35 +32,23 @@ public enum Affiliation {
 	owner(40, true, true, true, true, true, true, true, true, true, true, true, true);
 
 	private final boolean banMembersAndUnaffiliatedUsers;
-
 	private final boolean changeRoomDefinition;
-
 	private final boolean destroyRoom;
-
 	private final boolean editAdminList;
-
 	private final boolean editMemberList;
-
 	private final boolean editModeratorList;
-
 	private final boolean editOwnerList;
-
 	private final boolean enterMembersOnlyRoom;
-
 	private final boolean enterOpenRoom;
-
 	private final boolean registerWithOpenRoom;
-
 	private final boolean retrieveMemberList;
-
 	private final boolean viewOccupantsJid;
-
 	private final int weight;
 
 	private Affiliation(int weight, boolean enterOpenRoom, boolean registerWithOpenRoom, boolean retrieveMemberList,
-			boolean enterMembersOnlyRoom, boolean banMembersAndUnaffiliatedUsers, boolean editMemberList,
-			boolean editModeratorList, boolean editAdminList, boolean editOwnerList, boolean changeRoomDefinition,
-			boolean destroyRoom, boolean viewOccupantsJid) {
+						boolean enterMembersOnlyRoom, boolean banMembersAndUnaffiliatedUsers, boolean editMemberList,
+						boolean editModeratorList, boolean editAdminList, boolean editOwnerList,
+						boolean changeRoomDefinition, boolean destroyRoom, boolean viewOccupantsJid) {
 		this.weight = weight;
 		this.enterOpenRoom = enterOpenRoom;
 		this.registerWithOpenRoom = registerWithOpenRoom;
@@ -79,6 +66,10 @@ public enum Affiliation {
 
 	public int getWeight() {
 		return weight;
+	}
+
+	public boolean higherThan(Affiliation affiliation) {
+		return this.weight > affiliation.weight;
 	}
 
 	public boolean isBanMembersAndUnaffiliatedUsers() {
@@ -127,5 +118,9 @@ public enum Affiliation {
 
 	public boolean isViewOccupantsJid() {
 		return viewOccupantsJid;
+	}
+
+	public boolean lowerThan(Affiliation affiliation) {
+		return this.weight < affiliation.weight;
 	}
 }

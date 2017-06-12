@@ -170,6 +170,26 @@ public class RoomTest extends XMPPTestCase {
 	}
 
 	@org.junit.Test
+	public void test_invitations_allowed() {
+		test("src/test/scripts/invitation_allowed.cor", xmlio);
+	}
+
+	@org.junit.Test
+	public void test_invitations_allowed_membersonly() {
+		test("src/test/scripts/invitation_allowed_membersonly.cor", xmlio);
+	}
+
+	@org.junit.Test
+	public void test_invitations_notallowed() {
+		test("src/test/scripts/invitation_not_allowed.cor", xmlio);
+	}
+
+	@org.junit.Test
+	public void test_invitations_notallowed_membersonly() {
+		test("src/test/scripts/invitation_not_allowed_membersonly.cor", xmlio);
+	}
+
+	@org.junit.Test
 	public void test_presences2_non_anonymous() {
 		test("src/test/scripts/processPresence2-nonanonymous.cor", xmlio);
 	}
