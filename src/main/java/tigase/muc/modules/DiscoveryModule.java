@@ -39,31 +39,34 @@ import java.util.logging.Level;
 
 /**
  * @author bmalkow
- *
  */
 @Bean(name = DiscoveryModule.ID, parent = MUCComponent.class, active = true)
-public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModule {
-
-	@Inject
-	private IMucRepository repository;
+public class DiscoveryModule
+		extends tigase.component.modules.impl.DiscoveryModule {
 
 	private final DateTimeFormatter dtf = new DateTimeFormatter();
 	private DiscoItemsFilter filter = null;//new DefaultDiscoItemsFilter();
+	@Inject
+	private IMucRepository repository;
 
 	private static void addFeature(Element query, String feature) {
-		query.addChild(new Element("feature", new String[] { "var" }, new String[] { feature }));
+		query.addChild(new Element("feature", new String[]{"var"}, new String[]{feature}));
 	}
 
 	private void addField(Element form, String var, String type, String label, Object... value) {
-		if (value == null)
+		if (value == null) {
 			return;
+		}
 		Element f = new Element("field");
-		if (type != null)
+		if (type != null) {
 			f.setAttribute("type", type);
-		if (var != null)
+		}
+		if (var != null) {
 			f.setAttribute("var", var);
-		if (label != null)
+		}
+		if (label != null) {
 			f.setAttribute("label", label);
+		}
 
 		for (Object o : value) {
 			Element v = new Element("value");
@@ -86,29 +89,34 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 			allowedToViewAll = true;
 		} else if (senderAffiliation.isEnterMembersOnlyRoom()) {
 			allowedToViewAll = true;
-		} else
+		} else {
 			allowedToViewAll = false;
+		}
 
-		if (!config.isRoomconfigPublicroom() && !allowedToViewAll)
+		if (!config.isRoomconfigPublicroom() && !allowedToViewAll) {
 			return;
+		}
 
-		if (config.isRoomMembersOnly() && !allowedToViewAll)
+		if (config.isRoomMembersOnly() && !allowedToViewAll) {
 			return;
+		}
 
-		final Element form = new Element("x", new String[] { "xmlns", "type" }, new String[] { "jabber:x:data", "result" });
+		final Element form = new Element("x", new String[]{"xmlns", "type"}, new String[]{"jabber:x:data", "result"});
 		addField(form, "FORM_TYPE", "hidden", null, "http://jabber.org/protocol/muc#roominfo");
 
 		// text-single Room creation date
-		addField(form, "muc#roominfo_creationdate", null, "Room creation date", dtf.formatDateTime(room.getCreationDate()));
+		addField(form, "muc#roominfo_creationdate", null, "Room creation date",
+				 dtf.formatDateTime(room.getCreationDate()));
 		// text-single Current Discussion Topic
 		addField(form, "muc#roominfo_occupants", null, "Number of occupants", room.getOccupantsCount());
 		// text-single Current Discussion Topic
 		addField(form, "muc#roominfo_subject", null, "Current discussion topic", room.getSubject());
 		// boolean Whether to Allow Occupants to Invite Others
-		addField(form, "muc#roomconfig_allowinvites", null, "Whether occupants allowed to invite others", true);
+		addField(form, "muc#roomconfig_allowinvites", null, "Whether occupants allowed to invite others",
+				 room.getConfig().isInvitingAllowed());
 		// boolean Whether to Allow Occupants to Change Subject
 		addField(form, "muc#roomconfig_changesubject", null, "Whether occupants may change the subject",
-				config.isChangeSubject());
+				 config.isChangeSubject());
 		// boolean Whether to Enable Logging of Room Conversations
 		addField(form, "muc#roomconfig_enablelogging", null, "Whether logging is enabled", config.isLoggingEnabled());
 		// text-single Natural Language for Room Discussions
@@ -121,40 +129,45 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 		addField(form, "muc#roomconfig_moderatedroom", null, "Whether room is moderated", config.isRoomModerated());
 		// boolean Whether a Password is Required to Enter
 		addField(form, "muc#roomconfig_passwordprotectedroom", null, "Whether a password is required to enter",
-				config.isPasswordProtectedRoom());
+				 config.isPasswordProtectedRoom());
 		// boolean Whether to Make Room Persistent
 		addField(form, "muc#roomconfig_persistentroom", null, "Whether room is persistent", config.isPersistentRoom());
 		// list-multi Roles for which Presence is Broadcast
-		addField(form, "muc#roomconfig_presencebroadcast", null, "Roles for which presence is broadcast", Role.moderator.name(),
-				Role.participant.name(), Role.visitor.name());
+		addField(form, "muc#roomconfig_presencebroadcast", null, "Roles for which presence is broadcast",
+				 Role.moderator.name(), Role.participant.name(), Role.visitor.name());
 		// boolean Whether to Allow Public Searching for Room
 		addField(form, "muc#roomconfig_publicroom", null, "Whether room is publicly searchable",
-				config.isRoomconfigPublicroom());
+				 config.isRoomconfigPublicroom());
 		// jid-multi Full List of Room Admins
-		addField(form, "muc#roomconfig_roomadmins", null, "Full list of room admins",
-				room.getAffiliations().stream().filter(jid -> room.getAffiliation(jid) == Affiliation.admin).toArray());
+		addField(form, "muc#roomconfig_roomadmins", null, "Full list of room admins", room.getAffiliations()
+				.stream()
+				.filter(jid -> room.getAffiliation(jid) == Affiliation.admin)
+				.toArray());
 		// text-single Short Description of Room
 		addField(form, "muc#roomconfig_roomdesc", null, "Short description of room", config.getRoomDesc());
 		// text-single Natural-Language Room Name
 		addField(form, "muc#roomconfig_roomname", null, "Natural language room name", config.getRoomName());
 		// jid-multi Full List of Room Owners
-		addField(form, "muc#roomconfig_roomowners", null, "Full list of room owners",
-				room.getAffiliations().stream().filter(jid -> room.getAffiliation(jid) == Affiliation.owner).toArray());
+		addField(form, "muc#roomconfig_roomowners", null, "Full list of room owners", room.getAffiliations()
+				.stream()
+				.filter(jid -> room.getAffiliation(jid) == Affiliation.owner)
+				.toArray());
 		// text-private The Room Password
-		if (allowedToViewAll && config.isPasswordProtectedRoom())
+		if (allowedToViewAll && config.isPasswordProtectedRoom()) {
 			addField(form, "muc#roomconfig_roomsecret", null, "The room password", config.getPassword());
+		}
 
 		// list-single Affiliations that May Discover Real JIDs of Occupants
 		RoomConfig.Anonymity anonymity = config.getRoomAnonymity();
 		Object[] whois;
 		switch (anonymity) {
-		case nonanonymous:
-			whois = new String[] { Affiliation.owner.name(), Affiliation.admin.name(), Affiliation.member.name(),
-					Affiliation.none.name() };
-		case semianonymous:
-			whois = new String[] { Affiliation.owner.name(), Affiliation.admin.name() };
-		default:
-			whois = null;
+			case nonanonymous:
+				whois = new String[]{Affiliation.owner.name(), Affiliation.admin.name(), Affiliation.member.name(),
+									 Affiliation.none.name()};
+			case semianonymous:
+				whois = new String[]{Affiliation.owner.name(), Affiliation.admin.name()};
+			default:
+				whois = null;
 		}
 		addField(form, "muc#roomconfig_whois", null, "Affiliations that may discover real jIDs of occupants", whois);
 
@@ -167,8 +180,9 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 
 	public void setFilter(DiscoItemsFilter filter) {
 		this.filter = filter;
-		if (log.isLoggable(Level.FINER))
+		if (log.isLoggable(Level.FINER)) {
 			log.finer("New discoItems filter is set: " + filter);
+		}
 	}
 
 	/*
@@ -182,16 +196,18 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 	protected void processDiscoInfo(Packet packet, JID requestedJID, String node, JID senderJID)
 			throws ComponentException, RepositoryException {
 		if ((node == null) && (requestedJID.getLocalpart() == null) && (requestedJID.getResource() == null)) {
-			if (log.isLoggable(Level.FINER))
+			if (log.isLoggable(Level.FINER)) {
 				log.finer("Requested component info");
+			}
 
 			super.processDiscoInfo(packet, requestedJID, node, senderJID);
 		} else if ((node == null) && (requestedJID.getLocalpart() != null) && (requestedJID.getResource() == null)) {
-			if (log.isLoggable(Level.FINER))
+			if (log.isLoggable(Level.FINER)) {
 				log.finer("Requested room " + requestedJID.getBareJID() + " info");
+			}
 
-			Element resultQuery = new Element("query", new String[] { "xmlns" },
-					new String[] { "http://jabber.org/protocol/disco#info" });
+			Element resultQuery = new Element("query", new String[]{"xmlns"},
+											  new String[]{"http://jabber.org/protocol/disco#info"});
 
 			Room room = repository.getRoom(requestedJID.getBareJID());
 
@@ -200,26 +216,27 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 			}
 
 			String roomName = room.getConfig().getRoomName();
-			Element resultIdentity = new Element("identity", new String[] { "category", "name", "type" },
-					new String[] { "conference", (roomName == null) ? "" : roomName, "text" });
+			Element resultIdentity = new Element("identity", new String[]{"category", "name", "type"},
+												 new String[]{"conference", (roomName == null) ? "" : roomName,
+															  "text"});
 
 			resultQuery.addChild(resultIdentity);
 			addFeature(resultQuery, "http://jabber.org/protocol/muc");
 			switch (room.getConfig().getRoomAnonymity()) {
-			case fullanonymous:
-				addFeature(resultQuery, "muc_fullyanonymous");
+				case fullanonymous:
+					addFeature(resultQuery, "muc_fullyanonymous");
 
-				break;
+					break;
 
-			case semianonymous:
-				addFeature(resultQuery, "muc_semianonymous");
+				case semianonymous:
+					addFeature(resultQuery, "muc_semianonymous");
 
-				break;
+					break;
 
-			case nonanonymous:
-				addFeature(resultQuery, "muc_nonanonymous");
+				case nonanonymous:
+					addFeature(resultQuery, "muc_nonanonymous");
 
-				break;
+					break;
 			}
 			if (room.getConfig().isRoomModerated()) {
 				addFeature(resultQuery, "muc_moderated");
@@ -260,13 +277,14 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 	@Override
 	protected void processDiscoItems(Packet packet, JID requestedJID, String node, JID senderJID)
 			throws ComponentException, RepositoryException {
-		Element resultQuery = new Element("query", new String[] { Packet.XMLNS_ATT }, new String[] { DISCO_ITEMS_XMLNS });
+		Element resultQuery = new Element("query", new String[]{Packet.XMLNS_ATT}, new String[]{DISCO_ITEMS_XMLNS});
 		Packet result = packet.okResult(resultQuery, 0);
 
 		if ((node == null) && (requestedJID.getLocalpart() == null) && (requestedJID.getResource() == null)) {
 
-			if (log.isLoggable(Level.FINER))
+			if (log.isLoggable(Level.FINER)) {
 				log.finer("Requested  list of rooms");
+			}
 
 			// discovering rooms
 			// (http://xmpp.org/extensions/xep-0045.html#disco-rooms)
@@ -286,19 +304,23 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 						continue;
 					} else {
 						boolean fa = filter.allowed(senderJID, room);
-						log.finest("Using filter " + filter + "; result(" + senderJID + ", " + room.getRoomJID() + ")=" +
-										   fa);
+						log.finest(
+								"Using filter " + filter + "; result(" + senderJID + ", " + room.getRoomJID() + ")=" +
+										fa);
 						if (!fa) {
 							log.fine("Room " + jid + " is filtered off");
 							continue;
 						}
 					}
 				}
-				if (log.isLoggable(Level.FINER))
+				if (log.isLoggable(Level.FINER)) {
 					log.finer("Room " + jid + " is added to response.");
+				}
 
-				resultQuery.addChild(new Element("item", new String[] { "jid", "name" },
-												 new String[] { jid.toString(), (name != null) ? name : jid.getLocalpart() }));
+				resultQuery.addChild(new Element("item", new String[]{"jid", "name"}, new String[]{jid.toString(),
+																								   (name != null)
+																								   ? name
+																								   : jid.getLocalpart()}));
 			}
 
 //			BareJID[] roomsId = context.getMucRepository().getPublicVisibleRoomsIdList();
@@ -335,8 +357,9 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 			// querying for Room Items
 			// (http://xmpp.org/extensions/xep-0045.html#disco-roomitems)
 
-			if (log.isLoggable(Level.FINER))
+			if (log.isLoggable(Level.FINER)) {
 				log.finer("Requested items list of room " + requestedJID.getBareJID());
+			}
 
 			Room room = repository.getRoom(requestedJID.getBareJID());
 
@@ -350,8 +373,8 @@ public class DiscoveryModule extends tigase.component.modules.impl.DiscoveryModu
 				throw new MUCException(Authorization.FORBIDDEN);
 			}
 			for (String nick : room.getOccupantsNicknames()) {
-				resultQuery.addChild(new Element("item", new String[] { "jid", "name" },
-						new String[] { room.getRoomJID() + "/" + nick, nick }));
+				resultQuery.addChild(new Element("item", new String[]{"jid", "name"},
+												 new String[]{room.getRoomJID() + "/" + nick, nick}));
 			}
 		} else if ((node == null) && (requestedJID.getLocalpart() != null) && (requestedJID.getResource() != null)) {
 			// Querying a Room Occupant

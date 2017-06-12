@@ -49,46 +49,21 @@ import java.util.Map;
 
 /**
  * @author bmalkow
- *
  */
-public class RoomTest extends XMPPTestCase {
-
-	private final class ArrayWriter implements PacketWriter {
-
-		private final ArrayList<Element> elements = new ArrayList<Element>();
-
-		public void clear() {
-			elements.clear();
-		}
-
-		@Override
-		public void write(Collection<Packet> elements) {
-			for (Packet packet : elements) {
-				this.elements.add(packet.getElement());
-			}
-		}
-
-		@Override
-		public void write(Packet element) {
-			this.elements.add(element.getElement());
-		}
-
-		@Override
-		public void write(Packet packet, AsyncCallback callback) {
-			write(packet);
-		}
-
-	}
+public class RoomTest
+		extends XMPPTestCase {
 
 	private TestMUCCompoent pubsub;
-
 	private JUnitXMLIO xmlio;
 
 	@Before
 	public void init() throws RepositoryException, TigaseStringprepException, ConfigurationException {
 		final Kernel kernel = new Kernel();
 		kernel.registerBean(DefaultTypesConverter.class).exportable().exec();
-		kernel.registerBean(AbstractBeanConfigurator.DEFAULT_CONFIGURATOR_NAME).asClass(PropertiesBeanConfigurator.class).exportable().exec();
+		kernel.registerBean(AbstractBeanConfigurator.DEFAULT_CONFIGURATOR_NAME)
+				.asClass(PropertiesBeanConfigurator.class)
+				.exportable()
+				.exec();
 		Map<String, Object> props = new HashMap();
 		props.put("muc/" + "multi-user-chat", BareJID.bareJIDInstance("multi-user-chat"));
 		props.put("muc/" + MUCConfig.MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
@@ -157,6 +132,26 @@ public class RoomTest extends XMPPTestCase {
 	}
 
 	@org.junit.Test
+	public void test_invitations_allowed() {
+		test("src/test/scripts/invitation_allowed.cor", xmlio);
+	}
+
+	@org.junit.Test
+	public void test_invitations_allowed_membersonly() {
+		test("src/test/scripts/invitation_allowed_membersonly.cor", xmlio);
+	}
+
+	@org.junit.Test
+	public void test_invitations_notallowed() {
+		test("src/test/scripts/invitation_not_allowed.cor", xmlio);
+	}
+
+	@org.junit.Test
+	public void test_invitations_notallowed_membersonly() {
+		test("src/test/scripts/invitation_not_allowed_membersonly.cor", xmlio);
+	}
+
+	@org.junit.Test
 	public void test_messages() {
 		test("src/test/scripts/messagesGroupchat.cor", xmlio);
 	}
@@ -204,5 +199,33 @@ public class RoomTest extends XMPPTestCase {
 	@org.junit.Test
 	public void test_presences2_non_anonymous() {
 		test("src/test/scripts/processPresence2-nonanonymous.cor", xmlio);
+	}
+
+	private final class ArrayWriter
+			implements PacketWriter {
+
+		private final ArrayList<Element> elements = new ArrayList<Element>();
+
+		public void clear() {
+			elements.clear();
+		}
+
+		@Override
+		public void write(Collection<Packet> elements) {
+			for (Packet packet : elements) {
+				this.elements.add(packet.getElement());
+			}
+		}
+
+		@Override
+		public void write(Packet element) {
+			this.elements.add(element.getElement());
+		}
+
+		@Override
+		public void write(Packet packet, AsyncCallback callback) {
+			write(packet);
+		}
+
 	}
 }

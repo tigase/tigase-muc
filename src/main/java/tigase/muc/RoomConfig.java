@@ -37,6 +37,25 @@ import java.util.*;
  */
 public class RoomConfig {
 
+	public static final String MUC_ROOMCONFIG_ANONYMITY_KEY = "muc#roomconfig_anonymity";
+	public static final String MUC_ROOMCONFIG_CHANGESUBJECT_KEY = "muc#roomconfig_changesubject";
+	public static final String MUC_ROOMCONFIG_ENABLELOGGING_KEY = "muc#roomconfig_enablelogging";
+	public static final String MUC_ROOMCONFIG_MAXHISTORY_KEY = "muc#maxhistoryfetch";
+	public static final String MUC_ROOMCONFIG_MAXUSERS_KEY = "muc#roomconfig_maxusers";
+	public static final String MUC_ROOMCONFIG_MEMBERSONLY_KEY = "muc#roomconfig_membersonly";
+	public static final String MUC_ROOMCONFIG_ALLOWINVITES_KEY = "muc#roomconfig_allowinvites";
+	public static final String MUC_ROOMCONFIG_MODERATEDROOM_KEY = "muc#roomconfig_moderatedroom";
+	public static final String MUC_ROOMCONFIG_PASSWORDPROTECTEDROOM_KEY = "muc#roomconfig_passwordprotectedroom";
+	public static final String MUC_ROOMCONFIG_PERSISTENTROOM_KEY = "muc#roomconfig_persistentroom";
+	public static final String MUC_ROOMCONFIG_PUBLICROOM_KEY = "muc#roomconfig_publicroom";
+	public static final String MUC_ROOMCONFIG_ROOMDESC_KEY = "muc#roomconfig_roomdesc";
+	public static final String MUC_ROOMCONFIG_ROOMNAME_KEY = "muc#roomconfig_roomname";
+	public static final String MUC_ROOMCONFIG_ROOMSECRET_KEY = "muc#roomconfig_roomsecret";
+	public static final String TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC = "tigase#presence_delivery_logic";
+	public static final String TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS = "tigase#presence_filtered_affiliations";
+	public static final String TIGASE_ROOMCONFIG_PRESENCE_FILTERING = "tigase#presence_filtering";
+	private static final String LOGGING_FORMAT_KEY = "logging_format";
+
 	public static enum Anonymity {
 		/**
 		 * Fully-Anonymous Room -- a room in which the full JIDs or bare JIDs of
@@ -68,30 +87,10 @@ public class RoomConfig {
 		xml
 	}
 
-	public static interface RoomConfigListener {
-
-		void onConfigChanged(RoomConfig roomConfig, Set<String> modifiedVars);
-
-		void onInitialRoomConfig(RoomConfig roomConfig);
-	}
-
-	private static final String LOGGING_FORMAT_KEY = "logging_format";
-	public static final String MUC_ROOMCONFIG_ANONYMITY_KEY = "muc#roomconfig_anonymity";
-	public static final String MUC_ROOMCONFIG_CHANGESUBJECT_KEY = "muc#roomconfig_changesubject";
-	public static final String MUC_ROOMCONFIG_ENABLELOGGING_KEY = "muc#roomconfig_enablelogging";
-	public static final String MUC_ROOMCONFIG_MAXHISTORY_KEY = "muc#maxhistoryfetch";
-	public static final String MUC_ROOMCONFIG_MAXUSERS_KEY = "muc#roomconfig_maxusers";
-	public static final String MUC_ROOMCONFIG_MEMBERSONLY_KEY = "muc#roomconfig_membersonly";
-	public static final String MUC_ROOMCONFIG_MODERATEDROOM_KEY = "muc#roomconfig_moderatedroom";
-	public static final String MUC_ROOMCONFIG_PASSWORDPROTECTEDROOM_KEY = "muc#roomconfig_passwordprotectedroom";
-	public static final String MUC_ROOMCONFIG_PERSISTENTROOM_KEY = "muc#roomconfig_persistentroom";
-	public static final String MUC_ROOMCONFIG_PUBLICROOM_KEY = "muc#roomconfig_publicroom";
-	public static final String MUC_ROOMCONFIG_ROOMDESC_KEY = "muc#roomconfig_roomdesc";
-	public static final String MUC_ROOMCONFIG_ROOMNAME_KEY = "muc#roomconfig_roomname";
-	public static final String MUC_ROOMCONFIG_ROOMSECRET_KEY = "muc#roomconfig_roomsecret";
-	public static final String TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC = "tigase#presence_delivery_logic";
-	public static final String TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS = "tigase#presence_filtered_affiliations";
-	public static final String TIGASE_ROOMCONFIG_PRESENCE_FILTERING = "tigase#presence_filtering";
+	protected final Set<String> blacklist = new HashSet<String>();
+	protected final Form form = new Form("form", null, null);
+	private final ArrayList<RoomConfigListener> listeners = new ArrayList<RoomConfigListener>();
+	private final BareJID roomJID;
 
 	protected static <T extends Enum<T>> List<T> asEnum(Class<T> clazz, String[] values, Enum<?>[] defaultValues) {
 		List<T> list = new ArrayList<>();
@@ -113,14 +112,6 @@ public class RoomConfig {
 		}
 		return result;
 	}
-
-	protected final Set<String> blacklist = new HashSet<String>();
-
-	protected final Form form = new Form("form", null, null);
-
-	private final ArrayList<RoomConfigListener> listeners = new ArrayList<RoomConfigListener>();
-
-	private final BareJID roomJID;
 
 	/**
 	 * @param roomJID
@@ -157,15 +148,15 @@ public class RoomConfig {
 		for (String var : vars) {
 			if ((MUC_ROOMCONFIG_ANONYMITY_KEY).equals(var)) {
 				switch (getRoomAnonymity()) {
-				case nonanonymous:
-					result.add("172");
-					break;
-				case semianonymous:
-					result.add("173");
-					break;
-				case fullanonymous:
-					result.add("174");
-					break;
+					case nonanonymous:
+						result.add("172");
+						break;
+					case semianonymous:
+						result.add("173");
+						break;
+					case fullanonymous:
+						result.add("174");
+						break;
 				}
 			} else if ((MUC_ROOMCONFIG_ENABLELOGGING_KEY).equals(var)) {
 				result.add(isLoggingEnabled() ? "170" : "171");
@@ -175,7 +166,7 @@ public class RoomConfig {
 			}
 		}
 
-		return result.size() == 0 ? null : result.toArray(new String[] {});
+		return result.size() == 0 ? null : result.toArray(new String[]{});
 	}
 
 	public void copyFrom(Form configForm) {
@@ -213,8 +204,9 @@ public class RoomConfig {
 				result.add(field.getVar());
 			} else {
 				boolean tmp = Arrays.equals(field.getValues(), of.getValues());
-				if (!tmp)
+				if (!tmp) {
 					result.add(field.getVar());
+				}
 			}
 		}
 
@@ -233,6 +225,16 @@ public class RoomConfig {
 				listener.onInitialRoomConfig(this);
 			}
 		}
+	}
+
+	public Element getAsElement() {
+		Form form = new Form("form", null, null);
+		init(form);
+		form.copyValuesFrom(this.form);
+		for (String field : this.blacklist) {
+			form.removeField(field);
+		}
+		return form.getElement();
 	}
 
 	public Form getConfigForm() {
@@ -259,8 +261,9 @@ public class RoomConfig {
 	public Integer getMaxUsers() {
 		try {
 			String v = form.getAsString(MUC_ROOMCONFIG_MAXUSERS_KEY);
-			if (v == null || v.isEmpty())
+			if (v == null || v.isEmpty()) {
 				return null;
+			}
 			return Integer.valueOf(v);
 		} catch (Exception e) {
 			return null;
@@ -304,53 +307,65 @@ public class RoomConfig {
 	}
 
 	protected void init() {
-	    init(this.form);
+		init(this.form);
 	}
 
 	protected void init(Form form) {
 		form.addField(Field.fieldTextSingle(MUC_ROOMCONFIG_ROOMNAME_KEY, "", "Natural-Language Room Name"));
 		form.addField(Field.fieldTextSingle(MUC_ROOMCONFIG_ROOMDESC_KEY, "", "Short Description of Room"));
 		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_PERSISTENTROOM_KEY, Boolean.FALSE, "Make Room Persistent?"));
-		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_PUBLICROOM_KEY, Boolean.TRUE, "Make Room Publicly Searchable?"));
+		form.addField(
+				Field.fieldBoolean(MUC_ROOMCONFIG_PUBLICROOM_KEY, Boolean.TRUE, "Make Room Publicly Searchable?"));
 		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_MODERATEDROOM_KEY, Boolean.FALSE, "Make Room Moderated?"));
 		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_MEMBERSONLY_KEY, Boolean.FALSE, "Make Room Members Only?"));
 		form.addField(
-				Field.fieldBoolean(MUC_ROOMCONFIG_PASSWORDPROTECTEDROOM_KEY, Boolean.FALSE, "Password Required to Enter?"));
+				Field.fieldBoolean(MUC_ROOMCONFIG_ALLOWINVITES_KEY, Boolean.TRUE, "Allow Occupants to Invite Others?"));
+		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_PASSWORDPROTECTEDROOM_KEY, Boolean.FALSE,
+										 "Password Required to Enter?"));
 		form.addField(Field.fieldTextSingle(MUC_ROOMCONFIG_ROOMSECRET_KEY, "", "Password"));
 
 		form.addField(Field.fieldListSingle(MUC_ROOMCONFIG_ANONYMITY_KEY, Anonymity.semianonymous.name(),
-				"Room anonymity level:", new String[] { "Non-Anonymous Room", "Semi-Anonymous Room", "Fully-Anonymous Room" },
-				new String[] { Anonymity.nonanonymous.name(), Anonymity.semianonymous.name(),
-						Anonymity.fullanonymous.name() }));
-		form.addField(
-				Field.fieldBoolean(MUC_ROOMCONFIG_CHANGESUBJECT_KEY, Boolean.FALSE, "Allow Occupants to Change Subject?"));
+											"Room anonymity level:",
+											new String[]{"Non-Anonymous Room", "Semi-Anonymous Room",
+														 "Fully-Anonymous Room"},
+											new String[]{Anonymity.nonanonymous.name(), Anonymity.semianonymous.name(),
+														 Anonymity.fullanonymous.name()}));
+		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_CHANGESUBJECT_KEY, Boolean.FALSE,
+										 "Allow Occupants to Change Subject?"));
 
 		form.addField(Field.fieldBoolean(MUC_ROOMCONFIG_ENABLELOGGING_KEY, Boolean.FALSE, "Enable Public Logging?"));
 		form.addField(Field.fieldListSingle(LOGGING_FORMAT_KEY, LogFormat.html.name(), "Logging format:",
-				new String[] { "HTML", "Plain text" }, new String[] { LogFormat.html.name(), LogFormat.plain.name() }));
+											new String[]{"HTML", "Plain text"},
+											new String[]{LogFormat.html.name(), LogFormat.plain.name()}));
 
 		form.addField(Field.fieldTextSingle(MUC_ROOMCONFIG_MAXHISTORY_KEY, "50",
-				"Maximum Number of History Messages Returned by Room"));
+											"Maximum Number of History Messages Returned by Room"));
 
 		form.addField(Field.fieldListSingle(MUC_ROOMCONFIG_MAXUSERS_KEY, "", "Maximum Number of Occupants",
-				new String[] { "10", "20", "30", "50", "100", "None" }, new String[] { "10", "20", "30", "50", "100", "" }));
+											new String[]{"10", "20", "30", "50", "100", "None"},
+											new String[]{"10", "20", "30", "50", "100", ""}));
 
 		form.addField(Field.fieldListSingle(TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC,
-				PresenceStore.PresenceDeliveryLogic.PREFERE_PRIORITY.toString(), "Presence delivery logic",
-				asStringTable(PresenceStore.PresenceDeliveryLogic.values()),
-				asStringTable(PresenceStore.PresenceDeliveryLogic.values())));
+											PresenceStore.PresenceDeliveryLogic.PREFERE_PRIORITY.toString(),
+											"Presence delivery logic",
+											asStringTable(PresenceStore.PresenceDeliveryLogic.values()),
+											asStringTable(PresenceStore.PresenceDeliveryLogic.values())));
 
 		form.addField(Field.fieldBoolean(TIGASE_ROOMCONFIG_PRESENCE_FILTERING, Boolean.FALSE,
-				"Enable filtering of presence (broadcasting presence only between selected groups"));
+										 "Enable filtering of presence (broadcasting presence only between selected groups"));
 
 		form.addField(Field.fieldListMulti(TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS, null,
-				"Affiliations for which presence should be delivered", asStringTable(Affiliation.values()),
-				asStringTable(Affiliation.values())));
+										   "Affiliations for which presence should be delivered",
+										   asStringTable(Affiliation.values()), asStringTable(Affiliation.values())));
 
 	}
 
 	public boolean isChangeSubject() {
 		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_CHANGESUBJECT_KEY), false);
+	}
+
+	public boolean isInvitingAllowed() {
+		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_ALLOWINVITES_KEY), true);
 	}
 
 	public boolean isLoggingEnabled() {
@@ -369,6 +384,14 @@ public class RoomConfig {
 		return asBoolean(form.getAsBoolean(TIGASE_ROOMCONFIG_PRESENCE_FILTERING), false);
 	}
 
+	public boolean isRoomMembersOnly() {
+		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_MEMBERSONLY_KEY), false);
+	}
+
+	public boolean isRoomModerated() {
+		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_MODERATEDROOM_KEY), false);
+	}
+
 	/**
 	 * Make Room Publicly Searchable
 	 *
@@ -376,14 +399,6 @@ public class RoomConfig {
 	 */
 	public boolean isRoomconfigPublicroom() {
 		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_PUBLICROOM_KEY), true);
-	}
-
-	public boolean isRoomMembersOnly() {
-		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_MEMBERSONLY_KEY), false);
-	}
-
-	public boolean isRoomModerated() {
-		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_MODERATEDROOM_KEY), false);
 	}
 
 	public void notifyConfigUpdate() {
@@ -402,11 +417,16 @@ public class RoomConfig {
 	public void read(final UserRepository repository, final MUCConfig config, final String subnode)
 			throws UserNotFoundException, TigaseDBException {
 		String[] keys = repository.getKeys(config.getServiceName(), subnode);
-		if (keys != null)
+		if (keys != null) {
 			for (String key : keys) {
 				String[] values = repository.getDataList(config.getServiceName(), subnode, key);
 				setValues(key, values);
 			}
+		}
+	}
+
+	public void readFromElement(Element element) {
+		form.copyValuesFrom(element);
 	}
 
 	public void removeListener(RoomConfigListener listener) {
@@ -419,17 +439,19 @@ public class RoomConfig {
 		if (f == null) {
 			return;
 		} else if (data == null) {
-			f.setValues(new String[] {});
+			f.setValues(new String[]{});
 		} else if (data instanceof String) {
 			String str = (String) data;
-			if (f.getType() == FieldType.bool && !"0".equals(str) && !"1".equals(str) && !"true".equalsIgnoreCase(str)
-					&& !"false".equalsIgnoreCase(str))
+			if (f.getType() == FieldType.bool && !"0".equals(str) && !"1".equals(str) &&
+					!"true".equalsIgnoreCase(str) && !"false".equalsIgnoreCase(str)) {
 				throw new RuntimeException("Boolean fields allows only '1', 'true', '0', 'false' values");
-			f.setValues(new String[] { str });
+			}
+			f.setValues(new String[]{str});
 		} else if (data instanceof Boolean && f.getType() == FieldType.bool) {
 			boolean b = ((Boolean) data).booleanValue();
-			f.setValues(new String[] { b ? "1" : "0" });
-		} else if (data instanceof String[] && (f.getType() == FieldType.list_multi || f.getType() == FieldType.text_multi)) {
+			f.setValues(new String[]{b ? "1" : "0"});
+		} else if (data instanceof String[] &&
+				(f.getType() == FieldType.list_multi || f.getType() == FieldType.text_multi)) {
 			String[] d = (String[]) data;
 			f.setValues(d);
 		} else {
@@ -468,17 +490,10 @@ public class RoomConfig {
 		}
 	}
 
-	public Element getAsElement() {
-		Form form = new Form("form", null, null);
-		init(form);
-		form.copyValuesFrom(this.form);
-		for (String field : this.blacklist) {
-			form.removeField(field);
-		}
-		return form.getElement();
-	}
+	public static interface RoomConfigListener {
 
-	public void readFromElement(Element element) {
-		form.copyValuesFrom(element);
+		void onConfigChanged(RoomConfig roomConfig, Set<String> modifiedVars);
+
+		void onInitialRoomConfig(RoomConfig roomConfig);
 	}
 }
