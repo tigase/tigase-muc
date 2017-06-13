@@ -1,0 +1,402 @@
+# ------------------------------------------ #
+# creating room                              #
+# ------------------------------------------ #
+send(Create room): {
+<presence
+    from='crone1@shakespeare.lit/desktop'
+    to='darkcave@macbeth.shakespeare.lit/firstwitch'>
+  <x xmlns='http://jabber.org/protocol/muc'/>
+</presence>
+}
+
+expect: {
+<presence 
+    from='darkcave@macbeth.shakespeare.lit/firstwitch'
+    to='crone1@shakespeare.lit/desktop'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='owner'
+          jid="crone1@shakespeare.lit/desktop" 
+          nick="firstwitch"
+          role='moderator'/>
+    <status code='201'/>
+    <status code="110"/>      
+  </x>
+</presence>
+}
+
+# ------------------------------------------ #
+# owner unloks room                          #
+# ------------------------------------------ #
+send(unlocking): {
+<iq from='crone1@shakespeare.lit/desktop'
+    id='create1'
+    to='darkcave@macbeth.shakespeare.lit'
+    type='set'>
+  <query xmlns='http://jabber.org/protocol/muc#owner'>
+    <x xmlns='jabber:x:data' type='submit'/>
+  </query>
+</iq>
+}
+
+expect: {
+<iq from ='darkcave@macbeth.shakespeare.lit' to='crone1@shakespeare.lit/desktop' type='result' id='create1'/>
+}
+
+
+# ------------------------------------------ #
+# Entering a Room                            #
+# ------------------------------------------ #
+send(Entering: thirdwitch1): {
+<presence 
+    from='hag66@shakespeare.lit/pda'
+    to='darkcave@macbeth.shakespeare.lit/thirdwitch'>
+  <x xmlns='http://jabber.org/protocol/muc'/>
+</presence>
+}
+
+expect all: {
+# Service Sends Presence from Existing Occupants to New Occupant
+<presence  
+    from='darkcave@macbeth.shakespeare.lit/firstwitch'
+    to='hag66@shakespeare.lit/pda'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='owner' nick="firstwitch" role='moderator'/>
+  </x>
+</presence>
+# Service Sends New Occupant's Presence to All Occupants
+<presence  
+    from='darkcave@macbeth.shakespeare.lit/thirdwitch'
+    to='crone1@shakespeare.lit/desktop'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='none' nick="thirdwitch"  role='participant'/>
+  </x>
+</presence>
+<presence  
+    from='darkcave@macbeth.shakespeare.lit/thirdwitch'
+    to='hag66@shakespeare.lit/pda'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='none' nick="thirdwitch"   role='participant'/>
+    <status code="110"/>
+  </x>
+</presence>
+}
+
+# ------------------------------------------ #
+# Entering a Room 2                          #
+# ------------------------------------------ #
+send(Entering: thirdwitch2): {
+<presence 
+    from='hag66@shakespeare.lit/laptop'
+    to='darkcave@macbeth.shakespeare.lit/thirdwitch'>
+  <x xmlns='http://jabber.org/protocol/muc'/>
+</presence>
+}
+
+expect all: {
+# Service Sends Presence from Existing Occupants to New Occupant
+<presence
+    from='darkcave@macbeth.shakespeare.lit/firstwitch'
+    to='hag66@shakespeare.lit/laptop'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='owner' nick="firstwitch" role='moderator'/>
+  </x>
+</presence>
+# Service Sends New Occupant's Presence to All Occupants
+<presence 
+	from="darkcave@macbeth.shakespeare.lit/thirdwitch" 
+	to="hag66@shakespeare.lit/pda">
+  <x xmlns="http://jabber.org/protocol/muc#user">
+    <item nick="thirdwitch" role="participant" affiliation="none"/>
+    <status code="110"/>
+  </x>
+</presence> 
+<presence
+    from='darkcave@macbeth.shakespeare.lit/thirdwitch'
+    to='hag66@shakespeare.lit/laptop'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='none' nick="thirdwitch" role='participant'/>
+    <status code="110"/>
+  </x>
+</presence>
+<presence 
+	from="darkcave@macbeth.shakespeare.lit/thirdwitch" 
+	to="crone1@shakespeare.lit/desktop">
+  <x xmlns="http://jabber.org/protocol/muc#user">
+    <item jid="hag66@shakespeare.lit/pda" nick="thirdwitch" role="participant" affiliation="none"/>
+    <item jid="hag66@shakespeare.lit/laptop" nick="thirdwitch" role="participant" affiliation="none"/>
+  </x>
+</presence>
+}
+
+# ------------------------------------------ #
+# Entering a Room                            #
+# ------------------------------------------ #
+send(Entering: secondwitch): {
+<presence 
+    from='wiccarocks@shakespeare.lit/laptop'
+    to='darkcave@macbeth.shakespeare.lit/secondwitch'>
+  <x xmlns='http://jabber.org/protocol/muc'/>
+</presence>
+}
+
+expect all: {
+# Service Sends Presence from Existing Occupants to New Occupant
+<presence
+    from='darkcave@macbeth.shakespeare.lit/thirdwitch'
+    to='wiccarocks@shakespeare.lit/laptop'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='none' nick="thirdwitch" role='participant'/>
+  </x>
+</presence>
+<presence
+    from='darkcave@macbeth.shakespeare.lit/firstwitch'
+    to='wiccarocks@shakespeare.lit/laptop'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='owner' nick="firstwitch" role='moderator'/>
+  </x>
+</presence>
+# Service Sends New Occupant's Presence to All Occupants
+<presence
+    from='darkcave@macbeth.shakespeare.lit/secondwitch'
+    to='hag66@shakespeare.lit/pda'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='none' nick="secondwitch" role='participant'/>
+  </x>
+</presence>
+<presence
+    from='darkcave@macbeth.shakespeare.lit/secondwitch'
+    to='hag66@shakespeare.lit/laptop'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='none' nick="secondwitch" role='participant'/>
+  </x>
+</presence>
+<presence
+    from='darkcave@macbeth.shakespeare.lit/secondwitch'
+    to='crone1@shakespeare.lit/desktop'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='none' nick="secondwitch" role='participant'/>
+  </x>
+</presence>
+<presence
+    from='darkcave@macbeth.shakespeare.lit/secondwitch'
+    to='wiccarocks@shakespeare.lit/laptop'>
+  <x xmlns='http://jabber.org/protocol/muc#user'>
+    <item affiliation='none' nick="secondwitch" role='participant'/>
+    <status code="110"/>
+  </x>
+</presence>
+}
+
+
+
+# ------------------------------------------ #
+# Change affiliation                         #
+# ------------------------------------------ #
+
+send(UpdateAffiliation): {
+<iq
+    from='crone1@shakespeare.lit/desktop'
+    to='darkcave@macbeth.shakespeare.lit'
+    type='set'
+    id='sa01'>
+  <query xmlns="http://jabber.org/protocol/muc#admin">
+    <item affiliation="admin" jid="wiccarocks@shakespeare.lit" />
+  </query>
+</iq>
+}
+
+expect: {
+<iq
+    from='darkcave@macbeth.shakespeare.lit'
+    to='crone1@shakespeare.lit/desktop'
+    type='result'
+    id='sa01'/>
+}
+
+
+# ------------------------------------------ #
+# Getting members list 01                    #
+# ------------------------------------------ #
+
+send(Memberslist1): {
+<iq
+    from='crone1@shakespeare.lit/desktop'
+    to='darkcave@macbeth.shakespeare.lit'
+    type='get'
+    id='gml01'>
+  <query xmlns="http://jabber.org/protocol/muc#admin">
+    <item affiliation="member" />
+    <item affiliation="admin" />
+    <item affiliation="owner" />
+    <item affiliation="outcast" />
+    <item affiliation="none" />
+    <item role="participant" />
+    <item role="moderator" />
+    <item role="none" />
+    <item role="participant" />
+  </query>
+</iq>
+}
+
+expect: {
+<iq
+    from='darkcave@macbeth.shakespeare.lit'
+    to='crone1@shakespeare.lit/desktop'
+    type='result'
+    id='gml01'>
+  <query xmlns='http://jabber.org/protocol/muc#admin'>
+    <item nick="thirdwitch" role="participant" jid="hag66@shakespeare.lit" affiliation="none"/>
+    <item nick="secondwitch" role="participant" jid="wiccarocks@shakespeare.lit" affiliation="admin"/>
+    <item nick="firstwitch" role="moderator" jid="crone1@shakespeare.lit" affiliation="owner"/>
+  </query>
+</iq>
+}
+
+
+# ------------------------------------------ #
+# Getting members list 02                    #
+# ------------------------------------------ #
+
+send(Memberslist2): {
+<iq
+    from='crone1@shakespeare.lit/desktop'
+    to='darkcave@macbeth.shakespeare.lit'
+    type='get'
+    id='gml02'>
+  <query xmlns="http://jabber.org/protocol/muc#admin">
+    <item affiliation="admin" />
+  </query>
+</iq>
+}
+
+expect: {
+<iq
+    from='darkcave@macbeth.shakespeare.lit'
+    to='crone1@shakespeare.lit/desktop'
+    type='result'
+    id='gml02'>
+  <query xmlns='http://jabber.org/protocol/muc#admin'>
+    <item nick="secondwitch" role="participant" jid="wiccarocks@shakespeare.lit" affiliation="admin"/>
+  </query>
+</iq>
+}
+
+# ------------------------------------------ #
+# Getting members list 03                    #
+# ------------------------------------------ #
+
+send(Memberslist3): {
+<iq
+    from='crone1@shakespeare.lit/desktop'
+    to='darkcave@macbeth.shakespeare.lit'
+    type='get'
+    id='gml03'>
+  <query xmlns="http://jabber.org/protocol/muc#admin">
+    <item affiliation="none" />
+  </query>
+</iq>
+}
+
+expect: {
+<iq
+    from='darkcave@macbeth.shakespeare.lit'
+    to='crone1@shakespeare.lit/desktop'
+    type='result'
+    id='gml03'>
+  <query xmlns='http://jabber.org/protocol/muc#admin'>
+    <item nick="thirdwitch" role="participant" jid="hag66@shakespeare.lit" affiliation="none"/>
+  </query>
+</iq>
+}
+
+
+# ------------------------------------------ #
+# Getting members list 04                    #
+# ------------------------------------------ #
+
+send(Memberslist4): {
+<iq
+    from='crone1@shakespeare.lit/desktop'
+    to='darkcave@macbeth.shakespeare.lit'
+    type='get'
+    id='gml04'>
+  <query xmlns="http://jabber.org/protocol/muc#admin">
+    <item affiliation="admin" />
+    <item role="moderator" />
+  </query>
+</iq>
+}
+
+expect: {
+<iq
+    from='darkcave@macbeth.shakespeare.lit'
+    to='crone1@shakespeare.lit/desktop'
+    type='result'
+    id='gml04'>
+  <query xmlns='http://jabber.org/protocol/muc#admin'>
+    <item nick="secondwitch" role="participant" jid="wiccarocks@shakespeare.lit" affiliation="admin"/>
+    <item nick="firstwitch" role="moderator" jid="crone1@shakespeare.lit" affiliation="owner"/>
+  </query>
+</iq>
+}
+
+# ------------------------------------------ #
+# Getting members list 05                    #
+# ------------------------------------------ #
+
+send(Memberslist5): {
+<iq
+    from='crone1@shakespeare.lit/desktop'
+    to='darkcave@macbeth.shakespeare.lit'
+    type='get'
+    id='gml05'>
+  <query xmlns="http://jabber.org/protocol/muc#admin">
+    <item affiliation="all" />
+    <item role="all" />
+  </query>
+</iq>
+}
+
+expect: {
+<iq
+    from='darkcave@macbeth.shakespeare.lit'
+    to='crone1@shakespeare.lit/desktop'
+    type='result'
+    id='gml05'>
+  <query xmlns='http://jabber.org/protocol/muc#admin'>
+    <item nick="thirdwitch" role="participant" jid="hag66@shakespeare.lit" affiliation="none"/>
+    <item nick="secondwitch" role="participant" jid="wiccarocks@shakespeare.lit" affiliation="admin"/>
+    <item nick="firstwitch" role="moderator" jid="crone1@shakespeare.lit" affiliation="owner"/>
+  </query>
+</iq>
+}
+
+
+# ------------------------------------------ #
+# Getting members list 06                    #
+# ------------------------------------------ #
+
+send(Memberslist6): {
+<iq
+    from='crone1@shakespeare.lit/desktop'
+    to='darkcave@macbeth.shakespeare.lit'
+    type='get'
+    id='gml06'>
+  <query xmlns="http://jabber.org/protocol/muc#admin">
+    <item role="participant" />
+  </query>
+</iq>
+}
+
+expect: {
+<iq
+    from='darkcave@macbeth.shakespeare.lit'
+    to='crone1@shakespeare.lit/desktop'
+    type='result'
+    id='gml06'>
+  <query xmlns='http://jabber.org/protocol/muc#admin'>
+    <item nick="thirdwitch" role="participant" jid="hag66@shakespeare.lit" affiliation="none"/>
+    <item nick="secondwitch" role="participant" jid="wiccarocks@shakespeare.lit" affiliation="admin"/>
+  </query>
+</iq>
+}
