@@ -109,6 +109,11 @@ public class RoomTest extends XMPPTestCase {
 	}
 
 	@org.junit.Test
+	public void test_getting_members_list() {
+		test("src/test/scripts/gettingMembersList-ext.cor", xmlio);
+	}
+
+	@org.junit.Test
 	public void test_ghostUser() {
 		test("src/test/scripts/ghostUser.cor", xmlio);
 	}
