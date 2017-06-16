@@ -157,6 +157,11 @@ public class RoomTest
 	}
 
 	@org.junit.Test
+	public void test_members_only_subject() {
+		test("src/test/scripts/members-only-subject.cor", xmlio);
+	}
+
+	@org.junit.Test
 	public void test_messages() {
 		test("src/test/scripts/messagesGroupchat.cor", xmlio);
 	}
