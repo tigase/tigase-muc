@@ -195,6 +195,11 @@ public class RoomTest extends XMPPTestCase {
 	}
 
 	@org.junit.Test
+	public void test_members_only_subject() {
+		test("src/test/scripts/members-only-subject.cor", xmlio);
+	}
+
+	@org.junit.Test
 	public void test_presences2_non_anonymous() {
 		test("src/test/scripts/processPresence2-nonanonymous.cor", xmlio);
 	}
