@@ -389,9 +389,13 @@ call TigExecuteIf((select count(1) from information_schema.COLUMNS where TABLE_S
 -- ---------------------
 
 -- QUERY START:
-call TigExecuteIf((select count(1) from information_schema.STATISTICS where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'muc_history'), '
+call TigExecuteIf((select count(1) from information_schema.TABLES where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'muc_history'), '
     insert into tig_muc_room_history (room_jid, room_jid_sha1, event_type, ts, sender_jid, sender_nickname, body, public_event, msg)
-        select room_name, SHA1( LOWER(room_name) ), event_type, from_unixtime("timestamp"), sender_jid, sender_nickname, body, public_event, msg
-        from muc_history;
-    rename muc_history to muc_history_old;');
+        select room_name, SHA1( LOWER(room_name) ), event_type, from_unixtime(`timestamp`/1000), sender_jid, sender_nickname, body, public_event, msg
+        from muc_history');
+-- QUERY END:
+
+-- QUERY START:
+call TigExecuteIf((select count(1) from information_schema.TABLES where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'muc_history'), '
+    rename table muc_history to muc_history_old');
 -- QUERY END:
