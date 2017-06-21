@@ -28,7 +28,6 @@ import tigase.db.UserRepository;
 import tigase.kernel.beans.Initializable;
 import tigase.kernel.beans.Inject;
 import tigase.muc.*;
-import tigase.muc.exceptions.MUCException;
 import tigase.xmpp.BareJID;
 import tigase.xmpp.JID;
 
@@ -243,11 +242,17 @@ public class MucDAOOld
 				String[] affJids = repository.getKeys(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/affiliations");
 				if (affJids != null)
 					for (final String jid : affJids) {
+						if (jid == null || jid.isEmpty()) {
+							continue;
+						}
+
 						String t = repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/affiliations", jid);
+						if (t == null) {
+							continue;
+						}
 
 						Affiliation affiliation = Affiliation.valueOf(t);
 						affiliations.put(JID.jidInstance(jid).getBareJID(), affiliation);
-
 					}
 
 				room.setAffiliations(affiliations);
