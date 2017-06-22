@@ -211,6 +211,11 @@ public class RoomTest
 		test("src/test/scripts/processPresence2-nonanonymous.cor", xmlio);
 	}
 
+	@org.junit.Test
+	public void test_room_config() {
+		test("src/test/scripts/room-configuration.cor", xmlio);
+	}
+
 	private final class ArrayWriter
 			implements PacketWriter {
 
