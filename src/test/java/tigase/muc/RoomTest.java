@@ -44,7 +44,8 @@ import java.util.Map;
 /**
  * @author bmalkow
  */
-public class RoomTest extends XMPPTestCase {
+public class RoomTest
+		extends XMPPTestCase {
 
 	private MUCComponent pubsub;
 	private JUnitXMLIO xmlio;
@@ -124,6 +125,42 @@ public class RoomTest extends XMPPTestCase {
 	}
 
 	@org.junit.Test
+	public void test_invitations_allowed() {
+		test("src/test/scripts/invitation_allowed.cor", xmlio);
+	}
+
+	@org.junit.Test
+	public void test_invitations_allowed_membersonly() {
+		test("src/test/scripts/invitation_allowed_membersonly.cor", xmlio);
+	}
+
+	@org.junit.Test
+	public void test_invitations_notallowed() {
+		test("src/test/scripts/invitation_not_allowed.cor", xmlio);
+	}
+
+// Changing nickname is not supported yet!
+//	@org.junit.Test
+//	public void test_presences() {
+//		test("src/test/scripts/processPresence-empty.cor", xmlio);
+//	}
+
+	@org.junit.Test
+	public void test_invitations_notallowed_membersonly() {
+		test("src/test/scripts/invitation_not_allowed_membersonly.cor", xmlio);
+	}
+
+	@org.junit.Test
+	public void test_members_only_subject() {
+		test("src/test/scripts/members-only-subject.cor", xmlio);
+	}
+
+	@org.junit.Test
+	public void test_room_config() {
+		test("src/test/scripts/room-configuration.cor", xmlio);
+	}
+
+	@org.junit.Test
 	public void test_messages() {
 		test("src/test/scripts/messagesGroupchat.cor", xmlio);
 	}
@@ -144,12 +181,6 @@ public class RoomTest extends XMPPTestCase {
 	public void test_pings() {
 		test("src/test/scripts/ping.cor", xmlio);
 	}
-
-// Changing nickname is not supported yet!
-//	@org.junit.Test
-//	public void test_presences() {
-//		test("src/test/scripts/processPresence-empty.cor", xmlio);
-//	}
 
 	@org.junit.Test
 	public void test_presences2() {
@@ -175,36 +206,12 @@ public class RoomTest extends XMPPTestCase {
 	}
 
 	@org.junit.Test
-	public void test_invitations_allowed() {
-		test("src/test/scripts/invitation_allowed.cor", xmlio);
-	}
-
-	@org.junit.Test
-	public void test_invitations_allowed_membersonly() {
-		test("src/test/scripts/invitation_allowed_membersonly.cor", xmlio);
-	}
-
-	@org.junit.Test
-	public void test_invitations_notallowed() {
-		test("src/test/scripts/invitation_not_allowed.cor", xmlio);
-	}
-
-	@org.junit.Test
-	public void test_invitations_notallowed_membersonly() {
-		test("src/test/scripts/invitation_not_allowed_membersonly.cor", xmlio);
-	}
-
-	@org.junit.Test
-	public void test_members_only_subject() {
-		test("src/test/scripts/members-only-subject.cor", xmlio);
-	}
-
-	@org.junit.Test
 	public void test_presences2_non_anonymous() {
 		test("src/test/scripts/processPresence2-nonanonymous.cor", xmlio);
 	}
 
-	private final class ArrayWriter implements PacketWriter {
+	private final class ArrayWriter
+			implements PacketWriter {
 
 		private final ArrayList<Element> elements = new ArrayList<Element>();
 
