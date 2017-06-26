@@ -277,17 +277,18 @@ public class RoomConfigurationModule
 
 					final RoomConfig oldConfig = room.getConfig().clone();
 
+					room.getConfig().copyFrom(form);
 					if (room.isRoomLocked()) {
 						room.setRoomLocked(false);
 						if (log.isLoggable(Level.FINE)) {
 							log.fine("Room " + room.getRoomJID() + " is now unlocked");
 						}
 						String nickname = room.getOccupantsNickname(senderJID);
-						if (nickname != null) {
+						if (nickname != null && context.isWelcomeMessagesEnabled() &&
+								room.getConfig().isWelcomeMessageEnabled()) {
 							sendMucMessage(room, nickname, "Room is now unlocked");
 						}
 					}
-					room.getConfig().copyFrom(form);
 
 					String[] admins = form.getAsStrings("muc#roomconfig_roomadmins");
 					if (admins != null) {

@@ -49,7 +49,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 
-public class MUCComponent extends AbstractComponent<MucContext> {
+public class MUCComponent
+		extends AbstractComponent<MucContext> {
 
 	public static final String DEFAULT_ROOM_CONFIG_KEY = "default_room_config";
 	public static final String DEFAULT_ROOM_CONFIG_PREFIX_KEY = DEFAULT_ROOM_CONFIG_KEY + "/";
@@ -59,9 +60,7 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 	public static final String MUC_LOCK_NEW_ROOM_KEY = "muc-lock-new-room";
 	public static final String MUC_MULTI_ITEM_ALLOWED_KEY = "muc-multi-item-allowed";
 	/**
-	 * @deprecated Use
-	 * {@linkplain MUCComponent#SEARCH_GHOSTS_EVERY_MINUTE_KEY
-	 * SEARCH_GHOSTS_MINUTE_KEY} instead.
+	 * @deprecated Use {@linkplain MUCComponent#SEARCH_GHOSTS_EVERY_MINUTE_KEY SEARCH_GHOSTS_MINUTE_KEY} instead.
 	 */
 	@Deprecated
 	public static final String PING_EVERY_MINUTE_KEY = "ping-every-minute";
@@ -75,6 +74,8 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 	private static final String PRESENCE_MODULE_VAR = "presenceModule";
 	private static final String MUC_CUSTOM_DISCO_FILTER = "roomFilterClass";
 	private static final String MUC_ADD_ID_TO_MESSAGE_IF_MISSING_KEY = "muc-add-id-to-message-if-missing";
+	private static final String WELCOME_MESSAGE_ENABLED_KEY = "welcome-message";
+	protected boolean addMessageIdIfMissing = true;
 	protected String chatLoggingDirectory;
 	protected Boolean chatStateAllowed;
 	protected Ghostbuster2 ghostbuster;
@@ -86,15 +87,15 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 	protected Boolean newRoomLocked;
 	protected boolean presenceFilterEnabled;
 	protected boolean searchGhostsEveryMinute = false;
-	protected boolean addMessageIdIfMissing = true;
-
-	public MUCComponent() {
-	}
+	private boolean welcomeMessagesEnabled = true;
 
 	protected static void addIfExists(Bindings binds, String name, Object value) {
 		if (value != null) {
 			binds.put(name, value);
 		}
+	}
+
+	public MUCComponent() {
 	}
 
 	/*
@@ -114,15 +115,17 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 	@Override
 	public synchronized void everyHour() {
 		super.everyHour();
-		if (!searchGhostsEveryMinute)
+		if (!searchGhostsEveryMinute) {
 			executePingInThread();
+		}
 	}
 
 	@Override
 	public synchronized void everyMinute() {
 		super.everyMinute();
-		if (searchGhostsEveryMinute)
+		if (searchGhostsEveryMinute) {
 			executePingInThread();
+		}
 	}
 
 	private void executePingInThread() {
@@ -188,8 +191,8 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 		props.put(MUC_MULTI_ITEM_ALLOWED_KEY, Boolean.TRUE);
 
 		// By default use the same repository as all other components:
-		String repo_uri = (params.get(RepositoryFactory.GEN_USER_DB_URI) != null)
-				? (String) params.get(RepositoryFactory.GEN_USER_DB_URI) : "memory";
+		String repo_uri = (params.get(RepositoryFactory.GEN_USER_DB_URI) != null) ? (String) params.get(
+				RepositoryFactory.GEN_USER_DB_URI) : "memory";
 
 		props.put(HistoryManagerFactory.DB_URI_KEY, repo_uri);
 
@@ -217,8 +220,8 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 
 	@Override
 	public int hashCodeForPacket(Packet packet) {
-		if ((packet.getStanzaFrom() != null) && (packet.getPacketFrom() != null)
-				&& !getComponentId().equals(packet.getPacketFrom())) {
+		if ((packet.getStanzaFrom() != null) && (packet.getPacketFrom() != null) &&
+				!getComponentId().equals(packet.getPacketFrom())) {
 			return packet.getStanzaFrom().hashCode();
 		}
 
@@ -326,10 +329,12 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 			this.searchGhostsEveryMinute = (Boolean) props.get(PING_EVERY_MINUTE_KEY);
 			log.config("props.containsKey(PING_EVERY_MINUTE_KEY): " + props.containsKey(PING_EVERY_MINUTE_KEY));
 		} else {
-			log.config("props.containsKey(PING_EVERY_MINUTE_KEY): " + props.containsKey(SEARCH_GHOSTS_EVERY_MINUTE_KEY));
+			log.config(
+					"props.containsKey(PING_EVERY_MINUTE_KEY): " + props.containsKey(SEARCH_GHOSTS_EVERY_MINUTE_KEY));
 			this.searchGhostsEveryMinute = (Boolean) props.get(SEARCH_GHOSTS_EVERY_MINUTE_KEY);
 		}
-		log.config("searchGhostsEveryMinute: " + searchGhostsEveryMinute + "; " + props.containsKey(PING_EVERY_MINUTE_KEY));
+		log.config("searchGhostsEveryMinute: " + searchGhostsEveryMinute + "; " +
+						   props.containsKey(PING_EVERY_MINUTE_KEY));
 
 		if (props.containsKey(MUCComponent.GHOSTBUSTER_ENABLED_KEY)) {
 			boolean e = (Boolean) props.get(MUCComponent.GHOSTBUSTER_ENABLED_KEY);
@@ -345,31 +350,32 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 		if (props.containsKey(MUCComponent.MESSAGE_FILTER_ENABLED_KEY)) {
 			this.messageFilterEnabled = (Boolean) props.get(MUCComponent.MESSAGE_FILTER_ENABLED_KEY);
 		}
-		log.config("messageFilterEnabled: " + messageFilterEnabled + "; props: "
-				+ props.containsKey(MUCComponent.MESSAGE_FILTER_ENABLED_KEY));
+		log.config("messageFilterEnabled: " + messageFilterEnabled + "; props: " +
+						   props.containsKey(MUCComponent.MESSAGE_FILTER_ENABLED_KEY));
 
 		if (props.containsKey(MUCComponent.PRESENCE_FILTER_ENABLED_KEY)) {
 			this.presenceFilterEnabled = (Boolean) props.get(MUCComponent.PRESENCE_FILTER_ENABLED_KEY);
 		}
-		log.config("presenceFilterEnabled: " + presenceFilterEnabled + "; props: "
-				+ props.containsKey(MUCComponent.PRESENCE_FILTER_ENABLED_KEY));
+		log.config("presenceFilterEnabled: " + presenceFilterEnabled + "; props: " +
+						   props.containsKey(MUCComponent.PRESENCE_FILTER_ENABLED_KEY));
 
 		if (props.containsKey(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY)) {
 			this.multiItemMode = (Boolean) props.get(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY);
 		}
-		log.config(
-				"multiItemMode: " + multiItemMode + "; props: " + props.containsKey(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY));
+		log.config("multiItemMode: " + multiItemMode + "; props: " +
+						   props.containsKey(MUCComponent.MUC_MULTI_ITEM_ALLOWED_KEY));
 
 		if (props.containsKey(MUCComponent.MUC_ALLOW_CHAT_STATES_KEY)) {
 			this.chatStateAllowed = (Boolean) props.get(MUCComponent.MUC_ALLOW_CHAT_STATES_KEY);
 		}
-		log.config("chatStateAllowed: " + chatStateAllowed + "; props: "
-				+ props.containsKey(MUCComponent.MUC_ALLOW_CHAT_STATES_KEY));
+		log.config("chatStateAllowed: " + chatStateAllowed + "; props: " +
+						   props.containsKey(MUCComponent.MUC_ALLOW_CHAT_STATES_KEY));
 
 		if (props.containsKey(MUCComponent.MUC_LOCK_NEW_ROOM_KEY)) {
 			this.newRoomLocked = (Boolean) props.get(MUCComponent.MUC_LOCK_NEW_ROOM_KEY);
 		}
-		log.config("newRoomLocked: " + newRoomLocked + "; props: " + props.containsKey(MUCComponent.MUC_LOCK_NEW_ROOM_KEY));
+		log.config("newRoomLocked: " + newRoomLocked + "; props: " +
+						   props.containsKey(MUCComponent.MUC_LOCK_NEW_ROOM_KEY));
 
 		if (props.containsKey(LOG_DIR_KEY)) {
 			log.config("Setting Chat Logging Directory");
@@ -381,8 +387,13 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 		}
 		log.config("addMessageIdIfMissing: " + this.addMessageIdIfMissing);
 
-		log.config("Initializing History Provider, props.containsKey(HistoryManagerFactory.DB_CLASS_KEY): "
-				+ props.containsKey(HistoryManagerFactory.DB_CLASS_KEY));
+		if (props.containsKey(MUCComponent.WELCOME_MESSAGE_ENABLED_KEY)) {
+			this.welcomeMessagesEnabled = (Boolean) props.get(MUCComponent.WELCOME_MESSAGE_ENABLED_KEY);
+		}
+		log.config("welcome-messages: " + this.welcomeMessagesEnabled);
+
+		log.config("Initializing History Provider, props.containsKey(HistoryManagerFactory.DB_CLASS_KEY): " +
+						   props.containsKey(HistoryManagerFactory.DB_CLASS_KEY));
 		HistoryProvider oldHistoryProvider = this.historyProvider;
 		this.historyProvider = HistoryManagerFactory.getHistoryManager(props);
 		this.historyProvider.init(props);
@@ -408,21 +419,23 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 				}
 				MucDAO dao = new MucDAO(context, userRepository);
 				mucRepository = createMucRepository(context, dao);
-				log.config("MUC Repository initialized" + "; userRepository: " + userRepository + "; MucDAO dao: " + dao
-						+ "; mucRepository: " + mucRepository);
+				log.config(
+						"MUC Repository initialized" + "; userRepository: " + userRepository + "; MucDAO dao: " + dao +
+								"; mucRepository: " + mucRepository);
 
 			} catch (Exception e) {
 				log.log(Level.WARNING, "Cannot initialize MUC Repository", e);
 			}
 		}
 
-		log.config("Initializing MUC Logger, props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY)"
-				+ props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY));
+		log.config("Initializing MUC Logger, props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY)" +
+						   props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY));
 		if (props.containsKey(MucLogger.MUC_LOGGER_CLASS_KEY)) {
 			String loggerClassName = (String) props.get(MucLogger.MUC_LOGGER_CLASS_KEY);
 			try {
-				if (log.isLoggable(Level.CONFIG))
+				if (log.isLoggable(Level.CONFIG)) {
 					log.config("Using Room Logger: " + loggerClassName);
+				}
 				this.mucLogger = (MucLogger) Class.forName(loggerClassName).newInstance();
 				this.mucLogger.init(context);
 			} catch (Exception e) {
@@ -468,8 +481,9 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 			}
 		}
 
-		if (!found)
+		if (!found) {
 			return;
+		}
 
 		log.config("Updating Default Room Config");
 
@@ -490,14 +504,17 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 			}
 		}
 		if (changed) {
-			if (log.isLoggable(Level.CONFIG))
+			if (log.isLoggable(Level.CONFIG)) {
 				log.config("Default room configuration is udpated");
+			}
 			mucRepository.updateDefaultRoomConfig(defaultRoomConfig);
 		}
 
 	}
 
-	private class MucContextImpl extends AbstractContext implements MucContext {
+	private class MucContextImpl
+			extends AbstractContext
+			implements MucContext {
 
 		private final BareJID serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
 
@@ -571,6 +588,11 @@ public class MUCComponent extends AbstractComponent<MucContext> {
 		@Override
 		public boolean isPublicLoggingEnabled() {
 			return mucLogger != null || (historyProvider != null && historyProvider.isPersistent());
+		}
+
+		@Override
+		public boolean isWelcomeMessagesEnabled() {
+			return MUCComponent.this.welcomeMessagesEnabled;
 		}
 
 	}

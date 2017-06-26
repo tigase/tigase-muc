@@ -22,8 +22,6 @@
 
 package tigase.muc.modules;
 
-import java.util.Collection;
-
 import tigase.component.modules.AbstractModule;
 import tigase.muc.MucContext;
 import tigase.muc.Room;
@@ -35,31 +33,33 @@ import tigase.xml.Element;
 import tigase.xmpp.JID;
 import tigase.xmpp.StanzaType;
 
+import java.util.Collection;
+
 /**
  * @author bmalkow
- * 
  */
-public abstract class AbstractMucModule extends AbstractModule<MucContext> {
+public abstract class AbstractMucModule
+		extends AbstractModule<MucContext> {
+
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
 	 * @param iq
-	 * 
+	 *
 	 * @return
 	 */
 	public static Element createResultIQ(Element iq) {
-		return new Element(Iq.ELEM_NAME, new String[] { Packet.TYPE_ATT, Packet.FROM_ATT, Packet.TO_ATT, Packet.ID_ATT },
-				new String[] { "result", iq.getAttributeStaticStr(Packet.TO_ATT), iq.getAttributeStaticStr(Packet.FROM_ATT),
-						iq.getAttributeStaticStr(Packet.ID_ATT) });
+		return new Element(Iq.ELEM_NAME, new String[]{Packet.TYPE_ATT, Packet.FROM_ATT, Packet.TO_ATT, Packet.ID_ATT},
+						   new String[]{"result", iq.getAttributeStaticStr(Packet.TO_ATT),
+										iq.getAttributeStaticStr(Packet.FROM_ATT),
+										iq.getAttributeStaticStr(Packet.ID_ATT)});
 	}
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
 	 * @param jid
-	 * 
+	 *
 	 * @return
 	 */
 	public static String getNicknameFromJid(JID jid) {
@@ -75,20 +75,19 @@ public abstract class AbstractMucModule extends AbstractModule<MucContext> {
 
 	/**
 	 * Method description
-	 * 
-	 * 
+	 *
 	 * @param room
 	 * @param recipientNickame
 	 * @param message
-	 * 
+	 *
 	 * @throws TigaseStringprepException
 	 */
 	protected void sendMucMessage(Room room, String recipientNickame, String message) throws TigaseStringprepException {
 		Collection<JID> occupantJids = room.getOccupantsJidsByNickname(recipientNickame);
 
 		for (JID jid : occupantJids) {
-			Packet msg = Message.getMessage(JID.jidInstance(room.getRoomJID()), jid, StanzaType.groupchat, message, null, null,
-					null);
+			Packet msg = Message.getMessage(JID.jidInstance(room.getRoomJID()), jid, StanzaType.groupchat, message,
+											null, null, null);
 			msg.setXMLNS(Packet.CLIENT_XMLNS);
 			context.getWriter().write(msg);
 		}

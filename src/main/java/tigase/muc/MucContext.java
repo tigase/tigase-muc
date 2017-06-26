@@ -29,9 +29,9 @@ import tigase.xmpp.BareJID;
 
 /**
  * @author bmalkow
- * 
  */
-public interface MucContext extends Context {
+public interface MucContext
+		extends Context {
 
 	/**
 	 * @return
@@ -73,4 +73,6 @@ public interface MucContext extends Context {
 	 * @return
 	 */
 	boolean isPublicLoggingEnabled();
+
+	boolean isWelcomeMessagesEnabled();
 }
