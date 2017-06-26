@@ -29,7 +29,6 @@ import java.util.logging.Logger;
 
 /**
  * @author bmalkow
- *
  */
 @Bean(name = "mucConfig", parent = MUCComponent.class, active = true, exportable = true)
 public class MUCConfig {
@@ -47,6 +46,8 @@ public class MUCConfig {
 	private static final String GHOSTBUSTER_ENABLED_KEY = "ghostbuster-enabled";
 	protected final Logger log = Logger.getLogger(this.getClass().getName());
 	private final BareJID serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
+	@ConfigField(desc = "Add ID to messages if missing", alias = MUC_ADD_ID_TO_MESSAGE_IF_MISSING_KEY)
+	protected boolean addMessageIdIfMissing = true;
 	@ConfigField(desc = "Allowing Chat-States", alias = MUC_ALLOW_CHAT_STATES_KEY)
 	protected Boolean chatStateAllowed = false;
 	@ConfigField(desc = "Logs Directory", alias = LOG_DIR_KEY)
@@ -61,8 +62,8 @@ public class MUCConfig {
 	private boolean newRoomLocked = true;
 	@ConfigField(desc = "Passing only bare presence", alias = PRESENCE_FILTER_ENABLED_KEY)
 	private boolean presenceFilterEnabled = false;
-	@ConfigField(desc = "Add ID to messages if missing", alias = MUC_ADD_ID_TO_MESSAGE_IF_MISSING_KEY)
-	protected boolean addMessageIdIfMissing = true;
+	@ConfigField(desc = "Send welcome messages on room creation", alias = "welcome-message")
+	private boolean welcomeMessagesEnabled = true;
 
 	/**
 	 * @return
@@ -119,6 +120,10 @@ public class MUCConfig {
 	 */
 	public boolean isPresenceFilterEnabled() {
 		return presenceFilterEnabled;
+	}
+
+	public boolean isWelcomeMessagesEnabled() {
+		return welcomeMessagesEnabled;
 	}
 
 }

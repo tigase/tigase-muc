@@ -54,6 +54,7 @@ public class RoomConfig {
 	public static final String TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC = "tigase#presence_delivery_logic";
 	public static final String TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS = "tigase#presence_filtered_affiliations";
 	public static final String TIGASE_ROOMCONFIG_PRESENCE_FILTERING = "tigase#presence_filtering";
+	public static final String TIGASE_ROOMCONFIG_WELCOME_MESSAGES = "tigase#welcome_messages";
 	private static final String LOGGING_FORMAT_KEY = "logging_format";
 
 	public static enum Anonymity {
@@ -357,6 +358,8 @@ public class RoomConfig {
 		form.addField(Field.fieldListMulti(TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS, null,
 										   "Affiliations for which presence should be delivered",
 										   asStringTable(Affiliation.values()), asStringTable(Affiliation.values())));
+		form.addField(Field.fieldBoolean(TIGASE_ROOMCONFIG_WELCOME_MESSAGES, Boolean.TRUE,
+										 "Send welcome messages on room creation"));
 
 	}
 
@@ -399,6 +402,10 @@ public class RoomConfig {
 	 */
 	public boolean isRoomconfigPublicroom() {
 		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_PUBLICROOM_KEY), true);
+	}
+
+	public boolean isWelcomeMessageEnabled() {
+		return asBoolean(form.getAsBoolean(TIGASE_ROOMCONFIG_WELCOME_MESSAGES), true);
 	}
 
 	public void notifyConfigUpdate() {

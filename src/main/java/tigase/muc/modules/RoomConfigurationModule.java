@@ -29,10 +29,7 @@ import tigase.form.Field;
 import tigase.form.Form;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
-import tigase.muc.Affiliation;
-import tigase.muc.Role;
-import tigase.muc.Room;
-import tigase.muc.RoomConfig;
+import tigase.muc.*;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.modules.PresenceModule.PresenceWrapper;
@@ -58,13 +55,12 @@ public class RoomConfigurationModule
 
 	private static final Criteria CRIT = ElementCriteria.name("iq")
 			.add(ElementCriteria.name("query", "http://jabber.org/protocol/muc#owner"));
-
+	@Inject
+	private MUCConfig config;
 	@Inject
 	private HistoryProvider historyProvider;
-
 	@Inject(nullAllowed = false)
 	private GroupchatMessageModule messageModule;
-
 	@Inject
 	private IMucRepository repository;
 
@@ -282,17 +278,18 @@ public class RoomConfigurationModule
 
 					final RoomConfig oldConfig = room.getConfig().clone();
 
+					room.getConfig().copyFrom(form);
 					if (room.isRoomLocked()) {
 						room.setRoomLocked(false);
 						if (log.isLoggable(Level.FINE)) {
 							log.fine("Room " + room.getRoomJID() + " is now unlocked");
 						}
 						String nickname = room.getOccupantsNickname(senderJID);
-						if (nickname != null) {
+						if (nickname != null && config.isWelcomeMessagesEnabled() &&
+								room.getConfig().isWelcomeMessageEnabled()) {
 							sendMucMessage(room, nickname, "Room is now unlocked");
 						}
 					}
-					room.getConfig().copyFrom(form);
 
 					String[] admins = form.getAsStrings("muc#roomconfig_roomadmins");
 					if (admins != null) {
