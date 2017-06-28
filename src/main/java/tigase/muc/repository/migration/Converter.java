@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -114,6 +115,12 @@ public class Converter {
 				String subject = oldRepo.getSubject(roomJid);
 				Date subjectDate = oldRepo.getSubjectCreationDate(roomJid);
 				String subjectNick = oldRepo.getSubjectCreatorNickname(roomJid);
+
+				if (room == null || room.getConfig() == null) {
+					log.log(Level.WARNING, "skipping conversion of room with jid " + roomJid + " - room configuration is missing!");
+					oldRepo.destroyRoom(roomJid);
+					return;
+				}
 
 				if (newRepo.getRoom(roomJid) != null)
 					return;
