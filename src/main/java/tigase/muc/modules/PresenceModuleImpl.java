@@ -415,6 +415,7 @@ public class PresenceModuleImpl
 				roomCreated = true;
 				knownNickname = null;
 				room.getConfig().notifyConfigUpdate(true);
+				room.setNewSubject(null, nickName);
 			} else {
 				roomCreated = false;
 				knownNickname = room.getOccupantsNickname(senderJID);
@@ -614,8 +615,7 @@ public class PresenceModuleImpl
 			since = DateUtil.parse(hist.getAttributeStaticStr("since"));
 		}
 		sendHistoryToUser(room, senderJID, maxchars, maxstanzas, seconds, since);
-		if ((room.getSubject() != null) && (room.getSubjectChangerNick() != null) &&
-				(room.getSubjectChangeDate() != null)) {
+		if ((room.getSubjectChangerNick() != null) && (room.getSubjectChangeDate() != null)) {
 			Element message = new Element(Message.ELEM_NAME,
 										  new String[]{Packet.TYPE_ATT, Packet.FROM_ATT, Packet.TO_ATT, Packet.ID_ATT},
 										  new String[]{"groupchat",

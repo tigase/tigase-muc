@@ -79,6 +79,12 @@ expect all: {
     <status code="110"/>
   </x>
 </presence>
+
+<message type="groupchat"
+    from="darkcave@macbeth.shakespeare.lit/firstwitch"
+    to="hag66@shakespeare.lit/pda">
+  <subject/>
+</message>
 }
 
 
