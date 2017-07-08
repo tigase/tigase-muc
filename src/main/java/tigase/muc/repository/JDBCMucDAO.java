@@ -73,7 +73,7 @@ public class JDBCMucDAO
 				try {
 					stmt.setString(1, room.getRoomJID().toString());
 					stmt.setString(2, room.getCreatorJid().toString());
-					stmt.setTimestamp(3, new Timestamp(room.getCreationDate().getTime()));
+					data_repo.setTimestamp(stmt,3, new Timestamp(room.getCreationDate().getTime()));
 					stmt.setString(4, (roomName != null && !roomName.isEmpty()) ? roomName : null);
 					stmt.setString(5, room.getConfig().getAsElement().toString());
 
@@ -155,7 +155,7 @@ public class JDBCMucDAO
 
 					if (rs.next()) {
 						long roomId = rs.getLong(1);
-						Date date = rs.getTimestamp(2);
+						Date date = data_repo.getTimestamp(rs, 2);
 						BareJID creator = BareJID.bareJIDInstance(rs.getString(3));
 						RoomConfig roomConfig = new RoomConfig(roomJID);
 						roomConfig.readFromElement(parseConfigElement(rs.getString(4)));
@@ -166,7 +166,7 @@ public class JDBCMucDAO
 						String subjectCreator = rs.getString(6);
 
 						room.setNewSubject(subject, subjectCreator);
-						Date subjectDate = rs.getTimestamp(7);
+						Date subjectDate = data_repo.getTimestamp(rs, 7);
 						room.setSubjectChangeDate(subjectDate);
 
 						return room;
@@ -230,7 +230,7 @@ public class JDBCMucDAO
 				stmt.setLong(1, room.getId());
 				stmt.setString(2, subject);
 				stmt.setString(3, creatorNickname);
-				stmt.setTimestamp(4, new Timestamp(changeDate.getTime()));
+				data_repo.setTimestamp(stmt,4, new Timestamp(changeDate.getTime()));
 
 				stmt.execute();
 			}

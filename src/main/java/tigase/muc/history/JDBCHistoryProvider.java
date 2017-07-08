@@ -89,7 +89,7 @@ public class JDBCHistoryProvider implements HistoryProvider<DataRepository>, MAM
 
 			synchronized (st) {
 				st.setString(1, room.getRoomJID().toString());
-				st.setTimestamp(2, new Timestamp(time.getTime()));
+				data_repo.setTimestamp(st, 2, new Timestamp(time.getTime()));
 				st.setString(3, senderJid.toString());
 				st.setString(4, senderNickname);
 				st.setString(5, body);
@@ -187,12 +187,12 @@ public class JDBCHistoryProvider implements HistoryProvider<DataRepository>, MAM
 		int i = 1;
 		st.setString(i++, query.getComponentJID().getBareJID().toString());
 		if (query.getStart() != null) {
-			st.setTimestamp(i++, new Timestamp(query.getStart().getTime()));
+			data_repo.setTimestamp(st, i++, new Timestamp(query.getStart().getTime()));
 		} else {
 			st.setObject(i++, null);
 		}
 		if (query.getEnd() != null) {
-			st.setTimestamp(i++, new Timestamp(query.getEnd().getTime()));
+			data_repo.setTimestamp(st, i++, new Timestamp(query.getEnd().getTime()));
 		} else {
 			st.setObject(i++, null);
 		}
@@ -243,7 +243,7 @@ public class JDBCHistoryProvider implements HistoryProvider<DataRepository>, MAM
 				ResultSet rs = null;
 				try {
 					int i = setStatementParamsForMAM(st, query);
-					st.setTimestamp(i++, ts);
+					data_repo.setTimestamp(st, i++, ts);
 
 					rs = st.executeQuery();
 					if (rs.next()) {
@@ -290,7 +290,7 @@ public class JDBCHistoryProvider implements HistoryProvider<DataRepository>, MAM
 
 					while (rs.next()) {
 						String msgSenderNickname = rs.getString("sender_nickname");
-						Date msgTimestamp = rs.getTimestamp("ts");
+						Date msgTimestamp = data_repo.getTimestamp(rs, "ts");
 						String msgSenderJid = rs.getString("sender_jid");
 						String body = rs.getString("body");
 						String msg = rs.getString("msg");
@@ -340,7 +340,7 @@ public class JDBCHistoryProvider implements HistoryProvider<DataRepository>, MAM
 			try {
 				st.setString(1, room.getRoomJID().toString());
 				st.setInt(2, maxMessages);
-				st.setTimestamp(3, since);
+				data_repo.setTimestamp(st, 3, since);
 				rs = st.executeQuery();
 				processResultSet(room, senderJID, writer, rs);
 			} finally {
@@ -362,7 +362,7 @@ public class JDBCHistoryProvider implements HistoryProvider<DataRepository>, MAM
 
 		while (rs.next()) {
 			String msgSenderNickname = rs.getString("sender_nickname");
-			Date msgTimestamp = rs.getTimestamp("ts");
+			Date msgTimestamp = data_repo.getTimestamp(rs, "ts");
 			String msgSenderJid = rs.getString("sender_jid");
 			String body = rs.getString("body");
 			String msg = rs.getString("msg");
