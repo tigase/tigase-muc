@@ -292,18 +292,19 @@ public class MucDAO {
 	 */
 	public void setSubject(BareJID roomJID, String subject, String creatorNickname, Date changeDate)
 			throws RepositoryException {
-		try {
-			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/subject", SUBJECT_CREATOR_NICK_KEY,
-							   creatorNickname);
-			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/subject", SUBJECT_KEY, subject);
-			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/subject", SUBJECT_DATE_KEY,
-							   String.valueOf(changeDate.getTime()));
-			// TODO Auto-generated method stub
-		} catch (Exception e) {
-			e.printStackTrace();
-			throw new RepositoryException("Subject saving error", e);
+		if (changeDate != null) {
+			try {
+				repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/subject",
+								   SUBJECT_CREATOR_NICK_KEY, creatorNickname);
+				repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/subject", SUBJECT_KEY, subject);
+				repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/subject", SUBJECT_DATE_KEY,
+								   String.valueOf(changeDate.getTime()));
+				// TODO Auto-generated method stub
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw new RepositoryException("Subject saving error", e);
+			}
 		}
-
 	}
 
 	/**
