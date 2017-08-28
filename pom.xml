@@ -15,7 +15,7 @@
 	<groupId>tigase</groupId>
 	<artifactId>tigase-muc</artifactId>
 	<name>Tigase MUC</name>
-	<version>2.4.1</version>
+	<version>2.4.2-SNAPSHOT</version>
 	<packaging>bundle</packaging>
 	<description>Multi User Chat component for Tigase</description>
 	<url>https://projects.tigase.org/projects/tigase-muc</url>
@@ -47,7 +47,7 @@
 		<connection>scm:git:https://repository.tigase.org/git/tigase-muc.git</connection>
 		<developerConnection>scm:git:https://repository.tigase.org/git/tigase-muc.git</developerConnection>
 		<url>https://projects.tigase.org/projects/tigase-muc/repository</url>
-	  <tag>tigase-muc-2.4.1</tag>
+	  <tag>HEAD</tag>
   </scm>
 	<organization>
 		<name>Tigase</name>
