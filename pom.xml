@@ -139,6 +139,7 @@
                         </Implementation-Version>
                         <Implementation-Build>${gitVersion}/${buildNumber} (${maven.build.timestamp})
                         </Implementation-Build>
+                        <Tigase-Required-Dependencies>tigase.server=${project.dependencies[1].version}</Tigase-Required-Dependencies>
                         <Bundle-Activator>tigase.muc.Activator</Bundle-Activator>
                         <Export-Package>tigase.muc.*</Export-Package>
                     </instructions>
