@@ -39,7 +39,7 @@ public class JDBCHistoryProviderTest
 		extends AbstractHistoryProviderTest<DataRepository> {
 
 	private static final String PROJECT_ID = "muc";
-	private static final String VERSION = "2.5.0";
+	private static final String VERSION = "3.0.0";
 
 	@BeforeClass
 	public static void loadSchema() {
