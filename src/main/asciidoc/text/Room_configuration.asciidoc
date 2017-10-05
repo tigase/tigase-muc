@@ -1,7 +1,12 @@
-
+[[mUCRoomConfig]]
 = Room configuration options
 :author: Andrzej Wójcik
-:date: 2016-11-12 11:38
+:version: v2.0 October 2017. Reformatted for v8.0.0.
+
+:toc:
+:numbered:
+:website: http://tigase.net
+
 In addition to the default Room configuration options defined in the MUC specification Tigase offers following as well:
 
 Tigase MUC Options::

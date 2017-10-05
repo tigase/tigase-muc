@@ -1,7 +1,11 @@
-
+[[mUCDatabase]]
 = Database
 :author: Andrzej Wójcik
-:date: 2016-11-12 11:38
+:version: v2.0 October 2017. Reformatted for v8.0.0.
+
+:toc:
+:numbered:
+:website: http://tigase.net
 
 == Preparation of database
 Before you will be able to use Tigase MUC Component you need to initialize this database. We provide few schemas for this component for MySQL, PostgreSQL, SQLServer and DerbyDB.

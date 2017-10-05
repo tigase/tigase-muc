@@ -1,7 +1,11 @@
-
+[[mUCAnnouncement]]
 = Announcement
 :author: Andrzej Wójcik
-:date: 2016-11-12 11:38
+:version: v2.0 October 2017. Reformatted for v8.0.0.
+
+:toc:
+:numbered:
+:website: http://tigase.net
 
 == Major changes
 Tigase MUC component has undergone a few major changes to our code and structure. To continue to use Tigase MUC component, a few changes may be needed to be made to your systems. Please see them below:

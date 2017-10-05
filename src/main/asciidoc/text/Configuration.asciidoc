@@ -1,7 +1,11 @@
-
+[[mUCConfig]]
 = Configuration
 :author: Andrzej Wójcik
-:date: 2016-11-12 11:38
+:version: v2.0 October 2017. Reformatted for v8.0.0.
+
+:toc:
+:numbered:
+:website: http://tigase.net
 
 To enable Tigase MUC Component you need to add following block to `etc/init.properties` file:
 ----
