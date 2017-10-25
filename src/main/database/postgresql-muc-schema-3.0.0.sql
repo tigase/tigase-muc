@@ -366,3 +366,6 @@ end if;
 end$$;
 -- QUERY END:
 
+-- QUERY START:
+select TigSetComponentVersion('muc', '3.0.0');
+-- QUERY END:

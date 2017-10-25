@@ -399,3 +399,7 @@ call TigExecuteIf((select count(1) from information_schema.TABLES where TABLE_SC
 call TigExecuteIf((select count(1) from information_schema.TABLES where TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'muc_history'), '
     rename table muc_history to muc_history_old');
 -- QUERY END:
+
+-- QUERY START:
+call TigSetComponentVersion('muc', '3.0.0');
+-- QUERY END:

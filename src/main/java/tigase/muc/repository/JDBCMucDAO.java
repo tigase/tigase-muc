@@ -22,6 +22,8 @@ package tigase.muc.repository;
 
 import tigase.component.exceptions.RepositoryException;
 import tigase.db.DataRepository;
+import tigase.db.DataSource;
+import tigase.db.DataSourceAware;
 import tigase.db.Repository;
 import tigase.kernel.beans.Inject;
 import tigase.muc.*;
@@ -258,6 +260,9 @@ public class JDBCMucDAO
 
 	public void setDataSource(DataRepository dataSource) {
 		try {
+
+			dataSource.checkSchemaVersion( this );
+
 			initPreparedStatements(dataSource);
 		} catch (SQLException ex) {
 			new RuntimeException("Failed to initialize access to SQL database for PubSubDAOJDBC", ex);

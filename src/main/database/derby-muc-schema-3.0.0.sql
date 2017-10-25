@@ -201,3 +201,7 @@ create procedure Tig_MUC_MAM_GetMessagesCount(roomJid varchar(2049), "since" tim
     DYNAMIC RESULT SETS 1
     EXTERNAL NAME 'tigase.muc.repository.derby.StoredProcedures.tigMucMamGetMessagesCount';
 -- QUERY END:
+
+-- QUERY START:
+call TigSetComponentVersion('muc', '3.0.0');
+-- QUERY END:

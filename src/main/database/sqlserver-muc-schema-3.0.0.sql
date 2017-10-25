@@ -461,3 +461,8 @@ BEGIN
 END
 -- QUERY END:
 GO
+
+-- QUERY START:
+exec TigSetComponentVersion('muc', '3.0.0');
+-- QUERY END:
+GO
