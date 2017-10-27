@@ -22,7 +22,7 @@ import tigase.muc.MUCComponent;
 import tigase.server.ComponentInfo;
 import tigase.server.Packet;
 import tigase.sys.TigaseRuntime;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.JID;
 
 import java.util.List;
 import java.util.logging.Logger;

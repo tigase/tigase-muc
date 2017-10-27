@@ -11,8 +11,8 @@ package tigase.muc.cluster;
 import tigase.kernel.beans.Bean;
 import tigase.muc.*;
 import tigase.xml.Element;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
 
 import java.util.Collection;
 import java.util.Collections;

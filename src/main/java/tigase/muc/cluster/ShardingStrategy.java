@@ -17,8 +17,8 @@ import tigase.muc.repository.inmemory.InMemoryMucRepository;
 import tigase.server.Packet;
 import tigase.server.Priority;
 import tigase.xml.Element;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;

@@ -11,7 +11,7 @@ import tigase.cluster.api.ClusterControllerIfc;
 import tigase.kernel.beans.Initializable;
 import tigase.kernel.beans.UnregisterAware;
 import tigase.server.Packet;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.JID;
 
 import java.util.List;
 

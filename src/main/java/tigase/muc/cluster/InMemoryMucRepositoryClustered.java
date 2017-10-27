@@ -14,8 +14,8 @@ import tigase.muc.RoomConfig;
 import tigase.muc.repository.IMucRepository;
 import tigase.muc.repository.inmemory.InMemoryMucRepository;
 import tigase.xml.Element;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
 
 import java.util.Map;
 import java.util.Set;
