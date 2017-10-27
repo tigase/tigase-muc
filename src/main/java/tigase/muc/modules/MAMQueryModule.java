@@ -27,9 +27,9 @@ import tigase.kernel.beans.Inject;
 import tigase.muc.Room;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
-import tigase.util.TigaseStringprepException;
+import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xmpp.Authorization;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.JID;
 import tigase.xmpp.mam.modules.QueryModule;
 
 /**

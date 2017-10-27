@@ -24,7 +24,7 @@ package tigase.muc.logger;
 import java.util.Date;
 
 import tigase.muc.Room;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.JID;
 
 /**
  * @author bmalkow

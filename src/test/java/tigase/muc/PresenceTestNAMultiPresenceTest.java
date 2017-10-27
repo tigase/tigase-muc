@@ -35,9 +35,9 @@ import tigase.kernel.core.Kernel;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
 import tigase.test.junit.XMPPTestCase;
-import tigase.util.TigaseStringprepException;
+import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
-import tigase.xmpp.BareJID;
+import tigase.xmpp.jid.BareJID;
 
 import java.io.IOException;
 import java.util.ArrayList;

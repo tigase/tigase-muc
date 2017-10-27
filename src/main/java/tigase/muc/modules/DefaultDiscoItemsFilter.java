@@ -24,7 +24,7 @@ package tigase.muc.modules;
 import tigase.kernel.beans.Bean;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.JID;
 
 @Bean(name = "discoItemsFilter", active = true)
 public class DefaultDiscoItemsFilter implements DiscoItemsFilter {

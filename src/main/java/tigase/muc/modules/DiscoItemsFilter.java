@@ -22,7 +22,7 @@
 package tigase.muc.modules;
 
 import tigase.muc.Room;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.JID;
 
 public interface DiscoItemsFilter {
 

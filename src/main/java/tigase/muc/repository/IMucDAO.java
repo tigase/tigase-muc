@@ -26,7 +26,7 @@ import tigase.db.DataSourceAware;
 import tigase.muc.Affiliation;
 import tigase.muc.RoomConfig;
 import tigase.muc.RoomWithId;
-import tigase.xmpp.BareJID;
+import tigase.xmpp.jid.BareJID;
 
 import java.util.Date;
 import java.util.List;

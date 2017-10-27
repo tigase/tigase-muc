@@ -22,13 +22,11 @@ package tigase.muc.repository;
 
 import tigase.component.exceptions.RepositoryException;
 import tigase.db.DataRepository;
-import tigase.db.DataSource;
-import tigase.db.DataSourceAware;
 import tigase.db.Repository;
 import tigase.kernel.beans.Inject;
 import tigase.muc.*;
-import tigase.util.TigaseStringprepException;
-import tigase.xmpp.BareJID;
+import tigase.util.stringprep.TigaseStringprepException;
+import tigase.xmpp.jid.BareJID;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

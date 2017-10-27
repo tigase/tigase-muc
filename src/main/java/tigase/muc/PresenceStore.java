@@ -35,10 +35,10 @@ import java.util.logging.Logger;
 //~--- non-JDK imports --------------------------------------------------------
 
 import tigase.server.Packet;
-import tigase.util.TigaseStringprepException;
+import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
 
 /**
  * Class description

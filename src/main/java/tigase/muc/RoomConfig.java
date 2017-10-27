@@ -28,7 +28,7 @@ import tigase.form.Field;
 import tigase.form.Field.FieldType;
 import tigase.form.Form;
 import tigase.xml.Element;
-import tigase.xmpp.BareJID;
+import tigase.xmpp.jid.BareJID;
 
 import java.util.*;
 

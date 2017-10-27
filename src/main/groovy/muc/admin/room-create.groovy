@@ -11,9 +11,9 @@ import tigase.muc.RoomConfig
 import tigase.server.Command
 import tigase.server.Iq
 import tigase.server.Packet
-import tigase.util.TigaseStringprepException
+import tigase.util.stringprep.TigaseStringprepException
 import tigase.xml.Element
-import tigase.xmpp.BareJID
+import tigase.xmpp.jid.BareJID
 
 def ROOM_NAME_KEY = "room-name"
 

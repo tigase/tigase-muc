@@ -4,7 +4,7 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
 
-import tigase.util.DateTimeFormatter;
+import tigase.util.datetime.DateTimeFormatter;
 
 public class DateUtil {
 

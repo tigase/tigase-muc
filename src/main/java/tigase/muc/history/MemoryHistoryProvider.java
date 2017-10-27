@@ -28,16 +28,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 import tigase.component.PacketWriter;
-import tigase.db.DBInitException;
 import tigase.db.DataSource;
-import tigase.db.Repository;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig.Anonymity;
 import tigase.server.Packet;
 import tigase.xml.Element;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
 
 /**
  * @author bmalkow

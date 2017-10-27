@@ -8,7 +8,7 @@ import tigase.muc.Role;
 import tigase.muc.exceptions.MUCException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.JID;
 
 public class ModeratorModuleTest {
 

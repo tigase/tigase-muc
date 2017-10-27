@@ -24,7 +24,7 @@ package tigase.muc.history;
 import tigase.db.DataRepository;
 import tigase.muc.Room;
 import tigase.xml.Element;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.JID;
 
 import java.sql.SQLException;
 import java.sql.Statement;

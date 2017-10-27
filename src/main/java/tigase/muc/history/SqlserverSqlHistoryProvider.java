@@ -23,10 +23,9 @@ package tigase.muc.history;
 
 import tigase.component.PacketWriter;
 import tigase.db.DataRepository;
-import tigase.db.Repository;
 import tigase.muc.Room;
 import tigase.xml.Element;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.JID;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;

@@ -33,7 +33,7 @@ import tigase.muc.MUCComponent;
 import tigase.muc.RoomConfig;
 import tigase.muc.RoomWithId;
 import tigase.server.BasicComponent;
-import tigase.xmpp.BareJID;
+import tigase.xmpp.jid.BareJID;
 
 import java.util.Date;
 import java.util.List;

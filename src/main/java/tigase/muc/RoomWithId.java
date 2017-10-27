@@ -20,7 +20,7 @@
  */
 package tigase.muc;
 
-import tigase.xmpp.BareJID;
+import tigase.xmpp.jid.BareJID;
 
 import java.util.Date;
 

@@ -35,8 +35,8 @@ import tigase.muc.MUCComponent;
 import tigase.muc.MUCConfig;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
 
 /**
  * @author bmalkow

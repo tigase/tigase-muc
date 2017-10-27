@@ -25,8 +25,8 @@ import tigase.muc.Room;
 import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.xml.Element;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
 
 import java.util.Map;
 

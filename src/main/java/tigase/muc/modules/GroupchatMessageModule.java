@@ -36,11 +36,11 @@ import tigase.muc.history.HistoryProvider;
 import tigase.muc.logger.MucLogger;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
-import tigase.util.TigaseStringprepException;
+import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
 
 import java.nio.charset.Charset;
 import java.security.MessageDigest;

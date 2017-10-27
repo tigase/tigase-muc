@@ -27,7 +27,7 @@ import tigase.db.DataSourceAware;
 import tigase.kernel.beans.Bean;
 import tigase.muc.Room;
 import tigase.xml.Element;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.JID;
 
 import java.util.Date;
 

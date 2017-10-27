@@ -7,8 +7,8 @@ package muc.admin
 import tigase.server.Command
 import tigase.server.Iq
 import tigase.server.Packet
-import tigase.util.TigaseStringprepException
-import tigase.xmpp.BareJID
+import tigase.util.stringprep.TigaseStringprepException
+import tigase.xmpp.jid.BareJID
 
 def ROOM_NAME_KEY = "room-name"
 def REASON_KEY = "reason"

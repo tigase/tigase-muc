@@ -32,8 +32,8 @@ import tigase.db.DataSourceHelper;
 import tigase.db.RepositoryFactory;
 import tigase.kernel.core.Kernel;
 import tigase.muc.*;
-import tigase.xmpp.BareJID;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
 
 import java.util.Date;
 import java.util.HashMap;

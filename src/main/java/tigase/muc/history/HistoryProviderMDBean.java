@@ -37,7 +37,7 @@ import tigase.osgi.ModulesManagerImpl;
 import tigase.server.BasicComponent;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
-import tigase.xmpp.JID;
+import tigase.xmpp.jid.JID;
 import tigase.xmpp.mam.MAMRepository;
 import tigase.xmpp.mam.Query;
 import tigase.xmpp.mam.QueryImpl;
