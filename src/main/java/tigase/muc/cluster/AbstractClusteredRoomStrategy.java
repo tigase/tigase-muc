@@ -2,8 +2,7 @@
  * AbstractClusteredRoomStrategy.java
  *
  * Tigase Jabber/XMPP Server
- * Copyright (C) 2004-2014 "Tigase, Inc." <office@tigase.com>
- *
+ * Copyright (C) 2004-2017 "Tigase, Inc." <office@tigase.com>
  */
 
 package tigase.muc.cluster;

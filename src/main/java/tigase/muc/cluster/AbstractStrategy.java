@@ -1,4 +1,11 @@
 /*
+ * AbstractStrategy.java
+ *
+ * Tigase Jabber/XMPP Server
+ * Copyright (C) 2004-2017 "Tigase, Inc." <office@tigase.com>
+ */
+
+/*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
