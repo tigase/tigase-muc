@@ -15,45 +15,47 @@ import tigase.xmpp.jid.JID;
 import java.util.List;
 
 /**
- *
  * @author andrzej
  */
-public interface StrategyIfc extends Initializable, UnregisterAware {
-	
+public interface StrategyIfc
+		extends Initializable, UnregisterAware {
+
 	/**
 	 * Method called when new node connected
-	 * 
-	 * @param nodeJid 
+	 *
+	 * @param nodeJid
+	 *
 	 * @return true - if new node was added
 	 */
 	void nodeConnected(JID nodeJid);
-	
+
 	/**
 	 * Method called when node was disconnected
-	 * 
-	 * @param nodeJid 
+	 *
+	 * @param nodeJid
 	 */
 	void nodeDisconnected(JID nodeJid);
-	
+
 	/**
 	 * Setter used to set instance of cluster controller
-	 * 
-	 * @param cl_controller 
+	 *
+	 * @param cl_controller
 	 */
 	void setClusterController(ClusterControllerIfc cl_controller);
-	
+
 	/**
 	 * Setter used to pass instance of MUCComponentClustered
-	 * 
-	 * @param mucComponent 
+	 *
+	 * @param mucComponent
 	 */
 	void setMucComponentClustered(MUCComponentClustered mucComponent);
-	
+
 	/**
-	 * Method called when packet is received by component to preprocess packet
-	 * before/instead of passing it back to non clustered component
-	 * 
+	 * Method called when packet is received by component to preprocess packet before/instead of passing it back to non
+	 * clustered component
+	 *
 	 * @param packet
+	 *
 	 * @return true if packet was fully processed
 	 */
 	boolean processPacket(Packet packet);
@@ -66,13 +68,12 @@ public interface StrategyIfc extends Initializable, UnregisterAware {
 	List<JID> getNodesConnected();
 
 	/**
-	 * The method returns cluster nodes currently connected to the cluster 
-	 * including jid of this cluster node.
+	 * The method returns cluster nodes currently connected to the cluster including jid of this cluster node.
 	 *
 	 * @return List of cluster nodes currently connected to the cluster.
 	 */
-	List<JID> getNodesConnectedWithLocal();	
-	
+	List<JID> getNodesConnectedWithLocal();
+
 //	/**
 //	 * Retrieve JID of node which is hosting this room
 //	 * 
@@ -81,18 +82,19 @@ public interface StrategyIfc extends Initializable, UnregisterAware {
 //	 */
 //	JID getNodeForRoom(BareJID roomJid);
 //	
+
 	/**
 	 * Setter to pass instance of InMemoryMucRepositoryClustered
-	 * 
-	 * @param mucRepository 
+	 *
+	 * @param mucRepository
 	 */
 	void setMucRepository(InMemoryMucRepositoryClustered mucRepository);
-	
+
 	/**
 	 * Method called when component is started
 	 */
 	void start();
-	
+
 	/**
 	 * Method called when component is stopped
 	 */

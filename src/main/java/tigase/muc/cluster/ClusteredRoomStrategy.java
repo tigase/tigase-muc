@@ -29,24 +29,26 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- *
  * @author andrzej
  */
-public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
+public class ClusteredRoomStrategy
+		extends AbstractClusteredRoomStrategy {
 
 	private static final Logger log = Logger.getLogger(ClusteredRoomStrategy.class.getCanonicalName());
 
 	private static final String OCCUPANT_PRESENCE_CMD = "muc-occupant-presence-cmd";
 
 	@Override
-	public void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence, boolean newOccupant) {
+	public void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence,
+										  boolean newOccupant) {
 		List<JID> toNodes = getNodesConnected();
 		if (occupantJid != null && presence == null) {
-			presence = new Element("presence", new String[] { "type", "xmlns" },
-					new String[] { "unavailable", Packet.CLIENT_XMLNS });
+			presence = new Element("presence", new String[]{"type", "xmlns"},
+								   new String[]{"unavailable", Packet.CLIENT_XMLNS});
 		}
-		if (occupantJid == null)
+		if (occupantJid == null) {
 			occupantJid = JID.jidInstanceNS(presence.getAttributeStaticStr("from"));
+		}
 		Affiliation affiliation = room.getAffiliation(occupantJid.getBareJID());
 		Role role = room.getRole(nickname);
 
@@ -56,8 +58,9 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 		data.put("nickname", nickname);
 		data.put("affiliation", affiliation.name());
 		data.put("role", role.name());
-		if (newOccupant)
+		if (newOccupant) {
 			data.put("new-occupant", String.valueOf(newOccupant));
+		}
 
 		if (log.isLoggable(Level.FINEST)) {
 			StringBuilder buf = new StringBuilder(100);
@@ -67,8 +70,9 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 				}
 				buf.append(node.toString());
 			}
-			log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] that occupant {2} in room {3} changed presence = {4}",
-					new Object[] { room, buf, occupantJid, room, presence });
+			log.log(Level.FINEST,
+					"room = {0}, notifing nodes [{1}] that occupant {2} in room {3} changed presence = {4}",
+					new Object[]{room, buf, occupantJid, room, presence});
 		}
 
 		// cl_controller.sendToNodes(OCCUPANT_PRESENCE_CMD, data, presence,
@@ -76,7 +80,8 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 	}
 
 	@Bean(name = OCCUPANT_PRESENCE_CMD, parent = ClusteredRoomStrategy.class, active = true)
-	public static class OccupantChangedPresenceCmd extends CommandListenerAbstract {
+	public static class OccupantChangedPresenceCmd
+			extends CommandListenerAbstract {
 
 		@Inject
 		private PresenceModule presenceModule;
@@ -89,8 +94,8 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 		}
 
 		@Override
-		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data, Queue<Element> packets)
-				throws ClusterCommandException {
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data,
+								   Queue<Element> packets) throws ClusterCommandException {
 
 			try {
 				BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
@@ -102,9 +107,10 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 
 				if (log.isLoggable(Level.FINEST)) {
 					log.log(Level.FINEST,
-							"executig OccupantChangedPresenceCmd command for room = {0}, occupantJID = {1},"
-									+ "nickname: {2}, occupantAffiliation = {3}, occupantRole = {4}, newOccupant = {5} ",
-							new Object[] { roomJid, occupantJID, nickname, occupantAffiliation, occupantRole, newOccupant });
+							"executig OccupantChangedPresenceCmd command for room = {0}, occupantJID = {1}," +
+									"nickname: {2}, occupantAffiliation = {3}, occupantRole = {4}, newOccupant = {5} ",
+							new Object[]{roomJid, occupantJID, nickname, occupantAffiliation, occupantRole,
+										 newOccupant});
 				}
 
 				Room room = strategy.mucRepository.getRoom(roomJid);
@@ -113,9 +119,9 @@ public class ClusteredRoomStrategy extends AbstractClusteredRoomStrategy {
 						// we need to clone original packet as PresenceWrapper
 						// will modify original element!
 						Element presence = presenceOrig.clone();
-						PresenceModule.PresenceWrapper presenceWrapper = PresenceModule.PresenceWrapper.preparePresenceW(room,
-								destinationJID, presence, occupantJID.getBareJID(), Collections.singleton(occupantJID),
-								nickname, occupantAffiliation, occupantRole);
+						PresenceModule.PresenceWrapper presenceWrapper = PresenceModule.PresenceWrapper.preparePresenceW(
+								room, destinationJID, presence, occupantJID.getBareJID(),
+								Collections.singleton(occupantJID), nickname, occupantAffiliation, occupantRole);
 						if (!"unavailable".equals(presence.getAttributeStaticStr("type"))) {
 							PresenceModuleImpl.addCodes(presenceWrapper, false, nickname);
 						}

@@ -34,17 +34,17 @@ import java.util.logging.Logger;
 @Bean(name = "muc", parent = Kernel.class, active = true)
 @ConfigType(ConfigTypeEnum.DefaultMode)
 @ClusterModeRequired(active = true)
-public class MUCComponentClustered extends MUCComponent implements ClusteredComponentIfc {
+public class MUCComponentClustered
+		extends MUCComponent
+		implements ClusteredComponentIfc {
 
 	private static final Logger log = Logger.getLogger(MUCComponentClustered.class.getCanonicalName());
 
 	protected LicenceChecker licenceChecker;
-
+	private ClusterControllerIfc clusterController;
 	private ComponentInfo cmpInfo = null;
 	@Inject
 	private List<CommandListener> commandListeners;
-	private ClusterControllerIfc clusterController;
-
 	@Inject
 	private StrategyIfc strategy;
 
@@ -64,12 +64,6 @@ public class MUCComponentClustered extends MUCComponent implements ClusteredComp
 	@Override
 	public boolean addOutPacket(Packet packet) {
 		return super.addOutPacket(packet);
-	}
-
-	@Override
-	protected void onNodeConnected(JID jid) {
-		super.onNodeConnected(jid);
-		strategy.nodeConnected(jid);
 	}
 
 	@Override
@@ -154,6 +148,12 @@ public class MUCComponentClustered extends MUCComponent implements ClusteredComp
 		cmpInfo.getComponentData().put("MUCClusteringStrategy", (strategy != null) ? strategy.getClass() : null);
 
 		return cmpInfo;
+	}
+
+	@Override
+	protected void onNodeConnected(JID jid) {
+		super.onNodeConnected(jid);
+		strategy.nodeConnected(jid);
 	}
 
 }

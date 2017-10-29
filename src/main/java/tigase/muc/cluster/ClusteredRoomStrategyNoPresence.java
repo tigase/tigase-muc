@@ -31,7 +31,8 @@ import java.util.logging.Logger;
  *
  * @author Wojciech Kapcia
  */
-public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrategy {
+public class ClusteredRoomStrategyNoPresence
+		extends AbstractClusteredRoomStrategy {
 
 	private static final Logger log = Logger.getLogger(ClusteredRoomStrategyNoPresence.class.getCanonicalName());
 
@@ -40,11 +41,12 @@ public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrate
 	private static final String OCCUPANTS_SYNC_REQUEST_CMD = "request-occupants-sync";
 
 	@Override
-	public void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence, boolean newOccupant) {
+	public void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence,
+										  boolean newOccupant) {
 		List<JID> toNodes = getNodesConnected();
 		if (occupantJid != null && presence == null) {
-			presence = new Element("presence", new String[] { "type", "xmlns" },
-					new String[] { "unavailable", Packet.CLIENT_XMLNS });
+			presence = new Element("presence", new String[]{"type", "xmlns"},
+								   new String[]{"unavailable", Packet.CLIENT_XMLNS});
 		}
 		if (occupantJid == null) {
 			occupantJid = JID.jidInstanceNS(presence.getAttributeStaticStr("from"));
@@ -70,14 +72,23 @@ public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrate
 				}
 				buf.append(node.toString());
 			}
-			log.log(Level.FINEST, "room = {0}, notifing nodes [{1}] that occupant {2} in room {3} changed presence = {4}",
-					new Object[] { room.getRoomJID(), buf, occupantJid, room.getRoomJID(), presence });
+			log.log(Level.FINEST,
+					"room = {0}, notifing nodes [{1}] that occupant {2} in room {3} changed presence = {4}",
+					new Object[]{room.getRoomJID(), buf, occupantJid, room.getRoomJID(), presence});
 		}
 
 	}
 
 	@Override
 	protected void requestSync(JID nodeJid) {
+	}
+
+	@Override
+	protected void sendRemoteOccupantRemovalOnDisconnect(Room room, JID occupant, String occupantNick,
+														 boolean sendRemovalToOccupant) {
+		super.sendRemoteOccupantRemovalOnDisconnect(room, occupant, occupantNick, sendRemovalToOccupant);
+		Map<String, Occupant> occupants = getRemoteOccupants(room);
+		occupants.remove(occupantNick);
 	}
 
 	private ConcurrentMap<String, Occupant> getRemoteOccupants(Room room) {
@@ -98,24 +109,17 @@ public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrate
 		return occupants;
 	}
 
-	@Override
-	protected void sendRemoteOccupantRemovalOnDisconnect(Room room, JID occupant, String occupantNick,
-			boolean sendRemovalToOccupant) {
-		super.sendRemoteOccupantRemovalOnDisconnect(room, occupant, occupantNick, sendRemovalToOccupant);
-		Map<String, Occupant> occupants = getRemoteOccupants(room);
-		occupants.remove(occupantNick);
-	}
-
 	@Bean(name = OCCUPANT_PRESENCE_CMD, parent = ClusteredRoomStrategyNoPresence.class, active = true)
-	public static class OccupantChangedPresenceCmd extends CommandListenerAbstract {
+	public static class OccupantChangedPresenceCmd
+			extends CommandListenerAbstract {
 
 		public OccupantChangedPresenceCmd() {
 			super(OCCUPANT_PRESENCE_CMD, Priority.HIGH);
 		}
 
 		@Override
-		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data, Queue<Element> packets)
-				throws ClusterCommandException {
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data,
+								   Queue<Element> packets) throws ClusterCommandException {
 
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			JID occupantJID = JID.jidInstanceNS(data.get("userId"));
@@ -124,16 +128,16 @@ public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrate
 			Role occupantRole = Role.valueOf(data.get("role"));
 			boolean newOccupant = data.containsKey("new-occupant");
 
-			log.log(Level.FINEST,
-					"executig OccupantChangedPresenceCmd command for room = {0}, occupantJID = {1},"
-							+ "nickname: {2}, occupantAffiliation = {3}, occupantRole = {4}, newOccupant = {5} ",
-					new Object[] { roomJid.toString(), occupantJID.toString(), nickname, occupantAffiliation, occupantRole,
-							newOccupant });
+			log.log(Level.FINEST, "executig OccupantChangedPresenceCmd command for room = {0}, occupantJID = {1}," +
+							"nickname: {2}, occupantAffiliation = {3}, occupantRole = {4}, newOccupant = {5} ",
+					new Object[]{roomJid.toString(), occupantJID.toString(), nickname, occupantAffiliation,
+								 occupantRole, newOccupant});
 		}
 	}
 
 	@Bean(name = OCCUPANTS_SYNC_REQUEST_CMD, parent = ClusteredRoomStrategyNoPresence.class, active = true)
-	public static class OccupantsSyncRequestCmd extends CommandListenerAbstract {
+	public static class OccupantsSyncRequestCmd
+			extends CommandListenerAbstract {
 
 		@Inject
 		private InMemoryMucRepositoryClustered mucRepository;
@@ -143,22 +147,22 @@ public class ClusteredRoomStrategyNoPresence extends AbstractClusteredRoomStrate
 		}
 
 		@Override
-		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data, Queue<Element> packets)
-				throws ClusterCommandException {
+		public void executeCommand(JID fromNode, Set<JID> visitedNodes, Map<String, String> data,
+								   Queue<Element> packets) throws ClusterCommandException {
 			List<Room> rooms = new ArrayList(mucRepository.getActiveRooms().values());
 			log.log(Level.FINEST, "executig OccupantsSyncRequestCmd command fromNode = {0}, rooms = {1}",
-					new Object[] { fromNode.toString(), rooms.toString() });
+					new Object[]{fromNode.toString(), rooms.toString()});
 		}
 
 	}
 
 	private class Occupant {
 
-		private JID occupantJID;
-		private String nickname;
 		private Affiliation affiliation;
-		private Role role;
+		private String nickname;
+		private JID occupantJID;
 		private Element presence;
+		private Role role;
 
 		public Occupant() {
 		}

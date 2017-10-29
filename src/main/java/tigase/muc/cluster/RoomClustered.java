@@ -20,24 +20,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- *
  * @author andrzej
  */
-public class RoomClustered<ID> extends RoomWithId<ID> {
-
-	@Bean(name = "roomFactory", parent = MUCComponentClustered.class, active = true, exportable = true)
-	public static class RoomFactoryImpl implements RoomFactory {
-
-		@Override
-		public <T> RoomWithId<T> newInstance(T id, RoomConfig rc, Date creationDate, BareJID creatorJid) {
-			return new RoomClustered(id, rc, creationDate, creatorJid);
-		}
-
-	};
+public class RoomClustered<ID>
+		extends RoomWithId<ID> {
 
 	private final ConcurrentMap<JID, String> remoteNicknames = new ConcurrentHashMap<JID, String>();
-	private final ConcurrentMap<String, Occupant> remoteOccupants = new ConcurrentHashMap<String, Occupant>();
 
+	;
+	private final ConcurrentMap<String, Occupant> remoteOccupants = new ConcurrentHashMap<String, Occupant>();
 	protected RoomClustered(ID id, RoomConfig rc, Date creationDate, BareJID creatorJid) {
 		super(id, rc, creationDate, creatorJid);
 	}
@@ -45,8 +36,9 @@ public class RoomClustered<ID> extends RoomWithId<ID> {
 	public Collection<Occupant> getRemoteOccupants() {
 		return remoteOccupants.values();
 	}
-	
-	public void addRemoteOccupant(String nickname, JID occupantJID, Role role, Affiliation affiliation, Element presence) {			
+
+	public void addRemoteOccupant(String nickname, JID occupantJID, Role role, Affiliation affiliation,
+								  Element presence) {
 		if (remoteNicknames.containsKey(occupantJID) && !nickname.equals(remoteNicknames.get(occupantJID))) {
 			removeRemoteOccupant(occupantJID);
 		}
@@ -74,11 +66,13 @@ public class RoomClustered<ID> extends RoomWithId<ID> {
 
 	public void removeRemoteOccupant(JID occupantJID) {
 		String nickname = remoteNicknames.remove(occupantJID);
-		if (nickname == null) 
+		if (nickname == null) {
 			return;
+		}
 		Occupant occupant = remoteOccupants.get(nickname);
-		if (occupant == null)
+		if (occupant == null) {
 			return;
+		}
 		occupant.removeOccupant(occupantJID);
 		if (occupant.isEmpty()) {
 			synchronized (occupant) {
@@ -88,12 +82,12 @@ public class RoomClustered<ID> extends RoomWithId<ID> {
 			}
 		}
 	}
-	
+
 	@Override
 	public int getOccupantsCount() {
 		return super.getOccupantsCount() + remoteOccupants.size();
 	}
-	
+
 	@Override
 	public Collection<JID> getOccupantsJidsByNickname(String nickname) {
 		Collection<JID> jids = super.getOccupantsJidsByNickname(nickname);
@@ -105,7 +99,7 @@ public class RoomClustered<ID> extends RoomWithId<ID> {
 		}
 		return jids;
 	}
-	
+
 	@Override
 	public boolean removeOccupant(JID jid) {
 		String nickname = getOccupantsNickname(jid);
@@ -124,7 +118,7 @@ public class RoomClustered<ID> extends RoomWithId<ID> {
 		}
 		return affil;
 	}
-	
+
 	@Override
 	public Role getRole(String nickname) {
 		Role role = super.getRole(nickname);
@@ -135,8 +129,8 @@ public class RoomClustered<ID> extends RoomWithId<ID> {
 			}
 		}
 		return role;
-	}	
-	
+	}
+
 	@Override
 	public Element getLastPresenceCopy(BareJID occupantJid, String nickname) {
 		PresenceStore.Presence p1 = presences.getBestPresenceInt(occupantJid);
@@ -146,6 +140,17 @@ public class RoomClustered<ID> extends RoomWithId<ID> {
 		int p2p = p2 == null ? -1 : p2.getPriority();
 		Element presence = (p1 == null && p2 == null) ? null : (p1p < p2p ? p2.getElement() : p1.getElement());
 		return presence == null ? null : presence.clone();
+	}
+
+	@Bean(name = "roomFactory", parent = MUCComponentClustered.class, active = true, exportable = true)
+	public static class RoomFactoryImpl
+			implements RoomFactory {
+
+		@Override
+		public <T> RoomWithId<T> newInstance(T id, RoomConfig rc, Date creationDate, BareJID creatorJid) {
+			return new RoomClustered(id, rc, creationDate, creatorJid);
+		}
+
 	}
 
 }

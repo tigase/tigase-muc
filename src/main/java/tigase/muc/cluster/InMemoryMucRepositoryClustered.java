@@ -22,19 +22,14 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 
 /**
- *
  * @author andrzej
  */
 @Bean(name = IMucRepository.ID, parent = MUCComponentClustered.class, active = true)
-public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
+public class InMemoryMucRepositoryClustered
+		extends InMemoryMucRepository {
 
 	private RoomListener roomListener;
 	private Room.RoomOccupantListener roomOccupantListener;
-
-	@Override
-	protected void addToAllRooms(BareJID roomJid, InternalRoom internalRoom) {
-		super.addToAllRooms(roomJid, internalRoom);
-	}
 
 	@Override
 	public Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException {
@@ -75,8 +70,9 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 	public Room getRoom(BareJID roomJID) throws RepositoryException {
 		boolean isNewInstance = !this.getActiveRooms().containsKey(roomJID);
 		Room room = super.getRoom(roomJID);
-		if (isNewInstance && room != null)
+		if (isNewInstance && room != null) {
 			addListenersToNewRoom(room);
+		}
 		return room;
 	}
 
@@ -87,6 +83,29 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 		if (roomListener != null) {
 			roomListener.onLeaveRoom(room);
 		}
+	}
+
+	public void leaveRoomWithoutListener(Room room) {
+		super.leaveRoom(room);
+	}
+
+	public void setRoomListener(RoomListener roomListener) {
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST, "setting room listener to {0}", roomListener);
+		}
+		this.roomListener = roomListener;
+	}
+
+	public void setRoomOccupantListener(Room.RoomOccupantListener roomOccupantListener) {
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST, "setting room occupants listener to " + roomListener);
+		}
+		this.roomOccupantListener = roomOccupantListener;
+	}
+
+	@Override
+	protected void addToAllRooms(BareJID roomJid, InternalRoom internalRoom) {
+		super.addToAllRooms(roomJid, internalRoom);
 	}
 
 	protected void removeFromAllRooms(BareJID roomJid, Predicate<InternalRoom> predicate) {
@@ -101,24 +120,6 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 	@Override
 	protected void removeFromAllRooms(BareJID roomJid) {
 		super.removeFromAllRooms(roomJid);
-	}
-
-	public void leaveRoomWithoutListener(Room room) {
-		super.leaveRoom(room);
-	}
-	
-	public void setRoomListener(RoomListener roomListener) {
-		if (log.isLoggable(Level.FINEST)) {
-			log.log(Level.FINEST, "setting room listener to {0}", roomListener);
-		}
-		this.roomListener = roomListener;
-	}
-
-	public void setRoomOccupantListener(Room.RoomOccupantListener roomOccupantListener) {
-		if (log.isLoggable(Level.FINEST)) {
-			log.log(Level.FINEST, "setting room occupants listener to " + roomListener);
-		}
-		this.roomOccupantListener = roomOccupantListener;
 	}
 
 	protected void roomConfigChanged(RoomConfig roomConfig, Set<String> modifiedVars) {
@@ -144,7 +145,7 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 
 		Room room = rooms.get(roomJid);
 		if (room != null) {
-			for (Map.Entry<String,String> e : values.entrySet()) {
+			for (Map.Entry<String, String> e : values.entrySet()) {
 				String[] val = null;
 				if (e.getValue() != null) {
 					val = e.getValue().split("\\|");
@@ -167,6 +168,7 @@ public class InMemoryMucRepositoryClustered extends InMemoryMucRepository {
 	}
 
 	public interface RoomListener {
+
 		void onLeaveRoom(Room room);
 
 		void onRoomChanged(RoomConfig roomConfig, Set<String> modifiedVars);

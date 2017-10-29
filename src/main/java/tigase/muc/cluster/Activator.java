@@ -10,9 +10,9 @@ package tigase.muc.cluster;
 import tigase.osgi.AbstractActivator;
 
 /**
- *
  * @author andrzej
  */
-public class Activator extends AbstractActivator {
+public class Activator
+		extends AbstractActivator {
 
 }
