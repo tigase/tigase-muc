@@ -19,6 +19,11 @@
  */
 package tigase.muc;
 
+import tigase.server.Packet;
+import tigase.xml.Element;
+import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -26,16 +31,11 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import tigase.server.Packet;
-import tigase.xml.Element;
-import tigase.xmpp.jid.BareJID;
-import tigase.xmpp.jid.JID;
-
 /**
- *
  * @author Wojciech Kapcia <wojciech.kapcia@tigase.org>
  */
-public class PresenceFiltered implements Room.RoomOccupantListener, Room.RoomListener {
+public class PresenceFiltered
+		implements Room.RoomOccupantListener, Room.RoomListener {
 
 	protected static final Logger log = Logger.getLogger(PresenceFiltered.class.getName());
 	private final Collection<BareJID> occupantsPresenceFiltered = new ConcurrentSkipListSet<>();
@@ -83,22 +83,23 @@ public class PresenceFiltered implements Room.RoomOccupantListener, Room.RoomLis
 	@Override
 	public void onOccupantAdded(Room room, JID occupantJid) {
 		if (log.isLoggable(Level.FINEST)) {
-			log.log(Level.FINEST,
-					"Adding: " + occupantJid + " to occupantsPresenceFiltered: " + Arrays.asList(occupantsPresenceFiltered));
+			log.log(Level.FINEST, "Adding: " + occupantJid + " to occupantsPresenceFiltered: " +
+					Arrays.asList(occupantsPresenceFiltered));
 		}
 		occupantsPresenceFiltered.add(occupantJid.getBareJID());
 	}
 
 	@Override
-	public void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence, boolean newOccupant) {
+	public void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence,
+										  boolean newOccupant) {
 		// we don't need to do anything here
 	}
 
 	@Override
 	public void onOccupantRemoved(Room room, JID occupantJid) {
 		if (log.isLoggable(Level.FINEST)) {
-			log.log(Level.FINEST,
-					"Removing: " + occupantJid + " to occupantsPresenceFiltered: " + Arrays.asList(occupantsPresenceFiltered));
+			log.log(Level.FINEST, "Removing: " + occupantJid + " to occupantsPresenceFiltered: " +
+					Arrays.asList(occupantsPresenceFiltered));
 		}
 		occupantsPresenceFiltered.remove(occupantJid.getBareJID());
 	}
@@ -106,8 +107,8 @@ public class PresenceFiltered implements Room.RoomOccupantListener, Room.RoomLis
 	@Override
 	public void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation) {
 		if (log.isLoggable(Level.FINEST)) {
-			log.log(Level.FINEST, "Modifying affiliation of: " + jid + " on occupantsPresenceFiltered: "
-					+ Arrays.asList(occupantsPresenceFiltered));
+			log.log(Level.FINEST, "Modifying affiliation of: " + jid + " on occupantsPresenceFiltered: " +
+					Arrays.asList(occupantsPresenceFiltered));
 		}
 		Collection<Affiliation> presenceFilterFrom = room.getConfig().getPresenceFilteredAffiliations();
 		if (presenceFilterFrom.contains(room.getAffiliation(jid))) {

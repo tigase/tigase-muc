@@ -32,23 +32,15 @@ import java.util.logging.Logger;
 
 /**
  * @author bmalkow
- *
  */
-public class MockMucRepository implements IMucRepository {
-
-	private class InternalRoom {
-		boolean isPublic = true;
-	}
+public class MockMucRepository
+		implements IMucRepository {
 
 	private final Map<BareJID, InternalRoom> allRooms = new HashMap<BareJID, InternalRoom>();
-
-	private RoomConfig defaultConfig = new RoomConfig(null);
-
-	protected Logger log = Logger.getLogger(this.getClass().getName());
-
 	private final RoomConfigListener roomConfigListener;
-
 	private final HashMap<BareJID, Room> rooms = new HashMap<BareJID, Room>();
+	protected Logger log = Logger.getLogger(this.getClass().getName());
+	private RoomConfig defaultConfig = new RoomConfig(null);
 
 	public MockMucRepository() throws RepositoryException {
 		this.roomConfigListener = new RoomConfig.RoomConfigListener() {
@@ -66,8 +58,7 @@ public class MockMucRepository implements IMucRepository {
 					if (modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PERSISTENTROOM_KEY)) {
 						if (roomConfig.isPersistentRoom()) {
 							System.out.println("now is PERSISTENT");
-							@SuppressWarnings("unused")
-							final Room room = getRoom(roomConfig.getRoomJID());
+							@SuppressWarnings("unused") final Room room = getRoom(roomConfig.getRoomJID());
 							// dao.createRoom(room);
 						} else {
 							System.out.println("now is NOT! PERSISTENT");
@@ -84,9 +75,9 @@ public class MockMucRepository implements IMucRepository {
 			@Override
 			public void onInitialRoomConfig(RoomConfig roomConfig) {
 				try {
-					if ( roomConfig.isRoomconfigPublicroom() ){
-						InternalRoom ir = allRooms.get( roomConfig.getRoomJID() );
-						if ( ir != null ){
+					if (roomConfig.isRoomconfigPublicroom()) {
+						InternalRoom ir = allRooms.get(roomConfig.getRoomJID());
+						if (ir != null) {
 							ir.isPublic = roomConfig.isRoomconfigPublicroom();
 						}
 					}
@@ -159,7 +150,7 @@ public class MockMucRepository implements IMucRepository {
 				result.add(entry.getKey());
 			}
 		}
-		return result.toArray(new BareJID[] {});
+		return result.toArray(new BareJID[]{});
 	}
 
 	@Override
@@ -225,5 +216,10 @@ public class MockMucRepository implements IMucRepository {
 	@Override
 	public void updateDefaultRoomConfig(RoomConfig config) throws RepositoryException {
 		throw new RuntimeException("NOT IMPLEMENTED");
+	}
+
+	private class InternalRoom {
+
+		boolean isPublic = true;
 	}
 }

@@ -22,5 +22,7 @@ package tigase.muc;
 
 import tigase.osgi.AbstractActivator;
 
-public class Activator extends AbstractActivator {
+public class Activator
+		extends AbstractActivator {
+
 }

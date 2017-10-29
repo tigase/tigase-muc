@@ -34,86 +34,26 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class Room implements RoomConfig.RoomConfigListener {
-
-	public static interface RoomFactory {
-
-		public <T> RoomWithId<T> newInstance(T id, RoomConfig rc, Date creationDate, BareJID creatorJid);
-
-	}
-
-	public static interface RoomListener {
-		void onChangeSubject(Room room, String nick, String newSubject, Date changeDate);
-
-		void onMessageToOccupants(Room room, JID from, Packet msg);
-
-		void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation);
-	}
-
-	public static interface RoomOccupantListener {
-		void onOccupantAdded(Room room, JID occupantJid);
-
-		void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence, boolean newOccupant);
-
-		void onOccupantRemoved(Room room, JID occupantJid);
-	}
-
-	@Bean(name = "roomFactory", parent = MUCComponent.class, active = true, exportable = true)
-	public static class RoomFactoryImpl implements RoomFactory {
-
-		@Override
-		public <T> RoomWithId<T> newInstance(T id, RoomConfig rc, Date creationDate, BareJID creatorJid) {
-			return new RoomWithId(id, rc, creationDate, creatorJid);
-		}
-
-	};
+public class Room
+		implements RoomConfig.RoomConfigListener {
 
 	public static final String FILTERED_OCCUPANTS_COLLECTION = "filtered_occupants_collection";
-
-	private static class OccupantEntry {
-
-		public BareJID jid;
-
-		private final Set<JID> jids = new HashSet<JID>();
-
-		private String nickname;
-
-		private Role role = Role.none;
-
-		@Override
-		public String toString() {
-			return "[" + nickname + "; " + role + "; " + jid + "; " + jids.toString() + "]";
-		}
-	}
-
 	protected static final Logger log = Logger.getLogger(Room.class.getName());
-
-	private final Map<BareJID, Affiliation> affiliations = new ConcurrentHashMap<BareJID, Affiliation>();
-
-	private final RoomConfig config;
-
-	private final Date creationDate;
-
-	private final BareJID creatorJid;
-
-	private final List<RoomListener> listeners = new CopyOnWriteArrayList<RoomListener>();
-
-	private final List<Room.RoomOccupantListener> occupantListeners = new CopyOnWriteArrayList<Room.RoomOccupantListener>();
-
-	private final Map<String, OccupantEntry> occupants = new ConcurrentHashMap<String, OccupantEntry>();
-
 	protected final PresenceFiltered presenceFiltered;
-
 	protected final PresenceStore presences = new PresenceStore();
 
+	;
+	private final Map<BareJID, Affiliation> affiliations = new ConcurrentHashMap<BareJID, Affiliation>();
+	private final RoomConfig config;
+	private final Date creationDate;
+	private final BareJID creatorJid;
+	private final List<RoomListener> listeners = new CopyOnWriteArrayList<RoomListener>();
+	private final List<Room.RoomOccupantListener> occupantListeners = new CopyOnWriteArrayList<Room.RoomOccupantListener>();
+	private final Map<String, OccupantEntry> occupants = new ConcurrentHashMap<String, OccupantEntry>();
 	private final Map<String, Object> roomCustomData = new ConcurrentHashMap<String, Object>();
-
 	private boolean roomLocked;
-
 	private String subject;
-
 	private Date subjectChangeDate;
-
 	private String subjectChangerNick;
 
 	protected Room(RoomConfig rc, Date creationDate, BareJID creatorJid) {
@@ -140,8 +80,8 @@ public class Room implements RoomConfig.RoomConfigListener {
 		this.listeners.add(listener);
 	}
 
-	public void addOccupantByJid(JID senderJid, String nickName, Role role, Element pe) throws
-																						TigaseStringprepException {
+	public void addOccupantByJid(JID senderJid, String nickName, Role role, Element pe)
+			throws TigaseStringprepException {
 		OccupantEntry entry = this.occupants.get(nickName);
 		this.presences.update(pe);
 		if (entry == null) {
@@ -152,7 +92,7 @@ public class Room implements RoomConfig.RoomConfigListener {
 
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST, "Room {0}. Created OccupantEntry for {1}, nickname={2}",
-						new Object[] { config.getRoomJID(), senderJid, nickName });
+						new Object[]{config.getRoomJID(), senderJid, nickName});
 			}
 		}
 
@@ -164,14 +104,14 @@ public class Room implements RoomConfig.RoomConfigListener {
 
 		if (log.isLoggable(Level.FINEST)) {
 			log.log(Level.FINEST, "Room {0}. {1} occupant {2} ({3}) to room with role={4}; filtering enabled: {5}",
-					new Object[] { config.getRoomJID(), (added ? "Added" : "Updated"), senderJid, nickName, role,
-								   config.isPresenceFilterEnabled() });
+					new Object[]{config.getRoomJID(), (added ? "Added" : "Updated"), senderJid, nickName, role,
+								 config.isPresenceFilterEnabled()});
 		}
 
 		if (added) {
-			if (!config.isPresenceFilterEnabled()
-					|| (config.isPresenceFilterEnabled() && (!config.getPresenceFilteredAffiliations().isEmpty()
-					&& config.getPresenceFilteredAffiliations().contains(getAffiliation(senderJid.getBareJID()))))) {
+			if (!config.isPresenceFilterEnabled() || (config.isPresenceFilterEnabled() &&
+					(!config.getPresenceFilteredAffiliations().isEmpty() && config.getPresenceFilteredAffiliations()
+							.contains(getAffiliation(senderJid.getBareJID()))))) {
 				fireOnOccupantAdded(senderJid);
 				fireOnOccupantChangedPresence(senderJid, nickName, pe, true);
 			}
@@ -191,44 +131,14 @@ public class Room implements RoomConfig.RoomConfigListener {
 		this.occupants.put(nickName, occ);
 
 		if (log.isLoggable(Level.FINEST)) {
-			log.finest("Room " + config.getRoomJID() + ". Occupant " + senderJid + " changed nickname from " + oldNickname
-							   + " to " + nickName);
+			log.finest("Room " + config.getRoomJID() + ". Occupant " + senderJid + " changed nickname from " +
+							   oldNickname + " to " + nickName);
 		}
 	}
 
 	public void fireOnMessageToOccupants(JID fromJID, Packet msg) {
 		for (Room.RoomListener listener : this.listeners) {
 			listener.onMessageToOccupants(this, fromJID, msg);
-		}
-	}
-
-	private void fireOnOccupantAdded(JID occupantJid) {
-		for (Room.RoomOccupantListener listener : this.occupantListeners) {
-			listener.onOccupantAdded(this, occupantJid);
-		}
-	}
-
-	private void fireOnOccupantChangedPresence(JID occupantJid, String nickname, Element cp, boolean newOccupant) {
-		for (Room.RoomOccupantListener listener : this.occupantListeners) {
-			listener.onOccupantChangedPresence(this, occupantJid, nickname, cp, newOccupant);
-		}
-	}
-
-	private void fireOnOccupantRemoved(JID occupantJid) {
-		for (Room.RoomOccupantListener listener : this.occupantListeners) {
-			listener.onOccupantRemoved(this, occupantJid);
-		}
-	}
-
-	private void fireOnSetAffiliation(BareJID jid, Affiliation affiliation) {
-		for (Room.RoomListener listener : this.listeners) {
-			listener.onSetAffiliation(this, jid, affiliation);
-		}
-	}
-
-	private void fireOnSetSubject(String nick, String subject, Date changeDate) {
-		for (Room.RoomListener listener : this.listeners) {
-			listener.onChangeSubject(this, nick, subject, changeDate);
 		}
 	}
 
@@ -255,23 +165,17 @@ public class Room implements RoomConfig.RoomConfigListener {
 		return this.affiliations.keySet();
 	}
 
+	public void setAffiliations(Map<BareJID, Affiliation> affiliations) {
+		this.affiliations.clear();
+		this.affiliations.putAll(affiliations);
+	}
+
 	public Collection<JID> getAllOccupantsJID() {
 		if (config.isPresenceFilterEnabled()) {
 			return presenceFiltered.getOccupantsPresenceFilteredJIDs();
 		} else {
 			return presences.getAllKnownJIDs();
 		}
-	}
-
-	private OccupantEntry getBySenderJid(JID sender) {
-		for (Map.Entry<String, OccupantEntry> e : occupants.entrySet()) {
-			synchronized (e.getValue().jids) {
-				if (e.getValue().jids.contains(sender)) {
-					return e.getValue();
-				}
-			}
-		}
-		return null;
 	}
 
 	public RoomConfig getConfig() {
@@ -329,16 +233,18 @@ public class Room implements RoomConfig.RoomConfigListener {
 
 	public Collection<JID> getOccupantsJidsByNickname(final String nickname) {
 		OccupantEntry entry = this.occupants.get(nickname);
-		if (entry == null)
+		if (entry == null) {
 			return new ArrayList<JID>();
+		}
 
 		return Collections.unmodifiableCollection(new ConcurrentSkipListSet(entry.jids));
 	}
 
 	public String getOccupantsNickname(JID jid) {
 		OccupantEntry e = getBySenderJid(jid);
-		if (e == null)
+		if (e == null) {
 			return null;
+		}
 
 		String nickname = e.nickname;
 
@@ -366,11 +272,13 @@ public class Room implements RoomConfig.RoomConfigListener {
 	}
 
 	public Role getRole(String nickname) {
-		if (nickname == null)
+		if (nickname == null) {
 			return Role.none;
+		}
 		OccupantEntry entry = this.occupants.get(nickname);
-		if (entry == null)
+		if (entry == null) {
 			return Role.none;
+		}
 		return entry.role == null ? Role.none : entry.role;
 	}
 
@@ -390,6 +298,10 @@ public class Room implements RoomConfig.RoomConfigListener {
 		return subjectChangeDate;
 	}
 
+	public void setSubjectChangeDate(Date subjectChangeDate) {
+		this.subjectChangeDate = subjectChangeDate;
+	}
+
 	public String getSubjectChangerNick() {
 		return subjectChangerNick;
 	}
@@ -400,6 +312,10 @@ public class Room implements RoomConfig.RoomConfigListener {
 
 	public boolean isRoomLocked() {
 		return roomLocked;
+	}
+
+	public void setRoomLocked(boolean roomLocked) {
+		this.roomLocked = roomLocked;
 	}
 
 	@Override
@@ -416,10 +332,9 @@ public class Room implements RoomConfig.RoomConfigListener {
 	}
 
 	/**
-	 *
 	 * @param jid
-	 * @return <code>true</code> if no more JIDs assigned to nickname. In other
-	 *         words: nickname is removed
+	 *
+	 * @return <code>true</code> if no more JIDs assigned to nickname. In other words: nickname is removed
 	 */
 	public boolean removeOccupant(JID jid) {
 		OccupantEntry e = getBySenderJid(jid);
@@ -458,11 +373,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 		}
 	}
 
-	public void setAffiliations(Map<BareJID, Affiliation> affiliations) {
-		this.affiliations.clear();
-		this.affiliations.putAll(affiliations);
-	}
-
 	public void setNewAffiliation(BareJID user, Affiliation affiliation) {
 		this.affiliations.put(user, affiliation);
 	}
@@ -490,14 +400,6 @@ public class Room implements RoomConfig.RoomConfigListener {
 		}
 	}
 
-	public void setRoomLocked(boolean roomLocked) {
-		this.roomLocked = roomLocked;
-	}
-
-	public void setSubjectChangeDate(Date subjectChangeDate) {
-		this.subjectChangeDate = subjectChangeDate;
-	}
-
 	public void updatePresenceByJid(JID jid, String nickname, Element cp) throws TigaseStringprepException {
 		if (cp == null) {
 			this.presences.remove(jid);
@@ -512,6 +414,97 @@ public class Room implements RoomConfig.RoomConfigListener {
 		}
 
 		fireOnOccupantChangedPresence(jid, nickname, cp, false);
+	}
+
+	private void fireOnOccupantAdded(JID occupantJid) {
+		for (Room.RoomOccupantListener listener : this.occupantListeners) {
+			listener.onOccupantAdded(this, occupantJid);
+		}
+	}
+
+	private void fireOnOccupantChangedPresence(JID occupantJid, String nickname, Element cp, boolean newOccupant) {
+		for (Room.RoomOccupantListener listener : this.occupantListeners) {
+			listener.onOccupantChangedPresence(this, occupantJid, nickname, cp, newOccupant);
+		}
+	}
+
+	private void fireOnOccupantRemoved(JID occupantJid) {
+		for (Room.RoomOccupantListener listener : this.occupantListeners) {
+			listener.onOccupantRemoved(this, occupantJid);
+		}
+	}
+
+	private void fireOnSetAffiliation(BareJID jid, Affiliation affiliation) {
+		for (Room.RoomListener listener : this.listeners) {
+			listener.onSetAffiliation(this, jid, affiliation);
+		}
+	}
+
+	private void fireOnSetSubject(String nick, String subject, Date changeDate) {
+		for (Room.RoomListener listener : this.listeners) {
+			listener.onChangeSubject(this, nick, subject, changeDate);
+		}
+	}
+
+	private OccupantEntry getBySenderJid(JID sender) {
+		for (Map.Entry<String, OccupantEntry> e : occupants.entrySet()) {
+			synchronized (e.getValue().jids) {
+				if (e.getValue().jids.contains(sender)) {
+					return e.getValue();
+				}
+			}
+		}
+		return null;
+	}
+
+	public static interface RoomFactory {
+
+		public <T> RoomWithId<T> newInstance(T id, RoomConfig rc, Date creationDate, BareJID creatorJid);
+
+	}
+
+	public static interface RoomListener {
+
+		void onChangeSubject(Room room, String nick, String newSubject, Date changeDate);
+
+		void onMessageToOccupants(Room room, JID from, Packet msg);
+
+		void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation);
+	}
+
+	public static interface RoomOccupantListener {
+
+		void onOccupantAdded(Room room, JID occupantJid);
+
+		void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence,
+									   boolean newOccupant);
+
+		void onOccupantRemoved(Room room, JID occupantJid);
+	}
+
+	private static class OccupantEntry {
+
+		private final Set<JID> jids = new HashSet<JID>();
+		public BareJID jid;
+		private String nickname;
+
+		private Role role = Role.none;
+
+		@Override
+		public String toString() {
+			return "[" + nickname + "; " + role + "; " + jid + "; " + jids.toString() + "]";
+		}
+	}
+
+	@Bean(name = "roomFactory", parent = MUCComponent.class, active = true, exportable = true)
+	public static class RoomFactoryImpl
+			implements RoomFactory {
+
+		@Override
+		public <T> RoomWithId<T> newInstance(T id, RoomConfig rc, Date creationDate, BareJID creatorJid) {
+			return new RoomWithId(id, rc, creationDate, creatorJid);
+		}
+
 	}
 
 }

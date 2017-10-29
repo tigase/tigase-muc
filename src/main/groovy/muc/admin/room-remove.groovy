@@ -40,26 +40,27 @@ def reason = Command.getFieldValue(p, REASON_KEY)
 def alternateJid = Command.getFieldValue(p, ALTERNATE_JID_KEY)
 
 if (roomName == null) {
-    // No data to process, let's ask user to provide
-    // a list of words
-    def res = (Packet) p.commandResult(Command.DataType.form)
-    Command.addFieldValue(res, ROOM_NAME_KEY, "", "text-single", "Room name")
-    Command.addFieldValue(res, REASON_KEY, "", "text-single", "Reason")
-    Command.addFieldValue(res, ALTERNATE_JID_KEY, "", "jid-single", "Alternate room")
-    return res
+	// No data to process, let's ask user to provide
+	// a list of words
+	def res = (Packet) p.commandResult(Command.DataType.form)
+	Command.addFieldValue(res, ROOM_NAME_KEY, "", "text-single", "Room name")
+	Command.addFieldValue(res, REASON_KEY, "", "text-single", "Reason")
+	Command.addFieldValue(res, ALTERNATE_JID_KEY, "", "jid-single", "Alternate room")
+	return res
 }
 
 if (roomName != null) {
-    BareJID jid;
-    try {
-        jid = BareJID.bareJIDInstance(roomName + "@" + p.getStanzaTo().getBareJID().getDomain());
-    } catch (TigaseStringprepException e) {
-        jid = BareJID.bareJIDInstance(roomName);
-    }
+	BareJID jid;
+	try {
+		jid = BareJID.bareJIDInstance(roomName + "@" + p.getStanzaTo().getBareJID().getDomain());
+	} catch (TigaseStringprepException e) {
+		jid = BareJID.bareJIDInstance(roomName);
+	}
 
-    def room = mucRepository.getRoom(jid)
-    if (room == null)
-        return "Room " + jid + " doesn't exists"
-    ownerModule.destroy(room, alternateJid, reason);
-    return "Room " + room.getRoomJID() + " removed";
+	def room = mucRepository.getRoom(jid)
+	if (room == null) {
+		return "Room " + jid + " doesn't exists"
+	}
+	ownerModule.destroy(room, alternateJid, reason);
+	return "Room " + room.getRoomJID() + " removed";
 }

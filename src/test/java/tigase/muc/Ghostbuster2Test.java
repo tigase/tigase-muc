@@ -28,9 +28,9 @@ import tigase.server.ReceiverTimeoutHandler;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.PacketErrorTypeException;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
-import tigase.xmpp.PacketErrorTypeException;
 
 import java.lang.reflect.Field;
 import java.util.Date;
@@ -89,12 +89,16 @@ public class Ghostbuster2Test {
 					if (timeouts.get() && value % 3 == 0) {
 						handler.timeOutExpired(packet);
 					} else {
-						Packet response = Authorization.SERVICE_UNAVAILABLE.getResponseMessage(packet, "Service not available.", true);
+						Packet response = Authorization.SERVICE_UNAVAILABLE.getResponseMessage(packet,
+																							   "Service not available.",
+																							   true);
 						handler.responseReceived(packet, response);
 					}
 				} else {
 					if (value % 3 == 0) {
-						Packet response = Authorization.FEATURE_NOT_IMPLEMENTED.getResponseMessage(packet, "Feature not implemented", true);
+						Packet response = Authorization.FEATURE_NOT_IMPLEMENTED.getResponseMessage(packet,
+																								   "Feature not implemented",
+																								   true);
 						handler.responseReceived(packet, response);
 					} else {
 						handler.responseReceived(packet, packet.okResult((Element) null, 0));
@@ -168,6 +172,10 @@ public class Ghostbuster2Test {
 		f.set(ghostbuster2, mucRepository);
 	}
 
+	private interface PacketHandler {
+
+		void handle(Packet packet, ReceiverTimeoutHandler handler) throws PacketErrorTypeException;
+	}
 
 	private class MUCComponent
 			extends tigase.muc.MUCComponent {
@@ -186,10 +194,5 @@ public class Ghostbuster2Test {
 			return true;
 		}
 
-	}
-
-	private interface PacketHandler {
-
-		void handle(Packet packet, ReceiverTimeoutHandler handler) throws PacketErrorTypeException;
 	}
 }

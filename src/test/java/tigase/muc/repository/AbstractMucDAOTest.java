@@ -47,10 +47,14 @@ import static org.junit.Assert.*;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public abstract class AbstractMucDAOTest<DS extends DataSource> {
 
-	protected static String uri = System.getProperty("testDbUri");
-
+	protected static JID adminJID = JID.jidInstanceNS(UUID.randomUUID().toString(), "test.local",
+													  UUID.randomUUID().toString());
+	protected static Date creationDate = null;
+	protected static JID creatorJID = JID.jidInstanceNS(UUID.randomUUID().toString(), "test.local",
+														UUID.randomUUID().toString());
 	protected static String emoji = "\uD83D\uDE97\uD83D\uDCA9\uD83D\uDE21";
-
+	protected static BareJID roomJID = BareJID.bareJIDInstanceNS(UUID.randomUUID().toString(), "muc.test.local");
+	protected static String uri = System.getProperty("testDbUri");
 	@ClassRule
 	public static TestRule rule = new TestRule() {
 		@Override
@@ -66,23 +70,11 @@ public abstract class AbstractMucDAOTest<DS extends DataSource> {
 			return stmnt;
 		}
 	};
-	
 	protected boolean checkEmoji = true;
-	protected DS dataSource;
 	protected IMucDAO dao;
+	protected DS dataSource;
 	protected Kernel kernel;
 	protected Room.RoomFactory roomFactory;
-
-	protected static BareJID roomJID = BareJID.bareJIDInstanceNS(UUID.randomUUID().toString(), "muc.test.local");
-	protected static JID creatorJID = JID.jidInstanceNS(UUID.randomUUID().toString(), "test.local", UUID.randomUUID().toString());
-	protected static Date creationDate = null;
-	protected static JID adminJID = JID.jidInstanceNS(UUID.randomUUID().toString(), "test.local", UUID.randomUUID().toString());
-
-	protected DS prepareDataSource() throws DBInitException, IllegalAccessException, InstantiationException {
-		DataSource dataSource = RepositoryFactory.getRepoClass(DataSource.class, uri).newInstance();
-		dataSource.initRepository(uri, new HashMap<>());
-		return (DS) dataSource;
-	}
 
 	@Before
 	public void setup() throws RepositoryException, DBInitException, IllegalAccessException, InstantiationException {
@@ -218,5 +210,11 @@ public abstract class AbstractMucDAOTest<DS extends DataSource> {
 		dao.destroyRoom(roomJID);
 		assertFalse(dao.getRoomsJIDList().contains(roomJID));
 		assertNull(dao.getRoom(roomJID));
+	}
+
+	protected DS prepareDataSource() throws DBInitException, IllegalAccessException, InstantiationException {
+		DataSource dataSource = RepositoryFactory.getRepoClass(DataSource.class, uri).newInstance();
+		dataSource.initRepository(uri, new HashMap<>());
+		return (DS) dataSource;
 	}
 }

@@ -35,25 +35,19 @@ import java.util.logging.Logger;
 
 /**
  * @author bmalkow
- *
  */
-public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
+public class SqlserverSqlHistoryProvider
+		extends AbstractJDBCHistoryProvider {
 
 	public static final String ADD_MESSAGE_QUERY_VAL = "insert into muc_history (room_name, event_type, timestamp, sender_jid, sender_nickname, body, public_event, msg) values (?, 1, ?, ?, ?, ?, ?, ?)";
-
-	private static final String CREATE_MUC_HISTORY_TABLE_VAL = "create table muc_history ("
-			+ "room_name nvarchar(128) NOT NULL,\n" + "event_type int, \n" + "timestamp bigint,\n"
-			+ "sender_jid nvarchar(2049),\n" + "sender_nickname nvarchar(128),\n" + "body nvarchar(max),\n" + "public_event bit,\n "
-			+ "msg nvarchar(max) " + ")";
-
 	public static final String DELETE_MESSAGES_QUERY_VAL = "delete from muc_history where room_name=?";
-
 	public static final String GET_MESSAGES_MAXSTANZAS_QUERY_VAL = "select room_name, event_type, timestamp, sender_jid, sender_nickname, body, msg from (select top (?) * from muc_history where room_name=? order by timestamp desc  ) AS t order by t.timestamp";
-
 	public static final String GET_MESSAGES_SINCE_QUERY_VAL = "select room_name, event_type, timestamp, sender_jid, sender_nickname, body, msg from (select top (?) * from muc_history where room_name= ? and timestamp >= ? order by timestamp desc  ) AS t order by t.timestamp";
-
 	public static final String CHECK_TEXT_FIELD_INVALID_TYPES = "select 1 from [INFORMATION_SCHEMA].[COLUMNS] where [TABLE_NAME] = 'muc_history' and ([COLUMN_NAME] = 'body' or [COLUMN_NAME] = 'msg') and [DATA_TYPE] = 'TEXT' and [TABLE_CATALOG] = DB_NAME()";
-
+	private static final String CREATE_MUC_HISTORY_TABLE_VAL =
+			"create table muc_history (" + "room_name nvarchar(128) NOT NULL,\n" + "event_type int, \n" +
+					"timestamp bigint,\n" + "sender_jid nvarchar(2049),\n" + "sender_nickname nvarchar(128),\n" +
+					"body nvarchar(max),\n" + "public_event bit,\n " + "msg nvarchar(max) " + ")";
 	private Logger log = Logger.getLogger(this.getClass().getName());
 
 	/**
@@ -77,15 +71,16 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 
 	/** {@inheritDoc} */
 	@Override
-	public void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname, Date time) {
+	public void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname,
+								 Date time) {
 		// TODO Auto-generated method stub
 
 	}
 
 	/** {@inheritDoc} */
 	@Override
-	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
-			PacketWriter writer) {
+	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds,
+								   Date since, PacketWriter writer) {
 		final String roomJID = room.getRoomJID().toString();
 
 		int maxMessages = room.getConfig().getMaxHistory();
@@ -93,10 +88,12 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 			ResultSet rs = null;
 			if (since != null) {
 				if (log.isLoggable(Level.FINEST)) {
-					log.finest("Using SINCE selector: roomJID=" + roomJID + ", since=" + since.getTime() + " (" + since + ")");
+					log.finest(
+							"Using SINCE selector: roomJID=" + roomJID + ", since=" + since.getTime() + " (" + since +
+									")");
 				}
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
-						GET_MESSAGES_SINCE_QUERY_KEY);
+																		   GET_MESSAGES_SINCE_QUERY_KEY);
 				synchronized (st) {
 					try {
 						st.setInt(1, maxMessages);
@@ -113,7 +110,7 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 					log.finest("Using MAXSTANZAS selector: roomJID=" + roomJID + ", maxstanzas=" + maxstanzas);
 				}
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
-						GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
+																		   GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
 				synchronized (st) {
 					try {
 						st.setInt(1, Math.min(maxstanzas, maxMessages));
@@ -130,7 +127,7 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 					log.finest("Using SECONDS selector: roomJID=" + roomJID + ", seconds=" + seconds);
 				}
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
-						GET_MESSAGES_SINCE_QUERY_KEY);
+																		   GET_MESSAGES_SINCE_QUERY_KEY);
 				synchronized (st) {
 					try {
 						st.setInt(1, maxMessages);
@@ -147,13 +144,14 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 					log.finest("Using DEFAULT selector: roomJID=" + roomJID);
 				}
 				PreparedStatement st = dataRepository.getPreparedStatement(senderJID.getBareJID(),
-						GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
+																		   GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
 				synchronized (st) {
 					try {
 						st.setInt(1, maxMessages);
 						st.setString(2, roomJID);
-						System.out.println("getHistoryMessages: " + st.toString() + " max " + maxMessages + " roomJID "
-								+ roomJID + " || \t " + GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
+						System.out.println(
+								"getHistoryMessages: " + st.toString() + " max " + maxMessages + " roomJID " + roomJID +
+										" || \t " + GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
 						rs = st.executeQuery();
 						processResultSet(room, senderJID, writer, rs);
 					} finally {
@@ -163,8 +161,9 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 			}
 
 		} catch (Exception e) {
-			if (log.isLoggable(Level.SEVERE))
+			if (log.isLoggable(Level.SEVERE)) {
 				log.log(Level.SEVERE, "Can't get history", e);
+			}
 			throw new RuntimeException(e);
 		}
 	}
@@ -176,18 +175,21 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 			internalInit(dataRepository);
 		} catch (SQLException e) {
 			e.printStackTrace();
-			if (log.isLoggable(Level.WARNING))
+			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, "Initializing problem", e);
+			}
 			try {
-				if (log.isLoggable(Level.INFO))
+				if (log.isLoggable(Level.INFO)) {
 					log.info("Trying to create tables: " + CREATE_MUC_HISTORY_TABLE_VAL);
+				}
 				Statement st = dataRepository.createStatement(null);
 				st.execute(CREATE_MUC_HISTORY_TABLE_VAL);
 
 				internalInit(dataRepository);
 			} catch (SQLException e1) {
-				if (log.isLoggable(Level.WARNING))
+				if (log.isLoggable(Level.WARNING)) {
 					log.log(Level.WARNING, "Can't initialize muc history", e1);
+				}
 				throw new RuntimeException(e1);
 			}
 		}
@@ -211,10 +213,12 @@ public class SqlserverSqlHistoryProvider extends AbstractJDBCHistoryProvider {
 				stmt.execute("alter table [dbo].[muc_history] alter column body nvarchar(MAX)");
 			}
 		} finally {
-			if (rs != null)
+			if (rs != null) {
 				rs.close();
-			if (stmt != null)
+			}
+			if (stmt != null) {
 				stmt.close();
+			}
 		}
 
 		dataRepository.initPreparedStatement(ADD_MESSAGE_QUERY_KEY, ADD_MESSAGE_QUERY_VAL);

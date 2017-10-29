@@ -20,11 +20,11 @@
 
 package tigase.muc;
 
+import tigase.util.datetime.DateTimeFormatter;
+
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
-
-import tigase.util.datetime.DateTimeFormatter;
 
 public class DateUtil {
 
@@ -38,6 +38,7 @@ public class DateUtil {
 	 * Used only in jabber:x:delivery
 	 *
 	 * @param date
+	 *
 	 * @return
 	 */
 	public static String formatOld(final Date date) {

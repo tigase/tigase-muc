@@ -19,12 +19,6 @@
  */
 package tigase.muc.history;
 
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
-
 import tigase.component.PacketWriter;
 import tigase.db.DataSource;
 import tigase.muc.Affiliation;
@@ -35,25 +29,19 @@ import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+
 /**
  * @author bmalkow
- *
  */
-public class MemoryHistoryProvider extends AbstractHistoryProvider {
-
-	private static class HItem {
-		String body;
-		/**
-		 * whole stanza
-		 */
-		String msg;
-		JID senderJid;
-		String senderNickname;
-		Date timestamp;
-	}
+public class MemoryHistoryProvider
+		extends AbstractHistoryProvider {
 
 	private final Map<BareJID, LinkedList<HItem>> history = new ConcurrentHashMap<BareJID, LinkedList<HItem>>();
-
 	private int maxSize = 256;
 
 	/**
@@ -93,7 +81,8 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 	}
 
 	@Override
-	public void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname, Date time) {
+	public void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname,
+								 Date time) {
 	}
 
 	@Override
@@ -102,8 +91,8 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 	}
 
 	@Override
-	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
-			PacketWriter writer) {
+	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds,
+								   Date since, PacketWriter writer) {
 		LinkedList<HItem> stanzas = this.history.get(room.getRoomJID());
 		if (stanzas == null) {
 			stanzas = new LinkedList<HItem>();
@@ -115,33 +104,38 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 		for (HItem item : stanzas) {
 
 			if (since != null) {
-				if (item.timestamp.before(since))
+				if (item.timestamp.before(since)) {
 					continue;
+				}
 			} else if (maxstanzas != null) {
-				if (c >= maxstanzas)
+				if (c >= maxstanzas) {
 					break;
+				}
 			} else if (seconds != null) {
-				if (item.timestamp.getTime() < now.getTime() - seconds * 1000)
+				if (item.timestamp.getTime() < now.getTime() - seconds * 1000) {
 					continue;
+				}
 			} else {
-				if (c >= 25)
+				if (c >= 25) {
 					break;
+				}
 			}
 
 			Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID());
-			boolean addRealJids = room.getConfig().getRoomAnonymity() == Anonymity.nonanonymous
-					|| room.getConfig().getRoomAnonymity() == Anonymity.semianonymous
-							&& (recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
+			boolean addRealJids = room.getConfig().getRoomAnonymity() == Anonymity.nonanonymous ||
+					room.getConfig().getRoomAnonymity() == Anonymity.semianonymous &&
+							(recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
 
 			try {
 				Packet message = createMessage(room.getRoomJID(), senderJID, item.senderNickname, item.msg, item.body,
-						item.senderJid.toString(), addRealJids, item.timestamp);
+											   item.senderJid.toString(), addRealJids, item.timestamp);
 
 				writer.write(message);
 				++c;
 			} catch (Exception e) {
-				if (log.isLoggable(Level.SEVERE))
+				if (log.isLoggable(Level.SEVERE)) {
 					log.log(Level.SEVERE, "Can't get history", e);
+				}
 				throw new RuntimeException(e);
 			}
 		}
@@ -160,6 +154,18 @@ public class MemoryHistoryProvider extends AbstractHistoryProvider {
 	@Override
 	public void removeHistory(Room room) {
 		this.history.remove(room.getRoomJID());
+	}
+
+	private static class HItem {
+
+		String body;
+		/**
+		 * whole stanza
+		 */
+		String msg;
+		JID senderJid;
+		String senderNickname;
+		Date timestamp;
 	}
 
 }

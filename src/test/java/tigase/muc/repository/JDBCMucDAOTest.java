@@ -34,10 +34,34 @@ import java.util.Arrays;
 /**
  * Created by andrzej on 15.10.2016.
  */
-public class JDBCMucDAOTest extends AbstractMucDAOTest<DataRepository> {
+public class JDBCMucDAOTest
+		extends AbstractMucDAOTest<DataRepository> {
 
 	private static final String PROJECT_ID = "muc";
 	private static final String VERSION = "3.0.0";
+
+	@AfterClass
+	public static void cleanDerby() {
+		if (uri.contains("jdbc:derby:")) {
+			File f = new File("derby_test");
+			if (f.exists()) {
+				try (Connection conn = DriverManager.getConnection(uri + ";shutdown=true")) {
+					conn.close();
+				} catch (SQLException e) {
+					//e.printStackTrace();
+				}
+				if (f.listFiles() != null) {
+					Arrays.asList(f.listFiles()).forEach(f2 -> {
+						if (f2.listFiles() != null) {
+							Arrays.asList(f2.listFiles()).forEach(f3 -> f3.delete());
+						}
+						f2.delete();
+					});
+				}
+				f.delete();
+			}
+		}
+	}
 
 	@BeforeClass
 	public static void loadSchema() {
@@ -51,29 +75,6 @@ public class JDBCMucDAOTest extends AbstractMucDAOTest<DataRepository> {
 			loader.validateDBExists();
 			Assert.assertEquals(SchemaLoader.Result.ok, loader.loadSchema(PROJECT_ID, VERSION));
 			loader.shutdown();
-		}
-	}
-
-	@AfterClass
-	public static void cleanDerby() {
-		if (uri.contains("jdbc:derby:")) {
-			File f = new File("derby_test");
-			if (f.exists()) {
-				try ( Connection conn = DriverManager.getConnection(uri + ";shutdown=true" ) ) {
-					conn.close();
-				} catch ( SQLException e ) {
-					//e.printStackTrace();
-				}
-				if (f.listFiles() != null) {
-					Arrays.asList(f.listFiles()).forEach(f2 -> {
-						if (f2.listFiles() != null) {
-							Arrays.asList(f2.listFiles()).forEach(f3 -> f3.delete());
-						}
-						f2.delete();
-					});
-				}
-				f.delete();
-			}
 		}
 	}
 

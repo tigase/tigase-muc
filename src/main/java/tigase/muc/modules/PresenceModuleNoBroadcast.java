@@ -38,19 +38,17 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Class for MucPresenceModule that strips down generated presence stanzas to
- * bare minimum - only sends back presence to user that joined the room for
- * compatibility reasons.
+ * Class for MucPresenceModule that strips down generated presence stanzas to bare minimum - only sends back presence to
+ * user that joined the room for compatibility reasons.
  *
  * @author wojtek
  */
 @Bean(name = PresenceModuleNoBroadcast.ID, active = true)
-public class PresenceModuleNoBroadcast extends PresenceModuleImpl {
-
-	private static final Criteria CRIT = ElementCriteria.name("presence");
+public class PresenceModuleNoBroadcast
+		extends PresenceModuleImpl {
 
 	protected static final Logger log = Logger.getLogger(PresenceModuleNoBroadcast.class.getName());
-
+	private static final Criteria CRIT = ElementCriteria.name("presence");
 	@Inject
 	private MUCConfig config;
 
@@ -80,24 +78,31 @@ public class PresenceModuleNoBroadcast extends PresenceModuleImpl {
 
 		if (config.isMultiItemMode()) {
 			final PresenceWrapper selfPresence = PresenceWrapper.preparePresenceW(room, senderJID, presenceElement,
-					senderJID.getBareJID(), occupantJIDs, leavingNickname, leavingAffiliation, leavingRole);
+																				  senderJID.getBareJID(), occupantJIDs,
+																				  leavingNickname, leavingAffiliation,
+																				  leavingRole);
 			write(selfPresence.getPacket());
 		} else {
 			Collection<JID> z = new ArrayList<JID>(1);
 			z.add(senderJID);
 
 			final PresenceWrapper selfPresence = PresenceWrapper.preparePresenceW(room, senderJID, presenceElement,
-					senderJID.getBareJID(), z, leavingNickname, leavingAffiliation, leavingRole);
+																				  senderJID.getBareJID(), z,
+																				  leavingNickname, leavingAffiliation,
+																				  leavingRole);
 			write(selfPresence.getPacket());
 		}
 
 		if (room.getOccupantsCount() == 0) {
 			if ((historyProvider != null) && !room.getConfig().isPersistentRoom()) {
-				if (log.isLoggable(Level.FINE))
+				if (log.isLoggable(Level.FINE)) {
 					log.fine("Removing history of room " + room.getRoomJID());
+				}
 				historyProvider.removeHistory(room);
-			} else if (log.isLoggable(Level.FINE))
-				log.fine("Cannot remove history of room " + room.getRoomJID() + " because history provider is not available.");
+			} else if (log.isLoggable(Level.FINE)) {
+				log.fine("Cannot remove history of room " + room.getRoomJID() +
+								 " because history provider is not available.");
+			}
 			repository.leaveRoom(room);
 
 			Element emptyRoomEvent = new Element("EmptyRoom", new String[]{"xmlns"}, new String[]{"tigase:events:muc"});
@@ -117,6 +122,11 @@ public class PresenceModuleNoBroadcast extends PresenceModuleImpl {
 	}
 
 	@Override
+	public void sendPresencesToNewOccupant(Room room, JID senderJID) throws TigaseStringprepException {
+		// do nothing
+	}
+
+	@Override
 	protected void processExit(Room room, Element presenceElement, JID senderJID)
 			throws MUCException, TigaseStringprepException {
 		super.processExit(room, presenceElement, senderJID);
@@ -124,18 +134,13 @@ public class PresenceModuleNoBroadcast extends PresenceModuleImpl {
 
 	@Override
 	protected void sendPresenceToAllOccupants(final Element $presence, Room room, JID senderJID, boolean newRoomCreated,
-			String newNickName) throws TigaseStringprepException {
+											  String newNickName) throws TigaseStringprepException {
 
 		// send presence only back to the joining user
 		PresenceWrapper presence = super.preparePresence(senderJID, $presence.clone(), room, senderJID, newRoomCreated,
-				newNickName);
+														 newNickName);
 		write(presence.getPacket());
 
-	}
-
-	@Override
-	public void sendPresencesToNewOccupant(Room room, JID senderJID) throws TigaseStringprepException {
-		// do nothing
 	}
 
 }

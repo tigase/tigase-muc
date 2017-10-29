@@ -34,9 +34,9 @@ import tigase.server.Packet;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.StanzaType;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
-import tigase.xmpp.StanzaType;
 
 import java.util.List;
 
@@ -53,6 +53,74 @@ public class MediatedInvitationModule
 						 .add(new Or(ElementCriteria.name("invite"), ElementCriteria.name("decline"))));
 	@Inject
 	private IMucRepository repository;
+
+	/**
+	 * Method description
+	 *
+	 * @return
+	 */
+	@Override
+	public String[] getFeatures() {
+		return null;
+	}
+
+	/**
+	 * Method description
+	 *
+	 * @return
+	 */
+	@Override
+	public Criteria getModuleCriteria() {
+		return CRIT;
+	}
+
+	/**
+	 * Method description
+	 *
+	 * @param element
+	 *
+	 * @throws MUCException
+	 */
+	@Override
+	public void process(Packet element) throws MUCException {
+		try {
+			final JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
+			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
+
+			if (getNicknameFromJid(JID.jidInstance(element.getAttributeStaticStr(Packet.TO_ATT))) != null) {
+				throw new MUCException(Authorization.BAD_REQUEST);
+			}
+
+			final Room room = repository.getRoom(roomJID);
+			if (room == null) {
+				throw new MUCException(Authorization.ITEM_NOT_FOUND,
+									   "Room " + roomJID + " does not exists on this server.");
+			}
+
+			final String nickName = room.getOccupantsNickname(senderJID);
+			final Role senderRole = room.getRole(nickName);
+			final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID());
+
+			final Element x = element.getElement().getChild("x", "http://jabber.org/protocol/muc#user");
+
+			List<Element> ch = x.getChildren();
+			for (Element child : ch) {
+				if (element.getType() == StanzaType.error && "invite".equals(child.getName())) {
+					processInvitationErrorResponse(child, element.getErrorCondition(), roomJID, senderJID);
+				} else if ("invite".equals(child.getName()) && element.getType() != StanzaType.error) {
+					doInvite(element, child, room, roomJID, senderJID, senderRole, senderAffiliation);
+				} else if ("decline".equals(child.getName()) && element.getType() != StanzaType.error) {
+					doDecline(child, roomJID, senderJID);
+				}
+			}
+		} catch (MUCException e1) {
+			throw e1;
+		} catch (Exception e) {
+			e.printStackTrace();
+
+			throw new RuntimeException(e);
+		}
+	}
 
 	/**
 	 * @param senderJID
@@ -152,74 +220,6 @@ public class MediatedInvitationModule
 		}
 
 		write(resultMessage);
-	}
-
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
-	@Override
-	public String[] getFeatures() {
-		return null;
-	}
-
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
-	@Override
-	public Criteria getModuleCriteria() {
-		return CRIT;
-	}
-
-	/**
-	 * Method description
-	 *
-	 * @param element
-	 *
-	 * @throws MUCException
-	 */
-	@Override
-	public void process(Packet element) throws MUCException {
-		try {
-			final JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
-			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
-
-			if (getNicknameFromJid(JID.jidInstance(element.getAttributeStaticStr(Packet.TO_ATT))) != null) {
-				throw new MUCException(Authorization.BAD_REQUEST);
-			}
-
-			final Room room = repository.getRoom(roomJID);
-			if (room == null) {
-				throw new MUCException(Authorization.ITEM_NOT_FOUND,
-									   "Room " + roomJID + " does not exists on this server.");
-			}
-
-			final String nickName = room.getOccupantsNickname(senderJID);
-			final Role senderRole = room.getRole(nickName);
-			final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID());
-
-			final Element x = element.getElement().getChild("x", "http://jabber.org/protocol/muc#user");
-
-			List<Element> ch = x.getChildren();
-			for (Element child : ch) {
-				if (element.getType() == StanzaType.error && "invite".equals(child.getName())) {
-					processInvitationErrorResponse(child, element.getErrorCondition(), roomJID, senderJID);
-				} else if ("invite".equals(child.getName()) && element.getType() != StanzaType.error) {
-					doInvite(element, child, room, roomJID, senderJID, senderRole, senderAffiliation);
-				} else if ("decline".equals(child.getName()) && element.getType() != StanzaType.error) {
-					doDecline(child, roomJID, senderJID);
-				}
-			}
-		} catch (MUCException e1) {
-			throw e1;
-		} catch (Exception e) {
-			e.printStackTrace();
-
-			throw new RuntimeException(e);
-		}
 	}
 
 	private void processInvitationErrorResponse(Element invite, String errorCondition, BareJID roomJID, JID senderJID)

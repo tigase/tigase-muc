@@ -37,38 +37,22 @@ import java.security.SecureRandom;
 
 /**
  * @author bmalkow
- *
  */
 @Bean(name = UniqueRoomNameModule.ID, active = true)
-public class UniqueRoomNameModule extends AbstractMucModule {
-
-	private final static String CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
-
-	private static final Criteria CRIT = ElementCriteria.nameType("iq", "get").add(
-			ElementCriteria.name("unique", "http://jabber.org/protocol/muc#unique"));
+public class UniqueRoomNameModule
+		extends AbstractMucModule {
 
 	public static final String ID = "unique";
-
+	private final static String CHARS = "abcdefghijklmnopqrstuvwxyz0123456789";
+	private static final Criteria CRIT = ElementCriteria.nameType("iq", "get")
+			.add(ElementCriteria.name("unique", "http://jabber.org/protocol/muc#unique"));
 	private SecureRandom random = new SecureRandom();
 
 	@Inject
 	private IMucRepository repository;
 
-	private String generateName(int len) {
-		StringBuilder sb = new StringBuilder();
-
-		for (int i = 0; i < len; i++) {
-			int a = random.nextInt(CHARS.length());
-
-			sb.append(CHARS.charAt(a));
-		}
-
-		return sb.toString();
-	}
-
 	/**
 	 * Method description
-	 *
 	 *
 	 * @return
 	 */
@@ -80,7 +64,6 @@ public class UniqueRoomNameModule extends AbstractMucModule {
 	/**
 	 * Method description
 	 *
-	 *
 	 * @return
 	 */
 	@Override
@@ -90,7 +73,6 @@ public class UniqueRoomNameModule extends AbstractMucModule {
 
 	/**
 	 * Method description
-	 *
 	 *
 	 * @param element
 	 *
@@ -112,8 +94,8 @@ public class UniqueRoomNameModule extends AbstractMucModule {
 				newRoomName = generateName(30);
 			} while (repository.isRoomIdExists(newRoomName + "@" + host));
 
-			Element unique = new Element("unique", new String[] { "xmlns" },
-					new String[] { "http://jabber.org/protocol/muc#unique" });
+			Element unique = new Element("unique", new String[]{"xmlns"},
+										 new String[]{"http://jabber.org/protocol/muc#unique"});
 
 			unique.setCData(newRoomName);
 			write(element.okResult(unique, 0));
@@ -124,6 +106,18 @@ public class UniqueRoomNameModule extends AbstractMucModule {
 
 			throw new RuntimeException(e);
 		}
+	}
+
+	private String generateName(int len) {
+		StringBuilder sb = new StringBuilder();
+
+		for (int i = 0; i < len; i++) {
+			int a = random.nextInt(CHARS.length());
+
+			sb.append(CHARS.charAt(a));
+		}
+
+		return sb.toString();
 	}
 
 }

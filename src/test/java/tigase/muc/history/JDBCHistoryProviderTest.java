@@ -40,29 +40,14 @@ public class JDBCHistoryProviderTest
 	private static final String PROJECT_ID = "muc";
 	private static final String VERSION = "3.0.0";
 
-	@BeforeClass
-	public static void loadSchema() {
-		if (uri.startsWith("jdbc:")) {
-			SchemaLoader loader = SchemaLoader.newInstance("jdbc");
-			SchemaLoader.Parameters params = loader.createParameters();
-			params.parseUri(uri);
-			params.setDbRootCredentials(null, null);
-			loader.init(params);
-			loader.validateDBConnection();
-			loader.validateDBExists();
-			Assert.assertEquals(SchemaLoader.Result.ok, loader.loadSchema(PROJECT_ID, VERSION));
-			loader.shutdown();
-		}
-	}
-
 	@AfterClass
 	public static void cleanDerby() {
 		if (uri.contains("jdbc:derby:")) {
 			File f = new File("derby_test");
 			if (f.exists()) {
-				try ( Connection conn = DriverManager.getConnection(uri + ";shutdown=true" ) ) {
+				try (Connection conn = DriverManager.getConnection(uri + ";shutdown=true")) {
 					conn.close();
-				} catch ( SQLException e ) {
+				} catch (SQLException e) {
 					//e.printStackTrace();
 				}
 				if (f.listFiles() != null) {
@@ -75,6 +60,21 @@ public class JDBCHistoryProviderTest
 				}
 				f.delete();
 			}
+		}
+	}
+
+	@BeforeClass
+	public static void loadSchema() {
+		if (uri.startsWith("jdbc:")) {
+			SchemaLoader loader = SchemaLoader.newInstance("jdbc");
+			SchemaLoader.Parameters params = loader.createParameters();
+			params.parseUri(uri);
+			params.setDbRootCredentials(null, null);
+			loader.init(params);
+			loader.validateDBConnection();
+			loader.validateDBExists();
+			Assert.assertEquals(SchemaLoader.Result.ok, loader.loadSchema(PROJECT_ID, VERSION));
+			loader.shutdown();
 		}
 	}
 

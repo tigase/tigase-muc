@@ -34,7 +34,8 @@ import java.util.Map;
 /**
  * Created by andrzej on 14.10.2016.
  */
-public interface IMucDAO<DS extends DataSource, ID> extends DataSourceAware<DS> {
+public interface IMucDAO<DS extends DataSource, ID>
+		extends DataSourceAware<DS> {
 
 	ID createRoom(RoomWithId<ID> room) throws RepositoryException;
 
@@ -48,7 +49,8 @@ public interface IMucDAO<DS extends DataSource, ID> extends DataSourceAware<DS> 
 
 	void setAffiliation(RoomWithId<ID> room, BareJID jid, Affiliation affiliation) throws RepositoryException;
 
-	void setSubject(RoomWithId<ID> room, String subject, String creatorNickname, Date changeDate) throws RepositoryException;
+	void setSubject(RoomWithId<ID> room, String subject, String creatorNickname, Date changeDate)
+			throws RepositoryException;
 
 	void updateRoomConfig(RoomConfig roomConfig) throws RepositoryException;
 }

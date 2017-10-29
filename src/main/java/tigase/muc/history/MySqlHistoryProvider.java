@@ -32,22 +32,18 @@ import java.util.logging.Logger;
 
 /**
  * @author bmalkow
- *
  */
-public class MySqlHistoryProvider extends AbstractJDBCHistoryProvider {
+public class MySqlHistoryProvider
+		extends AbstractJDBCHistoryProvider {
 
 	public static final String ADD_MESSAGE_QUERY_VAL = "insert into muc_history (room_name, event_type, timestamp, sender_jid, sender_nickname, body, public_event, msg) values (?, 1, ?, ?, ?, ?, ?, ?)";
-
-	private static final String CREATE_MUC_HISTORY_TABLE_VAL = "create table muc_history (" + "room_name char(128) NOT NULL,\n"
-			+ "event_type int, \n" + "timestamp bigint,\n" + "sender_jid varchar(2049),\n" + "sender_nickname char(128),\n"
-			+ "body text,\n" + "public_event boolean,\n " + "msg text " + ")";
-
 	public static final String DELETE_MESSAGES_QUERY_VAL = "delete from muc_history where room_name=?";
-
 	public static final String GET_MESSAGES_MAXSTANZAS_QUERY_VAL = "select room_name, event_type, timestamp, sender_jid, sender_nickname, body, msg from (select * from muc_history where room_name=? order by timestamp desc limit ? ) AS t order by t.timestamp";
-
 	public static final String GET_MESSAGES_SINCE_QUERY_VAL = "select room_name, event_type, timestamp, sender_jid, sender_nickname, body, msg from (select * from muc_history where room_name=? and timestamp >= ? order by timestamp desc limit ? ) AS t order by t.timestamp";
-
+	private static final String CREATE_MUC_HISTORY_TABLE_VAL =
+			"create table muc_history (" + "room_name char(128) NOT NULL,\n" + "event_type int, \n" +
+					"timestamp bigint,\n" + "sender_jid varchar(2049),\n" + "sender_nickname char(128),\n" +
+					"body text,\n" + "public_event boolean,\n " + "msg text " + ")";
 	private Logger log = Logger.getLogger(this.getClass().getName());
 
 	/**
@@ -71,7 +67,8 @@ public class MySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 
 	/** {@inheritDoc} */
 	@Override
-	public void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname, Date time) {
+	public void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname,
+								 Date time) {
 		// TODO Auto-generated method stub
 
 	}
@@ -83,18 +80,21 @@ public class MySqlHistoryProvider extends AbstractJDBCHistoryProvider {
 			internalInit(dataRepository);
 		} catch (SQLException e) {
 			e.printStackTrace();
-			if (log.isLoggable(Level.WARNING))
+			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, "Initializing problem", e);
+			}
 			try {
-				if (log.isLoggable(Level.INFO))
+				if (log.isLoggable(Level.INFO)) {
 					log.info("Trying to create tables: " + CREATE_MUC_HISTORY_TABLE_VAL);
+				}
 				Statement st = dataRepository.createStatement(null);
 				st.execute(CREATE_MUC_HISTORY_TABLE_VAL);
 
 				internalInit(dataRepository);
 			} catch (SQLException e1) {
-				if (log.isLoggable(Level.WARNING))
+				if (log.isLoggable(Level.WARNING)) {
 					log.log(Level.WARNING, "Can't initialize muc history", e1);
+				}
 				throw new RuntimeException(e1);
 			}
 		}

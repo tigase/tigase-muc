@@ -49,14 +49,17 @@ import java.util.logging.Logger;
 public class Converter {
 
 	private static final Logger log = Logger.getLogger(Converter.class.getCanonicalName());
+	private IMucDAO newRepo;
+	private MucDAOOld oldRepo;
 
 	public static void initLogger() {
-		String initial_config = "tigase.level=ALL\n" + "tigase.db.jdbc.level=INFO\n" + "tigase.xml.level=INFO\n"
-				+ "tigase.form.level=INFO\n" + "handlers=java.util.logging.ConsoleHandler java.util.logging.FileHandler\n"
-				+ "java.util.logging.ConsoleHandler.level=ALL\n"
-				+ "java.util.logging.ConsoleHandler.formatter=tigase.util.LogFormatter\n"
-				+ "java.util.logging.FileHandler.formatter=tigase.util.LogFormatter\n"
-				+ "java.util.logging.FileHandler.pattern=muc_db_migration.log\n" + "tigase.useParentHandlers=true\n";
+		String initial_config = "tigase.level=ALL\n" + "tigase.db.jdbc.level=INFO\n" + "tigase.xml.level=INFO\n" +
+				"tigase.form.level=INFO\n" +
+				"handlers=java.util.logging.ConsoleHandler java.util.logging.FileHandler\n" +
+				"java.util.logging.ConsoleHandler.level=ALL\n" +
+				"java.util.logging.ConsoleHandler.formatter=tigase.util.LogFormatter\n" +
+				"java.util.logging.FileHandler.formatter=tigase.util.LogFormatter\n" +
+				"java.util.logging.FileHandler.pattern=muc_db_migration.log\n" + "tigase.useParentHandlers=true\n";
 
 		ConfiguratorAbstract.loadLogManagerConfig(initial_config);
 	}
@@ -103,10 +106,6 @@ public class Converter {
 		log.info("migration finished");
 	}
 
-	private IMucDAO newRepo;
-
-	private MucDAOOld oldRepo;
-
 	public void convert() throws RepositoryException {
 		oldRepo.getRoomsJIDList().forEach(roomJid -> {
 			try {
@@ -116,13 +115,15 @@ public class Converter {
 				String subjectNick = oldRepo.getSubjectCreatorNickname(roomJid);
 
 				if (room == null || room.getConfig() == null) {
-					log.log(Level.WARNING, "skipping conversion of room with jid " + roomJid + " - room configuration is missing!");
+					log.log(Level.WARNING,
+							"skipping conversion of room with jid " + roomJid + " - room configuration is missing!");
 					oldRepo.destroyRoom(roomJid);
 					return;
 				}
 
-				if (newRepo.getRoom(roomJid) != null)
+				if (newRepo.getRoom(roomJid) != null) {
 					return;
+				}
 
 				newRepo.createRoom(room);
 

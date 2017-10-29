@@ -21,9 +21,9 @@ package tigase.muc;
 
 /**
  * @author bmalkow
- *
  */
 public class MucVersion {
+
 	public static String getVersion() {
 		String version = MucVersion.class.getPackage().getImplementationVersion();
 		return version == null ? "0.0.0" : version;

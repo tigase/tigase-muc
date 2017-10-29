@@ -24,11 +24,7 @@ import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
-import tigase.muc.Affiliation;
-import tigase.muc.DateUtil;
-import tigase.muc.MUCConfig;
-import tigase.muc.Role;
-import tigase.muc.Room;
+import tigase.muc.*;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.logger.MucLogger;
@@ -50,7 +46,8 @@ import java.util.logging.Level;
  * @author bmalkow
  */
 @Bean(name = GroupchatMessageModule.ID, active = true)
-public class GroupchatMessageModule extends AbstractMucModule {
+public class GroupchatMessageModule
+		extends AbstractMucModule {
 
 	public static final String ID = "groupchat";
 	private static final Criteria CRIT = ElementCriteria.nameType("message", "groupchat");
@@ -70,55 +67,22 @@ public class GroupchatMessageModule extends AbstractMucModule {
 	@Inject
 	private IMucRepository repository;
 
-	/**
-	 * @param room
-	 * @param message
-	 * @param body
-	 * @param senderJid
-	 * @param senderNickname
-	 * @param time
-	 */
-	protected void addMessageToHistory(Room room, final Element message, String body, JID senderJid, String senderNickname,
-									   Date time) {
+	public static String generateSubjectId(Date ts, String subject) {
 		try {
-			if (historyProvider != null) {
-				historyProvider.addMessage(room, message, body, senderJid, senderNickname, time);
+			MessageDigest md = MessageDigest.getInstance("SHA-1");
+			md.update(String.valueOf(ts.getTime() / 100).getBytes());
+			if (subject != null) {
+				md.update(subject.getBytes());
 			}
-		} catch (Exception e) {
-			if (log.isLoggable(Level.WARNING))
-				log.log(Level.WARNING, "Can't add message to history!", e);
-		}
-		try {
-			if ((mucLogger != null) && room.getConfig().isLoggingEnabled()) {
-				mucLogger.addMessage(room, body, senderJid, senderNickname, time);
+			StringBuilder sb = new StringBuilder();
+			for (byte b : md.digest()) {
+				sb.append(Character.forDigit((b & 0xF0) >> 4, 16));
+				sb.append(Character.forDigit(b & 0xF, 16));
 			}
-		} catch (Exception e) {
-			if (log.isLoggable(Level.WARNING))
-				log.log(Level.WARNING, "Can't add message to log!", e);
+			return sb.toString();
+		} catch (NoSuchAlgorithmException ex) {
+			return null;
 		}
-	}
-
-
-	protected void addSubjectChangeToHistory(Room room, Element message, final String subject, JID senderJid,
-											 String senderNickname, Date time) {
-		try {
-			if (historyProvider != null) {
-				historyProvider.addSubjectChange(room, message, subject, senderJid, senderNickname, time);
-			}
-		} catch (Exception e) {
-			if (log.isLoggable(Level.WARNING))
-				log.log(Level.WARNING, "Can't add subject change to history!", e);
-		}
-
-		try {
-			if ((mucLogger != null) && room.getConfig().isLoggingEnabled()) {
-				mucLogger.addSubjectChange(room, subject, senderJid, senderNickname, time);
-			}
-		} catch (Exception e) {
-			if (log.isLoggable(Level.WARNING))
-				log.log(Level.WARNING, "Can't add subject change to log!", e);
-		}
-
 	}
 
 	/**
@@ -158,25 +122,11 @@ public class GroupchatMessageModule extends AbstractMucModule {
 		return allowedElements.contains(CRIT_CHAT_STAT);
 	}
 
-	protected Packet preparePacket(String messageId, String xmlLang, Element... content) throws TigaseStringprepException {
-		Element e = new Element("message", new String[]{"type"}, new String[]{"groupchat"});
-		if (messageId != null) {
-			e.setAttribute("id", messageId);
-		}
-		if (xmlLang != null) {
-			e.setAttribute("xml:lang", xmlLang);
-		}
-		if (content != null)
-			e.addChildren(Arrays.asList(content));
-		Packet message = Packet.packetInstance(e);
-		message.setXMLNS(Packet.CLIENT_XMLNS);
-		return message;
-	}
-
 	/**
 	 * Method description
 	 *
 	 * @param packet
+	 *
 	 * @throws MUCException
 	 */
 	@Override
@@ -200,14 +150,17 @@ public class GroupchatMessageModule extends AbstractMucModule {
 			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
 
 			if (log.isLoggable(Level.FINEST)) {
-				log.finest("Processing groupchat message. room=" + roomJID + "; senderJID=" + senderJID + "; senderNickname="
-						+ nickName + "; role=" + role + "; affiliation=" + affiliation + ";");
+				log.finest("Processing groupchat message. room=" + roomJID + "; senderJID=" + senderJID +
+								   "; senderNickname=" + nickName + "; role=" + role + "; affiliation=" + affiliation +
+								   ";");
 			}
 
 			if (!role.isSendMessagesToAll() || (room.getConfig().isRoomModerated() && (role == Role.visitor))) {
-				if (log.isLoggable(Level.FINE))
-					log.fine("Insufficient privileges to send grouchat message: role=" + role + "; roomModerated="
-							+ room.getConfig().isRoomModerated() + "; stanza=" + packet.getElement().toStringNoChildren());
+				if (log.isLoggable(Level.FINE)) {
+					log.fine("Insufficient privileges to send grouchat message: role=" + role + "; roomModerated=" +
+									 room.getConfig().isRoomModerated() + "; stanza=" +
+									 packet.getElement().toStringNoChildren());
+				}
 				throw new MUCException(Authorization.FORBIDDEN, "Insufficient privileges to send groupchat message.");
 			}
 
@@ -257,9 +210,11 @@ public class GroupchatMessageModule extends AbstractMucModule {
 
 			if (subject != null) {
 				if (!(room.getConfig().isChangeSubject() && (role == Role.participant)) && !role.isModifySubject()) {
-					if (log.isLoggable(Level.FINE))
-						log.fine("Insufficient privileges to change subject: role=" + role + "; allowToChangeSubject="
-								+ room.getConfig().isChangeSubject() + "; stanza=" + packet.getElement().toStringNoChildren());
+					if (log.isLoggable(Level.FINE)) {
+						log.fine("Insufficient privileges to change subject: role=" + role + "; allowToChangeSubject=" +
+										 room.getConfig().isChangeSubject() + "; stanza=" +
+										 packet.getElement().toStringNoChildren());
+					}
 					throw new MUCException(Authorization.FORBIDDEN, "Insufficient privileges to change subject.");
 				}
 
@@ -276,7 +231,6 @@ public class GroupchatMessageModule extends AbstractMucModule {
 					id = UUID.randomUUID().toString();
 				}
 			}
-
 
 			Packet msg = preparePacket(id, xmlLang, content.toArray(new Element[]{}));
 
@@ -311,21 +265,62 @@ public class GroupchatMessageModule extends AbstractMucModule {
 		sendMessagesToAllOccupants(room, fromJID, msg);
 	}
 
-	public static String generateSubjectId(Date ts, String subject) {
+	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, final Packet msg)
+			throws TigaseStringprepException {
+		sendMessagesToAllOccupantsJids(room, fromJID, msg);
+
+		room.fireOnMessageToOccupants(fromJID, msg);
+	}
+
+	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, final Packet msg)
+			throws TigaseStringprepException {
+
+		for (String nickname : room.getOccupantsNicknames()) {
+			final Role role = room.getRole(nickname);
+
+			if (!role.isReceiveMessages()) {
+				continue;
+			}
+
+			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
+
+			for (JID jid : occupantJids) {
+				Packet message = msg.copyElementOnly();// Packet.packetInstance(e);
+				message.initVars(fromJID, jid);
+				message.setXMLNS(Packet.CLIENT_XMLNS);
+
+				write(message);
+			}
+		}
+	}
+
+	/**
+	 * @param room
+	 * @param message
+	 * @param body
+	 * @param senderJid
+	 * @param senderNickname
+	 * @param time
+	 */
+	protected void addMessageToHistory(Room room, final Element message, String body, JID senderJid,
+									   String senderNickname, Date time) {
 		try {
-			MessageDigest md = MessageDigest.getInstance("SHA-1");
-			md.update(String.valueOf(ts.getTime()/100).getBytes());
-			if (subject != null) {
-				md.update(subject.getBytes());
+			if (historyProvider != null) {
+				historyProvider.addMessage(room, message, body, senderJid, senderNickname, time);
 			}
-			StringBuilder sb = new StringBuilder();
-			for (byte b : md.digest()) {
-				sb.append(Character.forDigit((b & 0xF0) >> 4, 16));
-				sb.append(Character.forDigit(b & 0xF, 16));
+		} catch (Exception e) {
+			if (log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING, "Can't add message to history!", e);
 			}
-			return sb.toString();
-		} catch (NoSuchAlgorithmException ex) {
-			return null;
+		}
+		try {
+			if ((mucLogger != null) && room.getConfig().isLoggingEnabled()) {
+				mucLogger.addMessage(room, body, senderJid, senderNickname, time);
+			}
+		} catch (Exception e) {
+			if (log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING, "Can't add message to log!", e);
+			}
 		}
 	}
 //
@@ -388,31 +383,44 @@ public class GroupchatMessageModule extends AbstractMucModule {
 //		}
 //	}
 
-	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, final Packet msg) throws TigaseStringprepException {
-		sendMessagesToAllOccupantsJids(room, fromJID, msg);
-
-		room.fireOnMessageToOccupants(fromJID, msg);
-	}
-
-	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, final Packet msg)
-			throws TigaseStringprepException {
-
-		for (String nickname : room.getOccupantsNicknames()) {
-			final Role role = room.getRole(nickname);
-
-			if (!role.isReceiveMessages()) {
-				continue;
+	protected void addSubjectChangeToHistory(Room room, Element message, final String subject, JID senderJid,
+											 String senderNickname, Date time) {
+		try {
+			if (historyProvider != null) {
+				historyProvider.addSubjectChange(room, message, subject, senderJid, senderNickname, time);
 			}
-
-			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
-
-			for (JID jid : occupantJids) {
-				Packet message = msg.copyElementOnly();// Packet.packetInstance(e);
-				message.initVars(fromJID, jid);
-				message.setXMLNS(Packet.CLIENT_XMLNS);
-
-				write(message);
+		} catch (Exception e) {
+			if (log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING, "Can't add subject change to history!", e);
 			}
 		}
+
+		try {
+			if ((mucLogger != null) && room.getConfig().isLoggingEnabled()) {
+				mucLogger.addSubjectChange(room, subject, senderJid, senderNickname, time);
+			}
+		} catch (Exception e) {
+			if (log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING, "Can't add subject change to log!", e);
+			}
+		}
+
+	}
+
+	protected Packet preparePacket(String messageId, String xmlLang, Element... content)
+			throws TigaseStringprepException {
+		Element e = new Element("message", new String[]{"type"}, new String[]{"groupchat"});
+		if (messageId != null) {
+			e.setAttribute("id", messageId);
+		}
+		if (xmlLang != null) {
+			e.setAttribute("xml:lang", xmlLang);
+		}
+		if (content != null) {
+			e.addChildren(Arrays.asList(content));
+		}
+		Packet message = Packet.packetInstance(e);
+		message.setXMLNS(Packet.CLIENT_XMLNS);
+		return message;
 	}
 }

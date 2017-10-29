@@ -30,7 +30,8 @@ import java.util.Queue;
 /**
  * Created by andrzej on 14.10.2016.
  */
-public abstract class AbstractMucDAO<DS extends DataSource, ID> implements IMucDAO<DS, ID> {
+public abstract class AbstractMucDAO<DS extends DataSource, ID>
+		implements IMucDAO<DS, ID> {
 
 	private final SimpleParser parser = SingletonFactory.getParserInstance();
 

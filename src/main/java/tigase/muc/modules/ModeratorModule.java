@@ -36,9 +36,9 @@ import tigase.server.Packet;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.StanzaType;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
-import tigase.xmpp.StanzaType;
 
 import java.util.*;
 import java.util.logging.Level;
@@ -78,6 +78,82 @@ public class ModeratorModule
 		String tmp = item.getAttributeStaticStr("role");
 
 		return (tmp == null) ? null : Role.valueOf(tmp);
+	}
+
+	/**
+	 * Method description
+	 *
+	 * @return
+	 */
+	@Override
+	public String[] getFeatures() {
+		return null;
+	}
+
+	/**
+	 * Method description
+	 *
+	 * @return
+	 */
+	@Override
+	public Criteria getModuleCriteria() {
+		return CRIT;
+	}
+
+	/**
+	 * Kicking user without sending presence to all other occupant. Used only to inform occupants that component is
+	 * stopping.
+	 */
+	public void kickWithoutBroadcast(Room room, String occupantNick, String reason, String actor)
+			throws TigaseStringprepException {
+		List<String> codes = new ArrayList<String>();
+		final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNick);
+		final Affiliation occupantAffiliation = room.getAffiliation(occupantJid);
+
+		codes.add("307");
+		boolean isUnavailable = true;
+
+		final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(occupantNick);
+
+		for (JID jid : occupantJids) {
+			Packet occupantKickPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
+													   occupantAffiliation, Role.none, occupantNick, reason, actor,
+													   codes.toArray(new String[]{}));
+
+			write(occupantKickPresence);
+		}
+		room.removeOccupant(occupantNick);
+	}
+
+	/**
+	 * Method description
+	 *
+	 * @param element
+	 *
+	 * @throws MUCException
+	 */
+	@Override
+	public void process(Packet element) throws MUCException {
+		try {
+			final StanzaType type = element.getType();
+
+			if (getNicknameFromJid(element.getTo()) != null) {
+				throw new MUCException(Authorization.BAD_REQUEST);
+			}
+			if (type == StanzaType.set) {
+				processSet(element);
+			} else if (type == StanzaType.get) {
+				processGet(element);
+			} else {
+				throw new MUCException(Authorization.BAD_REQUEST);
+			}
+		} catch (MUCException e1) {
+			throw e1;
+		} catch (Exception e) {
+			e.printStackTrace();
+
+			throw new RuntimeException(e);
+		}
 	}
 
 	void checkItem(Element item, String occupantNickname, Affiliation occupantAffiliation, Role newRole,
@@ -167,51 +243,6 @@ public class ModeratorModule
 		}
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
-	@Override
-	public String[] getFeatures() {
-		return null;
-	}
-
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
-	@Override
-	public Criteria getModuleCriteria() {
-		return CRIT;
-	}
-
-	/**
-	 * Kicking user without sending presence to all other occupant. Used only to
-	 * inform occupants that component is stopping.
-	 */
-	public void kickWithoutBroadcast(Room room, String occupantNick, String reason, String actor)
-			throws TigaseStringprepException {
-		List<String> codes = new ArrayList<String>();
-		final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNick);
-		final Affiliation occupantAffiliation = room.getAffiliation(occupantJid);
-
-		codes.add("307");
-		boolean isUnavailable = true;
-
-		final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(occupantNick);
-
-		for (JID jid : occupantJids) {
-			Packet occupantKickPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
-													   occupantAffiliation, Role.none, occupantNick, reason, actor,
-													   codes.toArray(new String[]{}));
-
-			write(occupantKickPresence);
-		}
-		room.removeOccupant(occupantNick);
-	}
-
 	protected Packet makePresence(final JID destinationJid, final BareJID roomJID, final Room room,
 								  final BareJID occupantJid, boolean unavailable, Affiliation affiliation, Role role,
 								  String nick, String reason, String actor, String... codes)
@@ -263,37 +294,6 @@ public class ModeratorModule
 		result.setXMLNS(Packet.CLIENT_XMLNS);
 
 		return result;
-	}
-
-	/**
-	 * Method description
-	 *
-	 * @param element
-	 *
-	 * @throws MUCException
-	 */
-	@Override
-	public void process(Packet element) throws MUCException {
-		try {
-			final StanzaType type = element.getType();
-
-			if (getNicknameFromJid(element.getTo()) != null) {
-				throw new MUCException(Authorization.BAD_REQUEST);
-			}
-			if (type == StanzaType.set) {
-				processSet(element);
-			} else if (type == StanzaType.get) {
-				processGet(element);
-			} else {
-				throw new MUCException(Authorization.BAD_REQUEST);
-			}
-		} catch (MUCException e1) {
-			throw e1;
-		} catch (Exception e) {
-			e.printStackTrace();
-
-			throw new RuntimeException(e);
-		}
 	}
 
 	protected void processGet(Packet element) throws RepositoryException, MUCException {

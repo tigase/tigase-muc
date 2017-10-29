@@ -19,14 +19,13 @@
  */
 package tigase.muc.logger;
 
-import java.util.Date;
-
 import tigase.muc.Room;
 import tigase.xmpp.jid.JID;
 
+import java.util.Date;
+
 /**
  * @author bmalkow
- *
  */
 public interface MucLogger {
 

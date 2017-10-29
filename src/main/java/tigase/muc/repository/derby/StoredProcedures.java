@@ -33,6 +33,43 @@ public class StoredProcedures {
 
 	private static final Charset UTF8 = Charset.forName("UTF-8");
 
+	protected static String sha1OfLower(String data) throws SQLException {
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-1");
+			byte[] hash = md.digest(data.toLowerCase().getBytes(UTF8));
+			return Algorithms.bytesToHex(hash);
+		} catch (NoSuchAlgorithmException e) {
+			throw new SQLException(e);
+		}
+	}
+
+	public static void tigMucAddMessage(String roomJid, Timestamp ts, String senderJid, String senderNick, String body,
+										Boolean publicEvent, String msg) throws SQLException {
+		Connection conn = DriverManager.getConnection("jdbc:default:connection");
+
+		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
+		try {
+			PreparedStatement ps = conn.prepareStatement(
+					"insert into tig_muc_room_history (room_jid, room_jid_sha1, event_type, ts, sender_jid," +
+							" sender_nickname, body, public_event, msg)" + " values (?, ?, 1, ?, ?, ?, ?, ?, ?)");
+
+			ps.setString(1, roomJid);
+			ps.setString(2, sha1OfLower(roomJid));
+			ps.setTimestamp(3, ts);
+			ps.setString(4, senderJid);
+			ps.setString(5, senderNick);
+			ps.setString(6, body);
+			ps.setBoolean(7, publicEvent);
+			ps.setString(8, msg);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			conn.close();
+		}
+	}
+
 	public static void tigMucCreateRoom(String roomJid, String creatorJid, java.sql.Timestamp creationDate,
 										String roomName, String roomConfig, ResultSet[] data) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
@@ -63,6 +100,23 @@ public class StoredProcedures {
 		}
 	}
 
+	public static void tigMucDeleteMessages(String roomJid) throws SQLException {
+		Connection conn = DriverManager.getConnection("jdbc:default:connection");
+
+		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
+		try {
+			PreparedStatement ps = conn.prepareStatement("delete from tig_muc_room_history where room_jid_sha1 = ?");
+
+			ps.setString(1, sha1OfLower(roomJid));
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			conn.close();
+		}
+	}
+
 	public static void tigMucDestroyRoom(String roomJid) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
@@ -74,8 +128,9 @@ public class StoredProcedures {
 			ps.setString(1, roomJidSha1);
 
 			ResultSet rs = ps.executeQuery();
-			if (!rs.next())
+			if (!rs.next()) {
 				return;
+			}
 
 			long roomId = rs.getLong(1);
 
@@ -96,16 +151,24 @@ public class StoredProcedures {
 		}
 	}
 
-	public static void tigMucGetRoomAffiliations(Long roomId, ResultSet[] data) throws SQLException {
+	public static void tigMucGetMessages(String roomJid, Integer maxMessages, Timestamp since, ResultSet[] data)
+			throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 		try {
 			PreparedStatement ps = conn.prepareStatement(
-					"select jid, affiliation from tig_muc_room_affiliations where room_id = ?");
+					"select t.sender_nickname, t.ts, t.sender_jid, t.body, t.msg from (" +
+							"select h.sender_nickname, h.ts, h.sender_jid, h.body, h.msg" +
+							" from tig_muc_room_history h" + " where h.room_jid_sha1 = ?" +
+							"	and (? is null or h.ts >= ?)" +
+							" order by h.ts desc offset 0 rows fetch next ? rows only)" + " AS t order by t.ts asc");
 
-			ps.setLong(1, roomId);
+			ps.setString(1, sha1OfLower(roomJid));
+			ps.setTimestamp(2, since);
+			ps.setTimestamp(3, since);
+			ps.setInt(4, maxMessages);
 			data[0] = ps.executeQuery();
 		} catch (SQLException e) {
 			throw e;
@@ -133,15 +196,117 @@ public class StoredProcedures {
 		}
 	}
 
-	public static void tigMucGetRoomsJids(ResultSet[] data) throws SQLException {
+	public static void tigMucGetRoomAffiliations(Long roomId, ResultSet[] data) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 		try {
 			PreparedStatement ps = conn.prepareStatement(
-					"select jid from tig_muc_rooms");
+					"select jid, affiliation from tig_muc_room_affiliations where room_id = ?");
 
+			ps.setLong(1, roomId);
+			data[0] = ps.executeQuery();
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			conn.close();
+		}
+	}
+
+	public static void tigMucGetRoomsJids(ResultSet[] data) throws SQLException {
+		Connection conn = DriverManager.getConnection("jdbc:default:connection");
+
+		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
+		try {
+			PreparedStatement ps = conn.prepareStatement("select jid from tig_muc_rooms");
+
+			data[0] = ps.executeQuery();
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			conn.close();
+		}
+	}
+
+	public static void tigMucMamGetMessagePosition(String roomJid, Timestamp since, Timestamp to, String nickname,
+												   Timestamp id_ts, ResultSet[] data) throws SQLException {
+		Connection conn = DriverManager.getConnection("jdbc:default:connection");
+
+		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
+		try {
+			PreparedStatement ps = conn.prepareStatement(
+					"select count(1)" + " from tig_muc_room_history h" + " where h.room_jid_sha1 = ?" +
+							"	and (? is null or h.ts >= ?)" + "	and (? is null or h.ts <= ?)" +
+							"	and (? is null or h.sender_nickname = ?)" + "   and h.ts < ?");
+
+			ps.setString(1, sha1OfLower(roomJid));
+			ps.setTimestamp(2, since);
+			ps.setTimestamp(3, since);
+			ps.setTimestamp(4, to);
+			ps.setTimestamp(5, to);
+			ps.setString(6, nickname);
+			ps.setString(7, nickname);
+			ps.setTimestamp(8, id_ts);
+			data[0] = ps.executeQuery();
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			conn.close();
+		}
+	}
+
+	public static void tigMucMamGetMessages(String roomJid, Timestamp since, Timestamp to, String nickname,
+											Integer limit, Integer offset, ResultSet[] data) throws SQLException {
+		Connection conn = DriverManager.getConnection("jdbc:default:connection");
+
+		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
+		try {
+			PreparedStatement ps = conn.prepareStatement(
+					"select h.sender_nickname, h.ts, h.sender_jid, h.body, h.msg" + " from tig_muc_room_history h" +
+							" where h.room_jid_sha1 = ?" + "	and (? is null or h.ts >= ?)" +
+							"	and (? is null or h.ts <= ?)" + "	and (? is null or h.sender_nickname = ?)" +
+							" order by h.ts asc offset ? rows fetch next ? rows only");
+
+			ps.setString(1, sha1OfLower(roomJid));
+			ps.setTimestamp(2, since);
+			ps.setTimestamp(3, since);
+			ps.setTimestamp(4, to);
+			ps.setTimestamp(5, to);
+			ps.setString(6, nickname);
+			ps.setString(7, nickname);
+			ps.setInt(8, offset);
+			ps.setInt(9, limit);
+			data[0] = ps.executeQuery();
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			conn.close();
+		}
+	}
+
+	public static void tigMucMamGetMessagesCount(String roomJid, Timestamp since, Timestamp to, String nickname,
+												 ResultSet[] data) throws SQLException {
+		Connection conn = DriverManager.getConnection("jdbc:default:connection");
+
+		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
+		try {
+			PreparedStatement ps = conn.prepareStatement(
+					"select count(1)" + " from tig_muc_room_history h" + " where h.room_jid_sha1 = ?" +
+							"	and (? is null or h.ts >= ?)" + "	and (? is null or h.ts <= ?)" +
+							"	and (? is null or h.sender_nickname = ?)");
+
+			ps.setString(1, sha1OfLower(roomJid));
+			ps.setTimestamp(2, since);
+			ps.setTimestamp(3, since);
+			ps.setTimestamp(4, to);
+			ps.setTimestamp(5, to);
+			ps.setString(6, nickname);
+			ps.setString(7, nickname);
 			data[0] = ps.executeQuery();
 		} catch (SQLException e) {
 			throw e;
@@ -172,7 +337,8 @@ public class StoredProcedures {
 					ps.setString(3, jidSha1);
 					ps.executeUpdate();
 				} else {
-					ps = conn.prepareStatement("delete from tig_muc_room_affiliations where room_id = ? and jid_sha1 = ?");
+					ps = conn.prepareStatement(
+							"delete from tig_muc_room_affiliations where room_id = ? and jid_sha1 = ?");
 					ps.setLong(1, roomId);
 					ps.setString(2, jidSha1);
 					ps.executeUpdate();
@@ -189,27 +355,6 @@ public class StoredProcedures {
 					ps.executeUpdate();
 				}
 			}
-		} catch (SQLException e) {
-			throw e;
-		} finally {
-			conn.close();
-		}
-	}
-
-	public static void tigMucSetRoomSubject(Long roomId, String subject, String creator, Timestamp changeDate) throws SQLException {
-		Connection conn = DriverManager.getConnection("jdbc:default:connection");
-
-		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-
-		try {
-			PreparedStatement ps = conn.prepareStatement(
-					"update tig_muc_rooms set subject = ?, subject_creator_nick = ?, subject_date = ? where room_id = ?");
-
-			ps.setString(1, subject);
-			ps.setString(2, creator);
-			ps.setTimestamp(3, changeDate);
-			ps.setLong(4, roomId);
-			ps.executeUpdate();
 		} catch (SQLException e) {
 			throw e;
 		} finally {
@@ -237,177 +382,25 @@ public class StoredProcedures {
 		}
 	}
 
-	public static void tigMucAddMessage(String roomJid, Timestamp ts, String senderJid, String senderNick, String body,
-										Boolean publicEvent, String msg) throws SQLException {
+	public static void tigMucSetRoomSubject(Long roomId, String subject, String creator, Timestamp changeDate)
+			throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
 		try {
 			PreparedStatement ps = conn.prepareStatement(
-					"insert into tig_muc_room_history (room_jid, room_jid_sha1, event_type, ts, sender_jid," +
-							" sender_nickname, body, public_event, msg)" +
-							" values (?, ?, 1, ?, ?, ?, ?, ?, ?)");
+					"update tig_muc_rooms set subject = ?, subject_creator_nick = ?, subject_date = ? where room_id = ?");
 
-			ps.setString(1, roomJid);
-			ps.setString(2, sha1OfLower(roomJid));
-			ps.setTimestamp(3, ts);
-			ps.setString(4, senderJid);
-			ps.setString(5, senderNick);
-			ps.setString(6, body);
-			ps.setBoolean(7, publicEvent);
-			ps.setString(8, msg);
+			ps.setString(1, subject);
+			ps.setString(2, creator);
+			ps.setTimestamp(3, changeDate);
+			ps.setLong(4, roomId);
 			ps.executeUpdate();
 		} catch (SQLException e) {
 			throw e;
 		} finally {
 			conn.close();
-		}
-	}
-
-	public static void tigMucDeleteMessages(String roomJid) throws SQLException {
-		Connection conn = DriverManager.getConnection("jdbc:default:connection");
-
-		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-
-		try {
-			PreparedStatement ps = conn.prepareStatement("delete from tig_muc_room_history where room_jid_sha1 = ?");
-
-			ps.setString(1, sha1OfLower(roomJid));
-			ps.executeUpdate();
-		} catch (SQLException e) {
-			throw e;
-		} finally {
-			conn.close();
-		}
-	}
-
-	public static void tigMucGetMessages(String roomJid, Integer maxMessages, Timestamp since, ResultSet[] data) throws SQLException {
-		Connection conn = DriverManager.getConnection("jdbc:default:connection");
-
-		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-
-		try {
-			PreparedStatement ps = conn.prepareStatement(
-					"select t.sender_nickname, t.ts, t.sender_jid, t.body, t.msg from (" +
-							"select h.sender_nickname, h.ts, h.sender_jid, h.body, h.msg" +
-							" from tig_muc_room_history h" +
-							" where h.room_jid_sha1 = ?" +
-							"	and (? is null or h.ts >= ?)" +
-							" order by h.ts desc offset 0 rows fetch next ? rows only)"
-					+ " AS t order by t.ts asc");
-
-			ps.setString(1, sha1OfLower(roomJid));
-			ps.setTimestamp(2, since);
-			ps.setTimestamp(3, since);
-			ps.setInt(4, maxMessages);
-			data[0] = ps.executeQuery();
-		} catch (SQLException e) {
-			throw e;
-		} finally {
-			conn.close();
-		}
-	}
-
-	public static void tigMucMamGetMessages(String roomJid, Timestamp since, Timestamp to, String nickname, Integer limit, Integer offset, ResultSet[] data) throws SQLException {
-		Connection conn = DriverManager.getConnection("jdbc:default:connection");
-
-		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-
-		try {
-			PreparedStatement ps = conn.prepareStatement(
-					"select h.sender_nickname, h.ts, h.sender_jid, h.body, h.msg" +
-							" from tig_muc_room_history h" +
-							" where h.room_jid_sha1 = ?" +
-							"	and (? is null or h.ts >= ?)" +
-							"	and (? is null or h.ts <= ?)" +
-							"	and (? is null or h.sender_nickname = ?)" +
-							" order by h.ts asc offset ? rows fetch next ? rows only");
-
-			ps.setString(1, sha1OfLower(roomJid));
-			ps.setTimestamp(2, since);
-			ps.setTimestamp(3, since);
-			ps.setTimestamp(4, to);
-			ps.setTimestamp(5, to);
-			ps.setString(6, nickname);
-			ps.setString(7, nickname);
-			ps.setInt(8, offset );
-			ps.setInt(9, limit);
-			data[0] = ps.executeQuery();
-		} catch (SQLException e) {
-			throw e;
-		} finally {
-			conn.close();
-		}
-	}
-
-	public static void tigMucMamGetMessagePosition(String roomJid, Timestamp since, Timestamp to, String nickname, Timestamp id_ts, ResultSet[] data) throws SQLException {
-		Connection conn = DriverManager.getConnection("jdbc:default:connection");
-
-		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-
-		try {
-			PreparedStatement ps = conn.prepareStatement(
-					"select count(1)" +
-							" from tig_muc_room_history h" +
-							" where h.room_jid_sha1 = ?" +
-							"	and (? is null or h.ts >= ?)" +
-							"	and (? is null or h.ts <= ?)" +
-							"	and (? is null or h.sender_nickname = ?)" +
-							"   and h.ts < ?");
-
-			ps.setString(1, sha1OfLower(roomJid));
-			ps.setTimestamp(2, since);
-			ps.setTimestamp(3, since);
-			ps.setTimestamp(4, to);
-			ps.setTimestamp(5, to);
-			ps.setString(6, nickname);
-			ps.setString(7, nickname);
-			ps.setTimestamp(8, id_ts);
-			data[0] = ps.executeQuery();
-		} catch (SQLException e) {
-			throw e;
-		} finally {
-			conn.close();
-		}
-	}
-
-	public static void tigMucMamGetMessagesCount(String roomJid, Timestamp since, Timestamp to, String nickname, ResultSet[] data) throws SQLException {
-		Connection conn = DriverManager.getConnection("jdbc:default:connection");
-
-		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-
-		try {
-			PreparedStatement ps = conn.prepareStatement(
-					"select count(1)" +
-							" from tig_muc_room_history h" +
-							" where h.room_jid_sha1 = ?" +
-							"	and (? is null or h.ts >= ?)" +
-							"	and (? is null or h.ts <= ?)" +
-							"	and (? is null or h.sender_nickname = ?)");
-
-			ps.setString(1, sha1OfLower(roomJid));
-			ps.setTimestamp(2, since);
-			ps.setTimestamp(3, since);
-			ps.setTimestamp(4, to);
-			ps.setTimestamp(5, to);
-			ps.setString(6, nickname);
-			ps.setString(7, nickname);
-			data[0] = ps.executeQuery();
-		} catch (SQLException e) {
-			throw e;
-		} finally {
-			conn.close();
-		}
-	}
-
-	protected static String sha1OfLower(String data) throws SQLException {
-		try {
-			MessageDigest md = MessageDigest.getInstance("SHA-1");
-			byte[] hash = md.digest(data.toLowerCase().getBytes(UTF8));
-			return Algorithms.bytesToHex(hash);
-		} catch (NoSuchAlgorithmException e) {
-			throw new SQLException(e);
 		}
 	}
 

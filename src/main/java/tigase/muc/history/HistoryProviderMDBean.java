@@ -46,7 +46,8 @@ import java.util.Date;
  * Created by andrzej on 25.08.2016.
  */
 @Bean(name = "historyProviderPool", parent = MUCComponent.class, active = true)
-public class HistoryProviderMDBean extends MDRepositoryBeanWithStatistics<HistoryProvider>
+public class HistoryProviderMDBean
+		extends MDRepositoryBeanWithStatistics<HistoryProvider>
 		implements HistoryProvider, MAMRepository {
 
 	@ConfigField(desc = "Use domain without component name to lookup for repository", alias = "map-component-to-bare-domain")
@@ -87,7 +88,8 @@ public class HistoryProviderMDBean extends MDRepositoryBeanWithStatistics<Histor
 	}
 
 	@Override
-	public void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname, Date time) {
+	public void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname,
+								 Date time) {
 		getRepository(room).addSubjectChange(room, message, subject, senderJid, senderNickname, time);
 	}
 
@@ -97,7 +99,8 @@ public class HistoryProviderMDBean extends MDRepositoryBeanWithStatistics<Histor
 	}
 
 	@Override
-	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since, PacketWriter writer) {
+	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds,
+								   Date since, PacketWriter writer) {
 		getRepository(room).getHistoryMessages(room, senderJID, maxchars, maxstanzas, seconds, since, writer);
 	}
 
@@ -147,13 +150,13 @@ public class HistoryProviderMDBean extends MDRepositoryBeanWithStatistics<Histor
 		return super.getRepository(domain);
 	}
 
-
 	@Override
 	protected Class<? extends HistoryProvider> findClassForDataSource(DataSource dataSource) throws DBInitException {
 		return DataSourceHelper.getDefaultClass(HistoryProvider.class, dataSource.getResourceUri());
 	}
 
-	public static class HistoryProviderConfigBean extends MDRepositoryBean.MDRepositoryConfigBean<HistoryProvider> {
+	public static class HistoryProviderConfigBean
+			extends MDRepositoryBean.MDRepositoryConfigBean<HistoryProvider> {
 
 //		@Override
 //		public void register(Kernel kernel) {

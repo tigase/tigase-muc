@@ -31,10 +31,10 @@ import java.util.Date;
 
 /**
  * @author bmalkow
- *
  */
 @Bean(name = "history-provider", active = true)
-public interface HistoryProvider<DS extends DataSource> extends DataSourceAware<DS> {
+public interface HistoryProvider<DS extends DataSource>
+		extends DataSourceAware<DS> {
 
 	/**
 	 * Adds join event.
@@ -56,8 +56,7 @@ public interface HistoryProvider<DS extends DataSource> extends DataSourceAware<
 
 	/**
 	 * @param room
-	 * @param message
-	 *            TODO
+	 * @param message TODO
 	 * @param body
 	 * @param senderJid
 	 * @param senderNickname
@@ -69,8 +68,7 @@ public interface HistoryProvider<DS extends DataSource> extends DataSourceAware<
 	 * Adds subject changes to log/history.
 	 *
 	 * @param room
-	 * @param message
-	 *            TODO
+	 * @param message TODO
 	 * @param subject
 	 * @param senderJid
 	 * @param senderNickname
@@ -79,8 +77,8 @@ public interface HistoryProvider<DS extends DataSource> extends DataSourceAware<
 	void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname, Date time);
 
 	/**
-	 * Destroys this instance of HistoryProvider releasing all resources
-	 * allocated but this provider if they should be released
+	 * Destroys this instance of HistoryProvider releasing all resources allocated but this provider if they should be
+	 * released
 	 */
 	void destroy();
 
@@ -91,11 +89,10 @@ public interface HistoryProvider<DS extends DataSource> extends DataSourceAware<
 	 * @param maxstanzas
 	 * @param seconds
 	 * @param since
-	 * @param writer
-	 *            TODO
+	 * @param writer TODO
 	 */
 	void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
-			PacketWriter writer);
+							PacketWriter writer);
 
 	/**
 	 * @return

@@ -40,29 +40,10 @@ import java.util.logging.Logger;
 
 /**
  * @author bmalkow
- *
  */
 @Bean(name = "ghostbuster", parent = MUCComponent.class, active = true)
-public class Ghostbuster2 extends ScheduledTask {
-
-	protected class MonitoredObject {
-
-		private long lastActivity;
-
-		private HashSet<BareJID> rooms = new HashSet<BareJID>();
-
-		private final JID source;
-
-		/**
-		 * @param occupantJid
-		 */
-		public MonitoredObject(JID occupantJid) {
-			this.source = occupantJid;
-		}
-
-	}
-
-	private static long idCounter;
+public class Ghostbuster2
+		extends ScheduledTask {
 
 	private static final Set<String> intReasons = new HashSet<String>() {
 		private static final long serialVersionUID = 1L;
@@ -78,24 +59,17 @@ public class Ghostbuster2 extends ScheduledTask {
 			add("service-unavailable");
 		}
 	};
-
 	public static final Set<String> R = Collections.unmodifiableSet(intReasons);
-
+	private static long idCounter;
+	protected final Map<JID, MonitoredObject> monitoredObjects = new ConcurrentHashMap<JID, MonitoredObject>();
+	private final ReceiverTimeoutHandler pingHandler;
+	protected Logger log = Logger.getLogger(this.getClass().getName());
 	@Inject
 	private MUCConfig config;
-
-	protected Logger log = Logger.getLogger(this.getClass().getName());
-
-	protected final Map<JID, MonitoredObject> monitoredObjects = new ConcurrentHashMap<JID, MonitoredObject>();
-
 	@Inject
 	private MUCComponent mucComponent;
-
-	private final ReceiverTimeoutHandler pingHandler;
-
 	@Inject
 	private PresenceModule presenceModule;
-
 	@Inject
 	private IMucRepository repository;
 
@@ -134,12 +108,14 @@ public class Ghostbuster2 extends ScheduledTask {
 		try {
 			MonitoredObject o = monitoredObjects.get(occupantJid);
 
-			if (log.isLoggable(Level.FINE))
+			if (log.isLoggable(Level.FINE)) {
 				log.fine(occupantJid + " registered in room " + room.getRoomJID());
+			}
 
 			if (o == null) {
-				if (log.isLoggable(Level.FINE))
+				if (log.isLoggable(Level.FINE)) {
 					log.fine("Start observing " + occupantJid);
+				}
 
 				o = new MonitoredObject(occupantJid);
 				o.lastActivity = System.currentTimeMillis();
@@ -152,6 +128,161 @@ public class Ghostbuster2 extends ScheduledTask {
 			log.log(Level.WARNING, "Problem on registering occupant", e);
 		}
 
+	}
+
+	public PresenceModule getPresenceModule() {
+		return presenceModule;
+	}
+
+	public void setPresenceModule(PresenceModule presenceModule) {
+		this.presenceModule = presenceModule;
+	}
+
+	public void ping() throws TigaseStringprepException {
+		if (log.isLoggable(Level.FINE)) {
+			log.log(Level.FINE, "Pinging up to 1000 known JIDs with 1h of inactivity");
+		}
+
+		int c = 0;
+		final long now = System.currentTimeMillis();
+		final long border = now - 1000 * 60 * 60;
+		Iterator<MonitoredObject> it = this.monitoredObjects.values().iterator();
+
+		while (it.hasNext() && (c < 1000)) {
+			MonitoredObject entry = it.next();
+
+			if (entry.lastActivity < border) {
+				++c;
+
+				BareJID r = null;
+				synchronized (entry.rooms) {
+					if (!entry.rooms.isEmpty()) {
+						r = entry.rooms.iterator().next();
+					}
+				}
+				if (r != null) {
+					ping(r, entry.source);
+				}
+			}
+		}
+	}
+
+	/**
+	 * @param occupantJids
+	 * @param room
+	 */
+	public void remove(Collection<JID> occupantJids, Room room) {
+		for (JID jid : occupantJids) {
+			remove(jid, room);
+		}
+	}
+
+	public void remove(JID occupantJid, Room room) {
+		try {
+			MonitoredObject o = monitoredObjects.get(occupantJid);
+			if (o == null) {
+				return;
+			}
+
+			if (log.isLoggable(Level.FINE)) {
+				log.fine(occupantJid + " unregisterd from room " + room.getRoomJID());
+			}
+
+			synchronized (o.rooms) {
+				o.rooms.remove(room.getRoomJID());
+
+				if (o.rooms.isEmpty()) {
+					if (log.isLoggable(Level.FINE)) {
+						log.fine("Stop observing " + occupantJid);
+					}
+
+					monitoredObjects.remove(occupantJid);
+
+				}
+			}
+		} catch (Exception e) {
+			log.log(Level.WARNING, "Problem on unregistering occupant", e);
+		}
+	}
+
+	@Override
+	public void run() {
+		if (config.isGhostbusterEnabled()) {
+			try {
+				ping();
+			} catch (Exception e) {
+				log.log(Level.WARNING, "Problem on executing ghostbuster", e);
+			}
+		}
+	}
+
+	public void update(Packet packet) throws TigaseStringprepException {
+		if (packet.getStanzaFrom() == null) {
+			return;
+		}
+
+		final MonitoredObject o = monitoredObjects.get(packet.getStanzaFrom());
+
+		if (o == null) {
+			return;
+		}
+
+		if (checkError(packet) != null) {
+			if (log.isLoggable(Level.FINEST)) {
+				log.finest("Received presence error: " + packet.getElement().toString());
+			}
+			processError(o, packet);
+		} else {
+			// update last activity
+			if (log.isLoggable(Level.FINER)) {
+				log.finer("Update activity of " + o.source);
+			}
+
+			o.lastActivity = System.currentTimeMillis();
+		}
+	}
+
+	/**
+	 * @param packet
+	 *
+	 * @throws TigaseStringprepException
+	 */
+	protected void onPingReceived(Packet packet) throws TigaseStringprepException {
+		update(packet);
+	}
+
+	/**
+	 * @param stanzaTo
+	 *
+	 * @throws TigaseStringprepException
+	 */
+	protected void onPingTimeout(JID stanzaTo) throws TigaseStringprepException {
+		if (log.isLoggable(Level.FINEST)) {
+			log.finest("Timeouted ping to: " + stanzaTo);
+		}
+
+		// final MonitoredObject obj = monitoredObjects.get(stanzaTo);
+		//
+		// if (obj == null)
+		// return;
+		//
+		// if ((presenceModule == null) || (mucComponent.getMucRepository() ==
+		// null)) {
+		// return;
+		// }
+		//
+		// if (log.isLoggable(Level.FINEST)) {
+		// log.finest("Forced removal last activity of " + obj.source);
+		// }
+		//
+		// this.monitoredObjects.remove(obj);
+		// for (Room r :
+		// mucComponent.getMucRepository().getActiveRooms().values()) {
+		// if (obj.rooms.contains(r.getRoomJID()) &&
+		// r.isOccupantInRoom(obj.source)) {
+		// presenceModule.doQuit(r, obj.source);
+		// }
+		// }
 	}
 
 	private String checkError(final Packet packet) {
@@ -178,78 +309,6 @@ public class Ghostbuster2 extends ScheduledTask {
 		return null;
 	}
 
-	public PresenceModule getPresenceModule() {
-		return presenceModule;
-	}
-
-	/**
-	 * @param packet
-	 * @throws TigaseStringprepException
-	 */
-	protected void onPingReceived(Packet packet) throws TigaseStringprepException {
-		update(packet);
-	}
-
-	/**
-	 * @param stanzaTo
-	 * @throws TigaseStringprepException
-	 */
-	protected void onPingTimeout(JID stanzaTo) throws TigaseStringprepException {
-		if (log.isLoggable(Level.FINEST))
-			log.finest("Timeouted ping to: " + stanzaTo);
-
-		// final MonitoredObject obj = monitoredObjects.get(stanzaTo);
-		//
-		// if (obj == null)
-		// return;
-		//
-		// if ((presenceModule == null) || (mucComponent.getMucRepository() ==
-		// null)) {
-		// return;
-		// }
-		//
-		// if (log.isLoggable(Level.FINEST)) {
-		// log.finest("Forced removal last activity of " + obj.source);
-		// }
-		//
-		// this.monitoredObjects.remove(obj);
-		// for (Room r :
-		// mucComponent.getMucRepository().getActiveRooms().values()) {
-		// if (obj.rooms.contains(r.getRoomJID()) &&
-		// r.isOccupantInRoom(obj.source)) {
-		// presenceModule.doQuit(r, obj.source);
-		// }
-		// }
-	}
-
-	public void ping() throws TigaseStringprepException {
-		if (log.isLoggable(Level.FINE)) {
-			log.log(Level.FINE, "Pinging up to 1000 known JIDs with 1h of inactivity");
-		}
-
-		int c = 0;
-		final long now = System.currentTimeMillis();
-		final long border = now - 1000 * 60 * 60;
-		Iterator<MonitoredObject> it = this.monitoredObjects.values().iterator();
-
-		while (it.hasNext() && (c < 1000)) {
-			MonitoredObject entry = it.next();
-
-			if (entry.lastActivity < border) {
-				++c;
-
-				BareJID r = null;
-				synchronized (entry.rooms) {
-					if (!entry.rooms.isEmpty()) {
-						r = entry.rooms.iterator().next();
-					}
-				}
-				if (r != null)
-					ping(r, entry.source);
-			}
-		}
-	}
-
 	private void ping(BareJID room, JID occupantJID) throws TigaseStringprepException {
 		final String id = "png-" + (++idCounter);
 
@@ -257,23 +316,25 @@ public class Ghostbuster2 extends ScheduledTask {
 			log.log(Level.FINER, "Pinging " + occupantJID + ". id=" + id);
 		}
 
-		Element ping = new Element("iq", new String[] { "type", "id", "from", "to" },
-				new String[] { "get", id, room.toString(), occupantJID.toString() });
+		Element ping = new Element("iq", new String[]{"type", "id", "from", "to"},
+								   new String[]{"get", id, room.toString(), occupantJID.toString()});
 
-		ping.addChild(new Element("ping", new String[] { "xmlns" }, new String[] { "urn:xmpp:ping" }));
+		ping.addChild(new Element("ping", new String[]{"xmlns"}, new String[]{"urn:xmpp:ping"}));
 
 		Packet packet = Packet.packetInstance(ping);
 		packet.setXMLNS(Packet.CLIENT_XMLNS);
 
 		mucComponent.addOutPacketWithTimeout(packet, pingHandler, 1, TimeUnit.MINUTES);
 
-		if (log.isLoggable(Level.FINER))
+		if (log.isLoggable(Level.FINER)) {
 			log.log(Level.FINER, "Pinged " + occupantJID);
+		}
 	}
 
 	/**
 	 * @param obj
 	 * @param packet
+	 *
 	 * @throws TigaseStringprepException
 	 */
 	private void processError(MonitoredObject obj, Packet packet) throws TigaseStringprepException {
@@ -293,77 +354,19 @@ public class Ghostbuster2 extends ScheduledTask {
 		}
 	}
 
-	/**
-	 * @param occupantJids
-	 * @param room
-	 */
-	public void remove(Collection<JID> occupantJids, Room room) {
-		for (JID jid : occupantJids) {
-			remove(jid, room);
+	protected class MonitoredObject {
+
+		private final JID source;
+		private long lastActivity;
+		private HashSet<BareJID> rooms = new HashSet<BareJID>();
+
+		/**
+		 * @param occupantJid
+		 */
+		public MonitoredObject(JID occupantJid) {
+			this.source = occupantJid;
 		}
-	}
 
-	public void remove(JID occupantJid, Room room) {
-		try {
-			MonitoredObject o = monitoredObjects.get(occupantJid);
-			if (o == null)
-				return;
-
-			if (log.isLoggable(Level.FINE))
-				log.fine(occupantJid + " unregisterd from room " + room.getRoomJID());
-
-			synchronized (o.rooms) {
-				o.rooms.remove(room.getRoomJID());
-
-				if (o.rooms.isEmpty()) {
-					if (log.isLoggable(Level.FINE))
-						log.fine("Stop observing " + occupantJid);
-
-					monitoredObjects.remove(occupantJid);
-
-				}
-			}
-		} catch (Exception e) {
-			log.log(Level.WARNING, "Problem on unregistering occupant", e);
-		}
-	}
-
-	@Override
-	public void run() {
-		if (config.isGhostbusterEnabled()) {
-			try {
-				ping();
-			} catch (Exception e) {
-				log.log(Level.WARNING, "Problem on executing ghostbuster", e);
-			}
-		}
-	}
-
-	public void setPresenceModule(PresenceModule presenceModule) {
-		this.presenceModule = presenceModule;
-	}
-
-	public void update(Packet packet) throws TigaseStringprepException {
-		if (packet.getStanzaFrom() == null)
-			return;
-
-		final MonitoredObject o = monitoredObjects.get(packet.getStanzaFrom());
-
-		if (o == null)
-			return;
-
-		if (checkError(packet) != null) {
-			if (log.isLoggable(Level.FINEST)) {
-				log.finest("Received presence error: " + packet.getElement().toString());
-			}
-			processError(o, packet);
-		} else {
-			// update last activity
-			if (log.isLoggable(Level.FINER))
-				log.finer("Update activity of " + o.source);
-
-			o.lastActivity = System.currentTimeMillis();
-		}
 	}
 
 }

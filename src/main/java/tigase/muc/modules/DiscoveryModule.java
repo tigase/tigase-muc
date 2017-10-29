@@ -52,127 +52,6 @@ public class DiscoveryModule
 		query.addChild(new Element("feature", new String[]{"var"}, new String[]{feature}));
 	}
 
-	private void addField(Element form, String var, String type, String label, Object... value) {
-		if (value == null) {
-			return;
-		}
-		Element f = new Element("field");
-		if (type != null) {
-			f.setAttribute("type", type);
-		}
-		if (var != null) {
-			f.setAttribute("var", var);
-		}
-		if (label != null) {
-			f.setAttribute("label", label);
-		}
-
-		for (Object o : value) {
-			Element v = new Element("value");
-			if (o instanceof Boolean) {
-				v.setCData(((Boolean) o ? "1" : "0"));
-			} else if (o != null) {
-				v.setCData(o.toString());
-			}
-			f.addChild(v);
-		}
-		form.addChild(f);
-	}
-
-	private void addRoomInfoForm(final Element resultQuery, final Room room, final JID senderJID) {
-		final RoomConfig config = room.getConfig();
-		final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID());
-
-		final boolean allowedToViewAll;
-		if (!room.getOccupantsNicknames(senderJID.getBareJID()).isEmpty()) {
-			allowedToViewAll = true;
-		} else if (senderAffiliation.isEnterMembersOnlyRoom()) {
-			allowedToViewAll = true;
-		} else {
-			allowedToViewAll = false;
-		}
-
-		if (!config.isRoomconfigPublicroom() && !allowedToViewAll) {
-			return;
-		}
-
-		if (config.isRoomMembersOnly() && !allowedToViewAll) {
-			return;
-		}
-
-		final Element form = new Element("x", new String[]{"xmlns", "type"}, new String[]{"jabber:x:data", "result"});
-		addField(form, "FORM_TYPE", "hidden", null, "http://jabber.org/protocol/muc#roominfo");
-
-		// text-single Room creation date
-		addField(form, "muc#roominfo_creationdate", null, "Room creation date",
-				 dtf.formatDateTime(room.getCreationDate()));
-		// text-single Current Discussion Topic
-		addField(form, "muc#roominfo_occupants", null, "Number of occupants", room.getOccupantsCount());
-		// text-single Current Discussion Topic
-		addField(form, "muc#roominfo_subject", null, "Current discussion topic", room.getSubject());
-		// boolean Whether to Allow Occupants to Invite Others
-		addField(form, "muc#roomconfig_allowinvites", null, "Whether occupants allowed to invite others",
-				 room.getConfig().isInvitingAllowed());
-		// boolean Whether to Allow Occupants to Change Subject
-		addField(form, "muc#roomconfig_changesubject", null, "Whether occupants may change the subject",
-				 config.isChangeSubject());
-		// boolean Whether to Enable Logging of Room Conversations
-		addField(form, "muc#roomconfig_enablelogging", null, "Whether logging is enabled", config.isLoggingEnabled());
-		// text-single Natural Language for Room Discussions
-		addField(form, "muc#roomconfig_lang", null, "Natural language room name", config.getRoomName());
-		// list-single Maximum Number of Room Occupants
-		addField(form, "muc#roomconfig_maxusers", null, "Maximum number of room occupants", config.getMaxUsers());
-		// boolean Whether an Make Room Members-Only
-		addField(form, "muc#roomconfig_membersonly", null, "Whether room is members-only", config.isRoomMembersOnly());
-		// boolean Whether to Make Room Moderated
-		addField(form, "muc#roomconfig_moderatedroom", null, "Whether room is moderated", config.isRoomModerated());
-		// boolean Whether a Password is Required to Enter
-		addField(form, "muc#roomconfig_passwordprotectedroom", null, "Whether a password is required to enter",
-				 config.isPasswordProtectedRoom());
-		// boolean Whether to Make Room Persistent
-		addField(form, "muc#roomconfig_persistentroom", null, "Whether room is persistent", config.isPersistentRoom());
-		// list-multi Roles for which Presence is Broadcast
-		addField(form, "muc#roomconfig_presencebroadcast", null, "Roles for which presence is broadcast",
-				 Role.moderator.name(), Role.participant.name(), Role.visitor.name());
-		// boolean Whether to Allow Public Searching for Room
-		addField(form, "muc#roomconfig_publicroom", null, "Whether room is publicly searchable",
-				 config.isRoomconfigPublicroom());
-		// jid-multi Full List of Room Admins
-		addField(form, "muc#roomconfig_roomadmins", null, "Full list of room admins", room.getAffiliations()
-				.stream()
-				.filter(jid -> room.getAffiliation(jid) == Affiliation.admin)
-				.toArray());
-		// text-single Short Description of Room
-		addField(form, "muc#roomconfig_roomdesc", null, "Short description of room", config.getRoomDesc());
-		// text-single Natural-Language Room Name
-		addField(form, "muc#roomconfig_roomname", null, "Natural language room name", config.getRoomName());
-		// jid-multi Full List of Room Owners
-		addField(form, "muc#roomconfig_roomowners", null, "Full list of room owners", room.getAffiliations()
-				.stream()
-				.filter(jid -> room.getAffiliation(jid) == Affiliation.owner)
-				.toArray());
-		// text-private The Room Password
-		if (allowedToViewAll && config.isPasswordProtectedRoom()) {
-			addField(form, "muc#roomconfig_roomsecret", null, "The room password", config.getPassword());
-		}
-
-		// list-single Affiliations that May Discover Real JIDs of Occupants
-		RoomConfig.Anonymity anonymity = config.getRoomAnonymity();
-		Object[] whois;
-		switch (anonymity) {
-			case nonanonymous:
-				whois = new String[]{Affiliation.owner.name(), Affiliation.admin.name(), Affiliation.member.name(),
-									 Affiliation.none.name()};
-			case semianonymous:
-				whois = new String[]{Affiliation.owner.name(), Affiliation.admin.name()};
-			default:
-				whois = null;
-		}
-		addField(form, "muc#roomconfig_whois", null, "Affiliations that may discover real jIDs of occupants", whois);
-
-		resultQuery.addChild(form);
-	}
-
 	public DiscoItemsFilter getFilter() {
 		return filter;
 	}
@@ -382,5 +261,126 @@ public class DiscoveryModule
 			throw new MUCException(Authorization.BAD_REQUEST);
 		}
 		write(result);
+	}
+
+	private void addField(Element form, String var, String type, String label, Object... value) {
+		if (value == null) {
+			return;
+		}
+		Element f = new Element("field");
+		if (type != null) {
+			f.setAttribute("type", type);
+		}
+		if (var != null) {
+			f.setAttribute("var", var);
+		}
+		if (label != null) {
+			f.setAttribute("label", label);
+		}
+
+		for (Object o : value) {
+			Element v = new Element("value");
+			if (o instanceof Boolean) {
+				v.setCData(((Boolean) o ? "1" : "0"));
+			} else if (o != null) {
+				v.setCData(o.toString());
+			}
+			f.addChild(v);
+		}
+		form.addChild(f);
+	}
+
+	private void addRoomInfoForm(final Element resultQuery, final Room room, final JID senderJID) {
+		final RoomConfig config = room.getConfig();
+		final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID());
+
+		final boolean allowedToViewAll;
+		if (!room.getOccupantsNicknames(senderJID.getBareJID()).isEmpty()) {
+			allowedToViewAll = true;
+		} else if (senderAffiliation.isEnterMembersOnlyRoom()) {
+			allowedToViewAll = true;
+		} else {
+			allowedToViewAll = false;
+		}
+
+		if (!config.isRoomconfigPublicroom() && !allowedToViewAll) {
+			return;
+		}
+
+		if (config.isRoomMembersOnly() && !allowedToViewAll) {
+			return;
+		}
+
+		final Element form = new Element("x", new String[]{"xmlns", "type"}, new String[]{"jabber:x:data", "result"});
+		addField(form, "FORM_TYPE", "hidden", null, "http://jabber.org/protocol/muc#roominfo");
+
+		// text-single Room creation date
+		addField(form, "muc#roominfo_creationdate", null, "Room creation date",
+				 dtf.formatDateTime(room.getCreationDate()));
+		// text-single Current Discussion Topic
+		addField(form, "muc#roominfo_occupants", null, "Number of occupants", room.getOccupantsCount());
+		// text-single Current Discussion Topic
+		addField(form, "muc#roominfo_subject", null, "Current discussion topic", room.getSubject());
+		// boolean Whether to Allow Occupants to Invite Others
+		addField(form, "muc#roomconfig_allowinvites", null, "Whether occupants allowed to invite others",
+				 room.getConfig().isInvitingAllowed());
+		// boolean Whether to Allow Occupants to Change Subject
+		addField(form, "muc#roomconfig_changesubject", null, "Whether occupants may change the subject",
+				 config.isChangeSubject());
+		// boolean Whether to Enable Logging of Room Conversations
+		addField(form, "muc#roomconfig_enablelogging", null, "Whether logging is enabled", config.isLoggingEnabled());
+		// text-single Natural Language for Room Discussions
+		addField(form, "muc#roomconfig_lang", null, "Natural language room name", config.getRoomName());
+		// list-single Maximum Number of Room Occupants
+		addField(form, "muc#roomconfig_maxusers", null, "Maximum number of room occupants", config.getMaxUsers());
+		// boolean Whether an Make Room Members-Only
+		addField(form, "muc#roomconfig_membersonly", null, "Whether room is members-only", config.isRoomMembersOnly());
+		// boolean Whether to Make Room Moderated
+		addField(form, "muc#roomconfig_moderatedroom", null, "Whether room is moderated", config.isRoomModerated());
+		// boolean Whether a Password is Required to Enter
+		addField(form, "muc#roomconfig_passwordprotectedroom", null, "Whether a password is required to enter",
+				 config.isPasswordProtectedRoom());
+		// boolean Whether to Make Room Persistent
+		addField(form, "muc#roomconfig_persistentroom", null, "Whether room is persistent", config.isPersistentRoom());
+		// list-multi Roles for which Presence is Broadcast
+		addField(form, "muc#roomconfig_presencebroadcast", null, "Roles for which presence is broadcast",
+				 Role.moderator.name(), Role.participant.name(), Role.visitor.name());
+		// boolean Whether to Allow Public Searching for Room
+		addField(form, "muc#roomconfig_publicroom", null, "Whether room is publicly searchable",
+				 config.isRoomconfigPublicroom());
+		// jid-multi Full List of Room Admins
+		addField(form, "muc#roomconfig_roomadmins", null, "Full list of room admins", room.getAffiliations()
+				.stream()
+				.filter(jid -> room.getAffiliation(jid) == Affiliation.admin)
+				.toArray());
+		// text-single Short Description of Room
+		addField(form, "muc#roomconfig_roomdesc", null, "Short description of room", config.getRoomDesc());
+		// text-single Natural-Language Room Name
+		addField(form, "muc#roomconfig_roomname", null, "Natural language room name", config.getRoomName());
+		// jid-multi Full List of Room Owners
+		addField(form, "muc#roomconfig_roomowners", null, "Full list of room owners", room.getAffiliations()
+				.stream()
+				.filter(jid -> room.getAffiliation(jid) == Affiliation.owner)
+				.toArray());
+		// text-private The Room Password
+		if (allowedToViewAll && config.isPasswordProtectedRoom()) {
+			addField(form, "muc#roomconfig_roomsecret", null, "The room password", config.getPassword());
+		}
+
+		// list-single Affiliations that May Discover Real JIDs of Occupants
+		RoomConfig.Anonymity anonymity = config.getRoomAnonymity();
+		Object[] whois;
+		switch (anonymity) {
+			case nonanonymous:
+				whois = new String[]{Affiliation.owner.name(), Affiliation.admin.name(), Affiliation.member.name(),
+									 Affiliation.none.name()};
+			case semianonymous:
+				whois = new String[]{Affiliation.owner.name(), Affiliation.admin.name()};
+			default:
+				whois = null;
+		}
+		addField(form, "muc#roomconfig_whois", null, "Affiliations that may discover real jIDs of occupants", whois);
+
+		resultQuery.addChild(form);
 	}
 }

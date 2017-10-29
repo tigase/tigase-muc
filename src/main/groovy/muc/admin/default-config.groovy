@@ -26,20 +26,18 @@
  AS:ComponentClass: tigase.muc.MUCComponent
 */
 
-package muc.admin;
+package muc.admin
 
-import tigase.form.Form;
-import tigase.muc.MUCComponent;
-import tigase.muc.repository.IMucRepository;
+import tigase.form.Form
+import tigase.muc.repository.IMucRepository
 import tigase.server.Command
-import tigase.server.Iq;
-import tigase.server.Packet
+import tigase.server.Iq
 
 def SUBMIT = "submit";
 
-def mucRepositoryModule = (IMucRepository)mucRepository;
-def Iq p = (Iq)packet;
-def admins = (Set)adminsSet
+def mucRepositoryModule = (IMucRepository) mucRepository;
+def Iq p = (Iq) packet;
+def admins = (Set) adminsSet
 
 def stanzaFromBare = p.getStanzaFrom().getBareJID()
 def isServiceAdmin = admins.contains(stanzaFromBare)
@@ -50,7 +48,7 @@ if (!isServiceAdmin) {
 }
 
 def xform = Command.getData(p, "x", "jabber:x:data");
-def submit = xform==null?false:xform.getAttributeStaticStr("type")==SUBMIT;
+def submit = xform == null ? false : xform.getAttributeStaticStr("type") == SUBMIT;
 
 if (submit) {
 	def command = p.getElement().getChild("command", "http://jabber.org/protocol/commands");
@@ -65,7 +63,7 @@ if (submit) {
 
 	return "Default configurtation updated";
 } else if (!submit) {
-	def res = (Iq)p.commandResult(Command.DataType.form)
+	def res = (Iq) p.commandResult(Command.DataType.form)
 	def command = res.getElement().getChild("command", "http://jabber.org/protocol/commands");
 	def x = command.getChild("x", "jabber:x:data");
 	command.removeChild(x);

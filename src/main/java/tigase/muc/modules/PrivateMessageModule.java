@@ -38,21 +38,18 @@ import java.util.Collection;
 
 /**
  * @author bmalkow
- *
  */
 @Bean(name = PrivateMessageModule.ID, active = true)
-public class PrivateMessageModule extends AbstractMucModule {
-
-	private static final Criteria CRIT = ElementCriteria.nameType("message", "chat");
+public class PrivateMessageModule
+		extends AbstractMucModule {
 
 	public static final String ID = "privatemessages";
-
+	private static final Criteria CRIT = ElementCriteria.nameType("message", "chat");
 	@Inject
 	private IMucRepository repository;
 
 	/**
 	 * Method description
-	 *
 	 *
 	 * @return
 	 */
@@ -64,7 +61,6 @@ public class PrivateMessageModule extends AbstractMucModule {
 	/**
 	 * Method description
 	 *
-	 *
 	 * @return
 	 */
 	@Override
@@ -75,7 +71,6 @@ public class PrivateMessageModule extends AbstractMucModule {
 	/**
 	 * Method description
 	 *
-	 *
 	 * @param element
 	 *
 	 * @throws MUCException
@@ -85,7 +80,8 @@ public class PrivateMessageModule extends AbstractMucModule {
 		try {
 			final JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
 			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr(Packet.TO_ATT));
-			final String recipientNickname = getNicknameFromJid(JID.jidInstance(element.getAttributeStaticStr(Packet.TO_ATT)));
+			final String recipientNickname = getNicknameFromJid(
+					JID.jidInstance(element.getAttributeStaticStr(Packet.TO_ATT)));
 
 			if (recipientNickname == null) {
 				throw new MUCException(Authorization.BAD_REQUEST);
@@ -102,7 +98,7 @@ public class PrivateMessageModule extends AbstractMucModule {
 
 			if (!senderRole.isSendPrivateMessages()) {
 				throw new MUCException(Authorization.NOT_ALLOWED,
-						"Your role is '" + senderRole + "'. You can't send private message.");
+									   "Your role is '" + senderRole + "'. You can't send private message.");
 			}
 
 			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);

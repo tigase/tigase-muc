@@ -22,7 +22,8 @@ package tigase.muc.exceptions;
 import tigase.component.exceptions.ComponentException;
 import tigase.xmpp.Authorization;
 
-public class MUCException extends ComponentException {
+public class MUCException
+		extends ComponentException {
 
 	private static final long serialVersionUID = 1L;
 
@@ -31,22 +32,17 @@ public class MUCException extends ComponentException {
 	}
 
 	/**
-	 *
 	 * @param errorCondition
-	 * @param text
-	 *            human readable message will be send to client
+	 * @param text human readable message will be send to client
 	 */
 	public MUCException(Authorization errorCondition, String text) {
 		super(errorCondition, text);
 	}
 
 	/**
-	 *
 	 * @param errorCondition
-	 * @param text
-	 *            human readable message will be send to client
-	 * @param message
-	 *            exception message for logging only
+	 * @param text human readable message will be send to client
+	 * @param message exception message for logging only
 	 */
 	public MUCException(Authorization errorCondition, String text, String message) {
 		super(errorCondition, text, message);

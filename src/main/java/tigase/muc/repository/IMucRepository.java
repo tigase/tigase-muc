@@ -31,7 +31,6 @@ import java.util.Map;
 
 /**
  * @author bmalkow
- *
  */
 public interface IMucRepository {
 
@@ -54,6 +53,7 @@ public interface IMucRepository {
 
 	/**
 	 * @param newRoomName
+	 *
 	 * @return
 	 */
 	boolean isRoomIdExists(String newRoomName);

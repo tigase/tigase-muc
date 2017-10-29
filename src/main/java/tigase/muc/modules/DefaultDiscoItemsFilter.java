@@ -26,14 +26,17 @@ import tigase.muc.Room;
 import tigase.xmpp.jid.JID;
 
 @Bean(name = "discoItemsFilter", active = true)
-public class DefaultDiscoItemsFilter implements DiscoItemsFilter {
+public class DefaultDiscoItemsFilter
+		implements DiscoItemsFilter {
 
 	@Override
 	public boolean allowed(JID senderJID, Room room) {
 		if (!room.getConfig().isRoomconfigPublicroom()) {
 			Affiliation senderAff = room.getAffiliation(senderJID.getBareJID());
-			if (!room.isOccupantInRoom(senderJID) && (senderAff == Affiliation.none || senderAff == Affiliation.outcast))
+			if (!room.isOccupantInRoom(senderJID) &&
+					(senderAff == Affiliation.none || senderAff == Affiliation.outcast)) {
 				return false;
+			}
 		}
 
 		return true;

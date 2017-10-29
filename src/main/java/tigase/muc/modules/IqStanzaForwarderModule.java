@@ -39,10 +39,10 @@ import java.util.logging.Level;
 
 /**
  * @author bmalkow
- *
  */
 @Bean(name = IqStanzaForwarderModule.ID, active = true)
-public class IqStanzaForwarderModule extends AbstractMucModule {
+public class IqStanzaForwarderModule
+		extends AbstractMucModule {
 
 	public static final String ID = "iqforwarder";
 
@@ -61,16 +61,6 @@ public class IqStanzaForwarderModule extends AbstractMucModule {
 
 	@Inject
 	private IMucRepository repository;
-
-	protected boolean checkIfProcessed(Element element) {
-		if (element.getName() != "iq")
-			return false;
-		try {
-			return getNicknameFromJid(JID.jidInstance(element.getAttributeStaticStr("to"))) != null;
-		} catch (TigaseStringprepException e) {
-			return false;
-		}
-	}
 
 	@Override
 	public String[] getFeatures() {
@@ -115,21 +105,24 @@ public class IqStanzaForwarderModule extends AbstractMucModule {
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST,
 						"Processing IQ stanza, from: {0}, to: {1}, recipientNickname: {2}, senderNickname: {3}, senderRole: {4} ",
-						new Object[] { senderJID, roomJID, recipientNickname, senderNickname, senderRole });
+						new Object[]{senderJID, roomJID, recipientNickname, senderNickname, senderRole});
 			}
 
 			if (!senderRole.isSendPrivateMessages()) {
 				throw new MUCException(Authorization.NOT_ALLOWED, "Role is not allowed to send private messages");
 			}
-			if (room.getOccupantsJidsByNickname(senderNickname).size() > 1)
+			if (room.getOccupantsJidsByNickname(senderNickname).size() > 1) {
 				throw new MUCException(Authorization.NOT_ALLOWED, "Many source resources detected.");
+			}
 
 			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);
-			if (recipientJids == null || recipientJids.isEmpty())
+			if (recipientJids == null || recipientJids.isEmpty()) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
+			}
 
-			if (recipientJids.size() > 1)
+			if (recipientJids.size() > 1) {
 				throw new MUCException(Authorization.NOT_ALLOWED, "Many destination resources detected.");
+			}
 
 			JID recipientJid = recipientJids.iterator().next();
 
@@ -147,6 +140,17 @@ public class IqStanzaForwarderModule extends AbstractMucModule {
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new RuntimeException(e);
+		}
+	}
+
+	protected boolean checkIfProcessed(Element element) {
+		if (element.getName() != "iq") {
+			return false;
+		}
+		try {
+			return getNicknameFromJid(JID.jidInstance(element.getAttributeStaticStr("to"))) != null;
+		} catch (TigaseStringprepException e) {
+			return false;
 		}
 	}
 

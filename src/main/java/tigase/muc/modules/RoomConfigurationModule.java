@@ -36,9 +36,9 @@ import tigase.server.Packet;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.StanzaType;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
-import tigase.xmpp.StanzaType;
 
 import java.util.logging.Level;
 
@@ -67,41 +67,6 @@ public class RoomConfigurationModule
 		event.addChild(new Element("room", room.getRoomJID().toString()));
 		event.addChild(new Element("creatorJID", room.getCreatorJid().toString()));
 		return event;
-	}
-
-	private void destroy(Room room, Element destroyElement) throws TigaseStringprepException, RepositoryException {
-		for (String occupantNickname : room.getOccupantsNicknames()) {
-			for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
-				final Element p = new Element("presence");
-
-				p.addAttribute("type", "unavailable");
-
-				PresenceWrapper presence = PresenceWrapper.preparePresenceW(room, occupantJid, p,
-																			occupantJid.getBareJID(), occupantNickname,
-																			Affiliation.none, Role.none);
-
-				presence.x.addChild(destroyElement);
-				write(presence.packet);
-			}
-		}
-
-		// XXX TODO
-		// throw new
-		// MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
-		if (log.isLoggable(Level.FINE)) {
-			log.fine("Destroying room " + room.getRoomJID());
-		}
-
-		repository.destroyRoom(room, destroyElement);
-		if (historyProvider != null) {
-			if (log.isLoggable(Level.FINE)) {
-				log.fine("Removing history of room " + room.getRoomJID());
-			}
-			historyProvider.removeHistory(room);
-		} else if (log.isLoggable(Level.FINE)) {
-			log.fine("Cannot remove history of room " + room.getRoomJID() +
-							 " because history provider is not available.");
-		}
 	}
 
 	/**
@@ -146,33 +111,6 @@ public class RoomConfigurationModule
 		return CRIT;
 	}
 
-	private Element makeConfigFormIq(final Element request, final Room room, final RoomConfig roomConfig) {
-		final Element response = createResultIQ(request);
-		Element query = new Element("query", new String[]{"xmlns"},
-									new String[]{"http://jabber.org/protocol/muc#owner"});
-
-		response.addChild(query);
-
-		Form form = roomConfig.getConfigForm();
-		form.removeField("muc#roomconfig_roomadmins");
-
-		String[] adminsArrays;
-		if (room == null) {
-			adminsArrays = new String[]{};
-		} else {
-			adminsArrays = room.getAffiliations()
-					.stream()
-					.filter(jid -> room.getAffiliation(jid) == Affiliation.admin)
-					.map(bareJID -> bareJID.toString())
-					.toArray(String[]::new);
-		}
-
-		form.addField(Field.fieldJidMulti("muc#roomconfig_roomadmins", adminsArrays, "Full List of Room Admins"));
-		query.addChild(form.getElement());
-
-		return response;
-	}
-
 	/**
 	 * Method description
 	 *
@@ -202,6 +140,68 @@ public class RoomConfigurationModule
 
 			throw new RuntimeException(e);
 		}
+	}
+
+	private void destroy(Room room, Element destroyElement) throws TigaseStringprepException, RepositoryException {
+		for (String occupantNickname : room.getOccupantsNicknames()) {
+			for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
+				final Element p = new Element("presence");
+
+				p.addAttribute("type", "unavailable");
+
+				PresenceWrapper presence = PresenceWrapper.preparePresenceW(room, occupantJid, p,
+																			occupantJid.getBareJID(), occupantNickname,
+																			Affiliation.none, Role.none);
+
+				presence.x.addChild(destroyElement);
+				write(presence.packet);
+			}
+		}
+
+		// XXX TODO
+		// throw new
+		// MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
+		if (log.isLoggable(Level.FINE)) {
+			log.fine("Destroying room " + room.getRoomJID());
+		}
+
+		repository.destroyRoom(room, destroyElement);
+		if (historyProvider != null) {
+			if (log.isLoggable(Level.FINE)) {
+				log.fine("Removing history of room " + room.getRoomJID());
+			}
+			historyProvider.removeHistory(room);
+		} else if (log.isLoggable(Level.FINE)) {
+			log.fine("Cannot remove history of room " + room.getRoomJID() +
+							 " because history provider is not available.");
+		}
+	}
+
+	private Element makeConfigFormIq(final Element request, final Room room, final RoomConfig roomConfig) {
+		final Element response = createResultIQ(request);
+		Element query = new Element("query", new String[]{"xmlns"},
+									new String[]{"http://jabber.org/protocol/muc#owner"});
+
+		response.addChild(query);
+
+		Form form = roomConfig.getConfigForm();
+		form.removeField("muc#roomconfig_roomadmins");
+
+		String[] adminsArrays;
+		if (room == null) {
+			adminsArrays = new String[]{};
+		} else {
+			adminsArrays = room.getAffiliations()
+					.stream()
+					.filter(jid -> room.getAffiliation(jid) == Affiliation.admin)
+					.map(bareJID -> bareJID.toString())
+					.toArray(String[]::new);
+		}
+
+		form.addField(Field.fieldJidMulti("muc#roomconfig_roomadmins", adminsArrays, "Full List of Room Admins"));
+		query.addChild(form.getElement());
+
+		return response;
 	}
 
 	private void processGet(final Packet element) throws RepositoryException, MUCException {

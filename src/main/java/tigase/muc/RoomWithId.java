@@ -26,7 +26,8 @@ import java.util.Date;
 /**
  * Created by andrzej on 14.10.2016.
  */
-public class RoomWithId<ID> extends Room {
+public class RoomWithId<ID>
+		extends Room {
 
 	private ID id;
 

@@ -120,6 +120,10 @@ public class MucDAOMDBean
 	}
 
 	@Override
+	public void setDataSource(DataSource dataSource) {
+	}
+
+	@Override
 	protected IMucDAO getRepository(String domain) {
 		if (mapComponentToBareDomain) {
 			int idx = domain.indexOf(".");
@@ -131,15 +135,12 @@ public class MucDAOMDBean
 	}
 
 	@Override
-	public void setDataSource(DataSource dataSource) {
-	}
-
-	@Override
 	protected Class<? extends IMucDAO> findClassForDataSource(DataSource dataSource) throws DBInitException {
 		return DataSourceHelper.getDefaultClass(IMucDAO.class, dataSource.getResourceUri());
 	}
 
-	public static class MucDAOProviderConfigBean extends MDRepositoryBean.MDRepositoryConfigBean<IMucDAO> {
+	public static class MucDAOProviderConfigBean
+			extends MDRepositoryBean.MDRepositoryConfigBean<IMucDAO> {
 
 	}
 

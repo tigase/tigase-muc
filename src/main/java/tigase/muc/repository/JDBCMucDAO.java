@@ -37,7 +37,7 @@ import java.util.logging.Logger;
 /**
  * @author bmalkow
  */
-@Repository.Meta(supportedUris = {"jdbc:.*" }, isDefault = true)
+@Repository.Meta(supportedUris = {"jdbc:.*"}, isDefault = true)
 @Repository.SchemaId(id = Schema.MUC_SCHEMA_ID, name = Schema.MUC_SCHEMA_NAME)
 public class JDBCMucDAO
 		extends AbstractMucDAO<DataRepository, Long> {
@@ -52,14 +52,11 @@ public class JDBCMucDAO
 	private static final String SET_ROOM_AFFILIATION_QUERY = "{ call Tig_MUC_SetRoomAffiliation(?,?,?) }";
 	private static final String SET_ROOM_SUBJECT_QUERY = "{ call Tig_MUC_SetRoomSubject(?,?,?,?) }";
 	private static final String SET_ROOM_CONFIG_QUERY = "{ call Tig_MUC_SetRoomConfig(?,?,?) }";
-
-	@Inject
-	private Room.RoomFactory roomFactory;
-
+	protected DataRepository data_repo;
 	@Inject
 	private MUCConfig mucConfig;
-
-	protected DataRepository data_repo;
+	@Inject
+	private Room.RoomFactory roomFactory;
 
 	@Override
 	public Long createRoom(RoomWithId<Long> room) throws RepositoryException {
@@ -72,7 +69,7 @@ public class JDBCMucDAO
 				try {
 					stmt.setString(1, room.getRoomJID().toString());
 					stmt.setString(2, room.getCreatorJid().toString());
-					data_repo.setTimestamp(stmt,3, new Timestamp(room.getCreationDate().getTime()));
+					data_repo.setTimestamp(stmt, 3, new Timestamp(room.getCreationDate().getTime()));
 					stmt.setString(4, (roomName != null && !roomName.isEmpty()) ? roomName : null);
 					stmt.setString(5, room.getConfig().getAsElement().toString());
 
@@ -208,7 +205,8 @@ public class JDBCMucDAO
 	@Override
 	public void setAffiliation(RoomWithId<Long> room, BareJID jid, Affiliation affiliation) throws RepositoryException {
 		try {
-			PreparedStatement stmt = data_repo.getPreparedStatement(mucConfig.getServiceName(), SET_ROOM_AFFILIATION_QUERY);
+			PreparedStatement stmt = data_repo.getPreparedStatement(mucConfig.getServiceName(),
+																	SET_ROOM_AFFILIATION_QUERY);
 			synchronized (stmt) {
 				stmt.setLong(1, room.getId());
 				stmt.setString(2, jid.toString());
@@ -217,24 +215,29 @@ public class JDBCMucDAO
 				stmt.execute();
 			}
 		} catch (SQLException ex) {
-			throw new RepositoryException("Error while setting affiliation for room " + room.getRoomJID() + " for jid " + jid + " to " + affiliation.name(), ex);
+			throw new RepositoryException(
+					"Error while setting affiliation for room " + room.getRoomJID() + " for jid " + jid + " to " +
+							affiliation.name(), ex);
 		}
 	}
 
 	@Override
-	public void setSubject(RoomWithId<Long> room, String subject, String creatorNickname, Date changeDate) throws RepositoryException {
+	public void setSubject(RoomWithId<Long> room, String subject, String creatorNickname, Date changeDate)
+			throws RepositoryException {
 		try {
 			PreparedStatement stmt = data_repo.getPreparedStatement(mucConfig.getServiceName(), SET_ROOM_SUBJECT_QUERY);
 			synchronized (stmt) {
 				stmt.setLong(1, room.getId());
 				stmt.setString(2, subject);
 				stmt.setString(3, creatorNickname);
-				data_repo.setTimestamp(stmt,4, new Timestamp(changeDate.getTime()));
+				data_repo.setTimestamp(stmt, 4, new Timestamp(changeDate.getTime()));
 
 				stmt.execute();
 			}
 		} catch (SQLException ex) {
-			throw new RepositoryException("Error while setting subject for room " + room.getRoomJID() + " to " + subject + " by " + creatorNickname, ex);
+			throw new RepositoryException(
+					"Error while setting subject for room " + room.getRoomJID() + " to " + subject + " by " +
+							creatorNickname, ex);
 		}
 	}
 
@@ -258,7 +261,7 @@ public class JDBCMucDAO
 	public void setDataSource(DataRepository dataSource) {
 		try {
 
-			dataSource.checkSchemaVersion( this );
+			dataSource.checkSchemaVersion(this);
 
 			initPreparedStatements(dataSource);
 		} catch (SQLException ex) {

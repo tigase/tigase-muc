@@ -52,9 +52,14 @@ import static org.junit.Assert.assertNotNull;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 
-	protected static String uri = System.getProperty("testDbUri");
+	protected static Date creationDate = null;
+	protected static JID creatorJID = JID.jidInstanceNS(UUID.randomUUID().toString(), "test.local",
+														UUID.randomUUID().toString());
 	protected static String emoji = "\uD83D\uDE97\uD83D\uDCA9\uD83D\uDE21";
-	
+	protected static Room room;
+	protected static BareJID roomJID = BareJID.bareJIDInstanceNS(UUID.randomUUID().toString(), "muc.test.local");
+	protected static List<Item> savedMessages = new ArrayList<>();
+	protected static String uri = System.getProperty("testDbUri");
 	@ClassRule
 	public static TestRule rule = new TestRule() {
 		@Override
@@ -70,26 +75,11 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 			return stmnt;
 		}
 	};
-
 	protected boolean checkEmoji = true;
 	protected DS dataSource;
 	protected HistoryProvider historyProvider;
 	protected Kernel kernel;
 	protected Room.RoomFactory roomFactory;
-
-	protected static BareJID roomJID = BareJID.bareJIDInstanceNS(UUID.randomUUID().toString(), "muc.test.local");
-	protected static JID creatorJID = JID.jidInstanceNS(UUID.randomUUID().toString(), "test.local", UUID.randomUUID().toString());
-	protected static Date creationDate = null;
-
-	protected static List<Item> savedMessages = new ArrayList<>();
-
-	protected static Room room;
-
-	protected DS prepareDataSource() throws DBInitException, IllegalAccessException, InstantiationException {
-		DataSource dataSource = RepositoryFactory.getRepoClass(DataSource.class, uri).newInstance();
-		dataSource.initRepository(uri, new HashMap<>());
-		return (DS) dataSource;
-	}
 
 	@Before
 	public void setup() throws RepositoryException, DBInitException, IllegalAccessException, InstantiationException {
@@ -125,9 +115,10 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 
 	@Test
 	public void test2_appendMessages() throws RepositoryException, InterruptedException {
-		for (int i=0; i<10; i++) {
+		for (int i = 0; i < 10; i++) {
 			Item item = new Item(checkEmoji ? emoji : "");
-			historyProvider.addMessage(room, item.getMessage(room.getRoomJID()), item.body, item.sender, item.nick, item.ts);
+			historyProvider.addMessage(room, item.getMessage(room.getRoomJID()), item.body, item.sender, item.nick,
+									   item.ts);
 			savedMessages.add(item);
 			Thread.sleep(1000);
 		}
@@ -137,11 +128,11 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 
 		assertEquals(10, writer.queue.size());
 
-		for (int i=0; i<savedMessages.size(); i++) {
+		for (int i = 0; i < savedMessages.size(); i++) {
 			Item item = savedMessages.get(i);
 			Packet msg = writer.queue.poll();
 			assertNotNull(msg);
-			String body = msg.getElemCDataStaticStr(new String[] { "message", "body" });
+			String body = msg.getElemCDataStaticStr(new String[]{"message", "body"});
 			assertEquals(item.body, body);
 			assertEquals(msg.getStanzaFrom().getResource(), item.nick);
 		}
@@ -156,11 +147,11 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 
 		assertEquals(6, writer.queue.size());
 
-		for (int i=4; i<savedMessages.size(); i++) {
+		for (int i = 4; i < savedMessages.size(); i++) {
 			Item item = savedMessages.get(i);
 			Packet msg = writer.queue.poll();
 			assertNotNull(msg);
-			String body = msg.getElemCDataStaticStr(new String[] { "message", "body" });
+			String body = msg.getElemCDataStaticStr(new String[]{"message", "body"});
 			assertEquals(item.body, body);
 			assertEquals(msg.getStanzaFrom().getResource(), item.nick);
 		}
@@ -173,11 +164,11 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 
 		assertEquals(5, writer.queue.size());
 
-		for (int i=5; i<savedMessages.size(); i++) {
+		for (int i = 5; i < savedMessages.size(); i++) {
 			Item item = savedMessages.get(i);
 			Packet msg = writer.queue.poll();
 			assertNotNull(msg);
-			String body = msg.getElemCDataStaticStr(new String[] { "message", "body" });
+			String body = msg.getElemCDataStaticStr(new String[]{"message", "body"});
 			assertEquals(item.body, body);
 			assertEquals(msg.getStanzaFrom().getResource(), item.nick);
 		}
@@ -201,7 +192,7 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 			assertEquals(savedMessages.size(), items.size());
 			assertEquals(savedMessages.size(), query.getRsm().getCount().intValue());
 
-			IntStream.range(0, savedMessages.size()-1).forEach(pos -> {
+			IntStream.range(0, savedMessages.size() - 1).forEach(pos -> {
 				assertEquals(savedMessages.get(pos).body,
 							 items.get(pos).getMessage().getChildCData(new String[]{"message", "body"}));
 			});
@@ -231,7 +222,7 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 			assertEquals(2, items.size());
 			assertEquals(5, query.getRsm().getCount().intValue());
 
-			Arrays.asList(0,1).stream().forEach(pos -> {
+			Arrays.asList(0, 1).stream().forEach(pos -> {
 				assertEquals(savedMessages.get(4 + pos).body,
 							 items.get(pos).getMessage().getChildCData(new String[]{"message", "body"}));
 			});
@@ -262,7 +253,7 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 			assertEquals(5, query.getRsm().getCount().intValue());
 			assertEquals(0, query.getRsm().getIndex().intValue());
 
-			Arrays.asList(0,1).stream().forEach(pos -> {
+			Arrays.asList(0, 1).stream().forEach(pos -> {
 				assertEquals(savedMessages.get(4 + pos).body,
 							 items.get(pos).getMessage().getChildCData(new String[]{"message", "body"}));
 			});
@@ -283,7 +274,6 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 		}
 	}
 
-
 	@Test
 	public void test5_deleteMessages() throws RepositoryException {
 		historyProvider.removeHistory(room);
@@ -299,11 +289,18 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 		room = null;
 	}
 
+	protected DS prepareDataSource() throws DBInitException, IllegalAccessException, InstantiationException {
+		DataSource dataSource = RepositoryFactory.getRepoClass(DataSource.class, uri).newInstance();
+		dataSource.initRepository(uri, new HashMap<>());
+		return (DS) dataSource;
+	}
+
 	public static class Item {
 
 		public final String body;
-		public final JID sender = JID.jidInstanceNS(UUID.randomUUID().toString(), "test.local", UUID.randomUUID().toString());
 		public final String nick = UUID.randomUUID().toString();
+		public final JID sender = JID.jidInstanceNS(UUID.randomUUID().toString(), "test.local",
+													UUID.randomUUID().toString());
 		public final Date ts = new Date();
 
 		public Item(String suffix) {
@@ -311,13 +308,15 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 		}
 
 		public Element getMessage(BareJID roomJID) {
-			Element message = new Element("message", new String[] { "type", "to", "from" }, new String[] { "groupchat", roomJID.toString(), sender.toString() });
+			Element message = new Element("message", new String[]{"type", "to", "from"},
+										  new String[]{"groupchat", roomJID.toString(), sender.toString()});
 			message.addChild(new Element("body", body));
 			return message;
 		}
 	}
 
-	public static class QueueWriter implements PacketWriter {
+	public static class QueueWriter
+			implements PacketWriter {
 
 		public final Queue<Packet> queue = new ArrayDeque<>();
 

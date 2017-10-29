@@ -29,9 +29,9 @@ import java.util.Date;
 
 /**
  * @author bmalkow
- *
  */
-public class NoneHistoryProvider implements HistoryProvider {
+public class NoneHistoryProvider
+		implements HistoryProvider {
 
 	/*
 	 * (non-Javadoc)
@@ -72,7 +72,8 @@ public class NoneHistoryProvider implements HistoryProvider {
 	 * java.util.Date)
 	 */
 	@Override
-	public void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname, Date time) {
+	public void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname,
+								 Date time) {
 	}
 
 	@Override
@@ -89,8 +90,8 @@ public class NoneHistoryProvider implements HistoryProvider {
 	 * java.util.Date, tigase.component.ElementWriter)
 	 */
 	@Override
-	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
-			PacketWriter writer) {
+	public void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds,
+								   Date since, PacketWriter writer) {
 	}
 
 	/*

@@ -42,35 +42,27 @@ import java.util.logging.Logger;
 
 /**
  * @author bmalkow
- *
  */
 @Bean(name = IMucRepository.ID, parent = MUCComponent.class, active = true)
-public class InMemoryMucRepository implements IMucRepository, Initializable {
+public class InMemoryMucRepository
+		implements IMucRepository, Initializable {
 
 	private static final String ROOMS_KEY = "rooms/";
 
 	protected final Map<BareJID, InternalRoom> allRooms = new ConcurrentHashMap<BareJID, InternalRoom>();
-
-	@Inject(nullAllowed = false)
-	private IMucDAO dao;
-
-	private RoomConfig defaultConfig;
-
-	@Inject
-	private EventBus eventBus;
-
-	protected Logger log = Logger.getLogger(this.getClass().getName());
-
-	@Inject
-	private MUCConfig mucConfig;
-
-	@Inject
-	private Room.RoomFactory roomFactory;
-
+	protected final Map<BareJID, RoomWithId> rooms = new ConcurrentHashMap<>();
 	private final RoomConfigListener roomConfigListener;
 	private final RoomListener roomListener;
-	protected final Map<BareJID, RoomWithId> rooms = new ConcurrentHashMap<>();
-
+	protected Logger log = Logger.getLogger(this.getClass().getName());
+	@Inject(nullAllowed = false)
+	private IMucDAO dao;
+	private RoomConfig defaultConfig;
+	@Inject
+	private EventBus eventBus;
+	@Inject
+	private MUCConfig mucConfig;
+	@Inject
+	private Room.RoomFactory roomFactory;
 	@Inject
 	private UserRepository userRepository;
 
@@ -80,8 +72,9 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 			@Override
 			public void onChangeSubject(Room room, String nick, String newSubject, Date changeDate) {
 				try {
-					if (room.getConfig().isPersistentRoom())
+					if (room.getConfig().isPersistentRoom()) {
 						dao.setSubject((RoomWithId) room, newSubject, nick, changeDate);
+					}
 				} catch (Exception e) {
 					throw new RuntimeException(e);
 				}
@@ -136,8 +129,9 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 	 */
 	@Override
 	public Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException {
-		if (log.isLoggable(Level.FINE))
+		if (log.isLoggable(Level.FINE)) {
 			log.fine("Creating new room '" + roomJID + "'");
+		}
 
 		RoomConfig rc = new RoomConfig(roomJID);
 
@@ -162,18 +156,13 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 	@Override
 	public void destroyRoom(Room room, Element destroyElement) throws RepositoryException {
 		final BareJID roomJID = room.getRoomJID();
-		if (log.isLoggable(Level.FINE))
+		if (log.isLoggable(Level.FINE)) {
 			log.fine("Destroying room '" + roomJID);
+		}
 		this.rooms.remove(roomJID);
 		removeFromAllRooms(roomJID);
 		dao.destroyRoom(roomJID);
 		fireDestroyRoom(room);
-	}
-
-	private void fireDestroyRoom(Room room) {
-		Element emptyRoomEvent = new Element("RoomDestroyed", new String[]{"xmlns"}, new String[]{"tigase:events:muc"});
-		emptyRoomEvent.addChild(new Element("room", room.getRoomJID().toString()));
-		eventBus.fire(emptyRoomEvent);
 	}
 
 	@Override
@@ -216,7 +205,7 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 				if (!domain.equals(jid.getDomain())) {
 					continue;
 				}
-				
+
 				String name = entry.getValue().name;
 				if (name == null) {
 					Room room = getRoom(jid);
@@ -306,8 +295,9 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 	@Override
 	public void leaveRoom(Room room) {
 		final BareJID roomJID = room.getRoomJID();
-		if (log.isLoggable(Level.FINE))
+		if (log.isLoggable(Level.FINE)) {
 			log.fine("Removing room '" + roomJID + "' from memory");
+		}
 		this.rooms.remove(roomJID);
 		if (!room.getConfig().isPersistentRoom()) {
 			removeFromAllRooms(roomJID);
@@ -378,10 +368,17 @@ public class InMemoryMucRepository implements IMucRepository, Initializable {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
+	private void fireDestroyRoom(Room room) {
+		Element emptyRoomEvent = new Element("RoomDestroyed", new String[]{"xmlns"}, new String[]{"tigase:events:muc"});
+		emptyRoomEvent.addChild(new Element("room", room.getRoomJID().toString()));
+		eventBus.fire(emptyRoomEvent);
+	}
+
 	public static class InternalRoom {
-		public Boolean isPublic = null;
+
 		public boolean isPersistent = false;
+		public Boolean isPublic = null;
 		public String name;
 	}
 }

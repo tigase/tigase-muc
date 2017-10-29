@@ -49,26 +49,25 @@ import java.util.logging.Logger;
 /**
  * Created by andrzej on 17.10.2016.
  */
-@Repository.Meta(supportedUris = {"jdbc:.*" })
+@Repository.Meta(supportedUris = {"jdbc:.*"})
 @Repository.SchemaId(id = Schema.MUC_SCHEMA_ID, name = Schema.MUC_SCHEMA_NAME)
-public class JDBCHistoryProvider implements HistoryProvider<DataRepository>, MAMRepository {
+public class JDBCHistoryProvider
+		implements HistoryProvider<DataRepository>, MAMRepository {
 
 	private static final Logger log = Logger.getLogger(JDBCHistoryProvider.class.getCanonicalName());
-
+	protected DataRepository data_repo;
 	@ConfigField(desc = "Query to append message to history", alias = "add-message-query")
 	private String addMessageQuery = "{ call Tig_MUC_AddMessage(?,?,?,?,?,?,?) }";
 	@ConfigField(desc = "Delete messages from history", alias = "delete-messages-query")
 	private String deleteMessagesQuery = "{ call Tig_MUC_DeleteMessages(?) }";
 	@ConfigField(desc = "Retrieve messages from history", alias = "get-messages-query")
 	private String getMessagesQuery = "{ call Tig_MUC_GetMessages(?,?,?) }";
-	@ConfigField(desc = "Retrieve messages from archive", alias = "mam-get-messages-query")
-	private String mamGetMessagesQuery = "{ call Tig_MUC_MAM_GetMessages(?,?,?,?,?,?) }";
 	@ConfigField(desc = "Retrieve position of message in archive", alias = "mam-get-message-position-query")
 	private String mamGetMessagePositionQuery = "{ call Tig_MUC_MAM_GetMessagePosition(?,?,?,?,?) }";
 	@ConfigField(desc = "Retrieve messages from archive", alias = "mam-get-messages-count-query")
 	private String mamGetMessagesCountQuery = "{ call Tig_MUC_MAM_GetMessagesCount(?,?,?,?) }";
-
-	protected DataRepository data_repo;
+	@ConfigField(desc = "Retrieve messages from archive", alias = "mam-get-messages-query")
+	private String mamGetMessagesQuery = "{ call Tig_MUC_MAM_GetMessages(?,?,?,?,?,?) }";
 
 	@Override
 	public void addJoinEvent(Room room, Date date, JID senderJID, String nickName) {
@@ -126,7 +125,9 @@ public class JDBCHistoryProvider implements HistoryProvider<DataRepository>, MAM
 		try {
 			if (since != null) {
 				if (log.isLoggable(Level.FINEST)) {
-					log.finest("Using SINCE selector: roomJID=" + roomJID + ", since=" + since.getTime() + " (" + since + ")");
+					log.finest(
+							"Using SINCE selector: roomJID=" + roomJID + ", since=" + since.getTime() + " (" + since +
+									")");
 				}
 				getMessagesSince(room, senderJID, maxMessages, new Timestamp(since.getTime()), writer);
 			} else if (maxstanzas != null) {
@@ -138,7 +139,8 @@ public class JDBCHistoryProvider implements HistoryProvider<DataRepository>, MAM
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest("Using SECONDS selector: roomJID=" + roomJID + ", seconds=" + seconds);
 				}
-				getMessagesSince(room, senderJID, maxMessages, new Timestamp(System.currentTimeMillis() - seconds * 1000), writer);
+				getMessagesSince(room, senderJID, maxMessages,
+								 new Timestamp(System.currentTimeMillis() - seconds * 1000), writer);
 			} else {
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest("Using DEFAULT selector: roomJID=" + roomJID);
@@ -147,7 +149,9 @@ public class JDBCHistoryProvider implements HistoryProvider<DataRepository>, MAM
 			}
 
 		} catch (Exception e) {
-			if (log.isLoggable(Level.SEVERE)) log.log(Level.SEVERE, "Can't get history", e);
+			if (log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, "Can't get history", e);
+			}
 			throw new RuntimeException(e);
 		}
 	}
@@ -166,20 +170,151 @@ public class JDBCHistoryProvider implements HistoryProvider<DataRepository>, MAM
 			synchronized (st) {
 				st.setString(1, room.getRoomJID().toString());
 
-				if (log.isLoggable(Level.FINE))
+				if (log.isLoggable(Level.FINE)) {
 					log.fine("Removing history of room " + room.getRoomJID() + " from database.");
-				if (log.isLoggable(Level.FINEST))
+				}
+				if (log.isLoggable(Level.FINEST)) {
 					log.finest("Executing " + st.toString());
+				}
 
 				st.executeUpdate();
 			}
 		} catch (SQLException e) {
-			if (log.isLoggable(Level.WARNING))
+			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, "Can't delete MUC messages from database", e);
+			}
 			throw new RuntimeException(e);
 		} finally {
 			data_repo.release(null, null);
 		}
+	}
+
+	@Override
+	public void queryItems(Query query, ItemHandler itemHandler) throws TigaseDBException, ComponentException {
+		try {
+			Integer count = countItems(query);
+			if (count == null) {
+				count = 0;
+			}
+
+			Integer after = getItemPosition(query.getRsm().getAfter(), query);
+			Integer before = getItemPosition(query.getRsm().getBefore(), query);
+
+			AbstractHistoryProvider.calculateOffsetAndPosition(query, count, before, after);
+
+			PreparedStatement st = data_repo.getPreparedStatement(query.getQuestionerJID().getBareJID(),
+																  mamGetMessagesQuery);
+
+			synchronized (st) {
+				ResultSet rs = null;
+				try {
+					int i = setStatementParamsForMAM(st, query);
+					st.setInt(i++, query.getRsm().getMax());
+					st.setInt(i++, query.getRsm().getIndex());
+
+					rs = st.executeQuery();
+
+					while (rs.next()) {
+						String msgSenderNickname = rs.getString("sender_nickname");
+						Date msgTimestamp = data_repo.getTimestamp(rs, "ts");
+						String msgSenderJid = rs.getString("sender_jid");
+						String body = rs.getString("body");
+						String msg = rs.getString("msg");
+
+						Element msgEl = AbstractHistoryProvider.createMessageElement(
+								query.getComponentJID().getBareJID(), query.getQuestionerJID(), msgSenderNickname, msg,
+								body);
+
+						Item item = new Item() {
+							@Override
+							public String getId() {
+								return String.valueOf(msgTimestamp.getTime());
+							}
+
+							@Override
+							public Element getMessage() {
+								return msgEl;
+							}
+
+							@Override
+							public Date getTimestamp() {
+								return msgTimestamp;
+							}
+						};
+						itemHandler.itemFound(query, item);
+					}
+				} finally {
+					data_repo.release(null, rs);
+				}
+			}
+		} catch (SQLException | TigaseStringprepException ex) {
+			throw new TigaseDBException("Cound not retrieve items", ex);
+		}
+
+	}
+
+	@Override
+	public Query newQuery() {
+		return new QueryImpl();
+	}
+
+	public void setDataSource(DataRepository dataSource) {
+		try {
+			initPreparedStatements(dataSource);
+		} catch (SQLException ex) {
+			new RuntimeException("Failed to initialize access to SQL database for PubSubDAOJDBC", ex);
+		}
+		this.data_repo = dataSource;
+	}
+
+	protected void getMessagesSince(Room room, JID senderJID, int maxMessages, Timestamp since, PacketWriter writer)
+			throws SQLException, TigaseStringprepException {
+		PreparedStatement st = data_repo.getPreparedStatement(senderJID.getBareJID(), getMessagesQuery);
+		synchronized (st) {
+			ResultSet rs = null;
+			try {
+				st.setString(1, room.getRoomJID().toString());
+				st.setInt(2, maxMessages);
+				data_repo.setTimestamp(st, 3, since);
+				rs = st.executeQuery();
+				processResultSet(room, senderJID, writer, rs);
+			} finally {
+				data_repo.release(null, rs);
+			}
+		}
+	}
+
+	protected void processResultSet(Room room, JID senderJID, PacketWriter writer, ResultSet rs)
+			throws SQLException, TigaseStringprepException {
+		if (log.isLoggable(Level.FINEST)) {
+			log.finest("Select messages for " + senderJID + " from room " + room.getRoomJID());
+		}
+
+		Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID());
+		boolean addRealJids = room.getConfig().getRoomAnonymity() == RoomConfig.Anonymity.nonanonymous ||
+				room.getConfig().getRoomAnonymity() == RoomConfig.Anonymity.semianonymous &&
+						(recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
+
+		while (rs.next()) {
+			String msgSenderNickname = rs.getString("sender_nickname");
+			Date msgTimestamp = data_repo.getTimestamp(rs, "ts");
+			String msgSenderJid = rs.getString("sender_jid");
+			String body = rs.getString("body");
+			String msg = rs.getString("msg");
+
+			Packet m = AbstractHistoryProvider.createMessage(room.getRoomJID(), senderJID, msgSenderNickname, msg, body,
+															 msgSenderJid, addRealJids, msgTimestamp);
+			writer.write(m);
+		}
+	}
+
+	protected void initPreparedStatements(DataRepository repo) throws SQLException {
+		repo.initPreparedStatement(addMessageQuery, addMessageQuery);
+		repo.initPreparedStatement(deleteMessagesQuery, deleteMessagesQuery);
+		repo.initPreparedStatement(getMessagesQuery, getMessagesQuery);
+		repo.initPreparedStatement(mamGetMessagesQuery, mamGetMessagesQuery);
+		repo.initPreparedStatement(mamGetMessagesCountQuery, mamGetMessagesCountQuery);
+		repo.initPreparedStatement(mamGetMessagePositionQuery, mamGetMessagePositionQuery);
 	}
 
 	private int setStatementParamsForMAM(PreparedStatement st, Query query) throws SQLException {
@@ -260,134 +395,6 @@ public class JDBCHistoryProvider implements HistoryProvider<DataRepository>, MAM
 			throw new TigaseDBException("Can't find position for message with id " + msgId + " in archive for room " +
 												query.getComponentJID(), ex);
 		}
-	}
-
-	@Override
-	public void queryItems(Query query, ItemHandler itemHandler) throws TigaseDBException, ComponentException {
-		try {
-			Integer count = countItems(query);
-			if (count == null) {
-				count = 0;
-			}
-
-			Integer after = getItemPosition(query.getRsm().getAfter(), query);
-			Integer before = getItemPosition(query.getRsm().getBefore(), query);
-
-			AbstractHistoryProvider.calculateOffsetAndPosition(query, count, before, after);
-
-			PreparedStatement st = data_repo.getPreparedStatement(query.getQuestionerJID().getBareJID(),
-																  mamGetMessagesQuery);
-
-			synchronized (st) {
-				ResultSet rs = null;
-				try {
-					int i = setStatementParamsForMAM(st, query);
-					st.setInt(i++, query.getRsm().getMax());
-					st.setInt(i++, query.getRsm().getIndex());
-
-					rs = st.executeQuery();
-
-					while (rs.next()) {
-						String msgSenderNickname = rs.getString("sender_nickname");
-						Date msgTimestamp = data_repo.getTimestamp(rs, "ts");
-						String msgSenderJid = rs.getString("sender_jid");
-						String body = rs.getString("body");
-						String msg = rs.getString("msg");
-
-						Element msgEl = AbstractHistoryProvider.createMessageElement(
-								query.getComponentJID().getBareJID(), query.getQuestionerJID(), msgSenderNickname, msg,
-								body);
-
-						Item item = new Item() {
-							@Override
-							public String getId() {
-								return String.valueOf(msgTimestamp.getTime());
-							}
-
-							@Override
-							public Element getMessage() {
-								return msgEl;
-							}
-
-							@Override
-							public Date getTimestamp() {
-								return msgTimestamp;
-							}
-						};
-						itemHandler.itemFound(query, item);
-					}
-				} finally {
-					data_repo.release(null, rs);
-				}
-			}
-		} catch (SQLException|TigaseStringprepException ex) {
-			throw new TigaseDBException("Cound not retrieve items", ex);
-		}
-
-	}
-
-	@Override
-	public Query newQuery() {
-		return new QueryImpl();
-	}
-
-	protected void getMessagesSince(Room room, JID senderJID, int maxMessages, Timestamp since,
-									PacketWriter writer) throws SQLException, TigaseStringprepException {
-		PreparedStatement st = data_repo.getPreparedStatement(senderJID.getBareJID(), getMessagesQuery);
-		synchronized (st) {
-			ResultSet rs = null;
-			try {
-				st.setString(1, room.getRoomJID().toString());
-				st.setInt(2, maxMessages);
-				data_repo.setTimestamp(st, 3, since);
-				rs = st.executeQuery();
-				processResultSet(room, senderJID, writer, rs);
-			} finally {
-				data_repo.release(null, rs);
-			}
-		}
-	}
-
-	protected void processResultSet(Room room, JID senderJID, PacketWriter writer, ResultSet rs)
-			throws SQLException, TigaseStringprepException {
-		if (log.isLoggable(Level.FINEST)) {
-			log.finest("Select messages for " + senderJID + " from room " + room.getRoomJID());
-		}
-
-		Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID());
-		boolean addRealJids = room.getConfig().getRoomAnonymity() == RoomConfig.Anonymity.nonanonymous
-				|| room.getConfig().getRoomAnonymity() == RoomConfig.Anonymity.semianonymous
-				&& (recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
-
-		while (rs.next()) {
-			String msgSenderNickname = rs.getString("sender_nickname");
-			Date msgTimestamp = data_repo.getTimestamp(rs, "ts");
-			String msgSenderJid = rs.getString("sender_jid");
-			String body = rs.getString("body");
-			String msg = rs.getString("msg");
-
-			Packet m = AbstractHistoryProvider.createMessage(room.getRoomJID(), senderJID, msgSenderNickname, msg, body,
-															 msgSenderJid, addRealJids, msgTimestamp);
-			writer.write(m);
-		}
-	}
-
-	public void setDataSource(DataRepository dataSource) {
-		try {
-			initPreparedStatements(dataSource);
-		} catch (SQLException ex) {
-			new RuntimeException("Failed to initialize access to SQL database for PubSubDAOJDBC", ex);
-		}
-		this.data_repo = dataSource;
-	}
-
-	protected void initPreparedStatements(DataRepository repo) throws SQLException {
-		repo.initPreparedStatement(addMessageQuery, addMessageQuery);
-		repo.initPreparedStatement(deleteMessagesQuery, deleteMessagesQuery);
-		repo.initPreparedStatement(getMessagesQuery, getMessagesQuery);
-		repo.initPreparedStatement(mamGetMessagesQuery, mamGetMessagesQuery);
-		repo.initPreparedStatement(mamGetMessagesCountQuery, mamGetMessagesCountQuery);
-		repo.initPreparedStatement(mamGetMessagePositionQuery, mamGetMessagePositionQuery);
 	}
 
 }

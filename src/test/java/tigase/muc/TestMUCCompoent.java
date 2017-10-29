@@ -29,9 +29,9 @@ import tigase.muc.repository.IMucRepository;
 
 /**
  * @author bmalkow
- *
  */
-public class TestMUCCompoent extends MUCComponent {
+public class TestMUCCompoent
+		extends MUCComponent {
 
 	@Inject
 	private IMucRepository mucRepository;
@@ -54,7 +54,8 @@ public class TestMUCCompoent extends MUCComponent {
 	}
 
 	@Bean(name = "historyProviderPool", parent = TestMUCCompoent.class, active = true)
-	public static class TestHistoryProviderBean extends HistoryProviderMDBean {
+	public static class TestHistoryProviderBean
+			extends HistoryProviderMDBean {
 
 		private HistoryProvider provider = new MemoryHistoryProvider();
 

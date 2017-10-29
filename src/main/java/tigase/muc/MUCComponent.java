@@ -47,23 +47,23 @@ import java.util.logging.Level;
 @Bean(name = "muc", parent = Kernel.class, active = true)
 @ConfigType(ConfigTypeEnum.DefaultMode)
 @ClusterModeRequired(active = false)
-public class MUCComponent extends AbstractKernelBasedComponent {
+public class MUCComponent
+		extends AbstractKernelBasedComponent {
 
 	public static final String DEFAULT_ROOM_CONFIG_KEY = "default_room_config";
 	public static final String DEFAULT_ROOM_CONFIG_PREFIX_KEY = DEFAULT_ROOM_CONFIG_KEY + "/";
-	@Inject
-	private Ghostbuster2 ghostbuster;
-
 	@ConfigField(alias = DEFAULT_ROOM_CONFIG_KEY, desc = "Default room configuration", allowAliasFromParent = false)
 	private HashMap<String, String> defaultRoomConfig = new HashMap<>();
-
-	public MUCComponent() {
-	}
+	@Inject
+	private Ghostbuster2 ghostbuster;
 
 	protected static void addIfExists(Bindings binds, String name, Object value) {
 		if (value != null) {
 			binds.put(name, value);
 		}
+	}
+
+	public MUCComponent() {
 	}
 
 	@Override
@@ -89,8 +89,8 @@ public class MUCComponent extends AbstractKernelBasedComponent {
 
 	@Override
 	public int hashCodeForPacket(Packet packet) {
-		if ((packet.getStanzaFrom() != null) && (packet.getPacketFrom() != null)
-				&& !getComponentId().equals(packet.getPacketFrom())) {
+		if ((packet.getStanzaFrom() != null) && (packet.getPacketFrom() != null) &&
+				!getComponentId().equals(packet.getPacketFrom())) {
 			return packet.getStanzaFrom().hashCode();
 		}
 
@@ -137,6 +137,17 @@ public class MUCComponent extends AbstractKernelBasedComponent {
 	}
 
 	@Override
+	public void initialize() {
+		try {
+			updateDefaultRoomConfig();
+		} catch (Exception ex) {
+			log.log(Level.FINEST, "Exception during modification of default room config", ex);
+		}
+
+		super.initialize();
+	}
+
+	@Override
 	protected void registerModules(Kernel kernel) {
 		kernel.registerBean(XmppPingModule.class).exec();
 		kernel.registerBean(JabberVersionModule.class).exec();
@@ -162,22 +173,12 @@ public class MUCComponent extends AbstractKernelBasedComponent {
 		//kernel.registerBean(Ghostbuster2.class).exec();
 	}
 
-	@Override
-	public void initialize() {
-		try {
-			updateDefaultRoomConfig();
-		} catch (Exception ex) {
-			log.log(Level.FINEST, "Exception during modification of default room config", ex);
-		}
-
-		super.initialize();
-	}
-
 	private void updateDefaultRoomConfig() throws RepositoryException {
 		final IMucRepository mucRepository = kernel.getInstance(IMucRepository.class);
 
-		if (defaultRoomConfig.isEmpty())
+		if (defaultRoomConfig.isEmpty()) {
 			return;
+		}
 
 		log.config("Updating Default Room Config");
 
@@ -195,8 +196,9 @@ public class MUCComponent extends AbstractKernelBasedComponent {
 			}
 		}
 		if (changed) {
-			if (log.isLoggable(Level.CONFIG))
+			if (log.isLoggable(Level.CONFIG)) {
 				log.config("Default room configuration is udpated");
+			}
 			mucRepository.updateDefaultRoomConfig(defaultRoomConfig);
 		}
 
