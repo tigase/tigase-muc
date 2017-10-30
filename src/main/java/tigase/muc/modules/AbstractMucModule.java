@@ -38,13 +38,6 @@ import java.util.Collection;
 public abstract class AbstractMucModule
 		extends AbstractModule {
 
-	/**
-	 * Method description
-	 *
-	 * @param iq
-	 *
-	 * @return
-	 */
 	public static Element createResultIQ(Element iq) {
 		return new Element(Iq.ELEM_NAME, new String[]{Packet.TYPE_ATT, Packet.FROM_ATT, Packet.TO_ATT, Packet.ID_ATT},
 						   new String[]{"result", iq.getAttributeStaticStr(Packet.TO_ATT),
@@ -52,13 +45,6 @@ public abstract class AbstractMucModule
 										iq.getAttributeStaticStr(Packet.ID_ATT)});
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param jid
-	 *
-	 * @return
-	 */
 	public static String getNicknameFromJid(JID jid) {
 		if (jid != null) {
 			return jid.getResource();
@@ -70,15 +56,6 @@ public abstract class AbstractMucModule
 	public AbstractMucModule() {
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param room
-	 * @param recipientNickame
-	 * @param message
-	 *
-	 * @throws TigaseStringprepException
-	 */
 	protected void sendMucMessage(Room room, String recipientNickame, String message) throws TigaseStringprepException {
 		Collection<JID> occupantJids = room.getOccupantsJidsByNickname(recipientNickame);
 

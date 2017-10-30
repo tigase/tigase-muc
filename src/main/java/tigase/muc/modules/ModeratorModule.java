@@ -80,21 +80,11 @@ public class ModeratorModule
 		return (tmp == null) ? null : Role.valueOf(tmp);
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public String[] getFeatures() {
 		return null;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public Criteria getModuleCriteria() {
 		return CRIT;
@@ -125,13 +115,6 @@ public class ModeratorModule
 		room.removeOccupant(occupantNick);
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param element
-	 *
-	 * @throws MUCException
-	 */
 	@Override
 	public void process(Packet element) throws MUCException {
 		try {

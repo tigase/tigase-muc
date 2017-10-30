@@ -85,11 +85,6 @@ public class GroupchatMessageModule
 		}
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public String[] getFeatures() {
 		ArrayList<String> f = new ArrayList<String>();
@@ -103,32 +98,15 @@ public class GroupchatMessageModule
 		return f.toArray(new String[]{});
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public Criteria getModuleCriteria() {
 		return CRIT;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	public boolean isChatStateAllowed() {
 		return allowedElements.contains(CRIT_CHAT_STAT);
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param packet
-	 *
-	 * @throws MUCException
-	 */
 	@Override
 	public void process(Packet packet) throws MUCException {
 		try {
@@ -294,14 +272,6 @@ public class GroupchatMessageModule
 		}
 	}
 
-	/**
-	 * @param room
-	 * @param message
-	 * @param body
-	 * @param senderJid
-	 * @param senderNickname
-	 * @param time
-	 */
 	protected void addMessageToHistory(Room room, final Element message, String body, JID senderJid,
 									   String senderNickname, Date time) {
 		try {
@@ -323,65 +293,6 @@ public class GroupchatMessageModule
 			}
 		}
 	}
-//
-//	/**
-//	 * Method description
-//	 *
-//	 *
-//	 * @param room
-//	 * @param fromJID
-//	 * @param sendDate
-//	 * @param content
-//	 *
-//	 * @throws TigaseStringprepException
-//	 */
-//	public void sendMessagesToAllOccupants(final Room room, final JID fromJID, String messageId, final Element... content)
-//			throws TigaseStringprepException {
-//		room.fireOnMessageToOccupants(fromJID, content);
-//
-//		sendMessagesToAllOccupantsJids(room, fromJID, messageId, content);
-//	}
-//
-//	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, final Element... content)
-//			throws TigaseStringprepException {
-//		sendMessagesToAllOccupantsJids(room, fromJID, null, content);
-//	}
-//
-//	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, String messageId, final Element... content)
-//			throws TigaseStringprepException {
-//
-//		for (String nickname : room.getOccupantsNicknames()) {
-//			final Role role = room.getRole(nickname);
-//
-//			if (!role.isReceiveMessages()) {
-//				continue;
-//			}
-//
-//			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
-//
-//			for (JID jid : occupantJids) {
-//				Element e = new Element("message", new String[] { "type", "from", "to" }, new String[] { "groupchat",
-//						fromJID.toString(), jid.toString() });
-//				if (messageId != null)
-//					e.setAttribute("id", messageId);
-//				Packet message = Packet.packetInstance(e);
-//				message.setXMLNS(Packet.CLIENT_XMLNS);
-//
-//				// Packet message = Message.getMessage(fromJID, jid,
-//				// StanzaType.groupchat, null, null, null, null);
-//
-//				if (content != null) {
-//					for (Element sub : content) {
-//						if (sub != null) {
-//							message.getElement().addChild(sub);
-//						}
-//					}
-//				}
-//
-//				write(message);
-//			}
-//		}
-//	}
 
 	protected void addSubjectChangeToHistory(Room room, Element message, final String subject, JID senderJid,
 											 String senderNickname, Date time) {

@@ -43,45 +43,16 @@ public interface PresenceModule
 
 	public static final String ID = "presences";
 
-	/**
-	 * @param r
-	 * @param source
-	 */
 	void doQuit(final Room room, final JID senderJID) throws TigaseStringprepException;
 
-	/**
-	 * @param room
-	 * @param occupantJID
-	 */
 	public void sendPresencesToNewOccupant(Room room, JID senderJID) throws TigaseStringprepException;
 
-	/**
-	 * Class description
-	 *
-	 * @author Enter your name here...
-	 * @version Enter version here..., 13/02/20
-	 */
 	public static class PresenceWrapper {
 
 		final Element[] items;
 		final Packet packet;
 		final Element x;
 
-		/**
-		 * Method description
-		 *
-		 * @param room
-		 * @param destinationJID
-		 * @param presence
-		 * @param occupantBareJID
-		 * @param occupantNickname
-		 * @param occupantAffiliation
-		 * @param occupantRole
-		 *
-		 * @return
-		 *
-		 * @throws TigaseStringprepException
-		 */
 		public static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence,
 													   BareJID occupantBareJID, Collection<JID> occupantJIDs,
 													   String occupantNickname, Affiliation occupantAffiliation,
@@ -144,18 +115,6 @@ public interface PresenceModule
 									occupantAffiliation, occupantRole);
 		}
 
-		/**
-		 * Method description
-		 *
-		 * @param room
-		 * @param destinationJID
-		 * @param presence
-		 * @param occupantJID
-		 *
-		 * @return
-		 *
-		 * @throws TigaseStringprepException
-		 */
 		static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, JID occupantJID)
 				throws TigaseStringprepException {
 			final String occupantNickname = room.getOccupantsNickname(occupantJID);
@@ -163,18 +122,6 @@ public interface PresenceModule
 			return preparePresenceW(room, destinationJID, presence, occupantNickname);
 		}
 
-		/**
-		 * Method description
-		 *
-		 * @param room
-		 * @param destinationJID
-		 * @param presence
-		 * @param occupantNickname
-		 *
-		 * @return
-		 *
-		 * @throws TigaseStringprepException
-		 */
 		static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence,
 												String occupantNickname) throws TigaseStringprepException {
 			final BareJID occupantJID = room.getOccupantsJidByNickname(occupantNickname);
@@ -199,11 +146,6 @@ public interface PresenceModule
 			return x;
 		}
 
-		/**
-		 * Method description
-		 *
-		 * @param code
-		 */
 		void addStatusCode(int code) {
 			x.addChild(new Element("status", new String[]{"code"}, new String[]{"" + code}));
 		}

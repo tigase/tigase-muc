@@ -48,33 +48,16 @@ public class PrivateMessageModule
 	@Inject
 	private IMucRepository repository;
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public String[] getFeatures() {
 		return null;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public Criteria getModuleCriteria() {
 		return CRIT;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param element
-	 *
-	 * @throws MUCException
-	 */
 	@Override
 	public void process(Packet element) throws MUCException {
 		try {

@@ -65,9 +65,6 @@ public class PresenceStore {
 		presenceOrdening = pdl;
 	}
 
-	/**
-	 * Method description
-	 */
 	public void clear() {
 		presenceByJid.clear();
 		bestPresence.clear();
@@ -90,13 +87,6 @@ public class PresenceStore {
 		return result;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param jid
-	 *
-	 * @return
-	 */
 	public Element getBestPresence(final BareJID jid) {
 		Presence p = getBestPresenceInt(jid);
 		if (p == null) {
@@ -112,26 +102,12 @@ public class PresenceStore {
 		return this.bestPresence.get(jid);
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param jid
-	 *
-	 * @return
-	 */
 	public Element getPresence(final JID jid) {
 		Presence p = this.presenceByJid.get(jid);
 
 		return (p == null) ? null : p.element;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param jid
-	 *
-	 * @return
-	 */
 	public boolean isAvailable(BareJID jid) {
 		Map<String, Presence> resourcesPresence = this.presencesMapByBareJid.get(jid);
 		if (log.isLoggable(Level.FINEST)) {
@@ -153,11 +129,6 @@ public class PresenceStore {
 		return result;
 	}
 
-	/**
-	 * @param from
-	 *
-	 * @throws TigaseStringprepException
-	 */
 	public void remove(final JID from) throws TigaseStringprepException {
 		final String resource = (from.getResource() == null) ? "" : from.getResource();
 
@@ -181,13 +152,6 @@ public class PresenceStore {
 		presenceOrdening = pdl;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param presence
-	 *
-	 * @throws TigaseStringprepException
-	 */
 	public void update(final Element presence) throws TigaseStringprepException {
 		String f = presence.getAttributeStaticStr(Packet.FROM_ATT);
 
@@ -286,9 +250,6 @@ public class PresenceStore {
 		final String show;
 		final String type;
 
-		/**
-		 * @param presence
-		 */
 		public Presence(Element presence) {
 			this.lastUpdated = new Date();
 			this.element = presence;

@@ -54,33 +54,16 @@ public class MediatedInvitationModule
 	@Inject
 	private IMucRepository repository;
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public String[] getFeatures() {
 		return null;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public Criteria getModuleCriteria() {
 		return CRIT;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param element
-	 *
-	 * @throws MUCException
-	 */
 	@Override
 	public void process(Packet element) throws MUCException {
 		try {
@@ -122,12 +105,6 @@ public class MediatedInvitationModule
 		}
 	}
 
-	/**
-	 * @param senderJID
-	 * @param roomJID
-	 *
-	 * @throws TigaseStringprepException
-	 */
 	private void doDecline(Element decline, BareJID roomJID, JID senderJID) throws TigaseStringprepException {
 		final Element reason = decline.getChild("reason");
 		final JID recipient = JID.jidInstance(decline.getAttributeStaticStr(Packet.TO_ATT));
@@ -148,19 +125,6 @@ public class MediatedInvitationModule
 		write(resultMessage);
 	}
 
-	/**
-	 * @param message
-	 * @param senderAffiliation
-	 * @param senderJID
-	 * @param roomJID
-	 * @param room
-	 * @param invite
-	 * @param senderRole
-	 *
-	 * @throws TigaseStringprepException
-	 * @throws RepositoryException
-	 * @throws MUCException
-	 */
 	private void doInvite(Packet message, Element invite, Room room, BareJID roomJID, JID senderJID, Role senderRole,
 						  Affiliation senderAffiliation)
 			throws RepositoryException, TigaseStringprepException, MUCException {

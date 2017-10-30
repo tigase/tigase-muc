@@ -140,12 +140,6 @@ public class PresenceModuleImpl
 		allowedElements.add(ElementCriteria.xmlns("http://jabber.org/protocol/caps"));
 	}
 
-	/**
-	 * @param room
-	 * @param senderJID
-	 *
-	 * @throws TigaseStringprepException
-	 */
 	@Override
 	public void doQuit(final Room room, final JID senderJID) throws TigaseStringprepException {
 		final String leavingNickname = room.getOccupantsNickname(senderJID);
@@ -266,34 +260,16 @@ public class PresenceModuleImpl
 		}
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public String[] getFeatures() {
 		return null;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public Criteria getModuleCriteria() {
 		return CRIT;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param element
-	 *
-	 * @throws MUCException
-	 * @throws TigaseStringprepException
-	 */
 	@Override
 	public void process(Packet element) throws MUCException, TigaseStringprepException {
 		final JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
@@ -429,13 +405,6 @@ public class PresenceModuleImpl
 		}
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param element
-	 *
-	 * @return
-	 */
 	protected Element clonePresence(Element element) {
 		Element presence = new Element(element);
 		if (config.isPresenceFilterEnabled()) {
@@ -476,16 +445,6 @@ public class PresenceModuleImpl
 		return wrapper;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param room
-	 * @param presenceElement
-	 * @param senderJID
-	 * @param nickname
-	 *
-	 * @throws TigaseStringprepException
-	 */
 	protected void processChangeAvailabilityStatus(final Room room, final Element presenceElement, final JID senderJID,
 												   final String nickname) throws TigaseStringprepException {
 		if (log.isLoggable(Level.FINEST)) {
@@ -505,18 +464,6 @@ public class PresenceModuleImpl
 		sendPresenceToAllOccupants(pe, room, senderJID, false, null);
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param room
-	 * @param element
-	 * @param senderJID
-	 * @param senderNickname
-	 * @param newNickName
-	 *
-	 * @throws MUCException
-	 * @throws TigaseStringprepException
-	 */
 	protected void processChangeNickname(final Room room, final Element element, final JID senderJID,
 										 final String senderNickname, final String newNickName)
 			throws TigaseStringprepException, MUCException {
@@ -530,18 +477,6 @@ public class PresenceModuleImpl
 		// Locked Down (???)
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param room
-	 * @param roomCreated
-	 * @param element
-	 * @param senderJID
-	 * @param nickname
-	 *
-	 * @throws MUCException
-	 * @throws TigaseStringprepException
-	 */
 	protected void processEntering(final Room room, final boolean roomCreated, final Element element,
 								   final JID senderJID, final String nickname)
 			throws MUCException, TigaseStringprepException {
@@ -706,16 +641,6 @@ public class PresenceModuleImpl
 
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param room
-	 * @param presenceElement
-	 * @param senderJID
-	 *
-	 * @throws MUCException
-	 * @throws TigaseStringprepException
-	 */
 	protected void processExit(final Room room, final Element presenceElement, final JID senderJID)
 			throws MUCException, TigaseStringprepException {
 		if (log.isLoggable(Level.FINEST)) {
@@ -806,12 +731,6 @@ public class PresenceModuleImpl
 		}
 	}
 
-	/**
-	 * @param room
-	 * @param date
-	 * @param senderJID
-	 * @param nickName
-	 */
 	private void addJoinToHistory(Room room, Date date, JID senderJID, String nickName) {
 		if (historyProvider != null) {
 			historyProvider.addJoinEvent(room, date, senderJID, nickName);
@@ -821,12 +740,6 @@ public class PresenceModuleImpl
 		}
 	}
 
-	/**
-	 * @param room
-	 * @param date
-	 * @param senderJID
-	 * @param nickName
-	 */
 	private void addLeaveToHistory(Room room, Date date, JID senderJID, String nickName) {
 		if (historyProvider != null) {
 			historyProvider.addLeaveEvent(room, date, senderJID, nickName);
@@ -836,14 +749,6 @@ public class PresenceModuleImpl
 		}
 	}
 
-	/**
-	 * @param room
-	 * @param senderJID
-	 * @param maxchars
-	 * @param maxstanzas
-	 * @param seconds
-	 * @param since
-	 */
 	private void sendHistoryToUser(final Room room, final JID senderJID, final Integer maxchars,
 								   final Integer maxstanzas, final Integer seconds, final Date since) {
 		if (log.isLoggable(Level.FINEST)) {
@@ -855,48 +760,26 @@ public class PresenceModuleImpl
 		}
 	}
 
-	/**
-	 * Class description
-	 *
-	 * @author Enter your name here...
-	 * @version Enter version here..., 13/02/20
-	 */
 	public static class DelayDeliveryThread
 			extends Thread {
 
 		private final LinkedList<Element[]> items = new LinkedList<Element[]>();
 		private final DelDeliverySend sender;
 
-		/**
-		 * Constructs ...
-		 *
-		 * @param component
-		 */
 		public DelayDeliveryThread(DelDeliverySend component) {
 			this.sender = component;
 		}
 
-		/**
-		 * @param elements
-		 */
 		public void put(Collection<Element> elements) {
 			if ((elements != null) && (elements.size() > 0)) {
 				items.push(elements.toArray(new Element[]{}));
 			}
 		}
 
-		/**
-		 * Method description
-		 *
-		 * @param element
-		 */
 		public void put(Element element) {
 			items.add(new Element[]{element});
 		}
 
-		/**
-		 * Method description
-		 */
 		@Override
 		public void run() {
 			try {
@@ -925,19 +808,8 @@ public class PresenceModuleImpl
 			}
 		}
 
-		/**
-		 * Interface description
-		 *
-		 * @author Enter your name here...
-		 * @version Enter version here..., 13/02/20
-		 */
-		public static interface DelDeliverySend {
+		public interface DelDeliverySend {
 
-			/**
-			 * Method description
-			 *
-			 * @param packet
-			 */
 			void sendDelayedPacket(Packet packet);
 		}
 	}

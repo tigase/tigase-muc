@@ -69,16 +69,6 @@ public class RoomConfigurationModule
 		return event;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param room
-	 * @param jid
-	 * @param reason
-	 *
-	 * @throws RepositoryException
-	 * @throws TigaseStringprepException
-	 */
 	public void destroy(Room room, String jid, String reason) throws TigaseStringprepException, RepositoryException {
 		Element destroy = new Element("destroy");
 
@@ -91,33 +81,16 @@ public class RoomConfigurationModule
 		destroy(room, destroy);
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public String[] getFeatures() {
 		return null;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @return
-	 */
 	@Override
 	public Criteria getModuleCriteria() {
 		return CRIT;
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param element
-	 *
-	 * @throws MUCException
-	 */
 	@Override
 	public void process(Packet element) throws MUCException {
 		try {
