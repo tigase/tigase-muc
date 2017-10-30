@@ -52,11 +52,6 @@ public class ShardingStrategy
 	private final ConcurrentMap<BareJID, Set<JID>> occupantsPerRoom = new ConcurrentHashMap<BareJID, Set<JID>>();
 	private final ConcurrentMap<BareJID, JID> roomsPerNode = new ConcurrentHashMap<BareJID, JID>();
 
-	/**
-	 * Method description
-	 *
-	 * @param nodeJid is a <code>JID</code>
-	 */
 	@Override
 	public void nodeDisconnected(JID nodeJid) {
 		List<JID> connectedNodes = getNodesConnectedWithLocal();

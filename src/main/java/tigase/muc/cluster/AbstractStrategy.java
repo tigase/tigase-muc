@@ -59,11 +59,6 @@ public abstract class AbstractStrategy
 		return mucComponentClustered.getNodesConnectedWithLocal();
 	}
 
-	/**
-	 * Method description
-	 *
-	 * @param nodeJid is a <code>JID</code>
-	 */
 	@Override
 	public void nodeConnected(JID nodeJid) {
 		if (!localNodeJid.equals(nodeJid)) {
