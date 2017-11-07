@@ -22,6 +22,7 @@ package tigase.muc.repository;
 import tigase.component.exceptions.RepositoryException;
 import tigase.db.DataRepository;
 import tigase.db.Repository;
+import tigase.db.util.RepositoryVersionAware;
 import tigase.kernel.beans.Inject;
 import tigase.muc.*;
 import tigase.util.stringprep.TigaseStringprepException;
@@ -40,7 +41,8 @@ import java.util.logging.Logger;
 @Repository.Meta(supportedUris = {"jdbc:.*"}, isDefault = true)
 @Repository.SchemaId(id = Schema.MUC_SCHEMA_ID, name = Schema.MUC_SCHEMA_NAME)
 public class JDBCMucDAO
-		extends AbstractMucDAO<DataRepository, Long> {
+		extends AbstractMucDAO<DataRepository, Long>
+		implements RepositoryVersionAware {
 
 	private static final Logger log = Logger.getLogger(JDBCMucDAO.class.getName());
 
@@ -260,9 +262,6 @@ public class JDBCMucDAO
 
 	public void setDataSource(DataRepository dataSource) {
 		try {
-
-			dataSource.checkSchemaVersion(this);
-
 			initPreparedStatements(dataSource);
 		} catch (SQLException ex) {
 			new RuntimeException("Failed to initialize access to SQL database for PubSubDAOJDBC", ex);

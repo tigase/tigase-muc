@@ -24,6 +24,7 @@ import tigase.component.exceptions.ComponentException;
 import tigase.db.DataRepository;
 import tigase.db.Repository;
 import tigase.db.TigaseDBException;
+import tigase.db.util.RepositoryVersionAware;
 import tigase.kernel.beans.config.ConfigField;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
@@ -52,7 +53,7 @@ import java.util.logging.Logger;
 @Repository.Meta(supportedUris = {"jdbc:.*"})
 @Repository.SchemaId(id = Schema.MUC_SCHEMA_ID, name = Schema.MUC_SCHEMA_NAME)
 public class JDBCHistoryProvider
-		implements HistoryProvider<DataRepository>, MAMRepository {
+		implements HistoryProvider<DataRepository>, MAMRepository, RepositoryVersionAware {
 
 	private static final Logger log = Logger.getLogger(JDBCHistoryProvider.class.getCanonicalName());
 	protected DataRepository data_repo;
