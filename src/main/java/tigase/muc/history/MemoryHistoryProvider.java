@@ -44,9 +44,6 @@ public class MemoryHistoryProvider
 	private final Map<BareJID, LinkedList<HItem>> history = new ConcurrentHashMap<BareJID, LinkedList<HItem>>();
 	private int maxSize = 256;
 
-	/**
-	 * @param dataRepository
-	 */
 	public MemoryHistoryProvider() {
 	}
 

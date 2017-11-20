@@ -38,41 +38,15 @@ public interface HistoryProvider<DS extends DataSource>
 
 	/**
 	 * Adds join event.
-	 *
-	 * @param room
-	 * @param date
-	 * @param senderJID
-	 * @param nickName
 	 */
 	void addJoinEvent(Room room, Date date, JID senderJID, String nickName);
 
-	/**
-	 * @param room
-	 * @param date
-	 * @param senderJID
-	 * @param nickName
-	 */
 	void addLeaveEvent(Room room, Date date, JID senderJID, String nickName);
 
-	/**
-	 * @param room
-	 * @param message TODO
-	 * @param body
-	 * @param senderJid
-	 * @param senderNickname
-	 * @param time
-	 */
 	void addMessage(Room room, Element message, String body, JID senderJid, String senderNickname, Date time);
 
 	/**
 	 * Adds subject changes to log/history.
-	 *
-	 * @param room
-	 * @param message TODO
-	 * @param subject
-	 * @param senderJid
-	 * @param senderNickname
-	 * @param time
 	 */
 	void addSubjectChange(Room room, Element message, String subject, JID senderJid, String senderNickname, Date time);
 
@@ -82,21 +56,9 @@ public interface HistoryProvider<DS extends DataSource>
 	 */
 	void destroy();
 
-	/**
-	 * @param room
-	 * @param senderJID
-	 * @param maxchars
-	 * @param maxstanzas
-	 * @param seconds
-	 * @param since
-	 * @param writer TODO
-	 */
 	void getHistoryMessages(Room room, JID senderJID, Integer maxchars, Integer maxstanzas, Integer seconds, Date since,
 							PacketWriter writer);
 
-	/**
-	 * @return
-	 */
 	boolean isPersistent(Room room);
 
 	void removeHistory(Room room);
