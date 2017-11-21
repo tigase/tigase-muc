@@ -225,8 +225,7 @@ public class GroupchatMessageModule
 		} catch (TigaseStringprepException e) {
 			throw new MUCException(Authorization.BAD_REQUEST);
 		} catch (Exception e) {
-			e.printStackTrace();
-
+			log.log(Level.FINEST, "Error during processing groupchat message", e);
 			throw new RuntimeException(e);
 		}
 	}

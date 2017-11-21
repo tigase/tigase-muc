@@ -113,7 +113,7 @@ public class SqlserverSqlHistoryProvider
 					try {
 						st.setInt(1, Math.min(maxstanzas, maxMessages));
 						st.setString(2, roomJID);
-						System.out.println("getHistoryMessages: " + st + " || \t " + GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
+						log.log(Level.FINEST, "getHistoryMessages: " + st + " || \t " + GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
 						rs = st.executeQuery();
 						processResultSet(room, senderJID, writer, rs);
 					} finally {
@@ -147,8 +147,8 @@ public class SqlserverSqlHistoryProvider
 					try {
 						st.setInt(1, maxMessages);
 						st.setString(2, roomJID);
-						System.out.println(
-								"getHistoryMessages: " + st.toString() + " max " + maxMessages + " roomJID " + roomJID +
+						log.log(Level.FINEST,
+						        "getHistoryMessages: " + st.toString() + " max " + maxMessages + " roomJID " + roomJID +
 										" || \t " + GET_MESSAGES_MAXSTANZAS_QUERY_KEY);
 						rs = st.executeQuery();
 						processResultSet(room, senderJID, writer, rs);
@@ -172,7 +172,6 @@ public class SqlserverSqlHistoryProvider
 
 			internalInit(dataRepository);
 		} catch (SQLException e) {
-			e.printStackTrace();
 			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, "Initializing problem", e);
 			}

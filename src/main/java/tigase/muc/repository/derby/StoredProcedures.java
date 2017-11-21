@@ -91,9 +91,6 @@ public class StoredProcedures {
 			ps.executeUpdate();
 			data[0] = ps.getGeneratedKeys();
 		} catch (SQLException e) {
-
-			// e.printStackTrace();
-			// log.log(Level.SEVERE, "SP error", e);
 			throw e;
 		} finally {
 			conn.close();
@@ -142,9 +139,6 @@ public class StoredProcedures {
 			ps.setLong(1, roomId);
 			ps.executeUpdate();
 		} catch (SQLException e) {
-
-			// e.printStackTrace();
-			// log.log(Level.SEVERE, "SP error", e);
 			throw e;
 		} finally {
 			conn.close();

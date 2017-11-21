@@ -801,7 +801,7 @@ public class PresenceModuleImpl
 					}
 				} while (true);
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				log.log(Level.WARNING, "Error during delayed delivery", e);
 			}
 		}
 

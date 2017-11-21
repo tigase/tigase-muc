@@ -85,8 +85,6 @@ public class UniqueRoomNameModule
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (Exception e) {
-			e.printStackTrace();
-
 			throw new RuntimeException(e);
 		}
 	}

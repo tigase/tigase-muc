@@ -26,6 +26,7 @@ import tigase.muc.MUCComponent;
 import tigase.muc.MUCConfig;
 import tigase.muc.Room;
 import tigase.muc.RoomConfig;
+import tigase.muc.modules.PresenceModule;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
@@ -35,6 +36,8 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.LinkedList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * @author bmalkow
@@ -42,6 +45,8 @@ import java.util.LinkedList;
 @Bean(name = MucLogger.ID, parent = MUCComponent.class, active = false)
 public class RoomChatLogger
 		implements MucLogger, Initializable {
+
+	private static final Logger log = Logger.getLogger(RoomChatLogger.class.getName());
 
 	private final static String JOIN_HTML_FORMAT = "<a name=\"%1$s\" href=\"#%1$s\" class=\"mj\">[%1$s]</a>%2$s joins the room<br/>\n";
 	private final static String JOIN_PLAIN_FORMAT = "[%1$s] %2$s joins the room\n";
@@ -227,10 +232,8 @@ public class RoomChatLogger
 						sleep(15);
 					}
 				}
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
+			} catch (InterruptedException | IOException e) {
+				log.log(Level.WARNING, "Storing message failed", e);
 			}
 		}
 

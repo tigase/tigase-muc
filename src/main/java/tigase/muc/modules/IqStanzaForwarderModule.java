@@ -138,7 +138,7 @@ public class IqStanzaForwarderModule
 		} catch (TigaseStringprepException e) {
 			throw new MUCException(Authorization.BAD_REQUEST);
 		} catch (Exception e) {
-			e.printStackTrace();
+			log.log(Level.FINEST, "Error during forwarding IQ", e);
 			throw new RuntimeException(e);
 		}
 	}

@@ -77,7 +77,6 @@ public class MySqlHistoryProvider
 
 			internalInit(dataRepository);
 		} catch (SQLException e) {
-			e.printStackTrace();
 			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, "Initializing problem", e);
 			}

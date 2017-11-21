@@ -77,7 +77,6 @@ public class MucDAOOld
 			}
 
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new RepositoryException("Room creation error", e);
 		}
 	}
@@ -86,7 +85,6 @@ public class MucDAOOld
 		try {
 			repository.removeSubnode(mucConfig.getServiceName(), ROOMS_KEY + roomJID);
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new RepositoryException("Room destroing error", e);
 		}
 	}
@@ -115,7 +113,6 @@ public class MucDAOOld
 			return repository.getData(mucConfig.getServiceName(), ROOMS_KEY + jid + "/config",
 									  RoomConfig.MUC_ROOMCONFIG_ROOMNAME_KEY);
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new RepositoryException("Room name reading error", e);
 		}
 	}
@@ -132,7 +129,6 @@ public class MucDAOOld
 			}
 			return jids;
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new RepositoryException("Room list reading error", e);
 		}
 	}
@@ -141,7 +137,6 @@ public class MucDAOOld
 		try {
 			return repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/subject", SUBJECT_KEY);
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new RepositoryException("Subject saving error", e);
 		}
 	}
@@ -152,7 +147,6 @@ public class MucDAOOld
 											SUBJECT_DATE_KEY);
 			return tmp == null ? null : new Date(Long.valueOf(tmp));
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new RepositoryException("Subject change date reading error", e);
 		}
 	}
@@ -162,7 +156,6 @@ public class MucDAOOld
 			return repository.getData(mucConfig.getServiceName(), ROOMS_KEY + roomJID + "/subject",
 									  SUBJECT_CREATOR_NICK_KEY);
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new RepositoryException("Subject saving error", e);
 		}
 	}
@@ -267,7 +260,6 @@ public class MucDAOOld
 								   affiliation.name());
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new RepositoryException("Affiliation saving error", e);
 		}
 	}
@@ -283,7 +275,6 @@ public class MucDAOOld
 								   String.valueOf(changeDate.getTime()));
 				// TODO Auto-generated method stub
 			} catch (Exception e) {
-				e.printStackTrace();
 				throw new RepositoryException("Subject saving error", e);
 			}
 		}
@@ -294,7 +285,6 @@ public class MucDAOOld
 			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID, LAST_ACCESS_DATE_KEY,
 							   String.valueOf((new Date()).getTime()));
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new RepositoryException("Last access date writing error", e);
 		}
 	}
@@ -307,7 +297,6 @@ public class MucDAOOld
 			}
 			roomConfig.write(repository, mucConfig, ROOMS_KEY + roomJID + "/config");
 		} catch (Exception e) {
-			e.printStackTrace();
 			throw new RepositoryException("Room config writing error", e);
 		}
 	}

@@ -28,6 +28,7 @@ import tigase.xmpp.jid.JID;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -57,11 +58,11 @@ public class MockMucRepository
 
 					if (modifiedVars.contains(RoomConfig.MUC_ROOMCONFIG_PERSISTENTROOM_KEY)) {
 						if (roomConfig.isPersistentRoom()) {
-							System.out.println("now is PERSISTENT");
+							log.log(Level.FINEST, "now is PERSISTENT");
 							@SuppressWarnings("unused") final Room room = getRoom(roomConfig.getRoomJID());
 							// dao.createRoom(room);
 						} else {
-							System.out.println("now is NOT! PERSISTENT");
+							log.log(Level.FINEST, "now is NOT! PERSISTENT");
 							// dao.destroyRoom(roomConfig.getRoomId());
 						}
 					} else if (roomConfig.isPersistentRoom()) {

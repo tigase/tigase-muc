@@ -39,6 +39,7 @@ import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
 import java.util.List;
+import java.util.logging.Level;
 
 /**
  * @author bmalkow
@@ -99,8 +100,7 @@ public class MediatedInvitationModule
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (Exception e) {
-			e.printStackTrace();
-
+			log.log(Level.FINEST, "Error during processing invitation", e);
 			throw new RuntimeException(e);
 		}
 	}

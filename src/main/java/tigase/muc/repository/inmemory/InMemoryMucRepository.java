@@ -178,7 +178,7 @@ public class InMemoryMucRepository
 				defaultConfig.read(userRepository, mucConfig,
 								   ROOMS_KEY + MUCComponent.DEFAULT_ROOM_CONFIG_KEY + "/config");
 			} catch (Exception e) {
-				e.printStackTrace();
+				log.log(Level.WARNING, "Error reading default room configuration", e);
 			}
 			// dao.updateRoomConfig(defaultConfig);
 		}
@@ -316,7 +316,8 @@ public class InMemoryMucRepository
 			}
 			roomConfig.write(userRepository, mucConfig, ROOMS_KEY + roomJID + "/config");
 		} catch (Exception e) {
-			e.printStackTrace();
+			// finest is OK as it will be re-thrown
+			log.log(Level.FINEST, "error during updating default room configuration", e);
 			throw new RepositoryException("Room config writing error", e);
 		}
 	}
@@ -344,7 +345,7 @@ public class InMemoryMucRepository
 					if (name != null && name.isEmpty()) {
 						name = null;
 					}
-					System.out.println("setting room name '" + name + "'");
+					log.log(Level.FINEST, "setting room name '" + name + "'");
 					ir.name = name;
 				}
 			}

@@ -114,7 +114,6 @@ public class RoomTest
 			Room room = pubsub.getMucRepository().getRoom(BareJID.bareJIDInstance("darkcave@macbeth.shakespeare.lit"));
 			Assert.assertNull("Room should be destroyed", room);
 		} catch (Exception e) {
-			e.printStackTrace();
 			Assert.fail(e.getMessage());
 		}
 	}

@@ -133,8 +133,7 @@ public class ModeratorModule
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (Exception e) {
-			e.printStackTrace();
-
+			log.log(Level.FINEST, "Error during processing invitation", e);
 			throw new RuntimeException(e);
 		}
 	}
@@ -355,8 +354,6 @@ public class ModeratorModule
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (Exception e) {
-			e.printStackTrace();
-
 			throw new RuntimeException(e);
 		}
 	}
@@ -435,8 +432,7 @@ public class ModeratorModule
 		} catch (MUCException e1) {
 			throw e1;
 		} catch (Exception e) {
-			e.printStackTrace();
-
+			log.log(Level.FINEST, "Error during processing invitation", e);
 			throw new RuntimeException(e);
 		}
 	}

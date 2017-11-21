@@ -103,8 +103,6 @@ public class PrivateMessageModule
 		} catch (TigaseStringprepException e) {
 			throw new MUCException(Authorization.BAD_REQUEST);
 		} catch (Exception e) {
-			e.printStackTrace();
-
 			throw new RuntimeException(e);
 		}
 	}
