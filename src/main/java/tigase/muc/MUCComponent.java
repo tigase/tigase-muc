@@ -111,9 +111,6 @@ public class MUCComponent
 		return true;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 */
 	@Override
 	public void processPacket(Packet packet) {
 		if (ghostbuster != null) {

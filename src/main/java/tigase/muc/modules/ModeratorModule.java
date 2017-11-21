@@ -550,12 +550,6 @@ public class ModeratorModule
 		}
 	}
 
-	/**
-	 * @param room
-	 * @param occupantBareJid
-	 *
-	 * @throws TigaseStringprepException
-	 */
 	protected void sendInvitation(Room room, BareJID occupantBareJid, String actor) throws TigaseStringprepException {
 		Packet message = Packet.packetInstance(new Element("message", new String[]{Packet.FROM_ATT, Packet.TO_ATT},
 														   new String[]{room.getRoomJID().toString(),

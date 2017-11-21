@@ -167,10 +167,6 @@ public class Ghostbuster2
 		}
 	}
 
-	/**
-	 * @param occupantJids
-	 * @param room
-	 */
 	public void remove(Collection<JID> occupantJids, Room room) {
 		for (JID jid : occupantJids) {
 			remove(jid, room);
@@ -242,20 +238,10 @@ public class Ghostbuster2
 		}
 	}
 
-	/**
-	 * @param packet
-	 *
-	 * @throws TigaseStringprepException
-	 */
 	protected void onPingReceived(Packet packet) throws TigaseStringprepException {
 		update(packet);
 	}
 
-	/**
-	 * @param stanzaTo
-	 *
-	 * @throws TigaseStringprepException
-	 */
 	protected void onPingTimeout(JID stanzaTo) throws TigaseStringprepException {
 		if (log.isLoggable(Level.FINEST)) {
 			log.finest("Timeouted ping to: " + stanzaTo);
@@ -331,12 +317,6 @@ public class Ghostbuster2
 		}
 	}
 
-	/**
-	 * @param obj
-	 * @param packet
-	 *
-	 * @throws TigaseStringprepException
-	 */
 	private void processError(MonitoredObject obj, Packet packet) throws TigaseStringprepException {
 		if ((presenceModule == null) || (repository == null)) {
 			return;
@@ -360,9 +340,6 @@ public class Ghostbuster2
 		private long lastActivity;
 		private HashSet<BareJID> rooms = new HashSet<BareJID>();
 
-		/**
-		 * @param occupantJid
-		 */
 		public MonitoredObject(JID occupantJid) {
 			this.source = occupantJid;
 		}

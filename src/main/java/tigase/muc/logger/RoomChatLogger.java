@@ -56,9 +56,6 @@ public class RoomChatLogger
 	@Inject
 	private MUCConfig config;
 
-	/**
-	 * @param config2
-	 */
 	public RoomChatLogger() {
 	}
 

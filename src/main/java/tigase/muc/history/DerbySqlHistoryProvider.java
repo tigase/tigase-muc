@@ -52,8 +52,6 @@ public class DerbySqlHistoryProvider
 					"timestamp bigint,\n" + "sender_jid varchar(2049),\n" + "sender_nickname char(128),\n" +
 					"body varchar(4096),\n " + "public_event BOOLEAN,\n " + "msg varchar(32672) " + ")";
 
-	/**
-	 */
 	public DerbySqlHistoryProvider() {
 	}
 

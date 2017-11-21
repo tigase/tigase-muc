@@ -107,9 +107,6 @@ public class RoomConfig {
 		return result;
 	}
 
-	/**
-	 * @param roomJID
-	 */
 	public RoomConfig(BareJID roomJID) {
 		this.roomJID = roomJID;
 		init();
@@ -288,8 +285,6 @@ public class RoomConfig {
 
 	/**
 	 * Make Room Publicly Searchable
-	 *
-	 * @return
 	 */
 	public boolean isRoomconfigPublicroom() {
 		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_PUBLICROOM_KEY), true);

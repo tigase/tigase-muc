@@ -50,8 +50,6 @@ public class SqlserverSqlHistoryProvider
 					"body nvarchar(max),\n" + "public_event bit,\n " + "msg nvarchar(max) " + ")";
 	private Logger log = Logger.getLogger(this.getClass().getName());
 
-	/**
-	 */
 	public SqlserverSqlHistoryProvider() {
 	}
 

@@ -46,8 +46,6 @@ public class MySqlHistoryProvider
 					"body text,\n" + "public_event boolean,\n " + "msg text " + ")";
 	private Logger log = Logger.getLogger(this.getClass().getName());
 
-	/**
-	 */
 	public MySqlHistoryProvider() {
 	}
 

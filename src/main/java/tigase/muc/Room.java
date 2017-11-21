@@ -332,8 +332,6 @@ public class Room
 	}
 
 	/**
-	 * @param jid
-	 *
 	 * @return <code>true</code> if no more JIDs assigned to nickname. In other words: nickname is removed
 	 */
 	public boolean removeOccupant(JID jid) {

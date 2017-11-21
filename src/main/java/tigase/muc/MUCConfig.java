@@ -63,16 +63,10 @@ public class MUCConfig {
 	@ConfigField(desc = "Send welcome messages on room creation", alias = "welcome-message")
 	private boolean welcomeMessagesEnabled = true;
 
-	/**
-	 * @return
-	 */
 	public String getChatLoggingDirectory() {
 		return chatLoggingDirectory;
 	}
 
-	/**
-	 * @return
-	 */
 	public BareJID getServiceName() {
 		return serviceName;
 	}
@@ -81,9 +75,6 @@ public class MUCConfig {
 		return addMessageIdIfMissing;
 	}
 
-	/**
-	 * @return
-	 */
 	public boolean isChatStateAllowed() {
 		return chatStateAllowed;
 	}
@@ -92,30 +83,18 @@ public class MUCConfig {
 		return ghostbusterEnabled;
 	}
 
-	/**
-	 * @return
-	 */
 	public boolean isMessageFilterEnabled() {
 		return messageFilterEnabled;
 	}
 
-	/**
-	 * @return
-	 */
 	public boolean isMultiItemMode() {
 		return multiItemMode;
 	}
 
-	/**
-	 * @return
-	 */
 	public boolean isNewRoomLocked() {
 		return newRoomLocked;
 	}
 
-	/**
-	 * @return
-	 */
 	public boolean isPresenceFilterEnabled() {
 		return presenceFilterEnabled;
 	}

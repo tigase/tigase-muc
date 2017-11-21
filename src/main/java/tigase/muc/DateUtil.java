@@ -36,10 +36,6 @@ public class DateUtil {
 
 	/**
 	 * Used only in jabber:x:delivery
-	 *
-	 * @param date
-	 *
-	 * @return
 	 */
 	public static String formatOld(final Date date) {
 		Calendar now = Calendar.getInstance();

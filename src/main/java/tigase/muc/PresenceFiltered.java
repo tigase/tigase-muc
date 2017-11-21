@@ -32,7 +32,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * @author Wojciech Kapcia <wojciech.kapcia@tigase.org>
+ * @author Wojciech Kapcia
  */
 public class PresenceFiltered
 		implements Room.RoomOccupantListener, Room.RoomListener {

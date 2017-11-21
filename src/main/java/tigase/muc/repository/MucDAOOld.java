@@ -82,11 +82,6 @@ public class MucDAOOld
 		}
 	}
 
-	/**
-	 * @param roomJID
-	 *
-	 * @throws RepositoryException
-	 */
 	public void destroyRoom(BareJID roomJID) throws RepositoryException {
 		try {
 			repository.removeSubnode(mucConfig.getServiceName(), ROOMS_KEY + roomJID);
@@ -115,13 +110,6 @@ public class MucDAOOld
 		return repository;
 	}
 
-	/**
-	 * @param jid
-	 *
-	 * @return
-	 *
-	 * @throws RepositoryException
-	 */
 	public String getRoomName(String jid) throws RepositoryException {
 		try {
 			return repository.getData(mucConfig.getServiceName(), ROOMS_KEY + jid + "/config",
@@ -132,11 +120,6 @@ public class MucDAOOld
 		}
 	}
 
-	/**
-	 * @return
-	 *
-	 * @throws RepositoryException
-	 */
 	public ArrayList<BareJID> getRoomsJIDList() throws RepositoryException {
 		ArrayList<BareJID> jids = new ArrayList<BareJID>();
 		BareJID serviceName = mucConfig.getServiceName();
@@ -306,11 +289,6 @@ public class MucDAOOld
 		}
 	}
 
-	/**
-	 * @param roomJID
-	 *
-	 * @throws RepositoryException
-	 */
 	public void updateLastAccessDate(BareJID roomJID) throws RepositoryException {
 		try {
 			repository.setData(mucConfig.getServiceName(), ROOMS_KEY + roomJID, LAST_ACCESS_DATE_KEY,
@@ -321,11 +299,6 @@ public class MucDAOOld
 		}
 	}
 
-	/**
-	 * @param roomConfig
-	 *
-	 * @throws RepositoryException
-	 */
 	public void updateRoomConfig(RoomConfig roomConfig) throws RepositoryException {
 		try {
 			String roomJID = roomConfig.getRoomJID() != null ? roomConfig.getRoomJID().toString() : null;

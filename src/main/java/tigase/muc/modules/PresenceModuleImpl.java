@@ -50,9 +50,6 @@ public class PresenceModuleImpl
 		extends AbstractMucModule
 		implements PresenceModule {
 
-	/**
-	 * Field description
-	 */
 	protected static final Logger log = Logger.getLogger(PresenceModule.class.getName());
 	private static final Criteria CRIT = ElementCriteria.name("presence");
 	private final Set<Criteria> allowedElements = new HashSet<Criteria>();

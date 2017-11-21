@@ -43,31 +43,12 @@ public interface MucLogger {
 	 */
 	void addJoinEvent(Room room, Date date, JID senderJID, String nickName);
 
-	/**
-	 * @param room
-	 * @param date
-	 * @param senderJID
-	 * @param nickName
-	 */
 	void addLeaveEvent(Room room, Date date, JID senderJID, String nickName);
 
-	/**
-	 * @param room
-	 * @param message
-	 * @param senderJid
-	 * @param senderNickname
-	 * @param time
-	 */
 	void addMessage(Room room, String message, JID senderJid, String senderNickname, Date time);
 
 	/**
 	 * Adds subject changes to log/history.
-	 *
-	 * @param room
-	 * @param message
-	 * @param senderJid
-	 * @param senderNickname
-	 * @param time
 	 */
 	void addSubjectChange(Room room, String message, JID senderJid, String senderNickname, Date time);
 
