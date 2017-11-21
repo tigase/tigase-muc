@@ -11,6 +11,7 @@
         <sign-skip>true</sign-skip>
         <verbose-log>false</verbose-log>
         <tsa>${tsa-uri}</tsa>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
     </properties>
     <modelVersion>4.0.0</modelVersion>
     <groupId>tigase</groupId>
@@ -51,12 +52,15 @@
     </organization>
     <profiles>
         <profile>
-            <id>disable-java8-doclint</id>
+            <id>dist</id>
             <activation>
-                <jdk>[1.8,)</jdk>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>dist</name>
+                </property>
             </activation>
             <properties>
-                <additionalparam>-Xdoclint:none</additionalparam>
+                <maven.javadoc.skip>false</maven.javadoc.skip>
             </properties>
         </profile>
     </profiles>
@@ -245,6 +249,32 @@
                     <keypass>${sign-keypass}</keypass>
                     <verbose>${verbose-log}</verbose>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.10.4</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                        <configuration>
+                            <source>1.8</source>
+                            <quiet>true</quiet>
+                            <aggregate>true</aggregate>
+
+                            <reportOutputDirectory>${project.reporting.outputDirectory}/docs/javadoc
+                            </reportOutputDirectory>
+                            <destDir>docs/javadoc</destDir>
+
+                            <finalName>${project.artifactId}-${project.version}-b${gitVersion}</finalName>
+                            <jarOutputDirectory>pack</jarOutputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

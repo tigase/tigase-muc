@@ -22,39 +22,27 @@ public interface StrategyIfc
 
 	/**
 	 * Method called when new node connected
-	 *
-	 * @param nodeJid
-	 *
-	 * @return true - if new node was added
 	 */
 	void nodeConnected(JID nodeJid);
 
 	/**
 	 * Method called when node was disconnected
-	 *
-	 * @param nodeJid
 	 */
 	void nodeDisconnected(JID nodeJid);
 
 	/**
 	 * Setter used to set instance of cluster controller
-	 *
-	 * @param cl_controller
 	 */
 	void setClusterController(ClusterControllerIfc cl_controller);
 
 	/**
 	 * Setter used to pass instance of MUCComponentClustered
-	 *
-	 * @param mucComponent
 	 */
 	void setMucComponentClustered(MUCComponentClustered mucComponent);
 
 	/**
 	 * Method called when packet is received by component to preprocess packet before/instead of passing it back to non
 	 * clustered component
-	 *
-	 * @param packet
 	 *
 	 * @return true if packet was fully processed
 	 */
@@ -74,19 +62,9 @@ public interface StrategyIfc
 	 */
 	List<JID> getNodesConnectedWithLocal();
 
-//	/**
-//	 * Retrieve JID of node which is hosting this room
-//	 * 
-//	 * @param roomJid
-//	 * @return 
-//	 */
-//	JID getNodeForRoom(BareJID roomJid);
-//	
-
 	/**
 	 * Setter to pass instance of InMemoryMucRepositoryClustered
 	 *
-	 * @param mucRepository
 	 */
 	void setMucRepository(InMemoryMucRepositoryClustered mucRepository);
 
