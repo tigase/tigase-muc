@@ -19,16 +19,16 @@
  */
 package tigase.muc.repository;
 
-import org.junit.*;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.FixMethodOrder;
+import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import org.junit.runners.model.Statement;
 import tigase.component.exceptions.RepositoryException;
+import tigase.db.AbstractDataSourceAwareTestCase;
 import tigase.db.DBInitException;
 import tigase.db.DataSource;
-import tigase.db.DataSourceHelper;
-import tigase.db.RepositoryFactory;
+import tigase.db.DataSourceAware;
 import tigase.kernel.core.Kernel;
 import tigase.muc.*;
 import tigase.xmpp.jid.BareJID;
@@ -45,7 +45,7 @@ import static org.junit.Assert.*;
  * Created by andrzej on 15.10.2016.
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public abstract class AbstractMucDAOTest<DS extends DataSource> {
+public abstract class AbstractMucDAOTest<DS extends DataSource> extends AbstractDataSourceAwareTestCase<DS, IMucDAO> {
 
 	protected static JID adminJID = JID.jidInstanceNS(UUID.randomUUID().toString(), "test.local",
 													  UUID.randomUUID().toString());
@@ -54,45 +54,14 @@ public abstract class AbstractMucDAOTest<DS extends DataSource> {
 														UUID.randomUUID().toString());
 	protected static String emoji = "\uD83D\uDE97\uD83D\uDCA9\uD83D\uDE21";
 	protected static BareJID roomJID = BareJID.bareJIDInstanceNS(UUID.randomUUID().toString(), "muc.test.local");
-	protected static String uri = System.getProperty("testDbUri");
-	@ClassRule
-	public static TestRule rule = new TestRule() {
-		@Override
-		public Statement apply(Statement stmnt, Description d) {
-			if (uri == null) {
-				return new Statement() {
-					@Override
-					public void evaluate() throws Throwable {
-						Assume.assumeTrue("Ignored due to not passed DB URI!", false);
-					}
-				};
-			}
-			return stmnt;
-		}
-	};
 	protected boolean checkEmoji = true;
 	protected IMucDAO dao;
-	protected DS dataSource;
-	protected Kernel kernel;
 	protected Room.RoomFactory roomFactory;
 
 	@Before
 	public void setup() throws RepositoryException, DBInitException, IllegalAccessException, InstantiationException {
-		kernel = new Kernel();
-		kernel.registerBean(Room.RoomFactoryImpl.class).exec();
-		Class<IMucDAO> daoClass = DataSourceHelper.getDefaultClass(IMucDAO.class, uri);
-		assertNotNull("Not found DAO class for uri: " + uri, daoClass);
-		kernel.registerBean(MUCConfig.class).exec();
-		kernel.registerBean("muc-dao").asClass(daoClass).exec();
-
-		roomFactory = kernel.getInstance(Room.RoomFactory.class);
-		dataSource = prepareDataSource();
-		dao = kernel.getInstance(IMucDAO.class);
-		try {
-			dao.setDataSource(dataSource);
-		} catch (RuntimeException ex) {
-			throw new RepositoryException(ex);
-		}
+		roomFactory = getInstance(Room.RoomFactory.class);
+		dao = getDataSourceAware();
 	}
 
 	@After
@@ -212,9 +181,15 @@ public abstract class AbstractMucDAOTest<DS extends DataSource> {
 		assertNull(dao.getRoom(roomJID));
 	}
 
-	protected DS prepareDataSource() throws DBInitException, IllegalAccessException, InstantiationException {
-		DataSource dataSource = RepositoryFactory.getRepoClass(DataSource.class, uri).newInstance();
-		dataSource.initRepository(uri, new HashMap<>());
-		return (DS) dataSource;
+	@Override
+	protected Class<? extends DataSourceAware> getDataSourceAwareIfc() {
+		return IMucDAO.class;
+	}
+
+	@Override
+	protected void registerBeans(Kernel kernel) {
+		super.registerBeans(kernel);
+		kernel.registerBean(Room.RoomFactoryImpl.class).exec();
+		kernel.registerBean(MUCConfig.class).exec();
 	}
 }

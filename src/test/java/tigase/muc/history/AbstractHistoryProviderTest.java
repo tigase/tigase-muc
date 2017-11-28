@@ -19,11 +19,11 @@
  */
 package tigase.muc.history;
 
-import org.junit.*;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.FixMethodOrder;
+import org.junit.Test;
 import org.junit.runners.MethodSorters;
-import org.junit.runners.model.Statement;
 import tigase.component.PacketWriter;
 import tigase.component.exceptions.ComponentException;
 import tigase.component.exceptions.RepositoryException;
@@ -50,7 +50,8 @@ import static org.junit.Assert.assertNotNull;
  * Created by andrzej on 16.10.2016.
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
+public abstract class AbstractHistoryProviderTest<DS extends DataSource>
+		extends AbstractDataSourceAwareTestCase<DS, HistoryProvider> {
 
 	protected static Date creationDate = null;
 	protected static JID creatorJID = JID.jidInstanceNS(UUID.randomUUID().toString(), "test.local",
@@ -60,43 +61,14 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 	protected static BareJID roomJID = BareJID.bareJIDInstanceNS(UUID.randomUUID().toString(), "muc.test.local");
 	protected static List<Item> savedMessages = new ArrayList<>();
 	protected static String uri = System.getProperty("testDbUri");
-	@ClassRule
-	public static TestRule rule = new TestRule() {
-		@Override
-		public Statement apply(Statement stmnt, Description d) {
-			if (uri == null) {
-				return new Statement() {
-					@Override
-					public void evaluate() throws Throwable {
-						Assume.assumeTrue("Ignored due to not passed DB URI!", false);
-					}
-				};
-			}
-			return stmnt;
-		}
-	};
 	protected boolean checkEmoji = true;
-	protected DS dataSource;
 	protected HistoryProvider historyProvider;
-	protected Kernel kernel;
 	protected Room.RoomFactory roomFactory;
 
 	@Before
 	public void setup() throws RepositoryException, DBInitException, IllegalAccessException, InstantiationException {
-		kernel = new Kernel();
-		kernel.registerBean(Room.RoomFactoryImpl.class).exec();
-		Class<HistoryProvider> historyProviderClass = DataSourceHelper.getDefaultClass(HistoryProvider.class, uri);
-		assertNotNull("Not found HistoryProvider class for uri: " + uri, historyProviderClass);
-		kernel.registerBean("history-provider").asClass(historyProviderClass).exec();
-
-		roomFactory = kernel.getInstance(Room.RoomFactory.class);
-		dataSource = prepareDataSource();
-		historyProvider = kernel.getInstance(HistoryProvider.class);
-		try {
-			historyProvider.setDataSource(dataSource);
-		} catch (RuntimeException ex) {
-			throw new RepositoryException(ex);
-		}
+		roomFactory = getInstance(Room.RoomFactory.class);
+		historyProvider = getInstance(HistoryProvider.class);
 	}
 
 	@After
@@ -289,10 +261,15 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource> {
 		room = null;
 	}
 
-	protected DS prepareDataSource() throws DBInitException, IllegalAccessException, InstantiationException {
-		DataSource dataSource = RepositoryFactory.getRepoClass(DataSource.class, uri).newInstance();
-		dataSource.initRepository(uri, new HashMap<>());
-		return (DS) dataSource;
+	@Override
+	protected Class<? extends DataSourceAware> getDataSourceAwareIfc() {
+		return HistoryProvider.class;
+	}
+
+	@Override
+	protected void registerBeans(Kernel kernel) {
+		super.registerBeans(kernel);
+		kernel.registerBean(Room.RoomFactoryImpl.class).exec();
 	}
 
 	public static class Item {

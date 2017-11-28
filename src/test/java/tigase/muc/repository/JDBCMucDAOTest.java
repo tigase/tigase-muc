@@ -19,17 +19,16 @@
  */
 package tigase.muc.repository;
 
-import org.junit.AfterClass;
-import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
+import tigase.db.DBInitException;
 import tigase.db.DataRepository;
-import tigase.db.util.SchemaLoader;
 
-import java.io.File;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Created by andrzej on 15.10.2016.
@@ -40,42 +39,25 @@ public class JDBCMucDAOTest
 	private static final String PROJECT_ID = "muc";
 	private static final String VERSION = "3.0.0";
 
-	@AfterClass
-	public static void cleanDerby() {
-		if (uri.contains("jdbc:derby:")) {
-			File f = new File("derby_test");
-			if (f.exists()) {
-				try (Connection conn = DriverManager.getConnection(uri + ";shutdown=true")) {
-					conn.close();
-				} catch (SQLException e) {
-					//e.printStackTrace();
-				}
-				if (f.listFiles() != null) {
-					Arrays.asList(f.listFiles()).forEach(f2 -> {
-						if (f2.listFiles() != null) {
-							Arrays.asList(f2.listFiles()).forEach(f3 -> f3.delete());
-						}
-						f2.delete();
-					});
-				}
-				f.delete();
+	@ClassRule
+	public static TestRule rule = new TestRule() {
+		@Override
+		public Statement apply(Statement stmnt, Description d) {
+			if (uri == null || !uri.startsWith("jdbc:")) {
+				return new Statement() {
+					@Override
+					public void evaluate() throws Throwable {
+						Assume.assumeTrue("Ignored due to not passed DB URI!", false);
+					}
+				};
 			}
+			return stmnt;
 		}
-	}
+	};
 
 	@BeforeClass
-	public static void loadSchema() {
-		if (uri.startsWith("jdbc:")) {
-			SchemaLoader loader = SchemaLoader.newInstance("jdbc");
-			SchemaLoader.Parameters params = loader.createParameters();
-			params.parseUri(uri);
-			params.setDbRootCredentials(null, null);
-			loader.init(params);
-			loader.validateDBConnection();
-			loader.validateDBExists();
-			Assert.assertEquals(SchemaLoader.Result.ok, loader.loadSchema(PROJECT_ID, VERSION));
-			loader.shutdown();
-		}
+	public static void loadSchema() throws DBInitException {
+		loadSchema(PROJECT_ID, VERSION, Collections.singleton("muc"));
 	}
 
 }
