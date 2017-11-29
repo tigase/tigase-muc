@@ -20,6 +20,7 @@
 package tigase.muc.repository.inmemory;
 
 import tigase.component.exceptions.RepositoryException;
+import tigase.db.UserExistsException;
 import tigase.db.UserRepository;
 import tigase.eventbus.EventBus;
 import tigase.kernel.beans.Bean;
@@ -270,6 +271,19 @@ public class InMemoryMucRepository
 	@Override
 	public void initialize() {
 		try {
+			try {
+				getDefaultRoomConfig();
+			} catch (RepositoryException e) {
+				// if we cannot load default room config we need to check a few things
+				if (!userRepository.userExists(mucConfig.getServiceName())) {
+					try {
+						userRepository.addUser(mucConfig.getServiceName());
+					} catch (UserExistsException ex) {
+						// maybe other node create service user, let's ignore this exception..
+					}
+				}
+			}
+
 			List<BareJID> roomJids = dao.getRoomsJIDList();
 			if (roomJids != null) {
 				for (BareJID jid : roomJids) {
