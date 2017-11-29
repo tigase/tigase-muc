@@ -179,7 +179,7 @@ public class InMemoryMucRepository
 				defaultConfig.read(userRepository, mucConfig,
 								   ROOMS_KEY + MUCComponent.DEFAULT_ROOM_CONFIG_KEY + "/config");
 			} catch (Exception e) {
-				log.log(Level.WARNING, "Error reading default room configuration", e);
+				log.log(Level.FINEST, "Error reading default room configuration", e);
 			}
 			// dao.updateRoomConfig(defaultConfig);
 		}
