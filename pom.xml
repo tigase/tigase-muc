@@ -106,7 +106,7 @@
                                 } catch (Exception e) {
                                     version = '0'
                                 }
-                                println "setting revision to: " + version
+                                log.info("setting revision to: " + version)
 
                                 project.properties.setProperty('gitVersion', version)
 
@@ -466,7 +466,7 @@
         <dependency>
             <groupId>tigase</groupId>
             <artifactId>tigase-testsuite</artifactId>
-            <version>2.3.0</version>
+            <version>3.4.0-SNAPSHOT</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
