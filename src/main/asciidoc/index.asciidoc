@@ -1,17 +1,13 @@
 = Tigase MUC Component
-Tigase Team <team@tigase.net>
-:toc:
-:toclevels: 3
+:author: Tigase Team <team@tigase.net>
 :numbered:
 :website: http://tigase.net
 :Date: 2016-11-12
 
 Welcome to Tigase Multi User Chat component guide
 
-:leveloffset: 1
-
-include::text/Overview.asciidoc[]
-include::text/Announcement.asciidoc[]
-include::text/Database.asciidoc[]
-include::text/Configuration.asciidoc[]
-include::text/Room_configuration.asciidoc[]
+include::text/Overview.asciidoc[leveloffset=+1]
+include::text/Announcement.asciidoc[leveloffset=+1]
+include::text/Database.asciidoc[leveloffset=+1]
+include::text/Configuration.asciidoc[leveloffset=+1]
+include::text/Room_configuration.asciidoc[leveloffset=+1]
