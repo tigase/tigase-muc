@@ -53,30 +53,78 @@ public class PresenceStore {
 		PREFERE_LAST,
 		PREFERE_PRIORITY;
 	}
+
 	private final Map<BareJID, Presence> bestPresence = new ConcurrentHashMap<>();
 	private final Map<JID, Presence> presenceByJid = new ConcurrentHashMap<>();
-	private PresenceDeliveryLogic presenceOrdening;
-	private Map<BareJID, Map<String, Presence>> presencesMapByBareJid = new ConcurrentHashMap<BareJID, Map<String, Presence>>();
+	private PresenceDeliveryLogic presenceOrdering;
+	private Map<BareJID, Map<String, Presence>> presencesMapByBareJid = new ConcurrentHashMap<>();
+
 	public PresenceStore() {
-		presenceOrdening = PresenceDeliveryLogic.PREFERE_PRIORITY;
+		presenceOrdering = PresenceDeliveryLogic.PREFERE_PRIORITY;
 	}
 
 	public PresenceStore(PresenceDeliveryLogic pdl) {
-		presenceOrdening = pdl;
+		presenceOrdering = pdl;
 	}
 
 	public void clear() {
 		presenceByJid.clear();
 		bestPresence.clear();
 		presencesMapByBareJid.clear();
-
 	}
 
 	// ~--- methods
 	// --------------------------------------------------------------
 
+	private Presence findHighPriorityPresence(final BareJID jid) {
+		return findPresence(jid, (result, x) -> {
+			if ((result == null) || ((x.type == null) && (x.priority > result.priority ||
+					(x.priority == result.priority && x.lastUpdated.after(result.lastUpdated))))) {
+				return 1;
+			} else {
+				return -1;
+			}
+
+		});
+	}
+
+	private Presence findLastPresence(final BareJID jid) {
+		return findPresence(jid, (result, x) -> {
+			Date l = x.lastUpdated;
+			if ((result == null) || ((l.after(result.lastUpdated)) && (x.type == null))) {
+				return 1;
+			} else {
+				return -1;
+			}
+		});
+	}
+
+	private Presence findPresence(final BareJID jid, final Comparator<Presence> c) {
+		Map<String, Presence> resourcesPresence = this.presencesMapByBareJid.get(jid);
+		Presence result = null;
+
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST, "User resources presences: " + resourcesPresence);
+		}
+
+		if (resourcesPresence != null) {
+			Iterator<Presence> it = resourcesPresence.values().iterator();
+
+			while (it.hasNext()) {
+				Presence x = it.next();
+				int r = c.compare(result, x);
+
+				if (r > 0) {
+					result = x;
+				}
+
+			}
+		}
+		return result;
+	}
+
 	public Collection<JID> getAllKnownJIDs() {
-		ArrayList<JID> result = new ArrayList<JID>();
+		ArrayList<JID> result = new ArrayList<>();
 
 		for (Entry<JID, Presence> entry : this.presenceByJid.entrySet()) {
 			if (entry.getValue().type == null) {
@@ -142,14 +190,14 @@ public class PresenceStore {
 				this.presencesMapByBareJid.remove(from.getBareJID());
 			}
 		}
-		updateBestPresence(from.getBareJID());
+		updateBestPresence(from.getBareJID(), null);
 	}
 
 	public void setOrdening(PresenceDeliveryLogic pdl) {
 		if (log.isLoggable(Level.FINEST)) {
 			log.log(Level.FINEST, "Setting presence delivery logic to: " + pdl);
 		}
-		presenceOrdening = pdl;
+		presenceOrdering = pdl;
 	}
 
 	public void update(final Element presence) throws TigaseStringprepException {
@@ -187,45 +235,27 @@ public class PresenceStore {
 			m.put(resource, p);
 
 		}
-		updateBestPresence(bareFrom);
+		updateBestPresence(bareFrom, p);
 	}
 
-	private Presence intGetBestPresence(final BareJID jid) {
-		Map<String, Presence> resourcesPresence = this.presencesMapByBareJid.get(jid);
-		Presence result = null;
+	private void updateBestPresence(final BareJID bareFrom, final Presence currentPresence)
+			throws TigaseStringprepException {
+		Presence x;
 
-		if (log.isLoggable(Level.FINEST)) {
-			log.log(Level.FINEST, "User resources presences: " + resourcesPresence);
-		}
-
-		if (resourcesPresence != null) {
-			Iterator<Presence> it = resourcesPresence.values().iterator();
-
-			while (it.hasNext()) {
-				Presence x = it.next();
-
-				switch (presenceOrdening) {
-					case PREFERE_PRIORITY:
-						if ((result == null) || ((x.type == null) && (x.priority > result.priority ||
-								(x.priority == result.priority && x.lastUpdated.after(result.lastUpdated))))) {
-							result = x;
-						}
-
-						break;
-					case PREFERE_LAST:
-						Date l = x.lastUpdated;
-						if ((result == null) || ((l.after(result.lastUpdated)) && (x.type == null))) {
-							result = x;
-						}
-						break;
+		switch (presenceOrdering) {
+			case PREFERE_PRIORITY:
+				x = findHighPriorityPresence(bareFrom);
+				break;
+			case PREFERE_LAST:
+				if (currentPresence == null) {
+					x = findLastPresence(bareFrom);
+				} else {
+					x = currentPresence;
 				}
-			}
+				break;
+			default:
+				throw new RuntimeException("Unknown presenceOrdering");
 		}
-		return result;
-	}
-
-	private void updateBestPresence(final BareJID bareFrom) throws TigaseStringprepException {
-		Presence x = intGetBestPresence(bareFrom);
 
 		if (log.isLoggable(Level.FINEST)) {
 			log.finest("Selected BestPresence: " + (x != null ? x.element.toString() : "n/a"));

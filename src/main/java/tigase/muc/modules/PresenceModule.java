@@ -70,20 +70,22 @@ public interface PresenceModule
 			Element x = new Element("x", new String[]{"xmlns"}, new String[]{"http://jabber.org/protocol/muc#user"});
 
 			final ArrayList<Element> items = new ArrayList<Element>();
-			for (JID jid : occupantJIDs) {
+
+			if ((anonymity == Anonymity.nonanonymous) ||
+					((anonymity == Anonymity.semianonymous) && destinationAffiliation.isViewOccupantsJid())) {
+				for (JID jid : occupantJIDs) {
+					Element item = new Element("item", new String[]{"affiliation", "role", "nick", "jid"},
+											   new String[]{occupantAffiliation.name(), occupantRole.name(),
+															occupantNickname, jid.toString()});
+					x.addChild(item);
+					items.add(item);
+				}
+			} else {
 				Element item = new Element("item", new String[]{"affiliation", "role", "nick"},
 										   new String[]{occupantAffiliation.name(), occupantRole.name(),
 														occupantNickname});
 				x.addChild(item);
 				items.add(item);
-
-				if ((anonymity == Anonymity.nonanonymous) ||
-						((anonymity == Anonymity.semianonymous) && destinationAffiliation.isViewOccupantsJid())) {
-					item.setAttribute("jid", jid.toString());
-				} else {
-					break;
-				}
-
 			}
 
 			presence.addChild(x);
@@ -138,16 +140,16 @@ public interface PresenceModule
 			this.items = items;
 		}
 
+		void addStatusCode(int code) {
+			x.addChild(new Element("status", new String[]{"code"}, new String[]{"" + code}));
+		}
+
 		public Packet getPacket() {
 			return packet;
 		}
 
 		public Element getX() {
 			return x;
-		}
-
-		void addStatusCode(int code) {
-			x.addChild(new Element("status", new String[]{"code"}, new String[]{"" + code}));
 		}
 	}
 
