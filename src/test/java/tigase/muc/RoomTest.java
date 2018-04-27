@@ -21,10 +21,11 @@ package tigase.muc;
 
 import org.junit.Assert;
 import org.junit.Before;
+import tigase.component.DSLBeanConfigurator;
 import tigase.component.PacketWriter;
-import tigase.component.PropertiesBeanConfigurator;
 import tigase.component.exceptions.RepositoryException;
 import tigase.component.responses.AsyncCallback;
+import tigase.conf.ConfigWriter;
 import tigase.conf.ConfigurationException;
 import tigase.db.beans.DataSourceBean;
 import tigase.eventbus.EventBusFactory;
@@ -59,7 +60,7 @@ public class RoomTest
 		final Kernel kernel = new Kernel();
 		kernel.registerBean(DefaultTypesConverter.class).exportable().exec();
 		kernel.registerBean(AbstractBeanConfigurator.DEFAULT_CONFIGURATOR_NAME)
-				.asClass(PropertiesBeanConfigurator.class)
+				.asClass(DSLBeanConfigurator.class)
 				.exportable()
 				.exec();
 		Map<String, Object> props = new HashMap();
@@ -67,7 +68,8 @@ public class RoomTest
 		props.put("muc/" + MUCConfig.MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
 		props.put("muc/" + MUCConfig.PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
 		props.put("muc/" + MUCConfig.LOG_DIR_KEY, "./");
-		kernel.getInstance(PropertiesBeanConfigurator.class).setProperties(props);
+		props = ConfigWriter.buildTree(props);
+		kernel.getInstance(DSLBeanConfigurator.class).setProperties(props);
 		kernel.registerBean("eventBus").asInstance(EventBusFactory.getInstance()).exportable().exec();
 		kernel.registerBean("dataSourceBean").asClass(DataSourceBean.class).exportable().exec();
 		kernel.registerBean("mucRepository").asInstance(new MockMucRepository()).exportable().exec();
