@@ -62,6 +62,8 @@ public class MUCConfig {
 	private boolean presenceFilterEnabled = false;
 	@ConfigField(desc = "Send welcome messages on room creation", alias = "welcome-message")
 	private boolean welcomeMessagesEnabled = true;
+	@ConfigField(desc = "Enable sending timestamps in legacy format descibed in XEP-0091")
+	private boolean legacyDelayedDeliveryEnabled = false;
 
 	public String getChatLoggingDirectory() {
 		return chatLoggingDirectory;
@@ -101,6 +103,10 @@ public class MUCConfig {
 
 	public boolean isWelcomeMessagesEnabled() {
 		return welcomeMessagesEnabled;
+	}
+
+	public boolean useLegacyDelayedDelivery() {
+		return legacyDelayedDeliveryEnabled;
 	}
 
 }

@@ -31,6 +31,7 @@ import tigase.muc.logger.MucLogger;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Message;
 import tigase.server.Packet;
+import tigase.util.datetime.TimestampHelper;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xml.XMLNodeIfc;
@@ -38,6 +39,7 @@ import tigase.xmpp.Authorization;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
+import java.text.ParseException;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -63,6 +65,8 @@ public class PresenceModuleImpl
 	private MucLogger mucLogger;
 	@Inject
 	private IMucRepository repository;
+
+	private TimestampHelper timestampHelper = new TimestampHelper();
 
 	public static void addCodes(PresenceWrapper wrapper, boolean newRoomCreated, String newNickName) {
 		if (newRoomCreated) {
@@ -119,14 +123,18 @@ public class PresenceModuleImpl
 		return newRole;
 	}
 
-	private static Integer toInteger(String v, Integer defaultValue) {
+	private Integer toInteger(String v, Integer defaultValue) throws NumberFormatException {
 		if (v == null) {
 			return defaultValue;
 		}
+		return Integer.parseInt(v);
+	}
+
+	private Integer attrToInteger(Element elem, String attr, Integer defaultValue) throws MUCException {
 		try {
-			return Integer.parseInt(v);
-		} catch (Exception e) {
-			return defaultValue;
+			return toInteger(elem.getAttributeStaticStr(attr), defaultValue);
+		} catch (NumberFormatException ex) {
+			throw new MUCException(Authorization.BAD_REQUEST, "Invalid value for attribute " + attr);
 		}
 	}
 
@@ -500,6 +508,24 @@ public class PresenceModuleImpl
 			throw new MUCException(Authorization.SERVICE_UNAVAILABLE, "Reached maximum number of occupant resources");
 		}
 
+		// we need to have those values ready before we will be able to join to the room as parsing those may throw exceptions
+		Integer maxchars = null;
+		Integer maxstanzas = null;
+		Integer seconds = null;
+		Date since = null;
+		Element hist = (xElement == null) ? null : xElement.getChild("history");
+
+		if (hist != null) {
+			maxchars = attrToInteger(hist,"maxchars", null);
+			maxstanzas = attrToInteger(hist,"maxstanzas", null);
+			seconds = attrToInteger(hist, "seconds", null);
+			try {
+				since = timestampHelper.parseTimestamp(hist.getAttributeStaticStr("since"));
+			} catch (ParseException ex) {
+				throw new MUCException(Authorization.BAD_REQUEST, "Invalid value for attribute since");
+			}
+		}
+
 		// TODO Service Informs User that Room Occupant Limit Has Been Reached
 		// Service Sends Presence from Existing Occupants to New Occupant
 		sendPresencesToNewOccupant(room, senderJID);
@@ -530,18 +556,6 @@ public class PresenceModuleImpl
 		event.addChild(new Element("jid", senderJID.toString()));
 		fireEvent(event);
 
-		Integer maxchars = null;
-		Integer maxstanzas = null;
-		Integer seconds = null;
-		Date since = null;
-		Element hist = (xElement == null) ? null : xElement.getChild("history");
-
-		if (hist != null) {
-			maxchars = toInteger(hist.getAttributeStaticStr("maxchars"), null);
-			maxstanzas = toInteger(hist.getAttributeStaticStr("maxstanzas"), null);
-			seconds = toInteger(hist.getAttributeStaticStr("seconds"), null);
-			since = DateUtil.parse(hist.getAttributeStaticStr("since"));
-		}
 		sendHistoryToUser(room, senderJID, maxchars, maxstanzas, seconds, since);
 		if ((room.getSubjectChangerNick() != null) && (room.getSubjectChangeDate() != null)) {
 			Element message = new Element(Message.ELEM_NAME,
@@ -552,17 +566,19 @@ public class PresenceModuleImpl
 												  room.getSubjectChangeDate(), room.getSubject())});
 
 			message.addChild(new Element("subject", room.getSubject()));
-
-			String stamp = DateUtil.formatDatetime(room.getSubjectChangeDate());
+			
+			String stamp = timestampHelper.formatWithMs(room.getSubjectChangeDate());
 			Element delay = new Element("delay", new String[]{"xmlns", "stamp"}, new String[]{"urn:xmpp:delay", stamp});
 
 			delay.setAttribute("jid", room.getRoomJID() + "/" + room.getSubjectChangerNick());
 
-			Element x = new Element("x", new String[]{"xmlns", "stamp"},
-									new String[]{"jabber:x:delay", DateUtil.formatOld(room.getSubjectChangeDate())});
-
 			message.addChild(delay);
-			message.addChild(x);
+
+			if (config.useLegacyDelayedDelivery()) {
+				Element x = new Element("x", new String[]{"xmlns", "stamp"},
+										new String[]{"jabber:x:delay", timestampHelper.formatInLegacyDelayedDelivery(room.getSubjectChangeDate())});
+				message.addChild(x);
+			}
 
 			Packet p = Packet.packetInstance(message);
 			p.setXMLNS(Packet.CLIENT_XMLNS);

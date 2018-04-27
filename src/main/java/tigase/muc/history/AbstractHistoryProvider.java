@@ -20,8 +20,8 @@
 package tigase.muc.history;
 
 import tigase.db.DataSource;
-import tigase.muc.DateUtil;
 import tigase.server.Packet;
+import tigase.util.datetime.TimestampHelper;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.DomBuilderHandler;
 import tigase.xml.Element;
@@ -45,6 +45,8 @@ public abstract class AbstractHistoryProvider<DS extends DataSource>
 	protected static final SimpleParser parser = SingletonFactory.getParserInstance();
 
 	protected final Logger log = Logger.getLogger(this.getClass().getName());
+
+	private final TimestampHelper timestampHelper = new TimestampHelper();
 
 	protected static <Q extends Query> void calculateOffsetAndPosition(Q query, int count, Integer before,
 																	   Integer after) {
@@ -74,7 +76,7 @@ public abstract class AbstractHistoryProvider<DS extends DataSource>
 		rsm.setCount(count);
 	}
 
-	public static Packet createMessage(BareJID roomJID, JID senderJID, String msgSenderNickname, String originalMessage,
+	public Packet createMessage(BareJID roomJID, JID senderJID, String msgSenderNickname, String originalMessage,
 									   String body, String msgSenderJid, boolean addRealJids, Date msgTimestamp)
 			throws TigaseStringprepException {
 
@@ -84,13 +86,13 @@ public abstract class AbstractHistoryProvider<DS extends DataSource>
 		// The 'from' attribute MUST be set to the JID of the room itself.
 		Element delay = new Element("delay", new String[]{"xmlns", "from", "stamp"},
 									new String[]{"urn:xmpp:delay", roomJID.toString(),
-												 DateUtil.formatDatetime(msgTimestamp)});
+												 timestampHelper.formatWithMs(msgTimestamp)});
 		message.getElement().addChild(delay);
 
 		return message;
 	}
 
-	public static Element createMessageElement(BareJID roomJID, JID senderJID, String msgSenderNickname,
+	public Element createMessageElement(BareJID roomJID, JID senderJID, String msgSenderNickname,
 											   String originalMessage, String body) throws TigaseStringprepException {
 		Element message = null;
 		if (originalMessage != null) {

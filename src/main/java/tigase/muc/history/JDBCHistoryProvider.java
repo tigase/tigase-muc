@@ -52,7 +52,7 @@ import java.util.logging.Logger;
  */
 @Repository.Meta(supportedUris = {"jdbc:.*"})
 @Repository.SchemaId(id = Schema.MUC_SCHEMA_ID, name = Schema.MUC_SCHEMA_NAME)
-public class JDBCHistoryProvider
+public class JDBCHistoryProvider extends AbstractHistoryProvider<DataRepository>
 		implements HistoryProvider<DataRepository>, MAMRepository, RepositoryVersionAware {
 
 	private static final Logger log = Logger.getLogger(JDBCHistoryProvider.class.getCanonicalName());
@@ -222,7 +222,7 @@ public class JDBCHistoryProvider
 						String body = rs.getString("body");
 						String msg = rs.getString("msg");
 
-						Element msgEl = AbstractHistoryProvider.createMessageElement(
+						Element msgEl = createMessageElement(
 								query.getComponentJID().getBareJID(), query.getQuestionerJID(), msgSenderNickname, msg,
 								body);
 
@@ -303,7 +303,7 @@ public class JDBCHistoryProvider
 			String body = rs.getString("body");
 			String msg = rs.getString("msg");
 
-			Packet m = AbstractHistoryProvider.createMessage(room.getRoomJID(), senderJID, msgSenderNickname, msg, body,
+			Packet m = createMessage(room.getRoomJID(), senderJID, msgSenderNickname, msg, body,
 															 msgSenderJid, addRealJids, msgTimestamp);
 			writer.write(m);
 		}

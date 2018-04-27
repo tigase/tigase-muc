@@ -30,6 +30,7 @@ import tigase.muc.history.HistoryProvider;
 import tigase.muc.logger.MucLogger;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
+import tigase.util.datetime.TimestampHelper;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
@@ -39,6 +40,7 @@ import tigase.xmpp.jid.JID;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.text.ParseException;
 import java.util.*;
 import java.util.logging.Level;
 
@@ -66,6 +68,8 @@ public class GroupchatMessageModule
 
 	@Inject
 	private IMucRepository repository;
+
+	private final TimestampHelper timestampHelper = new TimestampHelper();
 
 	public static String generateSubjectId(Date ts, String subject) {
 		try {
@@ -181,7 +185,11 @@ public class GroupchatMessageModule
 			Date sendDate;
 
 			if ((delay != null) && (affiliation == Affiliation.owner)) {
-				sendDate = DateUtil.parse(delay.getAttributeStaticStr("stamp"));
+				try {
+					sendDate = timestampHelper.parseTimestamp(delay.getAttributeStaticStr("stamp"));
+				} catch (ParseException ex) {
+					throw new MUCException(Authorization.BAD_REQUEST, "Invalid format of attribute stamp");
+				}
 			} else {
 				sendDate = new Date();
 			}
