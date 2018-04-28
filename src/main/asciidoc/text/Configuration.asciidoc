@@ -96,9 +96,9 @@ By default files are stored in `logs` subdirectory of Tigase XMPP Server install
 You may change it by setting `room-log-directory` property of MUC component to path where you want to store room logs.
 ----
 muc () {
-    muc-logger () {
+    'muc-logger' () {
     }
-    room-log-directory = '/var/log/muc/'
+    'room-log-directory' = '/var/log/muc/'
 }
 ----
 
@@ -106,7 +106,7 @@ We provide default logger for room events, but if you want, you may set your own
 Here we set `com.example.CustomLogger` as logger for MUC rooms:
 ----
 muc () {
-    muc-logger (class: 'com.example.CustomLogger') {
+    'muc-logger' (class: com.example.CustomLogger) {
     }
 }
 ----
@@ -116,7 +116,7 @@ MUC component by default filters messages and allows only `<body/>` element to b
 To disable this filtering it is required to set `message-filter-enabled` property of MUC component to `false`.
 ----
 muc () {
-    message-filter-enabled = false
+    'message-filter-enabled' = false
 }
 ----
 
@@ -124,7 +124,7 @@ muc () {
 To disable filter and allow MUC transfer all subelements in <presence/>, `presence-filter-enabled` property of MUC component needs to be set to `false`
 ----
 muc () {
-    presence-filter-enabled = false
+    'presence-filter-enabled' = false
 }
 ----
 
@@ -134,14 +134,14 @@ MUC component automatically discovers disconnected participants by checking if u
 It is possible to increase checking frequency by setting `search-ghosts-every-minute` property of MUC component to `true`
 ----
 muc () {
-    search-ghosts-every-minute = trues
+    'search-ghosts-every-minute' = trues
 }
 ----
 
 It is also possible to disable this discovery by setting `ghostbuster-enabled` property of MUC component to `false`
 ----
 muc () {
-    ghostbuster-enabled = false
+    'ghostbuster-enabled' = false
 }
 ----
 
@@ -149,7 +149,7 @@ muc () {
 To allow transfer of chat-states in MUC messages set `muc-allow-chat-states` property of MUC component to `true`
 ----
 muc () {
-    muc-allow-chat-states = true
+    'muc-allow-chat-states' = true
 }
 ----
 
@@ -157,7 +157,7 @@ muc () {
 To turn off default locking newly created rooms set `muc-lock-new-room` property of MUC component to `false`
 ----
 muc () {
-    muc-lock-new-room = false
+    'muc-lock-new-room' = false
 }
 ----
 
@@ -165,6 +165,15 @@ muc () {
 To disable joining from few resources to sinlge nickname set `muc-multi-item-allowed` property of MUC component to `false`
 ----
 muc () {
-    muc-multi-item-allowed = false
+    'muc-multi-item-allowed' = false
+}
+----
+
+[[legacyDelayedDeliveryEnabled]]
+== Enabling support for XEP-0091: Legacy Delayed Delivery
+To enable support for XEP-0091 you need to set `legacy-delayed-delivery-enabled` property of MUC component to `true`
+----
+muc () {
+    'legacy-delayed-delivery-enabled' = true
 }
 ----

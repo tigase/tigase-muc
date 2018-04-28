@@ -46,3 +46,9 @@ database/muc-db-migrate.cmd -in 'jdbc:mysql://localhost/database1' -out 'jdbc:my
 
 === Support for MAM
 In this version we added support for http://xmpp.org/extensions/xep-0313.html:[XEP-0313: Message Archive Management] protocol which allows any MAM compatible XMPP client with MUC support to retrieve room chat history using MAM and more advanced queries than retrieval of last X messages or messages since particular date supported by MUC
+
+=== Disabled support for XEP-0091: Legacy Delayed Delivery
+In this version we disabled by default support for https://xmpp.org/extensions/xep-0091.html:[XEP-0091: Legacy Delayed Delivery].
+This decision was made due to the fact that usage of XEP-0091 is not recommended any more and should be used only for backward compatibility.
+Moreover, it added overhead to each transmitted message sent from MUC room history, while the same information was already available in https://xmpp.org/extensions/xep-0203.html:[XEP-0203: Delayed Delivery] format.
+For more information see <<legacyDelayedDeliveryEnabled,Enabling support for XEP-0091: Legacy Delayed Delivery>>
