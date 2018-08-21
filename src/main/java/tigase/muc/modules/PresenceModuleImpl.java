@@ -31,7 +31,7 @@ import tigase.muc.logger.MucLogger;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Message;
 import tigase.server.Packet;
-import tigase.util.datetime.TimestampHelper;
+import tigase.util.datetime.DateTimeFormatter;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xml.XMLNodeIfc;
@@ -66,7 +66,7 @@ public class PresenceModuleImpl
 	@Inject
 	private IMucRepository repository;
 
-	private TimestampHelper timestampHelper = new TimestampHelper();
+	private DateTimeFormatter dateTimeFormatter = new DateTimeFormatter();
 
 	public static void addCodes(PresenceWrapper wrapper, boolean newRoomCreated, String newNickName) {
 		if (newRoomCreated) {
@@ -520,7 +520,7 @@ public class PresenceModuleImpl
 			maxstanzas = attrToInteger(hist,"maxstanzas", null);
 			seconds = attrToInteger(hist, "seconds", null);
 			try {
-				since = timestampHelper.parseTimestamp(hist.getAttributeStaticStr("since"));
+				since = dateTimeFormatter.parseDateTime(hist.getAttributeStaticStr("since")).getTime();
 			} catch (ParseException ex) {
 				throw new MUCException(Authorization.BAD_REQUEST, "Invalid value for attribute since");
 			}
@@ -567,7 +567,7 @@ public class PresenceModuleImpl
 
 			message.addChild(new Element("subject", room.getSubject()));
 			
-			String stamp = timestampHelper.formatWithMs(room.getSubjectChangeDate());
+			String stamp = dateTimeFormatter.formatWithMs(room.getSubjectChangeDate());
 			Element delay = new Element("delay", new String[]{"xmlns", "stamp"}, new String[]{"urn:xmpp:delay", stamp});
 
 			delay.setAttribute("jid", room.getRoomJID() + "/" + room.getSubjectChangerNick());
@@ -576,7 +576,7 @@ public class PresenceModuleImpl
 
 			if (config.useLegacyDelayedDelivery()) {
 				Element x = new Element("x", new String[]{"xmlns", "stamp"},
-										new String[]{"jabber:x:delay", timestampHelper.formatInLegacyDelayedDelivery(room.getSubjectChangeDate())});
+										new String[]{"jabber:x:delay", dateTimeFormatter.formatInLegacyDelayedDelivery(room.getSubjectChangeDate())});
 				message.addChild(x);
 			}
 
