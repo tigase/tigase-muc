@@ -27,7 +27,7 @@ import tigase.muc.*;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
-import tigase.util.datetime.DateTimeFormatter;
+import tigase.util.datetime.TimestampHelper;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
 import tigase.xmpp.jid.BareJID;
@@ -43,7 +43,7 @@ import java.util.logging.Level;
 public class DiscoveryModule
 		extends tigase.component.modules.impl.DiscoveryModule {
 
-	private final DateTimeFormatter dtf = new DateTimeFormatter();
+	private final TimestampHelper dtf = new TimestampHelper();
 	private DiscoItemsFilter filter = null;//new DefaultDiscoItemsFilter();
 	@Inject
 	private IMucRepository repository;
@@ -315,8 +315,7 @@ public class DiscoveryModule
 		addField(form, "FORM_TYPE", "hidden", null, "http://jabber.org/protocol/muc#roominfo");
 
 		// text-single Room creation date
-		addField(form, "muc#roominfo_creationdate", null, "Room creation date",
-				 dtf.formatDateTime(room.getCreationDate()));
+		addField(form, "muc#roominfo_creationdate", null, "Room creation date", dtf.format(room.getCreationDate()));
 		// text-single Current Discussion Topic
 		addField(form, "muc#roominfo_occupants", null, "Number of occupants", room.getOccupantsCount());
 		// text-single Current Discussion Topic

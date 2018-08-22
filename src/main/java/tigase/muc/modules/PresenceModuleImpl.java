@@ -31,7 +31,7 @@ import tigase.muc.logger.MucLogger;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Message;
 import tigase.server.Packet;
-import tigase.util.datetime.DateTimeFormatter;
+import tigase.util.datetime.TimestampHelper;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xml.XMLNodeIfc;
@@ -66,7 +66,7 @@ public class PresenceModuleImpl
 	@Inject
 	private IMucRepository repository;
 
-	private DateTimeFormatter dateTimeFormatter = new DateTimeFormatter();
+	private TimestampHelper dateTimeFormatter = new TimestampHelper();
 
 	public static void addCodes(PresenceWrapper wrapper, boolean newRoomCreated, String newNickName) {
 		if (newRoomCreated) {
@@ -520,7 +520,7 @@ public class PresenceModuleImpl
 			maxstanzas = attrToInteger(hist,"maxstanzas", null);
 			seconds = attrToInteger(hist, "seconds", null);
 			try {
-				since = dateTimeFormatter.parseDateTime(hist.getAttributeStaticStr("since")).getTime();
+				since = dateTimeFormatter.parseTimestamp(hist.getAttributeStaticStr("since"));
 			} catch (ParseException ex) {
 				throw new MUCException(Authorization.BAD_REQUEST, "Invalid value for attribute since");
 			}
