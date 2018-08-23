@@ -22,9 +22,7 @@ package tigase.muc;
 import org.junit.Assert;
 import org.junit.Before;
 import tigase.component.DSLBeanConfigurator;
-import tigase.component.PacketWriter;
 import tigase.component.exceptions.RepositoryException;
-import tigase.component.responses.AsyncCallback;
 import tigase.conf.ConfigWriter;
 import tigase.conf.ConfigurationException;
 import tigase.db.beans.DataSourceBean;
@@ -32,6 +30,7 @@ import tigase.eventbus.EventBusFactory;
 import tigase.kernel.DefaultTypesConverter;
 import tigase.kernel.beans.config.AbstractBeanConfigurator;
 import tigase.kernel.core.Kernel;
+import tigase.muc.utils.ArrayWriter;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
 import tigase.test.junit.XMPPTestCase;
@@ -41,7 +40,6 @@ import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -100,7 +98,7 @@ public class RoomTest
 					Packet p = Packet.packetInstance(data);
 					p.setXMLNS(Packet.CLIENT_XMLNS);
 					pubsub.processPacket(p);
-					send(writer.elements);
+					send(writer.getElements());
 				} catch (TigaseStringprepException e) {
 					e.printStackTrace();
 				}
@@ -213,33 +211,5 @@ public class RoomTest
 	@org.junit.Test
 	public void test_room_config() {
 		test("src/test/scripts/room-configuration.cor", xmlio);
-	}
-
-	private final class ArrayWriter
-			implements PacketWriter {
-
-		private final ArrayList<Element> elements = new ArrayList<Element>();
-
-		public void clear() {
-			elements.clear();
-		}
-
-		@Override
-		public void write(Collection<Packet> elements) {
-			for (Packet packet : elements) {
-				this.elements.add(packet.getElement());
-			}
-		}
-
-		@Override
-		public void write(Packet element) {
-			this.elements.add(element.getElement());
-		}
-
-		@Override
-		public void write(Packet packet, AsyncCallback callback) {
-			write(packet);
-		}
-
 	}
 }
