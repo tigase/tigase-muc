@@ -79,11 +79,18 @@ public class ModeratorModule
 		final Affiliation newAffiliation = getAffiliation(item);
 		HashSet<String> occupantNicknames = new HashSet<String>();
 
-		if (item.getAttributeStaticStr("nick") != null) {
-			occupantNicknames.add(item.getAttributeStaticStr("nick"));
-		} else if (item.getAttributeStaticStr("jid") != null) {
-			occupantNicknames.addAll(
-					room.getOccupantsNicknames(BareJID.bareJIDInstance(item.getAttributeStaticStr("jid"))));
+//		 The moderator can then modify the voice list if desired. In order to do so, the moderator MUST send the
+//		 changed items (i.e., only the "delta") back to the service; each item MUST include the 'nick' attribute
+//		 and 'role' attribute (normally set to a value of "participant" or "visitor") but SHOULD NOT include
+//		 the 'jid' attribute and MUST NOT include the 'affiliation' attribute (which is used to manage affiliations
+//		 such as owner rather than the participant role):
+		final String nick = item.getAttributeStaticStr("nick");
+		final String jid = item.getAttributeStaticStr("jid");
+
+		if (newRole != null && nick != null) {
+			occupantNicknames.add(nick);
+		} else if (newAffiliation != null && jid != null) {
+			occupantNicknames.addAll(room.getOccupantsNicknames(BareJID.bareJIDInstance(jid)));
 		} else {
 			throw new MUCException(Authorization.BAD_REQUEST);
 		}
