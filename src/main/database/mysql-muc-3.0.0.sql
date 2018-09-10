@@ -141,11 +141,9 @@ delimiter //
 create procedure Tig_MUC_CreateRoom(_roomJid varchar(2049), _creatorJid varchar(2049), _creationDate timestamp(6), _roomName varchar(1024) charset utf8mb4 collate utf8mb4_bin, _roomConfig text charset utf8mb4 collate utf8mb4_bin)
 begin
 	declare _roomId bigint;
-	declare _roomJidSha1 char(40);
 
-	select SHA1( LOWER( _roomJid ) ) into _roomJidSha1;
 	insert into tig_muc_rooms (jid, jid_sha1, name, config, creator, creation_date)
-		values (_roomJid, _roomJidSha1, _roomName, _roomConfig, _creatorJid, _creationDate);
+		values (_roomJid, SHA1( LOWER( _roomJid ) ), _roomName, _roomConfig, _creatorJid, _creationDate);
 	select LAST_INSERT_ID() into _roomId;
 
 	select _roomId as room_id;
@@ -191,8 +189,6 @@ end //
 -- QUERY START:
 create procedure Tig_MUC_SetRoomAffiliation(_roomId bigint, _jid varchar(2049), _affiliation varchar(20))
 begin
-    declare _jidSha1 char(40);
-
 	DECLARE exit handler for sqlexception
 		BEGIN
 			-- ERROR
@@ -201,17 +197,16 @@ begin
 
 	START TRANSACTION;
 
-    select SHA1( LOWER( _jid ) ) into _jidSha1;
-    if exists( select 1 from tig_muc_room_affiliations where room_id = _roomId and jid_sha1 = _jidSha1 ) then
+    if exists( select 1 from tig_muc_room_affiliations where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) )jidSha1 ) then
         if _affiliation <> 'none' then
-            update tig_muc_room_affiliations set affiliation = _affiliation where room_id = _roomId and jid_sha1 = _jidSha1;
+            update tig_muc_room_affiliations set affiliation = _affiliation where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) )jidSha1;
         else
-            delete from tig_muc_room_affiliations where room_id = _roomId and jid_sha1 = _jidSha1;
+            delete from tig_muc_room_affiliations where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) )jidSha1;
         end if;
     else
         if _affiliation <> 'none' then
             insert into tig_muc_room_affiliations (room_id, jid, jid_sha1, affiliation)
-                values (_roomId, _jid, _jidSha1, _affiliation);
+                values (_roomId, _jid, SHA1( LOWER( _jid ) )jidSha1, _affiliation);
         end if;
     end if;
 
@@ -236,11 +231,8 @@ end //
 -- QUERY START:
 create procedure Tig_MUC_AddMessage(_roomJid varchar(2049), _ts timestamp(6), _senderJid varchar(3074), _senderNick varchar(1024), _body text charset utf8mb4 collate utf8mb4_bin, _publicEvent boolean, _msg text charset utf8mb4 collate utf8mb4_bin)
 begin
-	declare _roomJidSha1 char(40);
-
-    select SHA1( LOWER( _roomJid ) ) into _roomJidSha1;
     insert into tig_muc_room_history (room_jid, room_jid_sha1, event_type, ts, sender_jid, sender_nickname, body, public_event, msg)
-        values (_roomJid, _roomJidSha1, 1, _ts, _senderJid, _senderNick, _body, _publicEvent, _msg);
+        values (_roomJid, SHA1( LOWER( _roomJid ) ), 1, _ts, _senderJid, _senderNick, _body, _publicEvent, _msg);
 end //
 -- QUERY END:
 
@@ -254,14 +246,10 @@ end //
 -- QUERY START:
 create procedure Tig_MUC_GetMessages(_roomJid varchar(2049), _maxMessages int, _since timestamp(6))
 begin
-    declare _roomJidSha1 char(40);
-
-    select SHA1( LOWER( _roomJid ) ) into _roomJidSha1;
-
     select t.sender_nickname, t.ts, t.sender_jid, t.body, t.msg from (
         select h.sender_nickname, h.ts, h.sender_jid, h.body, h.msg
             from tig_muc_room_history h
-            where h.room_jid_sha1 = _roomJidSha1
+            where h.room_jid_sha1 = SHA1( LOWER( _roomJid ) )
                 and (_since is null or h.ts >= _since)
             order by h.ts desc limit _maxMessages
     ) AS t order by t.ts asc;
@@ -271,13 +259,9 @@ end //
 -- QUERY START:
 create procedure Tig_MUC_MAM_GetMessages(_roomJid varchar(2049), _since timestamp(6), _to timestamp(6), _nickname varchar(1024), _limit int, _offset int)
 begin
-    declare _roomJidSha1 char(40);
-
-    select SHA1( LOWER( _roomJid ) ) into _roomJidSha1;
-
     select h.sender_nickname, h.ts, h.sender_jid, h.body, h.msg
         from tig_muc_room_history h
-        where h.room_jid_sha1 = _roomJidSha1
+        where h.room_jid_sha1 = SHA1( LOWER( _roomJid ) )
             and (_since is null or h.ts >= _since)
             and (_to is null or h.ts <= _to)
             and (_nickname is null or h.sender_nickname = _nickname)
@@ -288,14 +272,10 @@ end //
 -- QUERY START:
 create procedure Tig_MUC_MAM_GetMessagePosition(_roomJid varchar(2049), _since timestamp(6), _to timestamp(6), _nickname varchar(1024), _id_ts timestamp(6))
 begin
-    declare _roomJidSha1 char(40);
-
-    select SHA1( LOWER( _roomJid ) ) into _roomJidSha1;
-
     select count(1) from (
         select h.sender_nickname, h.ts, h.sender_jid, h.body, h.msg
             from tig_muc_room_history h
-            where h.room_jid_sha1 = _roomJidSha1
+            where h.room_jid_sha1 = SHA1( LOWER( _roomJid ) )
                 and (_since is null or h.ts >= _since)
                 and (_to is null or h.ts <= _to)
                 and (_nickname is null or h.sender_nickname = _nickname)
@@ -307,12 +287,8 @@ end //
 -- QUERY START:
 create procedure Tig_MUC_MAM_GetMessagesCount(_roomJid varchar(2049), _since timestamp(6), _to timestamp(6), _nickname varchar(1024))
 begin
-    declare _roomJidSha1 char(40);
-
-    select SHA1( LOWER( _roomJid ) ) into _roomJidSha1;
-
     select count(1) from tig_muc_room_history h
-        where h.room_jid_sha1 = _roomJidSha1
+        where h.room_jid_sha1 = SHA1( LOWER( _roomJid ) )
             and (_since is null or h.ts >= _since)
             and (_to is null or h.ts <= _to)
             and (_nickname is null or h.sender_nickname = _nickname);
