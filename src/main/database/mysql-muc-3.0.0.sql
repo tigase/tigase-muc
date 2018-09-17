@@ -197,16 +197,16 @@ begin
 
 	START TRANSACTION;
 
-    if exists( select 1 from tig_muc_room_affiliations where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) )jidSha1 ) then
+    if exists( select 1 from tig_muc_room_affiliations where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) ) ) then
         if _affiliation <> 'none' then
-            update tig_muc_room_affiliations set affiliation = _affiliation where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) )jidSha1;
+            update tig_muc_room_affiliations set affiliation = _affiliation where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) );
         else
-            delete from tig_muc_room_affiliations where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) )jidSha1;
+            delete from tig_muc_room_affiliations where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) );
         end if;
     else
         if _affiliation <> 'none' then
             insert into tig_muc_room_affiliations (room_id, jid, jid_sha1, affiliation)
-                values (_roomId, _jid, SHA1( LOWER( _jid ) )jidSha1, _affiliation);
+                values (_roomId, _jid, SHA1( LOWER( _jid ) ), _affiliation);
         end if;
     end if;
 
