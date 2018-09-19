@@ -170,6 +170,12 @@ public class DiscoveryModule
 
 			for (Map.Entry<BareJID, String> e : publicRooms.entrySet()) {
 				BareJID jid = e.getKey();
+
+				// we are skipping rooms without localPart as they are not valid!
+				if (jid.getLocalpart() == null) {
+					continue;
+				}
+
 				String name = e.getValue();
 				if (filter != null) {
 					final Room room = repository.getRoom(jid);

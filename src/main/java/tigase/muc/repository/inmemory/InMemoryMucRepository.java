@@ -287,7 +287,11 @@ public class InMemoryMucRepository
 			List<BareJID> roomJids = dao.getRoomsJIDList();
 			if (roomJids != null) {
 				for (BareJID jid : roomJids) {
-					addToAllRooms(jid, new InternalRoom());
+					if (jid.getLocalpart() == null) {
+						dao.destroyRoom(jid);
+					} else {
+						addToAllRooms(jid, new InternalRoom());
+					}
 				}
 			}
 		} catch (Exception e) {

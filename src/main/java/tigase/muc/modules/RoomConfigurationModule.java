@@ -205,6 +205,10 @@ public class RoomConfigurationModule
 	private void processSet(final Packet element) throws RepositoryException, MUCException {
 		try {
 			final JID roomJID = JID.jidInstance(element.getAttributeStaticStr(Packet.TO_ATT));
+			if (roomJID.getLocalpart() == null) {
+				throw new MUCException(Authorization.JID_MALFORMED);
+			}
+			
 			JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
 			final Element query = element.getElement().getChild("query", "http://jabber.org/protocol/muc#owner");
 			Room room = repository.getRoom(roomJID.getBareJID());
