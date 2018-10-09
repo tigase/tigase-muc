@@ -10,6 +10,7 @@ import tigase.cluster.api.ClusterControllerIfc;
 import tigase.cluster.api.ClusteredComponentIfc;
 import tigase.cluster.api.CommandListener;
 import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Initializable;
 import tigase.kernel.beans.Inject;
 import tigase.kernel.beans.selector.ClusterModeRequired;
 import tigase.kernel.beans.selector.ConfigType;
@@ -36,7 +37,7 @@ import java.util.logging.Logger;
 @ClusterModeRequired(active = true)
 public class MUCComponentClustered
 		extends MUCComponent
-		implements ClusteredComponentIfc {
+		implements ClusteredComponentIfc, Initializable {
 
 	private static final Logger log = Logger.getLogger(MUCComponentClustered.class.getCanonicalName());
 
@@ -49,10 +50,16 @@ public class MUCComponentClustered
 	private StrategyIfc strategy;
 
 	public MUCComponentClustered() {
-		licenceChecker = LicenceChecker.getLicenceChecker("acs");
+/*
+		 FIXME - restore this check! strategy is configured as a bean inside SM, how to access it?
 
-		// FIXME - restore this check! strategy is configured as a bean inside SM, how to access it?
-		// it should also be moved to ::register(Kernel) method!
+		 move this to ::register(Kernel) method!
+
+		 Wojtek: currently even in register(Kernel) method this won't work reliably because
+		 of the order in which Beans are initialised (it may happen that SM won't be available yet.
+		 .getInstance() would create new instance (if doesn't exists, which may not always be needed)
+		 let's leave it for now.
+*/
 //		String strategyProp = System.getProperty( "sm-cluster-strategy-class" );
 //		if ( strategyProp == null || !"tigase.server.cluster.strategy.OnlineUsersCachingStrategy".equals( strategyProp) ){
 //			log.severe( "You've tried using Clustered version of the component but ACS is disabled" );
@@ -148,6 +155,12 @@ public class MUCComponentClustered
 		cmpInfo.getComponentData().put("MUCClusteringStrategy", (strategy != null) ? strategy.getClass() : null);
 
 		return cmpInfo;
+	}
+
+	@Override
+	public void initialize() {
+		super.initialize();
+		licenceChecker = LicenceChecker.getLicenceChecker("acs");
 	}
 
 	@Override
