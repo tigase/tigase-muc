@@ -1,31 +1,19 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.build.timestamp.format>yyyy-MM-dd/HH:mm:ss</maven.build.timestamp.format>
-
-        <sign-keystore>/path/to/jks.keystore</sign-keystore>
-        <sign-alias>alias</sign-alias>
-        <sign-storepass>storepass</sign-storepass>
-        <sign-keypass>keypass</sign-keypass>
-        <sign-skip>true</sign-skip>
-        <tsa-uri/>
-        <verbose-log>false</verbose-log>
-        <maven.javadoc.skip>true</maven.javadoc.skip>
-    </properties>
     <modelVersion>4.0.0</modelVersion>
-    <groupId>tigase</groupId>
     <artifactId>tigase-muc</artifactId>
     <name>Tigase MUC</name>
     <version>3.0.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
     <description>Multi User Chat component for Tigase</description>
     <url>https://projects.tigase.org/projects/tigase-muc</url>
+
     <issueManagement>
         <system>Redmine</system>
         <url>https://projects.tigase.org/projects/tigase-muc</url>
     </issueManagement>
     <inceptionYear>2007</inceptionYear>
+
     <developers>
         <developer>
             <id>bmalkow</id>
@@ -38,223 +26,55 @@
             <timezone>+1</timezone>
         </developer>
     </developers>
+
     <licenses>
         <license>
             <name>GNU Affero General Public License</name>
             <url>http://www.gnu.org/licenses/agpl.txt</url>
         </license>
     </licenses>
+
     <scm>
         <connection>scm:git:https://repository.tigase.org/git/tigase-muc.git</connection>
         <developerConnection>scm:git:https://repository.tigase.org/git/tigase-muc.git</developerConnection>
         <url>https://projects.tigase.org/projects/tigase-muc/repository</url>
         <tag>HEAD</tag>
     </scm>
+
     <organization>
         <name>Tigase</name>
-        <url>http://www.tigase.org</url>
+        <url>http://www.tigase.net</url>
     </organization>
+
+    <parent>
+        <groupId>tigase</groupId>
+        <artifactId>tigase-projects-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath/>
+    </parent>
+
     <build>
         <plugins>
             <plugin>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.1</version>
-            </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>buildnumber-maven-plugin</artifactId>
-                <version>1.2</version>
-                <configuration>
-                    <timestampFormat>{0,date} {0,time}</timestampFormat>
-                    <shortRevisionLength>8</shortRevisionLength>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>create</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.gmaven</groupId>
-                <artifactId>gmaven-plugin</artifactId>
-                <version>1.5</version>
-                <executions>
-                    <execution>
-                        <id>gitver</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>execute</goal>
-                        </goals>
-                        <configuration>
-                            <providerSelection>2.0</providerSelection>
-                            <properties>
-                                <script>git rev-list HEAD --count</script>
-                            </properties>
-                            <source>
-                                def version
-                                try {
-                                    def command = project.properties.script
-                                    def process = command.execute()
-                                    process.waitFor()
-
-                                    version = process.in.text.trim()
-                                } catch (Exception e) {
-                                    version = '0'
-                                }
-                                log.info("setting revision to: " + version)
-
-                                project.properties.setProperty('gitVersion', version)
-
-                            </source>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>2.5.1</version>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                    <encoding>UTF-8</encoding>
-                    <showDeprecation>false</showDeprecation>
-                </configuration>
-            </plugin>
-
-            <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>2.4.0</version>
                 <extensions>true</extensions>
                 <configuration>
                     <instructions combine.inherited="append">
-                        <manifestLocation>src/main/resources/META-INF/MANIFEST.MF</manifestLocation>
-                        <Implementation-Title>${project.name}</Implementation-Title>
-                        <Implementation-Version>${project.version}-b${gitVersion}/${buildNumber}
-                        </Implementation-Version>
-                        <Implementation-Build>${gitVersion}/${buildNumber} (${maven.build.timestamp})
-                        </Implementation-Build>
-                        <Tigase-Required-Dependencies>tigase.server=${project.dependencies[1].version}</Tigase-Required-Dependencies>
+                        <Tigase-Required-Dependencies>tigase.server=${project.dependencies[1].version}
+                        </Tigase-Required-Dependencies>
                         <Bundle-Activator>tigase.muc.Activator</Bundle-Activator>
                         <Export-Package>tigase.muc.*</Export-Package>
                     </instructions>
                 </configuration>
             </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-source-plugin</artifactId>
-                <version>2.2.1</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>jar-no-fork</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jarsigner-plugin</artifactId>
-                <version>1.4</version>
-                <executions>
-                    <execution>
-                        <id>sign</id>
-                        <goals>
-                            <goal>sign</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <archiveDirectory>${project.basedir}</archiveDirectory>
-                    <includes>
-                        <include>target/tigase*.?ar</include>
-                        <include>jars/tigase*.?ar</include>
-                    </includes>
-                    <processMainArtifact>false</processMainArtifact>
-                    <processAttachedArtifacts>false</processAttachedArtifacts>
-                    <tsa>${tsa-uri}</tsa>
-                    <skip>${sign-skip}</skip>
-
-                    <keystore>${sign-keystore}</keystore>
-                    <alias>${sign-alias}</alias>
-                    <storepass>${sign-storepass}</storepass>
-                    <keypass>${sign-keypass}</keypass>
-                    <verbose>${verbose-log}</verbose>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.6</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>test-jar</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.0.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <source>1.8</source>
-                            <quiet>true</quiet>
-                            <aggregate>true</aggregate>
-
-                            <reportOutputDirectory>${project.reporting.outputDirectory}/docs/javadoc
-                            </reportOutputDirectory>
-                            <destDir>docs/javadoc</destDir>
-
-                            <finalName>${project.artifactId}-${project.version}-b${gitVersion}</finalName>
-                            <jarOutputDirectory>pack</jarOutputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
         </plugins>
 
-
         <resources>
-            <resource>
-                <directory>src/main/database</directory>
-                <targetPath>database</targetPath>
-                <includes>
-                    <include>**/*.sql</include>
-                    <include>**/*.sh</include>
-                    <include>**/*.cmd</include>
-                    <include>**/*.txt</include>
-                </includes>
-            </resource>
-
             <resource>
                 <directory>src/main/groovy/muc</directory>
                 <includes>
                     <include>**/*.groovy</include>
-                </includes>
-            </resource>
-
-            <resource>
-                <directory>src/main/asciidoc</directory>
-                <targetPath>documentation</targetPath>
-                <includes>
-                    <include>**/*.asciidoc</include>
-                    <include>**/*.css</include>
                 </includes>
             </resource>
 
@@ -271,168 +91,42 @@
             </activation>
             <properties>
                 <maven.javadoc.skip>false</maven.javadoc.skip>
-                <dist_path>.</dist_path>
                 <guide_name>Tigase_MUC</guide_name>
-                <guide_path>${dist_path}/docs/${guide_name}_Guide</guide_path>
-                <guide_filename>index</guide_filename>
             </properties>
             <build>
                 <plugins>
                     <plugin>
                         <groupId>org.asciidoctor</groupId>
                         <artifactId>asciidoctor-maven-plugin</artifactId>
-                        <version>1.5.6</version>
                         <executions>
                             <execution>
                                 <id>output-html</id>
                                 <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>process-asciidoc</goal>
-                                </goals>
-                                <configuration>
-                                    <sourceHighlighter>coderay</sourceHighlighter>
-                                    <backend>html5</backend>
-                                    <preserveDirectories>true</preserveDirectories>
-                                    <outputDirectory>${guide_path}/html</outputDirectory>
-                                    <attributes>
-                                        <toc>left</toc>
-                                        <sectanchors>true</sectanchors>
-                                        <linkcss>true</linkcss>
-                                        <imagesdir>.</imagesdir>
-                                    </attributes>
-                                </configuration>
                             </execution>
                             <execution>
                                 <id>output-docbook</id>
                                 <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>process-asciidoc</goal>
-                                </goals>
-                                <configuration>
-                                    <preserveDirectories>true</preserveDirectories>
-                                    <outputDirectory>${project.build.directory}/docbook/</outputDirectory>
-                                    <backend>docbook</backend>
-                                    <doctype>book</doctype>
-                                    <attributes>
-                                        <linkcss>true</linkcss>
-                                        <imagesdir>.</imagesdir>
-                                    </attributes>
-                                </configuration>
                             </execution>
                         </executions>
-                        <configuration>
-                            <gemPath>gems-provided</gemPath>
-                            <sourceDirectory>./src/main/asciidoc</sourceDirectory>
-                            <sourceDocumentName>${guide_filename}.asciidoc</sourceDocumentName>
-                            <attributes>
-                                <endpoint-url>http://docs.tigase.org</endpoint-url>
-                            </attributes>
-                            <headerFooter>true</headerFooter>
-                        </configuration>
                     </plugin>
 
                     <plugin>
                         <groupId>com.agilejava.docbkx</groupId>
                         <artifactId>docbkx-maven-plugin</artifactId>
-                        <version>2.0.16</version>
-                        <dependencies>
-                            <dependency>
-                                <groupId>net.sf.docbook</groupId>
-                                <artifactId>docbook-xml</artifactId>
-                                <version>5.0-all</version>
-                                <classifier>resources</classifier>
-                                <type>zip</type>
-                                <scope>runtime</scope>
-                            </dependency>
-                            <dependency>
-                                <groupId>net.sf.xslthl</groupId>
-                                <artifactId>xslthl</artifactId>
-                                <version>2.0.1</version>
-                                <scope>runtime</scope>
-                            </dependency>
-                            <dependency>
-                                <groupId>net.sf.offo</groupId>
-                                <artifactId>fop-hyph</artifactId>
-                                <version>1.2</version>
-                                <scope>runtime</scope>
-                            </dependency>
-                        </dependencies>
                         <executions>
                             <execution>
                                 <id>generate-webhelp</id>
                                 <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>generate-webhelp</goal>
-                                </goals>
-                                <configuration>
-                                    <targetDirectory>${guide_path}/webhelp/</targetDirectory>
-                                    <!--<imgSrcPath></imgSrcPath>-->
-                                    <ignoreImageScaling>true</ignoreImageScaling>
-                                    <postProcess>
-                                        <copy todir="${guide_path}/webhelp/css">
-                                            <fileset dir="src/main/asciidoc/css"/>
-                                        </copy>
-                                        <copy todir="${guide_path}/webhelp/images">
-                                            <fileset dir="src/main/asciidoc/images"/>
-                                        </copy>
-                                    </postProcess>
-
-                                </configuration>
                             </execution>
                             <execution>
                                 <id>generate-pdf</id>
                                 <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>generate-pdf</goal>
-                                </goals>
-                                <configuration>
-                                    <targetDirectory>${guide_path}/pdf/</targetDirectory>
-                                    <imgSrcPath>${project.build.directory}/docbook/</imgSrcPath>
-                                    <ignoreImageScaling>true</ignoreImageScaling>
-                                    <fopLogLevel>OFF</fopLogLevel>
-                                    <!--<defaultImageWidth>3cm</defaultImageWidth>-->
-                                    <!--<ignoreImageScaling>true</ignoreImageScaling>-->
-                                    <postProcess>
-                                        <move file="${guide_path}/pdf/index.pdf"
-                                              tofile="${guide_path}/pdf/${guide_name}_Guide.pdf" failonerror="false"/>
-                                    </postProcess>
-                                </configuration>
                             </execution>
                             <execution>
                                 <id>generate-html</id>
                                 <phase>generate-resources</phase>
-                                <goals>
-                                    <goal>generate-html</goal>
-                                </goals>
-                                <configuration>
-                                    <chunkedOutput>true</chunkedOutput>
-                                    <targetDirectory>${guide_path}/html_chunk/</targetDirectory>
-                                    <targetsFilename>true</targetsFilename>
-                                    <useIdAsFilename>true</useIdAsFilename>
-                                    <cssDecoration>true</cssDecoration>
-                                    <annotationCss>true</annotationCss>
-                                    <htmlStylesheet>css/docbook-xsl.css</htmlStylesheet>
-                                    <postProcess>
-                                        <copy todir="${guide_path}/html_chunk/css">
-                                            <fileset dir="src/main/asciidoc/css"/>
-                                        </copy>
-                                        <copy todir="${guide_path}/html_chunk/images">
-                                            <fileset dir="src/main/asciidoc/images"/>
-                                        </copy>
-                                    </postProcess>
-                                </configuration>
                             </execution>
                         </executions>
-                        <configuration>
-                            <chunkedOutput>true</chunkedOutput>
-                            <sourceDirectory>${project.build.directory}/docbook/</sourceDirectory>
-                            <includes>${guide_filename}.xml</includes>
-                            <!--<imgSrcPath></imgSrcPath>-->
-                            <highlightSource>1</highlightSource>
-                            <!--<foCustomization>src/docbkx/docbook-fo.xsl</foCustomization>-->
-                            <hyphenate>true</hyphenate>
-                            <hyphenateVerbatim>true</hyphenateVerbatim>
-                        </configuration>
                     </plugin>
                     <plugin>
                         <artifactId>maven-clean-plugin</artifactId>
@@ -445,17 +139,6 @@
                                 </goals>
                             </execution>
                         </executions>
-                        <configuration>
-                            <filesets>
-                                <fileset>
-                                    <directory>${guide_path}/pdf/</directory>
-                                    <followSymlinks>false</followSymlinks>
-                                    <includes>
-                                        <include>*.fo</include>
-                                    </includes>
-                                </fileset>
-                            </filesets>
-                        </configuration>
                     </plugin>
                 </plugins>
 
@@ -495,12 +178,6 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
             <version>5.1.40</version>
@@ -525,41 +202,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-    <repositories>
-        <repository>
-            <id>tigase</id>
-            <name>Tigase repository</name>
-            <url>http://maven-repo.tigase.org/repository/release</url>
-        </repository>
-        <repository>
-            <id>tigase-snapshot</id>
-            <name>Tigase repository</name>
-            <url>http://maven-repo.tigase.org/repository/snapshot</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-    <distributionManagement>
-        <repository>
-            <id>tigase</id>
-            <name>Tigase repository</name>
-            <url>http://maven-repo.tigase.org/repository/release</url>
-        </repository>
-        <snapshotRepository>
-            <id>tigase-snapshot</id>
-            <name>Tigase snapshot repository</name>
-            <url>http://maven-repo.tigase.org/repository/snapshot</url>
-        </snapshotRepository>
-    </distributionManagement>
-    <reporting>
-        <plugins>
-        </plugins>
-    </reporting>
-    <dependencyManagement>
-        <dependencies>
-        </dependencies>
-    </dependencyManagement>
 </project>
-
-
