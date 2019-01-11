@@ -70,9 +70,10 @@
             </plugin>
         </plugins>
 
-        <resources>
+        <resources >
             <resource>
                 <directory>src/main/groovy/muc</directory>
+                <targetPath>scripts</targetPath>
                 <includes>
                     <include>**/*.groovy</include>
                 </includes>
