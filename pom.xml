@@ -1,17 +1,26 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>tigase</groupId>
+        <artifactId>tigase-projects-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath/>
+    </parent>
+
     <artifactId>tigase-muc</artifactId>
-    <name>Tigase MUC</name>
     <version>3.0.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
+
+    <name>Tigase MUC</name>
     <description>Multi User Chat component for Tigase</description>
-    <url>https://projects.tigase.org/projects/tigase-muc</url>
 
     <issueManagement>
         <system>Redmine</system>
         <url>https://projects.tigase.org/projects/tigase-muc</url>
     </issueManagement>
+
     <inceptionYear>2007</inceptionYear>
 
     <developers>
@@ -41,45 +50,45 @@
         <tag>HEAD</tag>
     </scm>
 
-    <organization>
-        <name>Tigase</name>
-        <url>http://www.tigase.net</url>
-    </organization>
-
-    <parent>
-        <groupId>tigase</groupId>
-        <artifactId>tigase-projects-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
-        <relativePath/>
-    </parent>
-
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
                 <configuration>
                     <instructions combine.inherited="append">
-                        <Tigase-Required-Dependencies>tigase.server=${project.dependencies[1].version}
-                        </Tigase-Required-Dependencies>
                         <Bundle-Activator>tigase.muc.Activator</Bundle-Activator>
                         <Export-Package>tigase.muc.*</Export-Package>
                     </instructions>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>com.mycila</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>agpl3</id>
+                        <!--<phase>process-resources</phase>-->
+                        <phase>none</phase>
+                        <configuration>
+                            <header>com/mycila/maven/plugin/license/templates/GPL-3.txt</header>
+                            <excludes>
+                                <!--default-->
+                                <exclude>**/COPYING</exclude>
+                                <exclude>**/LICENSE</exclude>
+                                <exclude>**/README</exclude>
+                                <exclude>src/test/resources/**</exclude>
+                                <exclude>src/main/resources/**</exclude>
+                                <exclude>src/main/asciidoc/**/*.asciidoc</exclude>
+                                <!--specific to tigase-muc-->
+                                <exclude>**/*.cor</exclude>
+                                <exclude>debian/**</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
         </plugins>
-
-        <resources >
-            <resource>
-                <directory>src/main/groovy/muc</directory>
-                <targetPath>scripts</targetPath>
-                <includes>
-                    <include>**/*.groovy</include>
-                </includes>
-            </resource>
-
-        </resources>
     </build>
     <profiles>
         <profile>
@@ -146,6 +155,7 @@
             </build>
         </profile>
     </profiles>
+
     <dependencies>
         <dependency>
             <groupId>tigase</groupId>
@@ -171,12 +181,6 @@
             <version>8.0.0-SNAPSHOT</version>
             <type>test-jar</type>
             <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.felix</groupId>
-            <artifactId>org.osgi.core</artifactId>
-            <version>1.4.0</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>mysql</groupId>

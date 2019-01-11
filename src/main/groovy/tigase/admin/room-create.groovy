@@ -1,5 +1,5 @@
 /*
- * room-remove.groovy
+ * room-create.groovy
  *
  * Tigase Jabber/XMPP Multi-User Chat Component
  * Copyright (C) 2004-2017 "Tigase, Inc." <office@tigase.com>
@@ -18,34 +18,45 @@
  * If not, see http://www.gnu.org/licenses/.
  */
 
-package muc.admin
-// AS:Description: Remove room
-// AS:CommandId: room-remove
+package tigase.admin
+
+// AS:Description: Create room
+// AS:CommandId: room-create
 // AS:Component: muc
 // AS:ComponentClass: tigase.muc.MUCComponent
 
+import tigase.form.Form
+import tigase.muc.Affiliation
+import tigase.muc.Room
+import tigase.muc.RoomConfig
 import tigase.server.Command
 import tigase.server.Iq
 import tigase.server.Packet
 import tigase.util.stringprep.TigaseStringprepException
+import tigase.xml.Element
 import tigase.xmpp.jid.BareJID
 
 def ROOM_NAME_KEY = "room-name"
-def REASON_KEY = "reason"
-def ALTERNATE_JID_KEY = "alternate-jid"
 
 def Iq p = (Iq) packet
 def roomName = Command.getFieldValue(p, ROOM_NAME_KEY)
-def reason = Command.getFieldValue(p, REASON_KEY)
-def alternateJid = Command.getFieldValue(p, ALTERNATE_JID_KEY)
 
 if (roomName == null) {
+	RoomConfig roomConfig = mucRepository.getDefaultRoomConfig();
+
 	// No data to process, let's ask user to provide
 	// a list of words
-	def res = (Packet) p.commandResult(Command.DataType.form)
+	def Packet res = p.commandResult(Command.DataType.form)
 	Command.addFieldValue(res, ROOM_NAME_KEY, "", "text-single", "Room name")
-	Command.addFieldValue(res, REASON_KEY, "", "text-single", "Reason")
-	Command.addFieldValue(res, ALTERNATE_JID_KEY, "", "jid-single", "Alternate room")
+
+
+
+	Element command = res.getElement().getChild("command")
+	Element x = command.getChild("x", "jabber:x:data")
+
+	x.addChildren(roomConfig.getConfigForm().getElement().getChildren())
+
+
 	return res
 }
 
@@ -57,10 +68,15 @@ if (roomName != null) {
 		jid = BareJID.bareJIDInstance(roomName);
 	}
 
-	def room = mucRepository.getRoom(jid)
-	if (room == null) {
-		return "Room " + jid + " doesn't exists"
-	}
-	ownerModule.destroy(room, alternateJid, reason);
-	return "Room " + room.getRoomJID() + " removed";
+	Element command = p.getElement().getChild("command")
+	Element x = command.getChild("x", "jabber:x:data")
+	Form f = new Form(x)
+
+	def Room room = mucRepository.createNewRoom(jid, p.getStanzaFrom());
+	room.addAffiliationByJid(p.getStanzaFrom().getBareJID(), Affiliation.owner);
+	room.getConfig().copyFrom(f)
+	room.setRoomLocked(false);
+	room.getConfig().notifyConfigUpdate(true);
+
+	return "Room " + room.getRoomJID() + " created";
 }
