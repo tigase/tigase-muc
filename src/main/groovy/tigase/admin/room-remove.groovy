@@ -1,3 +1,4 @@
+package tigase.admin
 // AS:Description: Remove room
 // AS:CommandId: room-remove
 // AS:Component: muc

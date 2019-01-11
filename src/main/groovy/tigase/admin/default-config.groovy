@@ -6,7 +6,7 @@
  AS:ComponentClass: tigase.muc.MUCComponent
 */
 
-package muc.admin;
+package tigase.admin;
 
 import tigase.form.Form;
 import tigase.muc.MUCComponent;
