@@ -9,6 +9,11 @@
         <relativePath/>
     </parent>
 
+    <properties>
+        <bundle-activator>tigase.muc.Activator</bundle-activator>
+        <bundle-export-package>tigase.muc.*</bundle-export-package>
+    </properties>
+
     <artifactId>tigase-muc</artifactId>
     <version>3.0.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
@@ -52,16 +57,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <configuration>
-                    <instructions combine.inherited="append">
-                        <Bundle-Activator>tigase.muc.Activator</Bundle-Activator>
-                        <Export-Package>tigase.muc.*</Export-Package>
-                    </instructions>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
