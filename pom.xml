@@ -1,30 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.build.timestamp.format>yyyy-MM-dd/HH:mm:ss</maven.build.timestamp.format>
-        <sign-keystore>/path/to/jks.keystore</sign-keystore>
-        <sign-alias>alias</sign-alias>
-        <sign-storepass>storepass</sign-storepass>
-        <sign-keypass>keypass</sign-keypass>
-        <sign-skip>true</sign-skip>
-        <verbose-log>false</verbose-log>
-        <tsa>${tsa-uri}</tsa>
-        <maven.javadoc.skip>true</maven.javadoc.skip>
-    </properties>
     <modelVersion>4.0.0</modelVersion>
-    <groupId>tigase</groupId>
+    <parent>
+        <groupId>tigase</groupId>
+        <artifactId>tigase-projects-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath/>
+    </parent>
+
+    <properties>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+        <bundle-activator>tigase.muc.cluster.Activator</bundle-activator>
+        <bundle-export-package>tigase.muc.cluster</bundle-export-package>
+    </properties>
+
     <artifactId>tigase-acs-muc</artifactId>
-    <name>Tigase ACS - MUC Component</name>
     <version>2.0.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
+
+    <name>Tigase ACS - MUC Component</name>
     <description>Tigase Advanced Clustering Strategy - MUC Component</description>
     <url>https://projects.tigase.org/projects/tigase-acs-muc</url>
+
     <issueManagement>
         <system>Redmine</system>
         <url>https://projects.tigase.org/projects/tigase-acs-muc</url>
     </issueManagement>
+
     <developers>
         <developer>
             <name>Artur Hefczyc</name>
@@ -34,22 +37,26 @@
             </roles>
         </developer>
     </developers>
+
     <licenses>
         <license>
             <name>Tigase ACS</name>
             <url>https://projects.tigase.org/projects/tigase-acs-muc/repository/revisions/master/entry/COPYING</url>
         </license>
     </licenses>
+
     <scm>
         <connection>scm:git:https://repository.tigase.org/git/tigase-acs-muc.git</connection>
         <developerConnection>scm:git:https://repository.tigase.org/git/tigase-acs-muc.git</developerConnection>
         <url>https://projects.tigase.org/projects/tigase-acs-muc/repository</url>
         <tag>HEAD</tag>
     </scm>
+
     <organization>
         <name>Tigase</name>
         <url>http://www.tigase.com</url>
     </organization>
+
     <profiles>
         <profile>
             <id>dist</id>
@@ -60,242 +67,42 @@
                 </property>
             </activation>
             <properties>
-                <maven.javadoc.skip>false</maven.javadoc.skip>
+                <maven.javadoc.skip>true</maven.javadoc.skip>
             </properties>
         </profile>
     </profiles>
+
     <build>
-        <finalName>${project.artifactId}-${project.version}</finalName>
         <plugins>
-            <plugin>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>2.5.1</version>
-            </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>buildnumber-maven-plugin</artifactId>
-                <version>1.2</version>
-                <configuration>
-                    <timestampFormat>{0,date} {0,time}</timestampFormat>
-                    <doCheck>false</doCheck>
-                    <doUpdate>false</doUpdate>
-                    <shortRevisionLength>8</shortRevisionLength>
-                </configuration>
-                <executions>
-                    <execution>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>create</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.codehaus.gmaven</groupId>
-                <artifactId>gmaven-plugin</artifactId>
-                <version>1.5</version>
-                <executions>
-                    <execution>
-                        <id>gitver</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>execute</goal>
-                        </goals>
-                        <configuration>
-                            <providerSelection>2.0</providerSelection>
-                            <properties>
-                                <script>git rev-list HEAD --count</script>
-                            </properties>
-                            <source>
-                                def version
-                                try {
-                                    def command = project.properties.script
-                                    def process = command.execute()
-                                    process.waitFor()
-
-                                    version = process.in.text.trim()
-                                } catch (Exception e) {
-                                    version = '0'
-                                }
-                                println "setting revision to: " + version
-
-                                project.properties.setProperty('gitVersion', version)
-
-                            </source>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <plugin>
                 <groupId>com.github.wvengen</groupId>
                 <artifactId>proguard-maven-plugin</artifactId>
-                <version>2.0.8</version>
-                <dependencies>
-                    <dependency>
-                        <groupId>net.sf.proguard</groupId>
-                        <artifactId>proguard-base</artifactId>
-                        <version>5.1</version>
-                        <scope>runtime</scope>
-                    </dependency>
-                </dependencies>
                 <executions>
                     <execution>
+                        <id>Proguard</id>
                         <phase>package</phase>
-                        <goals>
-                            <goal>proguard</goal>
-                        </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <options>
-                        <option>-printseeds</option>
-                        <option>-verbose</option>
-
-                        <option>-allowaccessmodification</option>
-
-                        <option>-dontwarn</option>
-                        <option>-dontshrink</option>
-                        <option>-dontoptimize</option>
-
-                        <option>-renamesourcefileattribute SourceFile</option>
-
-                        <option>-keeppackagenames</option>
-                        <option>-keepparameternames</option>
-
-                        <option>-keep public class * {public protected *; @tigase.kernel.beans.Inject private *;
-                            @tigase.kernel.beans.config.ConfigField private *;}
-                        </option>
-
-                        <option>-keepattributes Exceptions,InnerClasses,Signature,
-                            Deprecated,SourceFile,LineNumberTable,*Annotation*,EnclosingMethod
-                        </option>
-                    </options>
-                    <libs>
-                        <lib>${java.home}/lib/rt.jar</lib>
-                        <lib>${java.home}/lib/jce.jar</lib>
-                    </libs>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <version>2.5.1</version>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                    <encoding>UTF-8</encoding>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <version>2.3</version>
-                <configuration>
-                    <descriptors>
-                        <descriptor>src/main/assembly/dist.xml</descriptor>
-                    </descriptors>
-                    <finalName>${project.artifactId}</finalName>
-                    <appendAssemblyId>false</appendAssemblyId>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <version>2.4.0</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions combine.inherited="append">
-                        <manifestLocation>src/main/resources/META-INF/MANIFEST.MF</manifestLocation>
-                        <Implementation-Title>${project.name}</Implementation-Title>
-                        <Implementation-Version>${project.version}-b${gitVersion}/${buildNumber}
-                        </Implementation-Version>
-                        <Implementation-Build>${gitVersion}/${buildNumber} (${maven.build.timestamp})
-                        </Implementation-Build>
-                        <Tigase-Required-Dependencies>
-                            tigase.server=${project.dependencies[1].version},tigase.muc=${project.dependencies[4].version}
-                        </Tigase-Required-Dependencies>
-                        <Bundle-Activator>tigase.muc.cluster.Activator</Bundle-Activator>
-                        <Export-Package>tigase.muc.cluster</Export-Package>
-                    </instructions>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jarsigner-plugin</artifactId>
-                <version>1.4</version>
+                <artifactId>maven-source-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>sign</id>
-                        <goals>
-                            <goal>sign</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <archiveDirectory>${project.basedir}</archiveDirectory>
-                    <includes>
-                        <include>target/tigase*.?ar</include>
-                        <include>jars/tigase*.?ar</include>
-                    </includes>
-                    <processMainArtifact>false</processMainArtifact>
-                    <processAttachedArtifacts>false</processAttachedArtifacts>
-                    <tsa>${tsa-uri}</tsa>
-                    <skip>${sign-skip}</skip>
-
-                    <keystore>${sign-keystore}</keystore>
-                    <alias>${sign-alias}</alias>
-                    <storepass>${sign-storepass}</storepass>
-                    <keypass>${sign-keypass}</keypass>
-                    <verbose>${verbose-log}</verbose>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.0.1</version>
-                <executions>
-                    <execution>
-                        <id>attach-javadocs</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>jar</goal>
-                        </goals>
-                        <configuration>
-                            <source>1.8</source>
-                            <quiet>true</quiet>
-                            <aggregate>true</aggregate>
-
-                            <reportOutputDirectory>${project.reporting.outputDirectory}/docs/javadoc
-                            </reportOutputDirectory>
-                            <destDir>docs/javadoc</destDir>
-
-                            <finalName>${project.artifactId}-${project.version}-b${gitVersion}</finalName>
-                            <jarOutputDirectory>pack</jarOutputDirectory>
-                        </configuration>
+                        <id>generate-jar</id>
+                        <phase>none</phase>
                     </execution>
                 </executions>
             </plugin>
         </plugins>
     </build>
+
     <dependencies>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.10</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>tigase</groupId>
             <artifactId>tigase-server</artifactId>
             <version>8.0.0-SNAPSHOT</version>
             <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.felix</groupId>
-            <artifactId>org.osgi.core</artifactId>
-            <version>1.4.0</version>
-            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>tigase</groupId>
@@ -304,38 +111,11 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>${project.groupId}</groupId>
+            <groupId>tigase</groupId>
             <artifactId>tigase-muc</artifactId>
             <version>3.0.0-SNAPSHOT</version>
             <scope>compile</scope>
             <optional>true</optional>
         </dependency>
     </dependencies>
-    <repositories>
-        <repository>
-            <id>tigase</id>
-            <name>Tigase repository</name>
-            <url>http://maven-repo.tigase.org/repository/release</url>
-        </repository>
-        <repository>
-            <id>tigase-snapshot</id>
-            <name>Tigase repository</name>
-            <url>http://maven-repo.tigase.org/repository/snapshot</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
-    </repositories>
-    <distributionManagement>
-        <repository>
-            <id>tigase</id>
-            <name>Tigase repository</name>
-            <url>http://maven-repo.tigase.org/repository/release</url>
-        </repository>
-        <snapshotRepository>
-            <id>tigase-snapshot</id>
-            <name>Tigase snapshot repository</name>
-            <url>http://maven-repo.tigase.org/repository/snapshot</url>
-        </snapshotRepository>
-    </distributionManagement>
 </project>
