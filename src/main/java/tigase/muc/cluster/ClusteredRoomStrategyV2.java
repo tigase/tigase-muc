@@ -1,10 +1,9 @@
-/*
- * ClusteredRoomStrategyV2.java
- *
- * Tigase Jabber/XMPP Server
- * Copyright (C) 2004-2017 "Tigase, Inc." <office@tigase.com>
+/**
+ * Tigase ACS - MUC Component - Tigase Advanced Clustering Strategy - MUC Component
+ * Copyright (C) 2004 Tigase, Inc. (office@tigase.com) - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
  */
-
 package tigase.muc.cluster;
 
 import tigase.cluster.api.ClusterCommandException;

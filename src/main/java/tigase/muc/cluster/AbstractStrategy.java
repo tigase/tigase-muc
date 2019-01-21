@@ -1,10 +1,9 @@
-/*
- * AbstractStrategy.java
- *
- * Tigase Jabber/XMPP Server
- * Copyright (C) 2004-2017 "Tigase, Inc." <office@tigase.com>
+/**
+ * Tigase ACS - MUC Component - Tigase Advanced Clustering Strategy - MUC Component
+ * Copyright (C) 2004 Tigase, Inc. (office@tigase.com) - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ * Proprietary and confidential
  */
-
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
