@@ -1,5 +1,4 @@
 = Tigase MUC Component
-
 :author: Tigase Team <team@tigase.net>
 :numbered:
 :website: http://tigase.net
