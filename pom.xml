@@ -13,7 +13,11 @@
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <bundle-activator>tigase.muc.cluster.Activator</bundle-activator>
         <bundle-export-package>tigase.muc.cluster</bundle-export-package>
+
+        <license.inlineHeader>${inlineHeader_proprietary}</license.inlineHeader>
     </properties>
+
+    <inceptionYear>2013</inceptionYear>
 
     <artifactId>tigase-acs-muc</artifactId>
     <version>2.0.0-SNAPSHOT</version>
