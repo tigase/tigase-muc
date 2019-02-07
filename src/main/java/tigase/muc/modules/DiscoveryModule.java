@@ -45,6 +45,8 @@ public class DiscoveryModule
 	private DiscoItemsFilter filter = null;//new DefaultDiscoItemsFilter();
 	@Inject
 	private IMucRepository repository;
+	@Inject(nullAllowed = true)
+	private MAMQueryModule mamQueryModule;
 
 	private static void addFeature(Element query, String feature) {
 		query.addChild(new Element("feature", new String[]{"var"}, new String[]{feature}));
@@ -138,6 +140,9 @@ public class DiscoveryModule
 				addFeature(resultQuery, "muc_passwordprotected");
 			} else {
 				addFeature(resultQuery, "muc_unsecured");
+			}
+			if (mamQueryModule != null) {
+				addFeature(resultQuery, "urn:xmpp:mam:1");
 			}
 
 			addRoomInfoForm(resultQuery, room, senderJID);
