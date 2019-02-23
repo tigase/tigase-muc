@@ -340,6 +340,7 @@ public class ModeratorModule
 				allowed = allowed || senderAffiliation == Affiliation.owner;
 				allowed = allowed ||
 						(room.getConfig().getRoomAnonymity() == Anonymity.nonanonymous && senderRole.isPresentInRoom());
+				allowed = allowed || (room.getConfig().isRoomMembersOnly() && senderRole.isPresentInRoom());
 
 				if (!allowed) {
 					throw new MUCException(Authorization.FORBIDDEN);
