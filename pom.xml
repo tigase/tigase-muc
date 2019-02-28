@@ -16,7 +16,7 @@
     </properties>
 
     <artifactId>tigase-muc</artifactId>
-    <version>3.0.1-SNAPSHOT</version>
+    <version>3.1.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
     <name>Tigase MUC</name>
