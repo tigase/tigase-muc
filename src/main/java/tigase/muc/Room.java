@@ -31,6 +31,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 public class Room
 		implements RoomConfig.RoomConfigListener {
@@ -83,9 +84,7 @@ public class Room
 		OccupantEntry entry = this.occupants.get(nickName);
 		this.presences.update(pe);
 		if (entry == null) {
-			entry = new OccupantEntry();
-			entry.nickname = nickName;
-			entry.jid = senderJid.getBareJID();
+			entry = new OccupantEntry(nickName, senderJid.getBareJID());
 			this.occupants.put(nickName, entry);
 
 			if (log.isLoggable(Level.FINEST)) {
@@ -163,6 +162,13 @@ public class Room
 		return this.affiliations.keySet();
 	}
 
+	public Stream<BareJID> getAffiliationsHigherThan(Affiliation affiliation) {
+		return this.affiliations.entrySet()
+				.stream()
+				.filter(e -> e.getValue().higherThan(affiliation))
+				.map(Map.Entry::getKey);
+	}
+
 	public void setAffiliations(Map<BareJID, Affiliation> affiliations) {
 		this.affiliations.clear();
 		this.affiliations.putAll(affiliations);
@@ -214,6 +220,10 @@ public class Room
 		return this.occupants.size();
 	}
 
+	public Stream<BareJID> getOccupantsBareJids() {
+		return this.occupants.values().stream().map(OccupantEntry::getBareJID);
+	}
+
 	public BareJID getOccupantsJidByNickname(String nickname) {
 		OccupantEntry entry = this.occupants.get(nickname);
 		if (entry == null) {
@@ -250,7 +260,7 @@ public class Room
 	}
 
 	public Collection<String> getOccupantsNicknames() {
-		return Collections.unmodifiableCollection(new ConcurrentSkipListSet(this.occupants.keySet()));
+		return Collections.unmodifiableCollection(this.occupants.keySet());
 	}
 
 	public Collection<String> getOccupantsNicknames(BareJID bareJid) {
@@ -262,7 +272,7 @@ public class Room
 			}
 		}
 
-		return Collections.unmodifiableCollection(new ConcurrentSkipListSet(result));
+		return Collections.unmodifiableCollection(result);
 	}
 
 	public PresenceFiltered getPresenceFiltered() {
@@ -481,10 +491,19 @@ public class Room
 	private static class OccupantEntry {
 
 		private final Set<JID> jids = new HashSet<JID>();
-		public BareJID jid;
+		private final BareJID jid;
 		private String nickname;
 
 		private Role role = Role.none;
+
+		private OccupantEntry(String nickname, BareJID jid) {
+			this.nickname = nickname;
+			this.jid = jid;
+		}
+
+		private BareJID getBareJID() {
+			return jid;
+		}
 
 		@Override
 		public String toString() {
