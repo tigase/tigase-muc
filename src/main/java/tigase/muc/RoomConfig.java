@@ -367,6 +367,8 @@ public class RoomConfig {
 		form.addField(Field.fieldBoolean(TIGASE_ROOMCONFIG_WELCOME_MESSAGES, Boolean.TRUE,
 										 "Send welcome messages on room creation"));
 
+		form.addField(Field.fieldBoolean(TIGASE_ROOMCONFIG_SENDTOOFFLINEMEMBERS_KEY, Boolean.FALSE, "Send messages to the offline room members"));
+
 	}
 
 	public boolean isChangeSubject() {

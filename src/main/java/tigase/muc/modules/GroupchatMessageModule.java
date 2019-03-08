@@ -21,7 +21,10 @@ import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
-import tigase.muc.*;
+import tigase.muc.Affiliation;
+import tigase.muc.MUCConfig;
+import tigase.muc.Role;
+import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.logger.MucLogger;
@@ -257,23 +260,13 @@ public class GroupchatMessageModule
 	public void sendMessagesToAllOccupantsJids(final Room room, final JID fromJID, final Packet msg)
 			throws TigaseStringprepException {
 
-		for (String nickname : room.getOccupantsNicknames()) {
-			final Role role = room.getRole(nickname);
+		room.getAllJidsForMessageDelivery().forEach(jid -> {
+			Packet message = msg.copyElementOnly();
+			message.initVars(fromJID, jid);
+			message.setXMLNS(Packet.CLIENT_XMLNS);
 
-			if (!role.isReceiveMessages()) {
-				continue;
-			}
-
-			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
-
-			for (JID jid : occupantJids) {
-				Packet message = msg.copyElementOnly();// Packet.packetInstance(e);
-				message.initVars(fromJID, jid);
-				message.setXMLNS(Packet.CLIENT_XMLNS);
-
-				write(message);
-			}
-		}
+			write(message);
+		});
 	}
 
 	protected void addMessageToHistory(Room room, final Element message, String body, JID senderJid,

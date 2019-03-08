@@ -29,8 +29,10 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Room
@@ -180,6 +182,29 @@ public class Room
 		} else {
 			return presences.getAllKnownJIDs();
 		}
+	}
+
+	public Stream<JID> getAllOccupantsJidsForMessageDelivery() {
+		return this.occupants.entrySet().stream().filter(entry -> entry.getValue().role.isReceiveMessages()).flatMap(entry -> {
+			synchronized (entry.getValue().jids) {
+				return new HashSet(entry.getValue().jids).stream();
+			}
+		});
+	}
+
+	public Stream<JID> getAllJidsForMessageDelivery() {
+		if (!getConfig().isSendMessagesToOfflineMembers()) {
+			return getAllOccupantsJidsForMessageDelivery();
+		} else {
+			return Stream.concat(getAllOccupantsJidsForMessageDelivery(),
+								 getAffiliationsHigherThan(Affiliation.none).filter(createAvailableFilter())
+										 .map(JID::jidInstanceNS));
+		}
+	}
+
+	protected Predicate<BareJID> createAvailableFilter() {
+		Set<BareJID> occupants = getOccupantsBareJids().collect(Collectors.toSet());
+		return (jid) -> !occupants.contains(jid);
 	}
 
 	public RoomConfig getConfig() {
