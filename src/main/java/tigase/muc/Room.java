@@ -164,10 +164,10 @@ public class Room
 		return this.affiliations.keySet();
 	}
 
-	public Stream<BareJID> getAffiliationsHigherThan(Affiliation affiliation) {
+	public Stream<BareJID> getAffiliationsMatching(Predicate<RoomAffiliation> predicate) {
 		return this.affiliations.entrySet()
 				.stream()
-				.filter(e -> e.getValue().getAffiliation().higherThan(affiliation))
+				.filter(e -> predicate.test(e.getValue()))
 				.map(Map.Entry::getKey);
 	}
 
@@ -193,13 +193,9 @@ public class Room
 	}
 
 	public Stream<JID> getAllJidsForMessageDelivery() {
-		if (!getConfig().isSendMessagesToOfflineMembers()) {
-			return getAllOccupantsJidsForMessageDelivery();
-		} else {
-			return Stream.concat(getAllOccupantsJidsForMessageDelivery(),
-								 getAffiliationsHigherThan(Affiliation.none).filter(createAvailableFilter())
-										 .map(JID::jidInstanceNS));
-		}
+		return Stream.concat(getAllOccupantsJidsForMessageDelivery(),
+							 getAffiliationsMatching(RoomAffiliation::isPersistentOccupant).filter(createAvailableFilter())
+									 .map(JID::jidInstanceNS));
 	}
 
 	protected Predicate<BareJID> createAvailableFilter() {
