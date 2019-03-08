@@ -51,7 +51,6 @@ public class RoomConfig {
 	public static final String TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC = "tigase#presence_delivery_logic";
 	public static final String TIGASE_ROOMCONFIG_PRESENCE_FILTERED_AFFILIATIONS = "tigase#presence_filtered_affiliations";
 	public static final String TIGASE_ROOMCONFIG_PRESENCE_FILTERING = "tigase#presence_filtering";
-	public static final String TIGASE_ROOMCONFIG_SENDTOOFFLINEMEMBERS_KEY = "tigase#send_to_offline_members";
 	public static final String TIGASE_ROOMCONFIG_WELCOME_MESSAGES = "tigase#welcome_messages";
 	private static final String LOGGING_FORMAT_KEY = "logging_format";
 
@@ -367,8 +366,6 @@ public class RoomConfig {
 		form.addField(Field.fieldBoolean(TIGASE_ROOMCONFIG_WELCOME_MESSAGES, Boolean.TRUE,
 										 "Send welcome messages on room creation"));
 
-		form.addField(Field.fieldBoolean(TIGASE_ROOMCONFIG_SENDTOOFFLINEMEMBERS_KEY, Boolean.FALSE, "Send messages to the offline room members"));
-
 	}
 
 	public boolean isChangeSubject() {
@@ -408,10 +405,6 @@ public class RoomConfig {
 	 */
 	public boolean isRoomconfigPublicroom() {
 		return asBoolean(form.getAsBoolean(MUC_ROOMCONFIG_PUBLICROOM_KEY), true);
-	}
-
-	public boolean isSendMessagesToOfflineMembers() {
-		return asBoolean(form.getAsBoolean(TIGASE_ROOMCONFIG_SENDTOOFFLINEMEMBERS_KEY), false);
 	}
 
 	public boolean isWelcomeMessageEnabled() {

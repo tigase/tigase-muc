@@ -62,6 +62,8 @@ public class MUCConfig {
 	private boolean welcomeMessagesEnabled = true;
 	@ConfigField(desc = "Enable sending timestamps in legacy format descibed in XEP-0091", alias = "legacy-delayed-delivery-enabled")
 	private boolean legacyDelayedDeliveryEnabled = false;
+	@ConfigField(desc = "Automatically persist occupant on join", alias = "persist-occupant-on-join")
+	private boolean automaticallyPersistOccupantOnJoin = false;
 
 	public String getChatLoggingDirectory() {
 		return chatLoggingDirectory;
@@ -73,6 +75,10 @@ public class MUCConfig {
 
 	public boolean isAddMessageIdIfMissing() {
 		return addMessageIdIfMissing;
+	}
+
+	public boolean isAutomaticallyPersistOccupantOnJoin() {
+		return automaticallyPersistOccupantOnJoin;
 	}
 
 	public boolean isChatStateAllowed() {

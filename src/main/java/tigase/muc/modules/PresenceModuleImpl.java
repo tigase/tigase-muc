@@ -437,7 +437,7 @@ public class PresenceModuleImpl
 			log.finest("Processing stanza " + element.toString());
 		}
 
-		final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID()).getAffiliation();
+		RoomAffiliation affiliation = room.getAffiliation(senderJID.getBareJID());
 		final Element xElement = element.getChild("x", "http://jabber.org/protocol/muc");
 		final Element password = (xElement == null) ? null : xElement.getChild("password");
 
@@ -455,12 +455,12 @@ public class PresenceModuleImpl
 				throw new MUCException(Authorization.NOT_AUTHORIZED);
 			}
 		}
-		if (room.isRoomLocked() && (affiliation != Affiliation.owner)) {
+		if (room.isRoomLocked() && (affiliation.getAffiliation() != Affiliation.owner)) {
 
 			// Service Denies Access Because Room Does Not (Yet) Exist
 			throw new MUCException(Authorization.ITEM_NOT_FOUND, null, "Room exists but is locked");
 		}
-		if (!affiliation.isEnterOpenRoom()) {
+		if (!affiliation.getAffiliation().isEnterOpenRoom()) {
 
 			// Service Denies Access Because User is Banned
 			if (log.isLoggable(Level.FINEST)) {
@@ -469,7 +469,7 @@ public class PresenceModuleImpl
 			}
 
 			throw new MUCException(Authorization.FORBIDDEN);
-		} else if (room.getConfig().isRoomMembersOnly() && !affiliation.isEnterMembersOnlyRoom()) {
+		} else if (room.getConfig().isRoomMembersOnly() && !affiliation.getAffiliation().isEnterMembersOnlyRoom()) {
 
 			// Service Denies Access Because User Is Not on Member List
 			if (log.isLoggable(Level.FINEST)) {
@@ -480,6 +480,12 @@ public class PresenceModuleImpl
 
 			throw new MUCException(Authorization.REGISTRATION_REQUIRED);
 		}
+
+		// should we ban users from joining under different nickname if user is persistent?
+		// I'm not convinced that we need that for now
+//		if (affiliation.isPersistentOccupant() && !senderJID.getBareJID().equals(nickname)) {
+//			throw new MUCException(Authorization.NOT_ACCEPTABLE, "User " + senderJID.toString() + " needs to join room using nickname " + senderJID.getBareJID().toString());
+//		}
 
 		final BareJID currentOccupantJid = room.getOccupantsJidByNickname(nickname);
 
@@ -524,11 +530,32 @@ public class PresenceModuleImpl
 			}
 		}
 
+		if ((!affiliation.isPersistentOccupant()) && this.config.isAutomaticallyPersistOccupantOnJoin()) {
+			switch (affiliation.getAffiliation()) {
+				case none:
+					affiliation = RoomAffiliation.memberPersistent;
+					break;
+				case admin:
+					affiliation = RoomAffiliation.adminPersistent;
+					break;
+				case member:
+					affiliation = RoomAffiliation.memberPersistent;
+					break;
+				case outcast:
+					affiliation = RoomAffiliation.outcast;
+					break;
+				case owner:
+					affiliation = RoomAffiliation.ownerPersistent;
+					break;
+			}
+			room.setNewAffiliation(senderJID.getBareJID(),  affiliation);
+		}
+
 		// TODO Service Informs User that Room Occupant Limit Has Been Reached
 		// Service Sends Presence from Existing Occupants to New Occupant
 		sendPresencesToNewOccupant(room, senderJID);
 
-		final Role newRole = getDefaultRole(room.getConfig(), affiliation);
+		final Role newRole = getDefaultRole(room.getConfig(), affiliation.getAffiliation());
 
 		if (log.isLoggable(Level.FINEST)) {
 			log.finest(
