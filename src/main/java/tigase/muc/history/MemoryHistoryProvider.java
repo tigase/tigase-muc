@@ -116,7 +116,7 @@ public class MemoryHistoryProvider
 				}
 			}
 
-			Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID());
+			Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID()).getAffiliation();
 			boolean addRealJids = room.getConfig().getRoomAnonymity() == Anonymity.nonanonymous ||
 					room.getConfig().getRoomAnonymity() == Anonymity.semianonymous &&
 							(recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);

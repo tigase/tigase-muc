@@ -25,10 +25,7 @@ import tigase.db.beans.MDRepositoryBean;
 import tigase.db.beans.MDRepositoryBeanWithStatistics;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.config.ConfigField;
-import tigase.muc.Affiliation;
-import tigase.muc.MUCComponent;
-import tigase.muc.RoomConfig;
-import tigase.muc.RoomWithId;
+import tigase.muc.*;
 import tigase.server.BasicComponent;
 import tigase.xmpp.jid.BareJID;
 
@@ -73,7 +70,7 @@ public class MucDAOMDBean
 	}
 
 	@Override
-	public Map<BareJID, Affiliation> getAffiliations(RoomWithId room) throws RepositoryException {
+	public Map<BareJID, RoomAffiliation> getAffiliations(RoomWithId room) throws RepositoryException {
 		return getRepository(room.getRoomJID().getDomain()).getAffiliations(room);
 	}
 
@@ -97,7 +94,7 @@ public class MucDAOMDBean
 	}
 
 	@Override
-	public void setAffiliation(RoomWithId room, BareJID jid, Affiliation affiliation) throws RepositoryException {
+	public void setAffiliation(RoomWithId room, BareJID jid, RoomAffiliation affiliation) throws RepositoryException {
 		getRepository(room.getRoomJID().getDomain()).setAffiliation(room, jid, affiliation);
 	}
 

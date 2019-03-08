@@ -29,7 +29,7 @@ public class DefaultDiscoItemsFilter
 	@Override
 	public boolean allowed(JID senderJID, Room room) {
 		if (!room.getConfig().isRoomconfigPublicroom()) {
-			Affiliation senderAff = room.getAffiliation(senderJID.getBareJID());
+			Affiliation senderAff = room.getAffiliation(senderJID.getBareJID()).getAffiliation();
 			if (!room.isOccupantInRoom(senderJID) &&
 					(senderAff == Affiliation.none || senderAff == Affiliation.outcast)) {
 				return false;

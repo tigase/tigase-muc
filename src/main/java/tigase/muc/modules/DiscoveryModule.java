@@ -301,7 +301,7 @@ public class DiscoveryModule
 
 	private void addRoomInfoForm(final Element resultQuery, final Room room, final JID senderJID) {
 		final RoomConfig config = room.getConfig();
-		final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID());
+		final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID()).getAffiliation();
 
 		final boolean allowedToViewAll;
 		if (!room.getOccupantsNicknames(senderJID.getBareJID()).isEmpty()) {
@@ -359,7 +359,7 @@ public class DiscoveryModule
 		// jid-multi Full List of Room Admins
 		addField(form, "muc#roomconfig_roomadmins", null, "Full list of room admins", room.getAffiliations()
 				.stream()
-				.filter(jid -> room.getAffiliation(jid) == Affiliation.admin)
+				.filter(jid -> room.getAffiliation(jid).getAffiliation() == Affiliation.admin)
 				.toArray());
 		// text-single Short Description of Room
 		addField(form, "muc#roomconfig_roomdesc", null, "Short description of room", config.getRoomDesc());
@@ -368,7 +368,7 @@ public class DiscoveryModule
 		// jid-multi Full List of Room Owners
 		addField(form, "muc#roomconfig_roomowners", null, "Full list of room owners", room.getAffiliations()
 				.stream()
-				.filter(jid -> room.getAffiliation(jid) == Affiliation.owner)
+				.filter(jid -> room.getAffiliation(jid).getAffiliation() == Affiliation.owner)
 				.toArray());
 		// text-private The Room Password
 		if (allowedToViewAll && config.isPasswordProtectedRoom()) {

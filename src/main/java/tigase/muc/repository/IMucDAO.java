@@ -21,6 +21,7 @@ import tigase.component.exceptions.RepositoryException;
 import tigase.db.DataSource;
 import tigase.db.DataSourceAware;
 import tigase.muc.Affiliation;
+import tigase.muc.RoomAffiliation;
 import tigase.muc.RoomConfig;
 import tigase.muc.RoomWithId;
 import tigase.xmpp.jid.BareJID;
@@ -45,7 +46,7 @@ public interface IMucDAO<DS extends DataSource, ID>
 
 	List<BareJID> getRoomsJIDList() throws RepositoryException;
 
-	void setAffiliation(RoomWithId<ID> room, BareJID jid, Affiliation affiliation) throws RepositoryException;
+	void setAffiliation(RoomWithId<ID> room, BareJID jid, RoomAffiliation affiliation) throws RepositoryException;
 
 	void setSubject(RoomWithId<ID> room, String subject, String creatorNickname, Date changeDate)
 			throws RepositoryException;

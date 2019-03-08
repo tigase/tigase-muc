@@ -55,7 +55,7 @@ public interface PresenceModule
 													   String occupantNickname, Affiliation occupantAffiliation,
 													   Role occupantRole) throws TigaseStringprepException {
 			Anonymity anonymity = room.getConfig().getRoomAnonymity();
-			final Affiliation destinationAffiliation = room.getAffiliation(destinationJID.getBareJID());
+			final Affiliation destinationAffiliation = room.getAffiliation(destinationJID.getBareJID()).getAffiliation();
 
 			try {
 				presence.setAttribute("from", JID.jidInstance(room.getRoomJID(), occupantNickname).toString());
@@ -124,7 +124,7 @@ public interface PresenceModule
 		static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence,
 												String occupantNickname) throws TigaseStringprepException {
 			final BareJID occupantJID = room.getOccupantsJidByNickname(occupantNickname);
-			final Affiliation occupantAffiliation = room.getAffiliation(occupantJID);
+			final Affiliation occupantAffiliation = room.getAffiliation(occupantJID).getAffiliation();
 			final Role occupantRole = room.getRole(occupantNickname);
 
 			return preparePresenceW(room, destinationJID, presence, occupantJID, occupantNickname, occupantAffiliation,

@@ -61,7 +61,7 @@ public class PresenceModuleNoBroadcast
 	@Override
 	public void doQuit(final Room room, final JID senderJID) throws TigaseStringprepException {
 		final String leavingNickname = room.getOccupantsNickname(senderJID);
-		final Affiliation leavingAffiliation = room.getAffiliation(leavingNickname);
+		final Affiliation leavingAffiliation = room.getAffiliation(leavingNickname).getAffiliation();
 		final Role leavingRole = room.getRole(leavingNickname);
 		Element presenceElement = new Element("presence");
 

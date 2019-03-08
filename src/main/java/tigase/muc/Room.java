@@ -44,7 +44,7 @@ public class Room
 	protected final PresenceStore presences = new PresenceStore();
 
 	;
-	private final Map<BareJID, Affiliation> affiliations = new ConcurrentHashMap<BareJID, Affiliation>();
+	private final Map<BareJID, RoomAffiliation> affiliations = new ConcurrentHashMap<BareJID, RoomAffiliation>();
 	private final RoomConfig config;
 	private final Date creationDate;
 	private final BareJID creatorJid;
@@ -68,8 +68,8 @@ public class Room
 		presences.setOrdening(rc.getPresenceDeliveryLogic());
 	}
 
-	public void addAffiliationByJid(BareJID jid, Affiliation affiliation) throws RepositoryException {
-		if (affiliation == Affiliation.none) {
+	public void addAffiliationByJid(BareJID jid, RoomAffiliation affiliation) throws RepositoryException {
+		if (affiliation.getAffiliation() == Affiliation.none) {
 			this.affiliations.remove(jid);
 		} else {
 			this.affiliations.put(jid, affiliation);
@@ -141,18 +141,18 @@ public class Room
 		}
 	}
 
-	public Affiliation getAffiliation(BareJID jid) {
+	public RoomAffiliation getAffiliation(BareJID jid) {
 		if (log.isLoggable(Level.FINEST)) {
 			log.log(Level.FINEST, "Getting affiliations for: " + jid + " from set: " + affiliations.toString());
 		}
-		Affiliation result = null;
+		RoomAffiliation result = null;
 		if (jid != null) {
 			result = this.affiliations.get(jid);
 		}
-		return result == null ? Affiliation.none : result;
+		return result == null ? RoomAffiliation.none : result;
 	}
 
-	public Affiliation getAffiliation(String nickname) {
+	public RoomAffiliation getAffiliation(String nickname) {
 		OccupantEntry entry = this.occupants.get(nickname);
 		return getAffiliation(entry == null ? null : entry.jid);
 	}
@@ -167,11 +167,11 @@ public class Room
 	public Stream<BareJID> getAffiliationsHigherThan(Affiliation affiliation) {
 		return this.affiliations.entrySet()
 				.stream()
-				.filter(e -> e.getValue().higherThan(affiliation))
+				.filter(e -> e.getValue().getAffiliation().higherThan(affiliation))
 				.map(Map.Entry::getKey);
 	}
 
-	public void setAffiliations(Map<BareJID, Affiliation> affiliations) {
+	public void setAffiliations(Map<BareJID, RoomAffiliation> affiliations) {
 		this.affiliations.clear();
 		this.affiliations.putAll(affiliations);
 	}
@@ -404,7 +404,7 @@ public class Room
 		}
 	}
 
-	public void setNewAffiliation(BareJID user, Affiliation affiliation) {
+	public void setNewAffiliation(BareJID user, RoomAffiliation affiliation) {
 		this.affiliations.put(user, affiliation);
 	}
 
@@ -465,7 +465,7 @@ public class Room
 		}
 	}
 
-	private void fireOnSetAffiliation(BareJID jid, Affiliation affiliation) {
+	private void fireOnSetAffiliation(BareJID jid, RoomAffiliation affiliation) {
 		for (Room.RoomListener listener : this.listeners) {
 			listener.onSetAffiliation(this, jid, affiliation);
 		}
@@ -500,7 +500,7 @@ public class Room
 
 		void onMessageToOccupants(Room room, JID from, Packet msg);
 
-		void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation);
+		void onSetAffiliation(Room room, BareJID jid, RoomAffiliation newAffiliation);
 	}
 
 	public static interface RoomOccupantListener {

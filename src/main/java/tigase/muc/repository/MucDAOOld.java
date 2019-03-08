@@ -70,7 +70,7 @@ public class MucDAOOld
 			room.getConfig().write(repository, mucConfig, ROOMS_KEY + room.getRoomJID() + "/config");
 
 			for (BareJID affJid : room.getAffiliations()) {
-				final Affiliation a = room.getAffiliation(affJid);
+				final Affiliation a = room.getAffiliation(affJid).getAffiliation();
 				setAffiliation(room.getRoomJID(), affJid, a);
 			}
 
@@ -214,7 +214,7 @@ public class MucDAOOld
 				room.setNewSubject(subject, subjectCreator);
 				room.setSubjectChangeDate(subjectChangeDate);
 
-				Map<BareJID, Affiliation> affiliations = new HashMap<BareJID, Affiliation>();
+				Map<BareJID, RoomAffiliation> affiliations = new HashMap<>();
 
 				String[] affJids = repository.getKeys(mucConfig.getServiceName(),
 													  ROOMS_KEY + roomJID + "/affiliations");
@@ -230,7 +230,7 @@ public class MucDAOOld
 							continue;
 						}
 
-						Affiliation affiliation = Affiliation.valueOf(t);
+						RoomAffiliation affiliation = RoomAffiliation.valueof(t);
 						affiliations.put(JID.jidInstance(jid).getBareJID(), affiliation);
 					}
 				}

@@ -91,7 +91,7 @@ public class JDBCMucDAO
 		}
 
 		for (BareJID affJid : room.getAffiliations()) {
-			final Affiliation a = room.getAffiliation(affJid);
+			final RoomAffiliation a = room.getAffiliation(affJid);
 			setAffiliation(room, affJid, a);
 		}
 
@@ -203,14 +203,14 @@ public class JDBCMucDAO
 	}
 
 	@Override
-	public void setAffiliation(RoomWithId<Long> room, BareJID jid, Affiliation affiliation) throws RepositoryException {
+	public void setAffiliation(RoomWithId<Long> room, BareJID jid, RoomAffiliation affiliation) throws RepositoryException {
 		try {
 			PreparedStatement stmt = data_repo.getPreparedStatement(mucConfig.getServiceName(),
 																	SET_ROOM_AFFILIATION_QUERY);
 			synchronized (stmt) {
 				stmt.setLong(1, room.getId());
 				stmt.setString(2, jid.toString());
-				stmt.setString(3, affiliation.name());
+				stmt.setString(3, affiliation.toString());
 
 				stmt.execute();
 			}

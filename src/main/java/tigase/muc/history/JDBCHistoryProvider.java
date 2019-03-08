@@ -289,7 +289,7 @@ public class JDBCHistoryProvider extends AbstractHistoryProvider<DataRepository>
 			log.finest("Select messages for " + senderJID + " from room " + room.getRoomJID());
 		}
 
-		Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID());
+		Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID()).getAffiliation();
 		boolean addRealJids = room.getConfig().getRoomAnonymity() == RoomConfig.Anonymity.nonanonymous ||
 				room.getConfig().getRoomAnonymity() == RoomConfig.Anonymity.semianonymous &&
 						(recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);

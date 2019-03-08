@@ -22,10 +22,7 @@ import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
-import tigase.muc.Affiliation;
-import tigase.muc.Ghostbuster2;
-import tigase.muc.Role;
-import tigase.muc.Room;
+import tigase.muc.*;
 import tigase.muc.RoomConfig.Anonymity;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
@@ -95,7 +92,7 @@ public class ModeratorModule
 			throws TigaseStringprepException {
 		List<String> codes = new ArrayList<String>();
 		final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNick);
-		final Affiliation occupantAffiliation = room.getAffiliation(occupantJid);
+		final Affiliation occupantAffiliation = room.getAffiliation(occupantJid).getAffiliation();
 
 		codes.add("307");
 		boolean isUnavailable = true;
@@ -223,7 +220,7 @@ public class ModeratorModule
 			throw new MUCException(Authorization.BAD_REQUEST);
 		}
 		for (String occupantNickname : occupantNicknames) {
-			final Affiliation occupantAffiliation = room.getAffiliation(occupantNickname);
+			final Affiliation occupantAffiliation = room.getAffiliation(occupantNickname).getAffiliation();
 			checkItem(item, occupantNickname, occupantAffiliation, newRole, newAffiliation, senderJid, senderRole,
 					  senderaAffiliation);
 		}
@@ -293,7 +290,7 @@ public class ModeratorModule
 			final List<Element> items = element.getElemChildrenStaticStr(new String[]{"iq", "query"});
 			final JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
 			final String senderNickname = room.getOccupantsNickname(senderJID);
-			final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID());
+			final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID()).getAffiliation();
 			final Role senderRole = room.getRole(senderNickname);
 
 			final Collection<Item> resultItems = new HashSet<>();
@@ -368,7 +365,7 @@ public class ModeratorModule
 			throws RepositoryException, MUCException {
 
 		for (BareJID jid : room.getAffiliations()) {
-			final Affiliation affiliation = room.getAffiliation(jid);
+			final Affiliation affiliation = room.getAffiliation(jid).getAffiliation();
 
 			if (filterAffiliation != null && affiliation == filterAffiliation) {
 				Item i = new Item(affiliation, jid, null, null);
@@ -381,7 +378,7 @@ public class ModeratorModule
 		for (String occupantNickname : room.getOccupantsNicknames()) {
 			final Role role = room.getRole(occupantNickname);
 			final BareJID occupantBareJid = room.getOccupantsJidByNickname(occupantNickname);
-			final Affiliation affiliation = room.getAffiliation(occupantBareJid);
+			final Affiliation affiliation = room.getAffiliation(occupantBareJid).getAffiliation();
 
 			if (filterRole != null && role == filterRole ||
 					filterAffiliation != null && affiliation == filterAffiliation) {
@@ -404,7 +401,7 @@ public class ModeratorModule
 
 			JID senderJid = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
 			final String nickName = room.getOccupantsNickname(senderJid);
-			final Affiliation senderAffiliation = room.getAffiliation(senderJid.getBareJID());
+			final Affiliation senderAffiliation = room.getAffiliation(senderJid.getBareJID()).getAffiliation();
 
 			final Role senderRole = nickName == null
 									? PresenceModuleImpl.getDefaultRole(room.getConfig(), senderAffiliation)
@@ -447,18 +444,18 @@ public class ModeratorModule
 			throws RepositoryException, TigaseStringprepException {
 
 		final BareJID occupantBareJid = JID.jidInstance(item.getAttributeStaticStr("jid")).getBareJID();
-		final Affiliation previousAffiliation = room.getAffiliation(occupantBareJid);
+		final RoomAffiliation previousAffiliation = room.getAffiliation(occupantBareJid);
 
 		if (log.isLoggable(Level.FINE)) {
 			log.fine("Set affiliation of " + occupantBareJid + " to " + newAffiliation + " (from: " +
 							 previousAffiliation + ")");
 		}
 
-		if (room.getConfig().isRoomMembersOnly() && (previousAffiliation.getWeight() <= Affiliation.none.getWeight()) &&
+		if (room.getConfig().isRoomMembersOnly() && (previousAffiliation.getAffiliation().getWeight() <= Affiliation.none.getWeight()) &&
 				(newAffiliation.getWeight() >= Affiliation.member.getWeight())) {
 			sendInvitation(room, occupantBareJid, actor);
 		}
-		room.addAffiliationByJid(occupantBareJid, newAffiliation);
+		room.addAffiliationByJid(occupantBareJid, RoomAffiliation.from(newAffiliation, previousAffiliation.isPersistentOccupant()));
 
 		boolean isUnavailable = false;
 		Set<String> codes = new HashSet<String>();
@@ -514,7 +511,7 @@ public class ModeratorModule
 	protected void processSetRole(Room room, String occupantNick, Role newRole, String reason, String actor)
 			throws TigaseStringprepException {
 		final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNick);
-		final Affiliation occupantAffiliation = room.getAffiliation(occupantJid);
+		final Affiliation occupantAffiliation = room.getAffiliation(occupantJid).getAffiliation();
 		boolean isUnavailable = false;
 		List<String> codes = new ArrayList<String>();
 

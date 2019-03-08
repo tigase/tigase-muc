@@ -26,6 +26,7 @@ import tigase.kernel.beans.Inject;
 import tigase.muc.Affiliation;
 import tigase.muc.Role;
 import tigase.muc.Room;
+import tigase.muc.RoomAffiliation;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
@@ -81,7 +82,7 @@ public class MediatedInvitationModule
 
 			final String nickName = room.getOccupantsNickname(senderJID);
 			final Role senderRole = room.getRole(nickName);
-			final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID());
+			final Affiliation senderAffiliation = room.getAffiliation(senderJID.getBareJID()).getAffiliation();
 
 			final Element x = element.getElement().getChild("x", "http://jabber.org/protocol/muc#user");
 
@@ -160,7 +161,7 @@ public class MediatedInvitationModule
 		resultMessage.getElement().addChild(resultX);
 		if (room.getConfig().isRoomMembersOnly() &&
 				(senderAffiliation.isEditMemberList() || room.getConfig().isInvitingAllowed())) {
-			room.addAffiliationByJid(recipient.getBareJID(), Affiliation.member);
+			room.addAffiliationByJid(recipient.getBareJID(), RoomAffiliation.member);
 		}
 
 		final Element resultInvite = new Element("invite", new String[]{"from"}, new String[]{senderJID.toString()});

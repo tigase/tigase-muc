@@ -103,7 +103,7 @@ public class PresenceFiltered
 	}
 
 	@Override
-	public void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation) {
+	public void onSetAffiliation(Room room, BareJID jid, RoomAffiliation newAffiliation) {
 		if (log.isLoggable(Level.FINEST)) {
 			log.log(Level.FINEST, "Modifying affiliation of: " + jid + " on occupantsPresenceFiltered: " +
 					Arrays.asList(occupantsPresenceFiltered));

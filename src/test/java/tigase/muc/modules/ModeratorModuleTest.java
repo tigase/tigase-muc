@@ -79,8 +79,8 @@ public class ModeratorModuleTest {
 
 		room = kernel.getInstance(MockMucRepository.class)
 				.createNewRoom(BareJID.bareJIDInstance("darkcave@macbeth.shakespeare.lit"), admin);
-		room.addAffiliationByJid(admin.getBareJID(), Affiliation.admin);
-		room.addAffiliationByJid(member.getBareJID(), Affiliation.member);
+		room.addAffiliationByJid(admin.getBareJID(), RoomAffiliation.admin);
+		room.addAffiliationByJid(member.getBareJID(), RoomAffiliation.member);
 
 		moderatorModule = new ModeratorModule();
 

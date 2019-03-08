@@ -129,7 +129,7 @@ public class GroupchatMessageModule
 
 			final String nickName = room.getOccupantsNickname(senderJID);
 			final Role role = room.getRole(nickName);
-			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
+			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID()).getAffiliation();
 
 			if (log.isLoggable(Level.FINEST)) {
 				log.finest("Processing groupchat message. room=" + roomJID + "; senderJID=" + senderJID +

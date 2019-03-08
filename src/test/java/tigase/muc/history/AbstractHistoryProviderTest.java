@@ -28,8 +28,8 @@ import tigase.component.exceptions.RepositoryException;
 import tigase.component.responses.AsyncCallback;
 import tigase.db.*;
 import tigase.kernel.core.Kernel;
-import tigase.muc.Affiliation;
 import tigase.muc.Room;
+import tigase.muc.RoomAffiliation;
 import tigase.muc.RoomConfig;
 import tigase.server.Packet;
 import tigase.xml.Element;
@@ -80,7 +80,7 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource>
 		rc.setValue(RoomConfig.MUC_ROOMCONFIG_PERSISTENTROOM_KEY, Boolean.TRUE);
 		creationDate = new Date();
 		room = roomFactory.newInstance(null, rc, creationDate, creatorJID.getBareJID());
-		room.addAffiliationByJid(creatorJID.getBareJID(), Affiliation.owner);
+		room.addAffiliationByJid(creatorJID.getBareJID(), RoomAffiliation.owner);
 	}
 
 	@Test

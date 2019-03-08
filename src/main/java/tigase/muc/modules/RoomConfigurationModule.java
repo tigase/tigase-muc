@@ -161,7 +161,7 @@ public class RoomConfigurationModule
 		} else {
 			adminsArrays = room.getAffiliations()
 					.stream()
-					.filter(jid -> room.getAffiliation(jid) == Affiliation.admin)
+					.filter(jid -> room.getAffiliation(jid).getAffiliation() == Affiliation.admin)
 					.map(bareJID -> bareJID.toString())
 					.toArray(String[]::new);
 		}
@@ -184,7 +184,7 @@ public class RoomConfigurationModule
 				p.setXMLNS(Packet.CLIENT_XMLNS);
 				write(p);
 			} else {
-				if (room.getAffiliation(senderJID.getBareJID()) != Affiliation.owner) {
+				if (room.getAffiliation(senderJID.getBareJID()).getAffiliation() != Affiliation.owner) {
 					throw new MUCException(Authorization.FORBIDDEN);
 				}
 
@@ -219,12 +219,12 @@ public class RoomConfigurationModule
 			} else if (room == null) {
 				roomCreated = true;
 				room = repository.createNewRoom(roomJID.getBareJID(), senderJID);
-				room.addAffiliationByJid(senderJID.getBareJID(), Affiliation.owner);
+				room.addAffiliationByJid(senderJID.getBareJID(), RoomAffiliation.owner);
 			}
 
-			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
+			final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID()).getAffiliation();
 
-			if (room.getAffiliation(senderJID.getBareJID()) != Affiliation.owner) {
+			if (room.getAffiliation(senderJID.getBareJID()).getAffiliation() != Affiliation.owner) {
 				throw new MUCException(Authorization.FORBIDDEN);
 			}
 
@@ -264,7 +264,7 @@ public class RoomConfigurationModule
 					String[] admins = form.getAsStrings("muc#roomconfig_roomadmins");
 					if (admins != null) {
 						for (String admin : admins) {
-							room.addAffiliationByJid(BareJID.bareJIDInstance(admin), Affiliation.admin);
+							room.addAffiliationByJid(BareJID.bareJIDInstance(admin), RoomAffiliation.admin);
 						}
 					}
 

@@ -200,7 +200,7 @@ public class PresenceModuleImpl
 			}
 			return;
 		}
-		final Affiliation leavingAffiliation = room.getAffiliation(leavingNickname);
+		final Affiliation leavingAffiliation = room.getAffiliation(leavingNickname).getAffiliation();
 		final Role leavingRole = room.getRole(leavingNickname);
 		Element presenceElement = new Element("presence");
 
@@ -368,7 +368,7 @@ public class PresenceModuleImpl
 									">");
 				}
 				room = repository.createNewRoom(roomJID, senderJID);
-				room.addAffiliationByJid(senderJID.getBareJID(), Affiliation.owner);
+				room.addAffiliationByJid(senderJID.getBareJID(), RoomAffiliation.owner);
 				room.setRoomLocked(config.isNewRoomLocked());
 				roomCreated = true;
 				knownNickname = null;
@@ -437,7 +437,7 @@ public class PresenceModuleImpl
 			log.finest("Processing stanza " + element.toString());
 		}
 
-		final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID());
+		final Affiliation affiliation = room.getAffiliation(senderJID.getBareJID()).getAffiliation();
 		final Element xElement = element.getChild("x", "http://jabber.org/protocol/muc");
 		final Element password = (xElement == null) ? null : xElement.getChild("password");
 
@@ -646,7 +646,7 @@ public class PresenceModuleImpl
 
 		final String occupantNickname = room.getOccupantsNickname(senderJID);
 		final BareJID occupantJID = room.getOccupantsJidByNickname(occupantNickname);
-		final Affiliation occupantAffiliation = room.getAffiliation(occupantJID);
+		final Affiliation occupantAffiliation = room.getAffiliation(occupantJID).getAffiliation();
 		final Role occupantRole = room.getRole(occupantNickname);
 
 		Collection<String> occupantsNicknames;
@@ -714,7 +714,7 @@ public class PresenceModuleImpl
 	@Override
 	public void sendPresencesToNewOccupant(Room room, JID senderJID) throws TigaseStringprepException {
 		BareJID currentOccupantJid = senderJID.getBareJID();
-		Affiliation senderAffiliation = room.getAffiliation(currentOccupantJid);
+		Affiliation senderAffiliation = room.getAffiliation(currentOccupantJid).getAffiliation();
 
 		// in filtered room we skip sending occupants list to new occupants
 		// witout propper affiliation
@@ -740,7 +740,7 @@ public class PresenceModuleImpl
 				continue;
 			}
 
-			Affiliation affiliation = room.getAffiliation(occupantJid);
+			Affiliation affiliation = room.getAffiliation(occupantJid).getAffiliation();
 			if (room.getConfig().isPresenceFilterEnabled() &&
 					!room.getConfig().getPresenceFilteredAffiliations().contains(affiliation)) {
 				if (log.isLoggable(Level.FINEST)) {
@@ -758,7 +758,7 @@ public class PresenceModuleImpl
 
 			final Collection<JID> occupantJIDs = room.getOccupantsJidsByNickname(occupantNickname);
 			final BareJID occupantBareJID = room.getOccupantsJidByNickname(occupantNickname);
-			final Affiliation occupantAffiliation = room.getAffiliation(occupantBareJID);
+			final Affiliation occupantAffiliation = room.getAffiliation(occupantBareJID).getAffiliation();
 			final Role occupantRole = room.getRole(occupantNickname);
 
 			if (config.isMultiItemMode()) {

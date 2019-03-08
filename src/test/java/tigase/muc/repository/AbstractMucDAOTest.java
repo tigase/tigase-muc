@@ -78,7 +78,7 @@ public abstract class AbstractMucDAOTest<DS extends DataSource> extends Abstract
 		rc.setValue(RoomConfig.MUC_ROOMCONFIG_ROOMNAME_KEY, roomName);
 		creationDate = new Date();
 		RoomWithId room = roomFactory.newInstance(null, rc, creationDate, creatorJID.getBareJID());
-		room.addAffiliationByJid(creatorJID.getBareJID(), Affiliation.owner);
+		room.addAffiliationByJid(creatorJID.getBareJID(), RoomAffiliation.owner);
 
 		Object roomId = dao.createRoom(room);
 
@@ -114,18 +114,18 @@ public abstract class AbstractMucDAOTest<DS extends DataSource> extends Abstract
 	public void test3_setRoomAffiliation() throws RepositoryException {
 		RoomWithId room = dao.getRoom(roomJID);
 		room.setAffiliations(dao.getAffiliations(room));
-		room.addAffiliationByJid(adminJID.getBareJID(), Affiliation.admin);
-		dao.setAffiliation(room, adminJID.getBareJID(), Affiliation.admin);
+		room.addAffiliationByJid(adminJID.getBareJID(), RoomAffiliation.admin);
+		dao.setAffiliation(room, adminJID.getBareJID(), RoomAffiliation.admin);
 
 		Map<BareJID, Affiliation> roomAffiliations = new HashMap<>();
-		room.getAffiliations().forEach(jid -> roomAffiliations.put(jid, room.getAffiliation(jid)));
+		room.getAffiliations().forEach(jid -> roomAffiliations.put(jid, room.getAffiliation(jid).getAffiliation()));
 
 		assertEquals(roomAffiliations, dao.getAffiliations(room));
 
-		room.addAffiliationByJid(adminJID.getBareJID(), Affiliation.none);
-		dao.setAffiliation(room, adminJID.getBareJID(), Affiliation.none);
+		room.addAffiliationByJid(adminJID.getBareJID(), RoomAffiliation.none);
+		dao.setAffiliation(room, adminJID.getBareJID(), RoomAffiliation.none);
 		roomAffiliations.clear();
-		room.getAffiliations().forEach(jid -> roomAffiliations.put(jid, room.getAffiliation(jid)));
+		room.getAffiliations().forEach(jid -> roomAffiliations.put(jid, room.getAffiliation(jid).getAffiliation()));
 
 		assertEquals(roomAffiliations, dao.getAffiliations(room));
 	}
