@@ -20,7 +20,6 @@ package tigase.muc.repository;
 import tigase.component.exceptions.RepositoryException;
 import tigase.db.DataSource;
 import tigase.db.DataSourceAware;
-import tigase.muc.Affiliation;
 import tigase.muc.RoomAffiliation;
 import tigase.muc.RoomConfig;
 import tigase.muc.RoomWithId;
@@ -40,7 +39,7 @@ public interface IMucDAO<DS extends DataSource, ID>
 
 	void destroyRoom(BareJID roomJID) throws RepositoryException;
 
-	Map<BareJID, Affiliation> getAffiliations(RoomWithId<ID> room) throws RepositoryException;
+	Map<BareJID, RoomAffiliation> getAffiliations(RoomWithId<ID> room) throws RepositoryException;
 
 	RoomWithId<ID> getRoom(BareJID roomJID) throws RepositoryException;
 

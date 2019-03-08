@@ -112,8 +112,8 @@ public class JDBCMucDAO
 	}
 
 	@Override
-	public Map<BareJID, Affiliation> getAffiliations(RoomWithId<Long> room) throws RepositoryException {
-		Map<BareJID, Affiliation> affiliations = new HashMap<>();
+	public Map<BareJID, RoomAffiliation> getAffiliations(RoomWithId<Long> room) throws RepositoryException {
+		Map<BareJID, RoomAffiliation> affiliations = new HashMap<>();
 
 		try {
 			ResultSet rs = null;
@@ -124,7 +124,7 @@ public class JDBCMucDAO
 					rs = stmt.executeQuery();
 
 					while (rs.next()) {
-						Affiliation affiliation = Affiliation.valueOf(rs.getString(2));
+						RoomAffiliation affiliation = RoomAffiliation.valueof(rs.getString(2));
 						affiliations.put(BareJID.bareJIDInstance(rs.getString(1)), affiliation);
 					}
 				} finally {

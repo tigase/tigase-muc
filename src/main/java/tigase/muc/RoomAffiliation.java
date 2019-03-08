@@ -106,7 +106,7 @@ public enum RoomAffiliation {
 	}
 
 	public String toString() {
-		if (isPersistentOccupant()) {
+		if (!isPersistentOccupant()) {
 			return affiliation.name();
 		} else {
 			return affiliation.name() + "-persistent";

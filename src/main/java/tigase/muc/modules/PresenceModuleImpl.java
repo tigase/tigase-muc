@@ -548,7 +548,11 @@ public class PresenceModuleImpl
 					affiliation = RoomAffiliation.ownerPersistent;
 					break;
 			}
-			room.setNewAffiliation(senderJID.getBareJID(),  affiliation);
+			try {
+				room.addAffiliationByJid(senderJID.getBareJID(), affiliation);
+			} catch (RepositoryException ex) {
+				throw new MUCException(Authorization.INTERNAL_SERVER_ERROR);
+			}
 		}
 
 		// TODO Service Informs User that Room Occupant Limit Has Been Reached
