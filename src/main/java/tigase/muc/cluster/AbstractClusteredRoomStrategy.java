@@ -353,6 +353,11 @@ public abstract class AbstractClusteredRoomStrategy
 
 		return removed != null;
 	}
+	
+	public boolean shouldSendOfflineMessageToJidFromLocalNode(BareJID jid) {
+		return localNodeJid.equals(
+				getNodesConnectedWithLocal().get(jid.hashCode() % getNodesConnectedWithLocal().size()));
+	}
 
 	@Bean(name = REQUEST_SYNC_CMD, parent = AbstractClusteredRoomStrategy.class, active = true)
 	public static class RequestSyncCmd

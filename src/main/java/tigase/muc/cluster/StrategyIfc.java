@@ -10,6 +10,7 @@ import tigase.cluster.api.ClusterControllerIfc;
 import tigase.kernel.beans.Initializable;
 import tigase.kernel.beans.UnregisterAware;
 import tigase.server.Packet;
+import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
 import java.util.List;
@@ -84,5 +85,9 @@ public interface StrategyIfc
 
 	default void initialize() {
 		start();
+	}
+
+	default boolean shouldSendMessageOfflineToJidFromLocalNode(BareJID jid) {
+		return true;
 	}
 }

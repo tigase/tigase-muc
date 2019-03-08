@@ -7,6 +7,7 @@
 package tigase.muc.cluster;
 
 import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Inject;
 import tigase.muc.*;
 import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
@@ -15,8 +16,12 @@ import tigase.xmpp.jid.JID;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author andrzej
@@ -26,10 +31,13 @@ public class RoomClustered<ID>
 
 	private final ConcurrentMap<JID, String> remoteNicknames = new ConcurrentHashMap<JID, String>();
 
-	;
 	private final ConcurrentMap<String, Occupant> remoteOccupants = new ConcurrentHashMap<String, Occupant>();
-	protected RoomClustered(ID id, RoomConfig rc, Date creationDate, BareJID creatorJid) {
+
+	private final Predicate<BareJID> isJidForLocalClusterNode;
+
+	protected RoomClustered(ID id, RoomConfig rc, Date creationDate, BareJID creatorJid, Predicate<BareJID> isJidForLocalClusterNode) {
 		super(id, rc, creationDate, creatorJid);
+		this.isJidForLocalClusterNode = isJidForLocalClusterNode;
 	}
 
 	public Collection<Occupant> getRemoteOccupants() {
@@ -80,6 +88,25 @@ public class RoomClustered<ID>
 				}
 			}
 		}
+	}
+
+	@Override
+	public Stream<JID> getAllJidsForMessageDelivery() {
+		if (!getConfig().isSendMessagesToOfflineMembers()) {
+			return getAllOccupantsJidsForMessageDelivery();
+		} else {
+			return Stream.concat(getAllOccupantsJidsForMessageDelivery(),
+								 getAffiliationsHigherThan(Affiliation.none).filter(createAvailableFilter())
+										 .map(JID::jidInstanceNS));
+		}
+	}
+
+	@Override
+	protected Predicate<BareJID> createAvailableFilter() {
+		Set<BareJID> occupants = Stream.concat(getOccupantsBareJids(), remoteOccupants.values()
+				.stream()
+				.map(occupant -> occupant.getOccupantJID())).collect(Collectors.toSet());
+		return (jid) -> !occupants.contains(jid) && isJidForLocalClusterNode.test(jid) ;
 	}
 
 	@Override
@@ -145,9 +172,16 @@ public class RoomClustered<ID>
 	public static class RoomFactoryImpl
 			implements RoomFactory {
 
+		@Inject
+		private StrategyIfc strategy;
+
 		@Override
 		public <T> RoomWithId<T> newInstance(T id, RoomConfig rc, Date creationDate, BareJID creatorJid) {
-			return new RoomClustered(id, rc, creationDate, creatorJid);
+			return new RoomClustered(id, rc, creationDate, creatorJid, (Predicate<BareJID>) this::isJidForLocalClusterNode);
+		}
+
+		private boolean isJidForLocalClusterNode(BareJID jid) {
+			return strategy.shouldSendMessageOfflineToJidFromLocalNode(jid);
 		}
 
 	}

@@ -162,7 +162,7 @@ public class ClusteredRoomStrategyV2
 				RoomClustered room = (RoomClustered) mucRepository.getRoom(roomJid);
 
 				// update map of remote occupants
-				if ("unavailable".equals(presenceOrig.getAttribute("type"))) {
+				if ("unavailable".equals(presenceOrig.getAttributeStaticStr("type"))) {
 					room.removeRemoteOccupant(occupantJID);
 				} else {
 					room.addRemoteOccupant(nickname, occupantJID, occupantRole, occupantAffiliation, presenceOrig);
