@@ -43,7 +43,6 @@ public class Room
 	protected final PresenceFiltered presenceFiltered;
 	protected final PresenceStore presences = new PresenceStore();
 
-	;
 	private final Map<BareJID, RoomAffiliation> affiliations = new ConcurrentHashMap<BareJID, RoomAffiliation>();
 	private final RoomConfig config;
 	private final Date creationDate;
@@ -56,6 +55,34 @@ public class Room
 	private String subject;
 	private Date subjectChangeDate;
 	private String subjectChangerNick;
+
+	public static Role getDefaultRole(final RoomConfig config, final Affiliation affiliation) {
+		if (config.isRoomModerated() && (affiliation == Affiliation.none)) {
+			return Role.visitor;
+		} else {
+			switch (affiliation) {
+				case admin:
+					return Role.moderator;
+				case member:
+					return Role.participant;
+				case none:
+					return Role.participant;
+				case outcast:
+					return Role.none;
+				case owner:
+					return Role.moderator;
+				default:
+					return Role.none;
+			}
+		}
+	}
+
+	private static BareJID nicknameToJid(String nickname) {
+		if (nickname == null || !nickname.contains("@")) {
+			return null;
+		}
+		return BareJID.bareJIDInstanceNS(nickname);
+	}
 
 	protected Room(RoomConfig rc, Date creationDate, BareJID creatorJid) {
 		this.config = rc;
@@ -154,7 +181,12 @@ public class Room
 
 	public RoomAffiliation getAffiliation(String nickname) {
 		OccupantEntry entry = this.occupants.get(nickname);
-		return getAffiliation(entry == null ? null : entry.jid);
+		if (entry != null) {
+			return getAffiliation(entry.jid);
+		}
+
+		BareJID candidate = nicknameToJid(nickname);
+		return getAffiliation(candidate);
 	}
 
 	public Collection<BareJID> getAffiliations() {
@@ -164,16 +196,13 @@ public class Room
 		return this.affiliations.keySet();
 	}
 
-	public Stream<BareJID> getAffiliationsMatching(Predicate<RoomAffiliation> predicate) {
-		return this.affiliations.entrySet()
-				.stream()
-				.filter(e -> predicate.test(e.getValue()))
-				.map(Map.Entry::getKey);
-	}
-
 	public void setAffiliations(Map<BareJID, RoomAffiliation> affiliations) {
 		this.affiliations.clear();
 		this.affiliations.putAll(affiliations);
+	}
+
+	public Stream<BareJID> getAffiliationsMatching(Predicate<RoomAffiliation> predicate) {
+		return this.affiliations.entrySet().stream().filter(e -> predicate.test(e.getValue())).map(Map.Entry::getKey);
 	}
 
 	public Collection<JID> getAllOccupantsJID() {
@@ -185,22 +214,20 @@ public class Room
 	}
 
 	public Stream<JID> getAllOccupantsJidsForMessageDelivery() {
-		return this.occupants.entrySet().stream().filter(entry -> entry.getValue().role.isReceiveMessages()).flatMap(entry -> {
-			synchronized (entry.getValue().jids) {
-				return new HashSet(entry.getValue().jids).stream();
-			}
-		});
+		return this.occupants.entrySet()
+				.stream()
+				.filter(entry -> entry.getValue().role.isReceiveMessages())
+				.flatMap(entry -> {
+					synchronized (entry.getValue().jids) {
+						return new HashSet(entry.getValue().jids).stream();
+					}
+				});
 	}
 
 	public Stream<JID> getAllJidsForMessageDelivery() {
 		return Stream.concat(getAllOccupantsJidsForMessageDelivery(),
-							 getAffiliationsMatching(RoomAffiliation::isPersistentOccupant).filter(createAvailableFilter())
-									 .map(JID::jidInstanceNS));
-	}
-
-	protected Predicate<BareJID> createAvailableFilter() {
-		Set<BareJID> occupants = getOccupantsBareJids().collect(Collectors.toSet());
-		return (jid) -> !occupants.contains(jid);
+							 getAffiliationsMatching(RoomAffiliation::isPersistentOccupant).filter(
+									 createAvailableFilter()).map(JID::jidInstanceNS));
 	}
 
 	public RoomConfig getConfig() {
@@ -232,9 +259,20 @@ public class Room
 		Element e = this.presences.getBestPresence(occupantJid);
 		if (e != null) {
 			return e.clone();
-		} else {
+		}
+
+		RoomAffiliation aff = getAffiliation(occupantJid);
+		if (!aff.isPersistentOccupant()) {
 			return null;
 		}
+
+		Element result = new Element("presence");
+		result.setAttribute("from", occupantJid + "/" + occupantJid);
+		result.setAttribute("to", getRoomJID().toString());
+
+		result.addChild(new Element("show", "xa"));
+
+		return result;
 	}
 
 	public int getOccupantsCount() {
@@ -247,45 +285,72 @@ public class Room
 
 	public BareJID getOccupantsJidByNickname(String nickname) {
 		OccupantEntry entry = this.occupants.get(nickname);
-		if (entry == null) {
+		if (entry != null) {
+			return entry.jid;
+		}
+
+		BareJID candidate = nicknameToJid(nickname);
+		if (candidate == null) {
 			return null;
 		}
 
-		return entry.jid;
-//		synchronized (entry.jids) {
-//			if (!entry.jids.isEmpty()) {
-//				return entry.jids.iterator().next().getBareJID();
-//			}
-//		}
-//		return null;
+		RoomAffiliation aff = getAffiliation(candidate);
+		if (aff == null || !aff.isPersistentOccupant()) {
+			return null;
+		}
+
+		return candidate;
 	}
 
 	public Collection<JID> getOccupantsJidsByNickname(final String nickname) {
 		OccupantEntry entry = this.occupants.get(nickname);
-		if (entry == null) {
-			return new ArrayList<JID>();
+		if (entry != null) {
+			return Collections.unmodifiableCollection(new ConcurrentSkipListSet(entry.jids));
 		}
 
-		return Collections.unmodifiableCollection(new ConcurrentSkipListSet(entry.jids));
+		BareJID candidate = nicknameToJid(nickname);
+		if (candidate == null) {
+			return Collections.emptyList();
+		}
+
+		RoomAffiliation aff = getAffiliation(candidate);
+		if (aff.isPersistentOccupant()) {
+			return Collections.singleton(JID.jidInstanceNS(candidate, candidate.toString()));
+		} else {
+			return Collections.emptyList();
+		}
 	}
 
 	public String getOccupantsNickname(JID jid) {
 		OccupantEntry e = getBySenderJid(jid);
-		if (e == null) {
-			return null;
+		if (e != null) {
+			return e.nickname;
 		}
 
-		String nickname = e.nickname;
+		RoomAffiliation aff = getAffiliation(jid.getBareJID());
+		if (aff.isPersistentOccupant()) {
+			return jid.getResource();
+		}
 
-		return nickname;
+		return null;
 	}
 
 	public Collection<String> getOccupantsNicknames() {
-		return Collections.unmodifiableCollection(this.occupants.keySet());
+		final HashSet<String> result = new HashSet<>();
+
+		result.addAll(this.occupants.keySet());
+
+		affiliations.forEach((jid, affiliation) -> {
+			if (affiliation.isPersistentOccupant()) {
+				result.add(jid.toString());
+			}
+		});
+
+		return result;
 	}
 
 	public Collection<String> getOccupantsNicknames(BareJID bareJid) {
-		Set<String> result = new HashSet<String>();
+		Set<String> result = new HashSet<>();
 
 		for (Map.Entry<String, OccupantEntry> e : this.occupants.entrySet()) {
 			if (e.getValue().jid.equals(bareJid)) {
@@ -305,10 +370,21 @@ public class Room
 			return Role.none;
 		}
 		OccupantEntry entry = this.occupants.get(nickname);
-		if (entry == null) {
+		if (entry != null) {
+			return entry.role == null ? Role.none : entry.role;
+		}
+
+		BareJID candidate = nicknameToJid(nickname);
+		if (candidate == null) {
 			return Role.none;
 		}
-		return entry.role == null ? Role.none : entry.role;
+
+		RoomAffiliation aff = getAffiliation(candidate);
+		if (!aff.isPersistentOccupant()) {
+			return Role.none;
+		}
+
+		return getDefaultRole(this.config, aff.getAffiliation());
 	}
 
 	public Object getRoomCustomData(String key) {
@@ -336,7 +412,13 @@ public class Room
 	}
 
 	public boolean isOccupantInRoom(final JID jid) {
-		return getBySenderJid(jid) != null;
+		OccupantEntry oe = getBySenderJid(jid);
+		if (oe != null) {
+			return true;
+		}
+
+		RoomAffiliation aff = getAffiliation(jid.getBareJID());
+		return aff.isPersistentOccupant();
 	}
 
 	public boolean isRoomLocked() {
@@ -443,6 +525,11 @@ public class Room
 		fireOnOccupantChangedPresence(jid, nickname, cp, false);
 	}
 
+	protected Predicate<BareJID> createAvailableFilter() {
+		Set<BareJID> occupants = getOccupantsBareJids().collect(Collectors.toSet());
+		return (jid) -> !occupants.contains(jid);
+	}
+
 	private void fireOnOccupantAdded(JID occupantJid) {
 		for (Room.RoomOccupantListener listener : this.occupantListeners) {
 			listener.onOccupantAdded(this, occupantJid);
@@ -484,13 +571,13 @@ public class Room
 		return null;
 	}
 
-	public static interface RoomFactory {
+	public interface RoomFactory {
 
-		public <T> RoomWithId<T> newInstance(T id, RoomConfig rc, Date creationDate, BareJID creatorJid);
+		<T> RoomWithId<T> newInstance(T id, RoomConfig rc, Date creationDate, BareJID creatorJid);
 
 	}
 
-	public static interface RoomListener {
+	public interface RoomListener {
 
 		void onChangeSubject(Room room, String nick, String newSubject, Date changeDate);
 
@@ -499,7 +586,7 @@ public class Room
 		void onSetAffiliation(Room room, BareJID jid, RoomAffiliation newAffiliation);
 	}
 
-	public static interface RoomOccupantListener {
+	public interface RoomOccupantListener {
 
 		void onOccupantAdded(Room room, JID occupantJid);
 
@@ -511,8 +598,8 @@ public class Room
 
 	private static class OccupantEntry {
 
-		private final Set<JID> jids = new HashSet<JID>();
 		private final BareJID jid;
+		private final Set<JID> jids = new HashSet<JID>();
 		private String nickname;
 
 		private Role role = Role.none;
@@ -522,13 +609,13 @@ public class Room
 			this.jid = jid;
 		}
 
-		private BareJID getBareJID() {
-			return jid;
-		}
-
 		@Override
 		public String toString() {
 			return "[" + nickname + "; " + role + "; " + jid + "; " + jids.toString() + "]";
+		}
+
+		private BareJID getBareJID() {
+			return jid;
 		}
 	}
 

@@ -404,7 +404,7 @@ public class ModeratorModule
 			final Affiliation senderAffiliation = room.getAffiliation(senderJid.getBareJID()).getAffiliation();
 
 			final Role senderRole = nickName == null
-									? PresenceModuleImpl.getDefaultRole(room.getConfig(), senderAffiliation)
+									? Room.getDefaultRole(room.getConfig(), senderAffiliation)
 									: room.getRole(nickName);
 			final Element query = element.getElement().getChild("query");
 			final List<Element> items = query.getChildren();
@@ -451,11 +451,13 @@ public class ModeratorModule
 							 previousAffiliation + ")");
 		}
 
-		if (room.getConfig().isRoomMembersOnly() && (previousAffiliation.getAffiliation().getWeight() <= Affiliation.none.getWeight()) &&
+		if (room.getConfig().isRoomMembersOnly() &&
+				(previousAffiliation.getAffiliation().getWeight() <= Affiliation.none.getWeight()) &&
 				(newAffiliation.getWeight() >= Affiliation.member.getWeight())) {
 			sendInvitation(room, occupantBareJid, actor);
 		}
-		room.addAffiliationByJid(occupantBareJid, RoomAffiliation.from(newAffiliation, previousAffiliation.isPersistentOccupant()));
+		room.addAffiliationByJid(occupantBareJid,
+								 RoomAffiliation.from(newAffiliation, previousAffiliation.isPersistentOccupant()));
 
 		boolean isUnavailable = false;
 		Set<String> codes = new HashSet<String>();
