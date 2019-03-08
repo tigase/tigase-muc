@@ -11,10 +11,7 @@ import tigase.cluster.api.CommandListenerAbstract;
 import tigase.component.exceptions.RepositoryException;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
-import tigase.muc.Affiliation;
-import tigase.muc.Role;
-import tigase.muc.Room;
-import tigase.muc.RoomConfig;
+import tigase.muc.*;
 import tigase.muc.modules.GroupchatMessageModule;
 import tigase.muc.modules.PresenceModule.PresenceWrapper;
 import tigase.server.Packet;
@@ -229,7 +226,7 @@ public abstract class AbstractClusteredRoomStrategy
 	}
 
 	@Override
-	public void onSetAffiliation(Room room, BareJID jid, Affiliation newAffiliation) {
+	public void onSetAffiliation(Room room, BareJID jid, RoomAffiliation newAffiliation) {
 		List<JID> toNodes = getNodesConnected();
 
 		Map<String, String> data = new HashMap<String, String>();
@@ -466,7 +463,7 @@ public abstract class AbstractClusteredRoomStrategy
 
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			BareJID from = BareJID.bareJIDInstanceNS(data.get("userId"));
-			Affiliation newAffiliation = Affiliation.valueOf(data.get("newAffiliation"));
+			RoomAffiliation newAffiliation = RoomAffiliation.valueof(data.get("newAffiliation"));
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST,
 						"executig RoomAffiliationCmd command for room = {0}, from = {1}, newAffiliation: {2}",

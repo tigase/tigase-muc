@@ -50,7 +50,7 @@ public class ClusteredRoomStrategyV2
 		if (occupantJid == null) {
 			occupantJid = JID.jidInstanceNS(presence.getAttributeStaticStr("from"));
 		}
-		Affiliation affiliation = room.getAffiliation(nickname);
+		Affiliation affiliation = room.getAffiliation(nickname).getAffiliation();
 		Role role = room.getRole(nickname);
 
 		Map<String, String> data = new HashMap<String, String>();

@@ -91,17 +91,6 @@ public class RoomClustered<ID>
 	}
 
 	@Override
-	public Stream<JID> getAllJidsForMessageDelivery() {
-		if (!getConfig().isSendMessagesToOfflineMembers()) {
-			return getAllOccupantsJidsForMessageDelivery();
-		} else {
-			return Stream.concat(getAllOccupantsJidsForMessageDelivery(),
-								 getAffiliationsHigherThan(Affiliation.none).filter(createAvailableFilter())
-										 .map(JID::jidInstanceNS));
-		}
-	}
-
-	@Override
 	protected Predicate<BareJID> createAvailableFilter() {
 		Set<BareJID> occupants = Stream.concat(getOccupantsBareJids(), remoteOccupants.values()
 				.stream()
@@ -134,12 +123,12 @@ public class RoomClustered<ID>
 	}
 
 	@Override
-	public Affiliation getAffiliation(String nickname) {
-		Affiliation affil = super.getAffiliation(nickname);
-		if (affil == Affiliation.none) {
+	public RoomAffiliation getAffiliation(String nickname) {
+		RoomAffiliation affil = super.getAffiliation(nickname);
+		if (affil == RoomAffiliation.none) {
 			Occupant occupant = remoteOccupants.get(nickname);
 			if (occupant != null) {
-				affil = occupant.getAffiliation();
+				affil = RoomAffiliation.from(occupant.getAffiliation(), false);
 			}
 		}
 		return affil;
