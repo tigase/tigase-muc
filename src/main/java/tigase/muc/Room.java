@@ -303,22 +303,11 @@ public class Room
 	}
 
 	public Collection<JID> getOccupantsJidsByNickname(final String nickname) {
-		OccupantEntry entry = this.occupants.get(nickname);
-		if (entry != null) {
-			return Collections.unmodifiableCollection(new ConcurrentSkipListSet(entry.jids));
+		Collection<JID> result = getLocalOccupantsJidsByNickname(nickname);
+		if (!result.isEmpty()) {
+			return result;
 		}
-
-		BareJID candidate = nicknameToJid(nickname);
-		if (candidate == null) {
-			return Collections.emptyList();
-		}
-
-		RoomAffiliation aff = getAffiliation(candidate);
-		if (aff.isPersistentOccupant()) {
-			return Collections.singleton(JID.jidInstanceNS(candidate, candidate.toString()));
-		} else {
-			return Collections.emptyList();
-		}
+		return getPersistentOccupantsJidsByNickname(nickname);
 	}
 
 	public String getOccupantsNickname(JID jid) {
@@ -523,6 +512,28 @@ public class Room
 		}
 
 		fireOnOccupantChangedPresence(jid, nickname, cp, false);
+	}
+
+	protected Collection<JID> getLocalOccupantsJidsByNickname(final String nickname) {
+		OccupantEntry entry = this.occupants.get(nickname);
+		if (entry != null) {
+			return Collections.unmodifiableCollection(new ConcurrentSkipListSet(entry.jids));
+		}
+		return Collections.emptyList();
+	}
+
+	protected Collection<JID> getPersistentOccupantsJidsByNickname(final String nickname) {
+		BareJID candidate = nicknameToJid(nickname);
+		if (candidate == null) {
+			return Collections.emptyList();
+		}
+
+		RoomAffiliation aff = getAffiliation(candidate);
+		if (aff.isPersistentOccupant()) {
+			return Collections.singleton(JID.jidInstanceNS(candidate, candidate.toString()));
+		} else {
+			return Collections.emptyList();
+		}
 	}
 
 	protected Predicate<BareJID> createAvailableFilter() {
