@@ -105,14 +105,17 @@ public class RoomClustered<ID>
 
 	@Override
 	public Collection<JID> getOccupantsJidsByNickname(String nickname) {
-		Collection<JID> jids = super.getOccupantsJidsByNickname(nickname);
-		if (jids.isEmpty()) {
-			Occupant occupant = remoteOccupants.get(nickname);
-			if (occupant != null) {
-				return Collections.unmodifiableCollection(occupant.getOccupants());
-			}
+		Collection<JID> result = getLocalOccupantsJidsByNickname(nickname);
+		if (!result.isEmpty()) {
+			return result;
 		}
-		return jids;
+
+		Occupant occupant = remoteOccupants.get(nickname);
+		if (occupant != null) {
+			return Collections.unmodifiableCollection(occupant.getOccupants());
+		}
+
+		return getPersistentOccupantsJidsByNickname(nickname);
 	}
 
 	@Override
@@ -176,3 +179,4 @@ public class RoomClustered<ID>
 	}
 
 }
+`
