@@ -329,7 +329,7 @@ public class Room
 
 		RoomAffiliation aff = getAffiliation(jid.getBareJID());
 		if (aff.isPersistentOccupant()) {
-			return jid.getResource();
+			return jid.getBareJID().toString();
 		}
 
 		return null;
