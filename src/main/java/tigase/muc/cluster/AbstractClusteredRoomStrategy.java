@@ -226,7 +226,7 @@ public abstract class AbstractClusteredRoomStrategy
 	}
 
 	@Override
-	public void onSetAffiliation(Room room, BareJID jid, RoomAffiliation newAffiliation) {
+	public void onSetAffiliation(Room room, BareJID jid, RoomAffiliation oldAffiliation, RoomAffiliation newAffiliation) {
 		List<JID> toNodes = getNodesConnected();
 
 		Map<String, String> data = new HashMap<String, String>();

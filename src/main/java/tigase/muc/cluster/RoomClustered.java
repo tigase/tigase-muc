@@ -105,6 +105,10 @@ public class RoomClustered<ID>
 
 	@Override
 	public Collection<JID> getOccupantsJidsByNickname(String nickname) {
+		if (nickname == null) {
+			return null;
+		}
+
 		Collection<JID> result = getLocalOccupantsJidsByNickname(nickname);
 		if (!result.isEmpty()) {
 			return result;
