@@ -387,7 +387,7 @@ public class PresenceModuleImpl
 				event.getNewAffiliation().isPersistentOccupant()) {
 			// enter
 			JID sender = JID.jidInstanceNS(event.getJid());
-			sendPresenceToAllOccupants(event.getRoom(), sender, false, event.getJid().toString());
+			sendPresenceToAllOccupants(event.getRoom(), sender, false, null);
 		}
 	}
 
@@ -699,7 +699,7 @@ public class PresenceModuleImpl
 											  String newNickName) throws TigaseStringprepException {
 
 		final String occupantNickname = room.getOccupantsNickname(senderJID);
-		final BareJID occupantJID = room.getOccupantsJidByNickname(occupantNickname);
+		final BareJID occupantJID = Optional.ofNullable(room.getOccupantsJidByNickname(occupantNickname)).orElse(senderJID.getBareJID());
 		final Affiliation occupantAffiliation = room.getAffiliation(occupantJID).getAffiliation();
 		final Role occupantRole = room.getRole(occupantNickname);
 

@@ -31,6 +31,7 @@ import tigase.xmpp.jid.JID;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 
 /**
  * @author bmalkow
@@ -117,8 +118,14 @@ public interface PresenceModule
 		static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence, JID occupantJID)
 				throws TigaseStringprepException {
 			final String occupantNickname = room.getOccupantsNickname(occupantJID);
+			if (occupantNickname == null) {
+				final Affiliation occupantAffiliation = room.getAffiliation(occupantJID.getBareJID()).getAffiliation();
 
-			return preparePresenceW(room, destinationJID, presence, occupantNickname);
+				return preparePresenceW(room, destinationJID, presence, occupantJID.getBareJID(), Collections.singleton(occupantJID), occupantJID.getBareJID().toString(), occupantAffiliation,
+										Role.none);
+			} else {
+				return preparePresenceW(room, destinationJID, presence, occupantNickname);
+			}
 		}
 
 		static PresenceWrapper preparePresenceW(Room room, JID destinationJID, final Element presence,

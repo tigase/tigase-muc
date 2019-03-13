@@ -294,6 +294,9 @@ public class Room
 	}
 
 	public BareJID getOccupantsJidByNickname(String nickname) {
+		if (nickname == null) {
+			return null;
+		}
 		OccupantEntry entry = this.occupants.get(nickname);
 		if (entry != null) {
 			return entry.jid;
@@ -313,6 +316,9 @@ public class Room
 	}
 
 	public Collection<JID> getOccupantsJidsByNickname(final String nickname) {
+		if (nickname == null) {
+			return null;
+		}
 		Collection<JID> result = getLocalOccupantsJidsByNickname(nickname);
 		if (!result.isEmpty()) {
 			return result;
