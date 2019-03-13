@@ -20,8 +20,11 @@ package tigase.muc.modules;
 import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.eventbus.HandleEvent;
 import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Initializable;
 import tigase.kernel.beans.Inject;
+import tigase.kernel.beans.UnregisterAware;
 import tigase.muc.*;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryProvider;
@@ -48,7 +51,7 @@ import java.util.logging.Logger;
 @Bean(name = PresenceModuleImpl.ID, parent = MUCComponent.class, active = true)
 public class PresenceModuleImpl
 		extends AbstractMucModule
-		implements PresenceModule {
+		implements PresenceModule, Initializable, UnregisterAware {
 
 	protected static final Logger log = Logger.getLogger(PresenceModule.class.getName());
 	private static final Criteria CRIT = ElementCriteria.name("presence");
@@ -162,16 +165,16 @@ public class PresenceModuleImpl
 			}
 			return;
 		}
-		final Affiliation leavingAffiliation = room.getAffiliation(leavingNickname).getAffiliation();
+		final RoomAffiliation leavingAffiliation = room.getAffiliation(leavingNickname);
 		final Role leavingRole = room.getRole(leavingNickname);
+
 		Element presenceElement = new Element("presence");
+		presenceElement.setAttribute("type", "unavailable");
 
 		if (log.isLoggable(Level.FINER)) {
 			log.finer(
 					"Occupant " + senderJID + " known as " + leavingNickname + " is leaving room " + room.getRoomJID());
 		}
-
-		presenceElement.setAttribute("type", "unavailable");
 
 		Collection<JID> occupantJIDs = new ArrayList<JID>(room.getOccupantsJidsByNickname(leavingNickname));
 		boolean nicknameGone = room.removeOccupant(senderJID);
@@ -182,7 +185,8 @@ public class PresenceModuleImpl
 		if (config.isMultiItemMode()) {
 			final PresenceWrapper selfPresence = PresenceWrapper.preparePresenceW(room, senderJID, presenceElement,
 																				  senderJID.getBareJID(), occupantJIDs,
-																				  leavingNickname, leavingAffiliation,
+																				  leavingNickname,
+																				  leavingAffiliation.getAffiliation(),
 																				  Role.none);
 			write(selfPresence.packet);
 		} else {
@@ -191,7 +195,8 @@ public class PresenceModuleImpl
 
 			final PresenceWrapper selfPresence = PresenceWrapper.preparePresenceW(room, senderJID, presenceElement,
 																				  senderJID.getBareJID(), z,
-																				  leavingNickname, leavingAffiliation,
+																				  leavingNickname,
+																				  leavingAffiliation.getAffiliation(),
 																				  Role.none);
 			write(selfPresence.packet);
 		}
@@ -201,12 +206,16 @@ public class PresenceModuleImpl
 		if (nicknameGone) {
 			for (String occupantNickname : room.getOccupantsNicknames()) {
 				for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
-					presenceElement = new Element("presence");
-					presenceElement.setAttribute("type", "unavailable");
+
+					presenceElement = room.getLastPresenceCopy(senderJID.getBareJID(), leavingNickname);
+					if (presenceElement == null) {
+						presenceElement = new Element("presence", new String[]{"type"}, new String[]{"unavailable"});
+					}
 
 					PresenceWrapper presence = PresenceWrapper.preparePresenceW(room, occupantJid, presenceElement,
 																				senderJID.getBareJID(), occupantJIDs,
-																				leavingNickname, leavingAffiliation,
+																				leavingNickname,
+																				leavingAffiliation.getAffiliation(),
 																				Role.none);
 
 					write(presence.packet);
@@ -228,7 +237,8 @@ public class PresenceModuleImpl
 						PresenceWrapper presence = PresenceWrapper.preparePresenceW(room, occupantJid, pe.clone(),
 																					senderJID.getBareJID(),
 																					occupantJIDs, leavingNickname,
-																					leavingAffiliation, Role.none);
+																					leavingAffiliation.getAffiliation(),
+																					Role.none);
 						write(presence.packet);
 					} else {
 						for (JID jid : occupantJIDs) {
@@ -237,7 +247,8 @@ public class PresenceModuleImpl
 							PresenceWrapper presence = PresenceWrapper.preparePresenceW(room, occupantJid, pe.clone(),
 																						senderJID.getBareJID(), z,
 																						leavingNickname,
-																						leavingAffiliation, Role.none);
+																						leavingAffiliation.getAffiliation(),
+																						Role.none);
 							write(presence.packet);
 						}
 					}
@@ -245,11 +256,13 @@ public class PresenceModuleImpl
 			}
 		}
 
-		Element event = new Element("RoomLeave", new String[]{"xmlns"}, new String[]{"tigase:events:muc"});
-		event.addChild(new Element("room", room.getRoomJID().toString()));
-		event.addChild(new Element("nickname", leavingNickname));
-		event.addChild(new Element("jid", senderJID.toString()));
-		fireEvent(event);
+		if (!leavingAffiliation.isPersistentOccupant()) {
+			Element event = new Element("RoomLeave", new String[]{"xmlns"}, new String[]{"tigase:events:muc"});
+			event.addChild(new Element("room", room.getRoomJID().toString()));
+			event.addChild(new Element("nickname", leavingNickname));
+			event.addChild(new Element("jid", senderJID.toString()));
+			fireEvent(event);
+		}
 
 		if (room.getOccupantsCount() == 0) {
 			if (!room.getConfig().isPersistentRoom()) {
@@ -347,6 +360,34 @@ public class PresenceModuleImpl
 			throw e;
 		} catch (RepositoryException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	public void initialize() {
+		eventBus.registerAll(this);
+	}
+
+	@Override
+	public void beforeUnregister() {
+		eventBus.unregisterAll(this);
+	}
+
+	@HandleEvent()
+	void handleAffiliationChangedEvent(final AffiliationChangedEvent event) throws Exception {
+		if (event.getRoom().isOccupantOnline(event.getJid())) {
+			return;
+		}
+
+		if (event.getOldAffiliation().isPersistentOccupant() && !event.getNewAffiliation().isPersistentOccupant()) {
+			// exit
+			JID sender = JID.jidInstanceNS(event.getJid());
+			sendPresenceToAllOccupants(event.getRoom(), sender, false, event.getJid().toString());
+		} else if (!event.getOldAffiliation().isPersistentOccupant() &&
+				event.getNewAffiliation().isPersistentOccupant()) {
+			// enter
+			JID sender = JID.jidInstanceNS(event.getJid());
+			sendPresenceToAllOccupants(event.getRoom(), sender, false, event.getJid().toString());
 		}
 	}
 

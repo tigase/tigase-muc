@@ -96,12 +96,13 @@ public class Room
 	}
 
 	public void addAffiliationByJid(BareJID jid, RoomAffiliation affiliation) throws RepositoryException {
+		final RoomAffiliation oldAffiliation = getAffiliation(jid);
 		if (affiliation.getAffiliation() == Affiliation.none) {
 			this.affiliations.remove(jid);
 		} else {
 			this.affiliations.put(jid, affiliation);
 		}
-		fireOnSetAffiliation(jid, affiliation);
+		fireOnSetAffiliation(jid, oldAffiliation, affiliation);
 	}
 
 	public void addListener(Room.RoomListener listener) {
@@ -276,7 +277,16 @@ public class Room
 	}
 
 	public int getOccupantsCount() {
-		return this.occupants.size();
+		final HashSet<BareJID> tmp = new HashSet<>();
+
+		this.occupants.values().forEach(occupantEntry -> tmp.add(occupantEntry.jid));
+		this.affiliations.forEach((key, value) -> {
+			if (value.isPersistentOccupant()) {
+				tmp.add(key);
+			}
+		});
+
+		return tmp.size();
 	}
 
 	public Stream<BareJID> getOccupantsBareJids() {
@@ -336,6 +346,15 @@ public class Room
 		});
 
 		return result;
+	}
+
+	public boolean isOccupantOnline(final BareJID jid) {
+		for (Map.Entry<String, OccupantEntry> e : this.occupants.entrySet()) {
+			if (e.getValue().jid.equals(jid)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public Collection<String> getOccupantsNicknames(BareJID bareJid) {
@@ -559,9 +578,9 @@ public class Room
 		}
 	}
 
-	private void fireOnSetAffiliation(BareJID jid, RoomAffiliation affiliation) {
+	private void fireOnSetAffiliation(BareJID jid, RoomAffiliation oldAffiliation, RoomAffiliation newAffiliation) {
 		for (Room.RoomListener listener : this.listeners) {
-			listener.onSetAffiliation(this, jid, affiliation);
+			listener.onSetAffiliation(this, jid, oldAffiliation, newAffiliation);
 		}
 	}
 
@@ -594,7 +613,7 @@ public class Room
 
 		void onMessageToOccupants(Room room, JID from, Packet msg);
 
-		void onSetAffiliation(Room room, BareJID jid, RoomAffiliation newAffiliation);
+		void onSetAffiliation(Room room, BareJID jid, RoomAffiliation oldAffiliation, RoomAffiliation newAffiliation);
 	}
 
 	public interface RoomOccupantListener {

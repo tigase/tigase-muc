@@ -85,8 +85,10 @@ public class InMemoryMucRepository
 			}
 
 			@Override
-			public void onSetAffiliation(Room room, BareJID jid, RoomAffiliation newAffiliation) {
+			public void onSetAffiliation(Room room, BareJID jid, RoomAffiliation oldAffiliation,
+										 RoomAffiliation newAffiliation) {
 				try {
+					eventBus.fire(new AffiliationChangedEvent(room, jid, oldAffiliation, newAffiliation));
 					if (room.getConfig().isPersistentRoom()) {
 						RoomWithId roomWithId = (RoomWithId) room;
 						if (roomWithId.getId() != null) {
