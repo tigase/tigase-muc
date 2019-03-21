@@ -441,7 +441,7 @@ public class PresenceModuleImpl
 		if (!room.getConfig().isPresenceFilterEnabled() || (room.getConfig().isPresenceFilterEnabled() &&
 				!room.getConfig().getPresenceFilteredAffiliations().isEmpty() && room.getConfig()
 				.getPresenceFilteredAffiliations()
-				.contains(room.getAffiliation(senderJID.getBareJID())))) {
+				.contains(room.getAffiliation(senderJID.getBareJID()).getAffiliation()))) {
 			room.updatePresenceByJid(null, nickname, clonePresence(presenceElement));
 		}
 

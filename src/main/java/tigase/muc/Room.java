@@ -138,7 +138,7 @@ public class Room
 		if (added) {
 			if (!config.isPresenceFilterEnabled() || (config.isPresenceFilterEnabled() &&
 					(!config.getPresenceFilteredAffiliations().isEmpty() && config.getPresenceFilteredAffiliations()
-							.contains(getAffiliation(senderJid.getBareJID()))))) {
+							.contains(getAffiliation(senderJid.getBareJID()).getAffiliation())))) {
 				fireOnOccupantAdded(senderJid);
 				fireOnOccupantChangedPresence(senderJid, nickName, pe, true);
 			}
@@ -317,7 +317,7 @@ public class Room
 
 	public Collection<JID> getOccupantsJidsByNickname(final String nickname) {
 		if (nickname == null) {
-			return null;
+			return Collections.emptyList();
 		}
 		Collection<JID> result = getLocalOccupantsJidsByNickname(nickname);
 		if (!result.isEmpty()) {

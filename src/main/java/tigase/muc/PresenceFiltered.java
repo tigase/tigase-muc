@@ -110,7 +110,7 @@ public class PresenceFiltered
 					Arrays.asList(occupantsPresenceFiltered));
 		}
 		Collection<Affiliation> presenceFilterFrom = room.getConfig().getPresenceFilteredAffiliations();
-		if (presenceFilterFrom.contains(room.getAffiliation(jid))) {
+		if (presenceFilterFrom.contains(room.getAffiliation(jid).getAffiliation())) {
 			occupantsPresenceFiltered.add(jid);
 
 		} else {
