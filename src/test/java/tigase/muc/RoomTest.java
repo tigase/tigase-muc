@@ -189,7 +189,7 @@ public class RoomTest
 		Room room = pubsub.getMucRepository().getRoom(BareJID.bareJIDInstanceNS("darkcave@macbeth.shakespeare.lit"));
 		Assert.assertNotNull(room);
 
-		Collection<String> nicknames = room.getOccupantsNicknames();
+		Collection<String> nicknames = room.getOccupantsNicknames(false);
 		Assert.assertEquals(1, nicknames.size());
 		Assert.assertTrue(nicknames.contains("firstwitch"));
 

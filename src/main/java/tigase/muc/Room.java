@@ -329,18 +329,22 @@ public class Room
 		return null;
 	}
 
-	public Collection<String> getOccupantsNicknames() {
-		final HashSet<String> result = new HashSet<>();
+	public Collection<String> getOccupantsNicknames(boolean includePersistent) {
+		if (includePersistent) {
+			final HashSet<String> result = new HashSet<>();
 
-		result.addAll(this.occupants.keySet());
+			result.addAll(this.occupants.keySet());
 
-		affiliations.forEach((jid, affiliation) -> {
-			if (affiliation.isPersistentOccupant()) {
-				result.add(Optional.ofNullable(affiliation.getRegisteredNickname()).orElse(jid.toString()));
-			}
-		});
+			affiliations.forEach((jid, affiliation) -> {
+				if (affiliation.isPersistentOccupant()) {
+					result.add(Optional.ofNullable(affiliation.getRegisteredNickname()).orElse(jid.toString()));
+				}
+			});
 
-		return result;
+			return result;
+		} else {
+			return this.occupants.keySet();
+		}
 	}
 
 	public boolean isOccupantOnline(final BareJID jid) {

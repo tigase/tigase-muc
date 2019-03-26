@@ -111,7 +111,7 @@ public class RoomConfigurationModule
 	}
 
 	private void destroy(Room room, Element destroyElement) throws TigaseStringprepException, RepositoryException {
-		for (String occupantNickname : room.getOccupantsNicknames()) {
+		for (String occupantNickname : room.getOccupantsNicknames(false)) {
 			for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
 				final Element p = new Element("presence");
 

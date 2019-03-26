@@ -125,8 +125,9 @@ public class JDBCMucDAO
 
 					while (rs.next()) {
 						String affStr = rs.getString(2);
-						boolean persistent = affStr.endsWith("-persistent") || rs.getBoolean(3);
-						if (persistent) {
+						boolean persistent = rs.getBoolean(3);
+						if (affStr.endsWith("-persistent")) {
+							persistent = true;
 							affStr = affStr.substring(0, affStr.length() - "-persistent".length());
 						}
 						Affiliation affiliation = Affiliation.valueOf(affStr);

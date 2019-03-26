@@ -375,7 +375,7 @@ public class ModeratorModule
 			}
 		}
 
-		for (String occupantNickname : room.getOccupantsNicknames()) {
+		for (String occupantNickname : room.getOccupantsNicknames(true)) {
 			final Role role = room.getRole(occupantNickname);
 			final BareJID occupantBareJid = room.getOccupantsJidByNickname(occupantNickname);
 			final Affiliation affiliation = room.getAffiliation(occupantBareJid).getAffiliation();
@@ -488,9 +488,9 @@ public class ModeratorModule
 		}
 
 		if (log.isLoggable(Level.FINE)) {
-			log.fine("Sending new affiliation of " + occupantBareJid + " to occupants " + room.getOccupantsNicknames());
+			log.fine("Sending new affiliation of " + occupantBareJid + " to occupants " + room.getOccupantsNicknames(false));
 		}
-		for (String nickname : room.getOccupantsNicknames()) {
+		for (String nickname : room.getOccupantsNicknames(false)) {
 			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
 
 			if (log.isLoggable(Level.FINER)) {
@@ -537,7 +537,7 @@ public class ModeratorModule
 		}
 
 		// sending presence to all occupants
-		for (String nickname : room.getOccupantsNicknames()) {
+		for (String nickname : room.getOccupantsNicknames(false)) {
 			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
 
 			for (JID jid : occupantJids) {

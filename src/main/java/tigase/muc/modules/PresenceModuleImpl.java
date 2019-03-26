@@ -104,7 +104,7 @@ public class PresenceModuleImpl
 			return;
 		}
 
-		for (String occupantNickname : room.getOccupantsNicknames()) {
+		for (String occupantNickname : room.getOccupantsNicknames(true)) {
 			final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNickname);
 
 			if (occupantJid == null) {
@@ -204,7 +204,7 @@ public class PresenceModuleImpl
 		// TODO if highest priority is gone, then send current highest priority
 		// to occupants
 		if (nicknameGone) {
-			for (String occupantNickname : room.getOccupantsNicknames()) {
+			for (String occupantNickname : room.getOccupantsNicknames(false)) {
 				for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
 
 					presenceElement = room.getLastPresenceCopy(senderJID.getBareJID(), leavingNickname);
@@ -231,7 +231,7 @@ public class PresenceModuleImpl
 			if (pe == null) {
 				pe = new Element("presence", new String[]{"type"}, new String[]{"unavailable"});
 			}
-			for (String occupantNickname : room.getOccupantsNicknames()) {
+			for (String occupantNickname : room.getOccupantsNicknames(false)) {
 				for (JID occupantJid : room.getOccupantsJidsByNickname(occupantNickname)) {
 					if (config.isMultiItemMode()) {
 						PresenceWrapper presence = PresenceWrapper.preparePresenceW(room, occupantJid, pe.clone(),
@@ -708,7 +708,7 @@ public class PresenceModuleImpl
 			}
 		} else {
 			// no filtering, send presence to all users
-			occupantsNicknames = room.getOccupantsNicknames();
+			occupantsNicknames = room.getOccupantsNicknames(false);
 		}
 
 		if (log.isLoggable(Level.FINEST)) {

@@ -279,7 +279,7 @@ public class DiscoveryModule
 			if (nickname == null) {
 				throw new MUCException(Authorization.FORBIDDEN);
 			}
-			for (String nick : room.getOccupantsNicknames()) {
+			for (String nick : room.getOccupantsNicknames(true)) {
 				resultQuery.addChild(new Element("item", new String[]{"jid", "name"},
 												 new String[]{room.getRoomJID() + "/" + nick, nick}));
 			}
