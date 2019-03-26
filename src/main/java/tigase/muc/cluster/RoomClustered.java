@@ -161,7 +161,11 @@ public class RoomClustered<ID>
 		int p1p = p1 == null ? -1 : p1.getPriority();
 		int p2p = p2 == null ? -1 : p2.getPriority();
 		Element presence = (p1 == null && p2 == null) ? null : (p1p < p2p ? p2.getElement() : p1.getElement());
-		return presence == null ? null : presence.clone();
+		if (presence != null) {
+			return presence.clone();
+		} else {
+			return super.getLastPresenceCopy(occupantJid, nickname);
+		}
 	}
 
 	@Bean(name = "roomFactory", parent = MUCComponentClustered.class, active = true, exportable = true)

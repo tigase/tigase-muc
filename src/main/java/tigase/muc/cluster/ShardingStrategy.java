@@ -347,6 +347,9 @@ public class ShardingStrategy
 					// all it's occupants
 					Room room = strategy.mucRepository.getRoom(entry.getKey());
 					if (room != null) {
+						Optional.ofNullable(room.getConfig())
+								.map(RoomConfig::getRoomName)
+								.ifPresent(name -> roomEl.setAttribute("name", name));
 						roomEl.setAttribute("name", room.getConfig().getRoomName());
 						roomEl.setAttribute("public", String.valueOf(room.getConfig().isRoomconfigPublicroom()));
 						roomEl.setAttribute("persistent", String.valueOf(room.getConfig().isPersistentRoom()));

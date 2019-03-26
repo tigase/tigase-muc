@@ -227,7 +227,7 @@ public class ClusteredRoomStrategyV2
 			log.log(Level.FINEST, "executig OccupantsSyncRequestCmd command fromNode = {0}, rooms = {1}",
 					new Object[]{fromNode.toString(), rooms.toString()});
 			for (Room room : rooms) {
-				for (String nickname : room.getOccupantsNicknames()) {
+				for (String nickname : room.getOccupantsNicknames(false)) {
 					Collection<JID> jids = room.getOccupantsJidsByNickname(nickname);
 					if (jids.isEmpty()) {
 						continue;

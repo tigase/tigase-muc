@@ -139,7 +139,7 @@ public abstract class AbstractStrategy
 	protected void sendRemoteOccupantRemovalOnDisconnect(Room room, JID occupant, String occupantNick,
 														 boolean sendRemovalToOccupant) {
 		// notify occupants of this room on this node that occupant was removed
-		for (String nickname : room.getOccupantsNicknames()) {
+		for (String nickname : room.getOccupantsNicknames(false)) {
 			Collection<JID> jids = room.getOccupantsJidsByNickname(nickname);
 			for (JID jid : jids) {
 				sendRemovalFromRoomOnNodeDisconnect(JID.jidInstanceNS(room.getRoomJID(), occupantNick), jid);
