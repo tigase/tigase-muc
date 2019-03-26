@@ -9,6 +9,7 @@ package tigase.muc.cluster;
 import tigase.cluster.api.ClusterCommandException;
 import tigase.cluster.api.CommandListenerAbstract;
 import tigase.component.exceptions.RepositoryException;
+import tigase.eventbus.EventBus;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.muc.*;
@@ -233,7 +234,7 @@ public abstract class AbstractClusteredRoomStrategy
 		data.put("room", room.getRoomJID().toString());
 		data.put("userId", jid.toString());
 		data.put("newAffiliation", newAffiliation.getAffiliation().name());
-		data.put("newPersistent", newAffiliation.getAffiliation().name());
+		data.put("newPersistent", String.valueOf(newAffiliation.isPersistentOccupant()));
 		if (newAffiliation.getRegisteredNickname() != null) {
 			data.put("newNickname", newAffiliation.getRegisteredNickname());
 		}
@@ -456,6 +457,8 @@ public abstract class AbstractClusteredRoomStrategy
 
 		@Inject
 		private InMemoryMucRepositoryClustered mucRepository;
+		@Inject
+		private EventBus eventBus;
 
 		public RoomAffiliationCmd() {
 			super(ROOM_AFFILIATION_CMD, Priority.HIGH);
@@ -480,7 +483,9 @@ public abstract class AbstractClusteredRoomStrategy
 
 			try {
 				Room room = mucRepository.getRoom(roomJid);
+				RoomAffiliation oldAffiliation = room.getAffiliation(from);
 				room.setNewAffiliation(from, newAffiliation);
+				eventBus.fire(new AffiliationChangedEvent(room, from, oldAffiliation, newAffiliation));
 			} catch (RepositoryException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
 			}

@@ -91,6 +91,18 @@ public class RoomClustered<ID>
 	}
 
 	@Override
+	public boolean isOccupantOnline(BareJID jid) {
+		if (!super.isOccupantOnline(jid)) {
+			return this.remoteOccupants.values()
+					.stream()
+					.filter(occupant -> occupant.getOccupantJID().equals(jid))
+					.findAny()
+					.isPresent();
+		}
+		return true;
+	}
+
+	@Override
 	protected Predicate<BareJID> createAvailableFilter() {
 		Set<BareJID> occupants = Stream.concat(getOccupantsBareJids(), remoteOccupants.values()
 				.stream()
