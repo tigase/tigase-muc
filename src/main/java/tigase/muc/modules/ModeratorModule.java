@@ -457,7 +457,7 @@ public class ModeratorModule
 			sendInvitation(room, occupantBareJid, actor);
 		}
 		room.addAffiliationByJid(occupantBareJid,
-								 RoomAffiliation.from(newAffiliation, previousAffiliation.isPersistentOccupant()));
+								 RoomAffiliation.from(newAffiliation, previousAffiliation.isPersistentOccupant(), previousAffiliation.getRegisteredNickname()));
 
 		boolean isUnavailable = false;
 		Set<String> codes = new HashSet<String>();

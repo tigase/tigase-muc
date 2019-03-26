@@ -230,8 +230,8 @@ public class MucDAOOld
 							continue;
 						}
 
-						RoomAffiliation affiliation = RoomAffiliation.valueof(t);
-						affiliations.put(JID.jidInstance(jid).getBareJID(), affiliation);
+						Affiliation affiliation = Affiliation.valueOf(t);
+						affiliations.put(JID.jidInstance(jid).getBareJID(), RoomAffiliation.from(affiliation, false, null));
 					}
 				}
 

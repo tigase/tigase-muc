@@ -17,3 +17,19 @@
 --
 
 --
+
+-- QUERY START:
+CREATE procedure Tig_MUC_UPGRADE()
+	PARAMETER STYLE JAVA
+	LANGUAGE JAVA
+	MODIFIES SQL DATA
+	EXTERNAL NAME 'tigase.muc.repository.derby.StoredProcedures.migrateFromOldSchema';
+-- QUERY END:
+
+-- QUERY START:
+call Tig_MUC_UPGRADE();
+-- QUERY END:
+
+-- QUERY START:
+drop procedure Tig_MUC_UPGRADE;
+-- QUERY END:

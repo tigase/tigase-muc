@@ -49,7 +49,7 @@ public class JDBCMucDAO
 	private static final String GET_ROOM_AFFILIATIONS_QUERY = "{ call Tig_MUC_GetRoomAffiliations(?) }";
 	private static final String GET_ROOM_QUERY = "{ call Tig_MUC_GetRoom(?) }";
 	private static final String GET_ROOMS_JIDS_QUERY = "{ call Tig_MUC_GetRoomsJids() }";
-	private static final String SET_ROOM_AFFILIATION_QUERY = "{ call Tig_MUC_SetRoomAffiliation(?,?,?) }";
+	private static final String SET_ROOM_AFFILIATION_QUERY = "{ call Tig_MUC_SetRoomAffiliation(?,?,?,?,?) }";
 	private static final String SET_ROOM_SUBJECT_QUERY = "{ call Tig_MUC_SetRoomSubject(?,?,?,?) }";
 	private static final String SET_ROOM_CONFIG_QUERY = "{ call Tig_MUC_SetRoomConfig(?,?,?) }";
 	protected DataRepository data_repo;
@@ -124,8 +124,15 @@ public class JDBCMucDAO
 					rs = stmt.executeQuery();
 
 					while (rs.next()) {
-						RoomAffiliation affiliation = RoomAffiliation.valueof(rs.getString(2));
-						affiliations.put(BareJID.bareJIDInstance(rs.getString(1)), affiliation);
+						String affStr = rs.getString(2);
+						boolean persistent = affStr.endsWith("-persistent") || rs.getBoolean(3);
+						if (persistent) {
+							affStr = affStr.substring(0, affStr.length() - "-persistent".length());
+						}
+						Affiliation affiliation = Affiliation.valueOf(affStr);
+
+						RoomAffiliation roomAffiliation = RoomAffiliation.from(affiliation, persistent, rs.getString(4));
+						affiliations.put(BareJID.bareJIDInstance(rs.getString(1)), roomAffiliation);
 					}
 				} finally {
 					data_repo.release(null, rs);
@@ -210,14 +217,15 @@ public class JDBCMucDAO
 			synchronized (stmt) {
 				stmt.setLong(1, room.getId());
 				stmt.setString(2, jid.toString());
-				stmt.setString(3, affiliation.toString());
-
+				stmt.setString(3, affiliation.getAffiliation().name());
+				stmt.setBoolean(4, affiliation.isPersistentOccupant());
+				stmt.setString(5, affiliation.getRegisteredNickname());
 				stmt.execute();
 			}
 		} catch (SQLException ex) {
 			throw new RepositoryException(
 					"Error while setting affiliation for room " + room.getRoomJID() + " for jid " + jid + " to " +
-							affiliation.name(), ex);
+							affiliation.toString(), ex);
 		}
 	}
 

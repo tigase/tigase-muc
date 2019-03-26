@@ -216,7 +216,7 @@ public class PresenceModuleImpl
 																				senderJID.getBareJID(), occupantJIDs,
 																				leavingNickname,
 																				leavingAffiliation.getAffiliation(),
-																				Role.none);
+																				room.getRole(leavingNickname));
 
 					write(presence.packet);
 				}
@@ -514,6 +514,15 @@ public class PresenceModuleImpl
 			throw new MUCException(Authorization.REGISTRATION_REQUIRED);
 		}
 
+		if (room.getOccupantsJidsByNickname(nickname)
+				.stream()
+				.map(JID::getBareJID)
+				.filter(current -> !current.equals(senderJID.getBareJID()))
+				.findAny()
+				.isPresent()) {
+
+			throw new MUCException(Authorization.NOT_ALLOWED, "Nickname already in use.");
+		}
 		// should we ban users from joining under different nickname if user is persistent?
 		// I'm not convinced that we need that for now
 //		if (affiliation.isPersistentOccupant() && !senderJID.getBareJID().equals(nickname)) {
@@ -564,23 +573,7 @@ public class PresenceModuleImpl
 		}
 
 		if ((!affiliation.isPersistentOccupant()) && this.config.isAutomaticallyPersistOccupantOnJoin()) {
-			switch (affiliation.getAffiliation()) {
-				case none:
-					affiliation = RoomAffiliation.memberPersistent;
-					break;
-				case admin:
-					affiliation = RoomAffiliation.adminPersistent;
-					break;
-				case member:
-					affiliation = RoomAffiliation.memberPersistent;
-					break;
-				case outcast:
-					affiliation = RoomAffiliation.outcast;
-					break;
-				case owner:
-					affiliation = RoomAffiliation.ownerPersistent;
-					break;
-			}
+			affiliation = RoomAffiliation.from(affiliation.getAffiliation(), true, affiliation.getRegisteredNickname());
 			try {
 				room.addAffiliationByJid(senderJID.getBareJID(), affiliation);
 			} catch (RepositoryException ex) {
@@ -597,7 +590,7 @@ public class PresenceModuleImpl
 		if (log.isLoggable(Level.FINEST)) {
 			log.finest(
 					"Occupant '" + nickname + "' <" + senderJID.toString() + "> is entering room " + room.getRoomJID() +
-							" as role=" + newRole.name() + ", affiliation=" + affiliation.name());
+							" as role=" + newRole.name() + ", affiliation=" + affiliation.getAffiliation().name());
 		}
 
 		Element pe = clonePresence(element);

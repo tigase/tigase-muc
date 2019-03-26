@@ -100,6 +100,8 @@ public class DiscoveryModule
 
 			resultQuery.addChild(resultIdentity);
 			addFeature(resultQuery, "http://jabber.org/protocol/muc");
+			addFeature(resultQuery, "jabber:iq:register");
+			
 			switch (room.getConfig().getRoomAnonymity()) {
 				case fullanonymous:
 					addFeature(resultQuery, "muc_fullyanonymous");
@@ -150,6 +152,24 @@ public class DiscoveryModule
 			write(packet.okResult(resultQuery, 0));
 		} else if ((node == null) && (requestedJID.getLocalpart() != null) && (requestedJID.getResource() != null)) {
 			write(packet.okResult((Element) null, 0));
+		} else if ("x-roomuser-item".equals(node)) {
+			Room room = repository.getRoom(requestedJID.getBareJID());
+
+			if (room == null) {
+				throw new MUCException(Authorization.ITEM_NOT_FOUND);
+			}
+
+			Element resultQuery = new Element("query", new String[]{"xmlns", "node"},
+											  new String[]{"http://jabber.org/protocol/disco#info", node});
+
+			RoomAffiliation roomAffiliation = room.getAffiliation(senderJID.getBareJID());
+			if (roomAffiliation != null && roomAffiliation.getRegisteredNickname() != null)  {
+				resultQuery.addChild(new Element("identity", new String[]{"category", "name", "type"},
+												 new String[]{"conference", roomAffiliation.getRegisteredNickname(),
+															  "text"}));
+			}
+			
+			write(packet.okResult(resultQuery, 0));
 		} else {
 			throw new MUCException(Authorization.BAD_REQUEST);
 		}

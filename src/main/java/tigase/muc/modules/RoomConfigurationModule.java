@@ -264,7 +264,11 @@ public class RoomConfigurationModule
 					String[] admins = form.getAsStrings("muc#roomconfig_roomadmins");
 					if (admins != null) {
 						for (String admin : admins) {
-							room.addAffiliationByJid(BareJID.bareJIDInstance(admin), RoomAffiliation.admin);
+							BareJID adminJid = BareJID.bareJIDInstance(admin);
+							RoomAffiliation oldRoomAffiliation = room.getAffiliation(adminJid);
+							room.addAffiliationByJid(adminJid, RoomAffiliation.from(Affiliation.admin,
+																					oldRoomAffiliation.isPersistentOccupant(),
+																					oldRoomAffiliation.getRegisteredNickname()));
 						}
 					}
 

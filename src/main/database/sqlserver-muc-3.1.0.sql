@@ -17,3 +17,74 @@
 --
 
 --
+
+-- QUERY START:
+if not exists (select 1 from sys.columns where object_id = object_id('dbo.tig_muc_room_affiliations') and name = 'persistent')
+begin
+    alter table tig_muc_room_affiliations add persistent int not null default 0;
+end
+-- QUERY END:
+GO
+
+-- QUERY START:
+if not exists (select 1 from sys.columns where object_id = object_id('dbo.tig_muc_room_affiliations') and name = 'nickname')
+begin
+    alter table tig_muc_room_affiliations add nickname nvarchar(1024);
+end
+-- QUERY END:
+GO
+
+
+-- QUERY START:
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MUC_GetRoomAffiliations')
+	DROP PROCEDURE Tig_MUC_GetRoomAffiliations
+-- QUERY END:
+GO
+
+-- QUERY START:
+CREATE PROCEDURE dbo.Tig_MUC_GetRoomAffiliations
+    @_roomId [bigint]
+AS
+BEGIN
+    SELECT jid, affiliation, [persistent], nickname FROM dbo.tig_muc_room_affiliations WHERE room_id = @_roomId;
+END
+-- QUERY END:
+GO
+
+-- QUERY START:
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MUC_SetRoomAffiliation')
+	DROP PROCEDURE Tig_MUC_SetRoomAffiliation
+-- QUERY END:
+GO
+
+-- QUERY START:
+CREATE PROCEDURE dbo.Tig_MUC_SetRoomAffiliation
+    @_roomId [bigint],
+    @_jid [nvarchar](2049),
+    @_affiliation [nvarchar](20),
+    @_persistent [int],
+    @_nickname [nvarchar](1024)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @_jidSha1 [varbinary](40);
+
+    SET @_jidSha1 = HASHBYTES('SHA1', LOWER( @_jid ) )
+
+    IF EXISTS (SELECT 1 FROM dbo.tig_muc_room_affiliations WHERE room_id = @_roomId and jid_sha1 = @_jidSha1)
+    BEGIN
+        IF @_affiliation <> 'none'
+            UPDATE dbo.tig_muc_room_affiliations SET affiliation = @_affiliation, [persistent] = @_persistent, nickname = @_nickname WHERE room_id = @_roomId and jid_sha1 = @_jidSha1;
+        ELSE
+            DELETE dbo.tig_muc_room_affiliations WHERE room_id = @_roomId and jid_sha1 = @_jidSha1;
+    END
+    ELSE
+    BEGIN
+        IF @_affiliation <> 'none'
+            INSERT INTO dbo.tig_muc_room_affiliations (room_id, jid, jid_sha1, affiliation, [persistent], nickname)
+                VALUES (@_roomId, @_jid, @_jidSha1, @_affiliation, @_persistent, @_nickname);
+    END
+    SET NOCOUNT OFF;
+END
+-- QUERY END:
+GO

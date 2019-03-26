@@ -35,7 +35,7 @@ public class JDBCMucDAOTest
 		extends AbstractMucDAOTest<DataRepository> {
 
 	private static final String PROJECT_ID = "muc";
-	private static final String VERSION = "3.0.0";
+	private static final String VERSION = "3.1.0-SNAPSHOT";
 
 	@ClassRule
 	public static TestRule rule = new TestRule() {

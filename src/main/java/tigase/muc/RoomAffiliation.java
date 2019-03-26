@@ -20,21 +20,61 @@ package tigase.muc;
 /**
  * @author andrzej
  */
-public enum RoomAffiliation {
-	admin(Affiliation.admin, false),
-	adminPersistent(Affiliation.admin, true),
-	member(Affiliation.member, false),
-	memberPersistent(Affiliation.member, true),
-	none(Affiliation.none, false),
-	outcast(Affiliation.none, false),
-	owner(Affiliation.owner, false),
-	ownerPersistent(Affiliation.owner, true);
+public class RoomAffiliation {
+
+	public static final RoomAffiliation none = new RoomAffiliation(Affiliation.none, false, null);
+	public static final RoomAffiliation outcast = new RoomAffiliation(Affiliation.outcast, false, null);
+	public static final RoomAffiliation member = new RoomAffiliation(Affiliation.member, false, null);
+	public static final RoomAffiliation admin = new RoomAffiliation(Affiliation.admin, false, null);
+	public static final RoomAffiliation owner = new RoomAffiliation(Affiliation.owner, false, null);
+
+	public static final RoomAffiliation memberPersistent = new RoomAffiliation(Affiliation.member, true, null);
+	public static final RoomAffiliation adminPersistent = new RoomAffiliation(Affiliation.admin, true, null);
+	public static final RoomAffiliation ownerPersistent = new RoomAffiliation(Affiliation.owner, true, null);
+
+
+	public static RoomAffiliation from(Affiliation affiliation, boolean persistentOccupant, String nickname) {
+		if (nickname != null) {
+			return new RoomAffiliation(affiliation, persistentOccupant, nickname);
+		} else {
+			if (persistentOccupant) {
+				switch (affiliation) {
+					case admin:
+						return RoomAffiliation.adminPersistent;
+					case member:
+						return RoomAffiliation.memberPersistent;
+					case owner:
+						return RoomAffiliation.ownerPersistent;
+					case none:
+						return RoomAffiliation.none;
+					case outcast:
+						return RoomAffiliation.outcast;
+				}
+			} else {
+				switch (affiliation) {
+					case admin:
+						return RoomAffiliation.admin;
+					case member:
+						return RoomAffiliation.member;
+					case none:
+						return RoomAffiliation.none;
+					case outcast:
+						return RoomAffiliation.outcast;
+					case owner:
+						return RoomAffiliation.owner;
+				}
+			}
+			throw new IllegalArgumentException();
+		}
+	}
 
 	private final Affiliation affiliation;
+	private final String nickname;
 	private final boolean persistentOccupant;
 
-	private RoomAffiliation(Affiliation affiliation, boolean persistentOccupant) {
+	private RoomAffiliation(Affiliation affiliation, boolean persistentOccupant, String nickname) {
 		this.affiliation = affiliation;
+		this.nickname = nickname;
 		this.persistentOccupant = persistentOccupant;
 	}
 	
@@ -46,70 +86,77 @@ public enum RoomAffiliation {
 		return persistentOccupant;
 	}
 
-	public static RoomAffiliation from(Affiliation affiliation, boolean persistentOccupant) {
-		if (persistentOccupant) {
-			switch (affiliation) {
-				case admin:
-					return RoomAffiliation.adminPersistent;
-				case member:
-					return RoomAffiliation.memberPersistent;
-				case owner:
-					return RoomAffiliation.ownerPersistent;
-				case none:
-					return RoomAffiliation.none;
-				case outcast:
-					return RoomAffiliation.outcast;
-			}
-		} else {
-			switch (affiliation) {
-				case admin:
-					return RoomAffiliation.admin;
-				case member:
-					return RoomAffiliation.member;
-				case none:
-					return RoomAffiliation.none;
-				case outcast:
-					return RoomAffiliation.outcast;
-				case owner:
-					return RoomAffiliation.owner;
-			}
-		}
-		throw new IllegalArgumentException();
+	public String getRegisteredNickname() {
+		return nickname;
 	}
 
-	public static RoomAffiliation valueof(String name) {
-		if (name != null && name.endsWith("-persistent")) {
-			Affiliation type = Affiliation.valueOf(name.substring(0, name.length() - "-persistent".length()));
-			switch (type) {
-				case admin:
-					return RoomAffiliation.adminPersistent;
-				case member:
-					return RoomAffiliation.memberPersistent;
-				case owner:
-					return RoomAffiliation.ownerPersistent;
-			}
-		} else {
-			switch (Affiliation.valueOf(name)) {
-				case admin:
-					return RoomAffiliation.admin;
-				case member:
-					return RoomAffiliation.member;
-				case none:
-					return RoomAffiliation.none;
-				case outcast:
-					return RoomAffiliation.outcast;
-				case owner:
-					return RoomAffiliation.owner;
-			}
-		}
-		throw new IllegalArgumentException();
-	}
+//	public static RoomAffiliation from(Affiliation affiliation, boolean persistentOccupant) {
+//		if (persistentOccupant) {
+//			switch (affiliation) {
+//				case admin:
+//					return RoomAffiliation.adminPersistent;
+//				case member:
+//					return RoomAffiliation.memberPersistent;
+//				case owner:
+//					return RoomAffiliation.ownerPersistent;
+//				case none:
+//					return RoomAffiliation.none;
+//				case outcast:
+//					return RoomAffiliation.outcast;
+//			}
+//		} else {
+//			switch (affiliation) {
+//				case admin:
+//					return RoomAffiliation.admin;
+//				case member:
+//					return RoomAffiliation.member;
+//				case none:
+//					return RoomAffiliation.none;
+//				case outcast:
+//					return RoomAffiliation.outcast;
+//				case owner:
+//					return RoomAffiliation.owner;
+//			}
+//		}
+//		throw new IllegalArgumentException();
+//	}
+//
+//	public static RoomAffiliation valueof(String name) {
+//		if (name != null && name.endsWith("-persistent")) {
+//			Affiliation type = Affiliation.valueOf(name.substring(0, name.length() - "-persistent".length()));
+//			switch (type) {
+//				case admin:
+//					return RoomAffiliation.adminPersistent;
+//				case member:
+//					return RoomAffiliation.memberPersistent;
+//				case owner:
+//					return RoomAffiliation.ownerPersistent;
+//			}
+//		} else {
+//			switch (Affiliation.valueOf(name)) {
+//				case admin:
+//					return RoomAffiliation.admin;
+//				case member:
+//					return RoomAffiliation.member;
+//				case none:
+//					return RoomAffiliation.none;
+//				case outcast:
+//					return RoomAffiliation.outcast;
+//				case owner:
+//					return RoomAffiliation.owner;
+//			}
+//		}
+//		throw new IllegalArgumentException();
+//	}
 
+//	public String toString() {
+//		if (!isPersistentOccupant()) {
+//			return affiliation.name();
+//		} else {
+//			return affiliation.name() + "-persistent";
+//		}
+//	}
 	public String toString() {
-		if (!isPersistentOccupant()) {
-			return affiliation.name();
-		} else {
-			return affiliation.name() + "-persistent";
-		}
+		return "[aff: " + affiliation.name() + ",persistent: " + persistentOccupant + ",nickname: " + nickname + "]";
 	}
 }
