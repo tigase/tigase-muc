@@ -232,7 +232,11 @@ public abstract class AbstractClusteredRoomStrategy
 		Map<String, String> data = new HashMap<String, String>();
 		data.put("room", room.getRoomJID().toString());
 		data.put("userId", jid.toString());
-		data.put("newAffiliation", newAffiliation.toString());
+		data.put("newAffiliation", newAffiliation.getAffiliation().name());
+		data.put("newPersistent", newAffiliation.getAffiliation().name());
+		if (newAffiliation.getRegisteredNickname() != null) {
+			data.put("newNickname", newAffiliation.getRegisteredNickname());
+		}
 
 		if (log.isLoggable(Level.FINEST)) {
 			StringBuilder buf = new StringBuilder(100);
@@ -463,7 +467,11 @@ public abstract class AbstractClusteredRoomStrategy
 
 			BareJID roomJid = BareJID.bareJIDInstanceNS(data.get("room"));
 			BareJID from = BareJID.bareJIDInstanceNS(data.get("userId"));
-			RoomAffiliation newAffiliation = RoomAffiliation.valueof(data.get("newAffiliation"));
+			Affiliation affiliation = Affiliation.valueOf(data.get("newAffiliation"));
+			boolean persistent = Boolean.valueOf(data.get("newPersistent"));
+			String nickname = data.get("newNickname");
+
+			RoomAffiliation newAffiliation = RoomAffiliation.from(affiliation, persistent, nickname);
 			if (log.isLoggable(Level.FINEST)) {
 				log.log(Level.FINEST,
 						"executig RoomAffiliationCmd command for room = {0}, from = {1}, newAffiliation: {2}",

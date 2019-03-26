@@ -135,7 +135,7 @@ public class RoomClustered<ID>
 		if (affil == RoomAffiliation.none) {
 			Occupant occupant = remoteOccupants.get(nickname);
 			if (occupant != null) {
-				affil = RoomAffiliation.from(occupant.getAffiliation(), false);
+				affil = RoomAffiliation.from(occupant.getAffiliation(), false, null);
 			}
 		}
 		return affil;
