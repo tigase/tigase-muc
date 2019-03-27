@@ -19,6 +19,7 @@ package tigase.admin
 
 import groovy.transform.CompileStatic
 import tigase.kernel.core.Kernel
+import tigase.muc.Affiliation
 import tigase.muc.MUCComponent
 import tigase.muc.Room
 import tigase.muc.RoomAffiliation
@@ -27,6 +28,7 @@ import tigase.server.Command
 import tigase.server.Iq
 import tigase.server.Packet
 import tigase.xmpp.jid.BareJID
+
 // AS:Description: Add persistent room occupant
 // AS:CommandId: room-occupant-persistent-add
 // AS:Component: muc
@@ -73,13 +75,15 @@ Packet process(Kernel kernel, MUCComponent component, Iq p, Set admins) {
 
 			BareJID occupant = BareJID.bareJIDInstance(occupantStr);
 			RoomAffiliation oldAffiliation = room.getAffiliation(occupant);
-			if (oldAffiliation == RoomAffiliation.none || oldAffiliation == RoomAffiliation.outcast || oldAffiliation ==
-					RoomAffiliation.member) {
-				room.addAffiliationByJid(occupant, RoomAffiliation.memberPersistent);
-			} else if (oldAffiliation == RoomAffiliation.admin) {
-				room.addAffiliationByJid(occupant, RoomAffiliation.memberPersistent);
-			} else if (oldAffiliation == RoomAffiliation.owner) {
-				room.addAffiliationByJid(occupant, RoomAffiliation.ownerPersistent);
+			switch (oldAffiliation.getAffiliation()) {
+				case Affiliation.none:
+				case Affiliation.outcast:
+					room.addAffiliationByJid(occupant, RoomAffiliation.memberPersistent);
+					break;
+				default:
+					room.addAffiliationByJid(occupant,
+											 RoomAffiliation.from(oldAffiliation.getAffiliation(), true, null));
+					break;
 			}
 
 			Command.addTextField(result, "Note", "Operation successful");

@@ -740,7 +740,7 @@ public class PresenceModuleImpl
 		}
 	}
 
-	protected void sendPresenceToAllOccupants(Room room, JID senderJID, boolean newRoomCreated, String newNickName)
+	protected Element sendPresenceToAllOccupants(Room room, JID senderJID, boolean newRoomCreated, String newNickName)
 			throws TigaseStringprepException {
 		Element presence;
 
@@ -756,6 +756,7 @@ public class PresenceModuleImpl
 		if (presence != null) {
 			sendPresenceToAllOccupants(presence, room, senderJID, newRoomCreated, newNickName);
 		}
+		return presence;
 	}
 
 	private Integer toInteger(String v, Integer defaultValue) throws NumberFormatException {
