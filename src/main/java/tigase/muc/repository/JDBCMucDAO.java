@@ -219,7 +219,11 @@ public class JDBCMucDAO
 				stmt.setLong(1, room.getId());
 				stmt.setString(2, jid.toString());
 				stmt.setString(3, affiliation.getAffiliation().name());
-				stmt.setBoolean(4, affiliation.isPersistentOccupant());
+				if (data_repo.getDatabaseType() == DataRepository.dbTypes.postgresql) {
+					stmt.setInt(3, affiliation.isPersistentOccupant() ? 1 : 0);
+				} else {
+					stmt.setBoolean(4, affiliation.isPersistentOccupant());
+				}
 				stmt.setString(5, affiliation.getRegisteredNickname());
 				stmt.execute();
 			}
