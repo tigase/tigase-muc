@@ -68,6 +68,13 @@ public class ModeratorModuleTest {
 	}
 
 	@Test(expected = MUCException.class)
+	public void checkModifyVoiceItemRoleWithoutNickAndWithAffiliation() throws Exception {
+		final Element item1 = new Element("item", new String[]{"role", "affiliation"},
+										  new String[]{Role.none.toString(), Affiliation.owner.toString()});
+		moderatorModule.checkItem(room, item1, admin, Affiliation.admin, Role.moderator);
+	}
+
+	@Test(expected = MUCException.class)
 	public void checkModifyVoiceItemRoleOnly() throws Exception {
 		final Element item1 = new Element("item", new String[]{"role"}, new String[]{Role.participant.toString()});
 		moderatorModule.checkItem(room, item1, admin, Affiliation.admin, Role.moderator);
