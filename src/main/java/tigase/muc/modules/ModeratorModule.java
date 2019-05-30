@@ -215,9 +215,9 @@ public class ModeratorModule
 		final String nick = item.getAttributeStaticStr("nick");
 		final String jid = item.getAttributeStaticStr("jid");
 
-		if (newRole != null && nick != null) {
+		if (newRole != null && nick != null && newAffiliation == null) {
 			occupantNicknames.add(nick);
-		} else if (newAffiliation != null && jid != null) {
+		} else if (newAffiliation != null && jid != null && newRole == null) {
 			occupantNicknames.addAll(room.getOccupantsNicknames(BareJID.bareJIDInstance(jid)));
 		} else {
 			throw new MUCException(Authorization.BAD_REQUEST);
