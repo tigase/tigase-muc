@@ -92,6 +92,12 @@
             <artifactId>tigase-server</artifactId>
             <version>7.1.0</version>
             <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>tigase</groupId>
+                    <artifactId>tigase-projects-parent</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
