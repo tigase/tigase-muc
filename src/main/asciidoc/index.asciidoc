@@ -1,0 +1,7 @@
+= Tigase Advanced Clustering Strategy for Multi User Chat (ACS-MUC)
+Tigase Team <team@tigase.com>
+v{revnumber}, {localdate}
+:numbered:
+
+include::text/ACS_MUC_overview.asciidoc[leveloffset=+1]
+include::text/ACS_MUC_strategies.asciidoc[leveloffset=+1]

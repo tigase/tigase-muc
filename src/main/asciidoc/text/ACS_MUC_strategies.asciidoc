@@ -1,0 +1,103 @@
+[[ACS_MUC_Strategies]]
+= ACS MUC Strategies
+
+== ShardingStrategy
+
+This is default clustering strategy used by Tigase ACS - MUC component. It should be used in most cases when we do not have small number of rooms with many occupants.
+
+=== Short description
+
+This is default clustering strategy used by Tigase ACS - MUC component. In this strategy MUC rooms are partitioned so each room is hosted only on one node. Every node contains full list of rooms with list of occupants available in each room and map which contains room address as a key and node as a value. If room is already opened (hosted) on some node, then node hosting this room is resolved using map of room to node. In other case node is selected by hash of room address using following algorithm 
+
+[source,java]
+----
+Math.abs(roomJid.hashCode()) % connectedNodes.size()
+----
+
+which gives a index of node on connected nodes list. So if node is not opened, then every cluster node should forward packets related to this room to the same node.
+
+
+=== Connection to cluster
+
+Once node connects to a cluster then map of hosted rooms and it's occupants is synchronized between connecting node and any other already connected node.
+
+
+=== Disconnection from cluster
+
+If node is disconnected from a cluster due to server failure, then every other node will send "kick" stanzas to every occupant of every room hosted on disconnected node.
+
+If node is disconnected due to node shutdown then node which is shutting down will send "kick" stanzas on it's own, but it will notify every node about shutdown before disconnection from cluster.
+
+=== Configuration
+
+This is default strategy thus it's used if no strategy configuration is present, but if you wish to enable this strategy and keep it enabled even if deafult clustering strategy will change in the future then you need to set `class` property of `strategy` bean within `muc` component to `tigase.muc.cluster.ShardingStrategy`.
+
+Example:
+
+[source,java]
+----
+muc () {
+    strategy (class: tigase.muc.cluster.ShardingStrategy) {}
+}
+----
+
+
+== ClusteredRoomStrategy
+
+This is clustering strategy which can be used for by Tigase ACS - MUC component, which is recommended for installations with relatively few rooms but rooms itself having a lot of occupants.
+
+=== Short description
+
+In this strategy MUC rooms are persistent and each room is hosted on every node. Every node contains full list of rooms (as they are persistent). Room on each node has knowledge only about occupants which joined room on this node. If remote user has joined room on one node and then it's packets are delivered by S2S to other node, then packets will be forwarded to node to on which user joined room. Packets from user are processed by node on which they joined to room and notifications about joining room, leaving room, change of presences or about new message are sent to all other nodes and those other nodes are responsible for delivering proper notifications to users which joined room on them.
+
+=== Connection to cluster
+
+Once node connects to a cluster then map of occupants and their rooms are synchronized with other nodes.
+
+=== Disconnection from cluster
+
+If node is disconnected from a cluster, then every other node will send "kick" stanzas to every occupant of every room hosted on disconnected node.
+
+=== Configuration
+
+To enable this strategy you have to set `class` property of `strategy` bean within `muc` component to `tigase.muc.cluster.ClusteredRoomStrategy`.
+
+Example:
+
+[source,java]
+----
+muc () {
+    strategy (class: tigase.muc.cluster.ClusteredRoomStrategy) {}
+}
+----
+
+== ClusteredRoomStrategyV2
+
+This is clustering strategy which can be used for by Tigase ACS - MUC component, which is recommended for installations with relatively few rooms but rooms itself having a lot of occupants - contains improvements over ClusteredRoomStrategy
+
+=== Short description
+
+In this strategy MUC rooms are persistent and each room is hosted on every node. Every node contains full list of rooms (as they are persistent). Room on each node has knowledge only about occupants which joined room on this node. If remote user has joined room on one node and then it's packets are delivered by S2S to other node, then packets will be forwarded to node to on which user joined room. Packets from user are processed by node on which they joined to room and notifications about joining room, leaving room, change of presences or about new message are sent to all other nodes and those other nodes are responsible for delivering proper notifications to users which joined room on them.
+
+This version contains improvements over <<ClusteredRoomStrategy>> which leads to improved performance and reduced trafic over cluster connection due to changes in logic of processing packets.
+
+=== Connection to cluster
+
+Once node connects to a cluster then map of occupants and their rooms are synchronized with other nodes.
+
+=== Disconnection from cluster
+
+If node is disconnected from a cluster, then every other node will send "kick" stanzas to every occupant of every room hosted on disconnected node.
+
+=== Configuration
+
+To enable this strategy you have to set `class` property of `strategy` bean within `muc` component to `tigase.muc.cluster.ClusteredRoomStrategyV2`.
+
+Example:
+
+[source,java]
+----
+muc () {
+    strategy (class: tigase.muc.cluster.ClusteredRoomStrategyV2) {}
+}
+----

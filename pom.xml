@@ -70,8 +70,72 @@
                 </property>
             </activation>
             <properties>
-                <maven.javadoc.skip>true</maven.javadoc.skip>
+                <guide_name>Tigase_ACS-MUC</guide_name>
             </properties>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.asciidoctor</groupId>
+                        <artifactId>asciidoctor-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>output-html</id>
+                                <phase>generate-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>output-docbook</id>
+                                <phase>generate-resources</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>com.agilejava.docbkx</groupId>
+                        <artifactId>docbkx-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>generate-webhelp</id>
+                                <phase>generate-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>generate-pdf</id>
+                                <phase>generate-resources</phase>
+                            </execution>
+                            <execution>
+                                <id>generate-html</id>
+                                <phase>generate-resources</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>tigase-resources</id>
+                                <phase>validate</phase>
+                                <goals>
+                                    <goal>unpack</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>licence-lib</artifactId>
+                                            <type>jar</type>
+                                            <overWrite>false</overWrite>
+                                            <outputDirectory>${project.basedir}/target/tigase/</outputDirectory>
+                                            <includes>**/*.groovy</includes>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 

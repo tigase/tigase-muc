@@ -1,0 +1,26 @@
+= Overview
+
+ACS for MUC allows seamless clustering of MUC rooms across Tigase XMPP server cluster installation. ACS for MUC is required for clustered MUC deployments.
+If offers various strategies to handle distribution of traffic and rooms across the cluster, which allows fine-tune configuration of the deployment to individual needs.
+
+= Tigase ACS MUC Configuration
+
+In order to use ACS for MUC, main Advance Clustering Strategy is required. Once it's enabled, clustered version of MUC component will be selected by default during startup therefore it's not required to configure it explicitly (make sure no class is configured).
+[source,bash]
+----
+muc () {}
+----
+
+It's also possible to explicitly configure the class with the following configuration:
+[source,bash]
+----
+muc (class: tigase.muc.cluster.MUCComponentClustered) {}
+----
+
+With the above configuration default MUC clustering strategy will be used. In order to select different strategy you have to configure it's class in `strategy` bean within `muc` component bean:
+[source,bash]
+----
+muc () {
+    strategy (class: tigase.muc.cluster.ShardingStrategy) {}
+}
+----
