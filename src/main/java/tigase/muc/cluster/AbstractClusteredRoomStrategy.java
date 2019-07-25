@@ -483,9 +483,14 @@ public abstract class AbstractClusteredRoomStrategy
 
 			try {
 				Room room = mucRepository.getRoom(roomJid);
-				RoomAffiliation oldAffiliation = room.getAffiliation(from);
-				room.setNewAffiliation(from, newAffiliation);
-				eventBus.fire(new AffiliationChangedEvent(room, from, oldAffiliation, newAffiliation));
+
+				// In some cases room may be already destroyed or not yet created on this node
+				// In both cases there is no point in sending this event if the room does not exist
+				if (room != null) {
+					RoomAffiliation oldAffiliation = room.getAffiliation(from);
+					room.setNewAffiliation(from, newAffiliation);
+					eventBus.fire(new AffiliationChangedEvent(room, from, oldAffiliation, newAffiliation));
+				}
 			} catch (RepositoryException ex) {
 				Logger.getLogger(AbstractClusteredRoomStrategy.class.getName()).log(Level.SEVERE, null, ex);
 			}
