@@ -2,14 +2,14 @@
 = Offline users
 :author: Bartosz Małkowski
 
-If user affiliation is marked as persistent, MUC delivers presence to occupants in name of offline user.
+If user affiliation is marked as persistent (which can be done using admin ad-hoc commands), MUC delivers presence to occupants in name of offline user.
 MUC generates presence with `extended away` info:
 
 [source,xml]
 ----
 <presence from="…" to="…">
     <show>xa</show>
-</presence
+</presence>
 ----
 
 This presence is sent to occupants, when user goes offline and when persistent occupant is added to room (but he is offline).
