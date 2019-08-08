@@ -116,18 +116,34 @@ public class RegisterModule extends AbstractMucModule {
 
 		Element queryEl = packet.getElement().getChild(QUERY_NAME, REGISTER_XMLNS);
 		if (queryEl.getChild("remove") != null) {
-			room.addAffiliationByJid(sender.getBareJID(), RoomAffiliation.none);
-		} else {
-			String nickname = DataForm.getFieldValue(queryEl, NICKNAME_FIELD_NAME);
-			String currentNickname = room.getOccupantsNickname(packet.getStanzaFrom());
-			if (currentNickname == null || !currentNickname.equals(nickname)) {
-				throw new MUCException(Authorization.NOT_ACCEPTABLE,
-									   "You may only register a nickname which you are using now.");
+			RoomAffiliation roomAffiliation = room.getAffiliation(packet.getStanzaFrom().getBareJID());
+			if (roomAffiliation != null) {
+				Affiliation affiliation = roomAffiliation.getAffiliation();
+				room.addAffiliationByJid(sender.getBareJID(), RoomAffiliation.from(affiliation, false, null));
+			} else {
+				room.addAffiliationByJid(sender.getBareJID(), RoomAffiliation.none);
 			}
+		} else {
+			String nickname = Optional.ofNullable(DataForm.getFieldValue(queryEl, NICKNAME_FIELD_NAME))
+					.map(String::trim)
+					.filter(s -> !s.isEmpty())
+					.orElse(null);
+			String currentNickname = room.getOccupantsNickname(packet.getStanzaFrom());
 			boolean offline = Optional.ofNullable(DataForm.getFieldValue(queryEl, OFFLINE_FIELD_NAME))
 					.map(String::trim)
 					.map(str -> "1".equals(str) || "true".equals(str))
 					.orElse(false);
+
+			if (nickname != null) {
+				if (currentNickname == null || !currentNickname.equals(nickname)) {
+					throw new MUCException(Authorization.NOT_ACCEPTABLE,
+										   "You may only register a nickname which you are using now.");
+				}
+			}
+			if (offline && nickname == null) {
+				throw new MUCException(Authorization.NOT_ACCEPTABLE,
+									   "You need to register a nickname to enable push notifications.");
+			}
 
 			RoomAffiliation roomAffiliation = room.getAffiliation(packet.getStanzaFrom().getBareJID());
 			boolean changed = roomAffiliation.isPersistentOccupant() != offline;

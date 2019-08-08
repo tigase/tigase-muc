@@ -77,7 +77,7 @@ begin
 
     if exists( select 1 from tig_muc_room_affiliations where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) ) ) then
         if _affiliation <> 'none' then
-            update tig_muc_room_affiliations set affiliation = _affiliation, persistent = _persistent, nicknane = _nickanme where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) );
+            update tig_muc_room_affiliations set affiliation = _affiliation, persistent = _persistent, nickname = _nickname where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) );
         else
             delete from tig_muc_room_affiliations where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) );
         end if;
