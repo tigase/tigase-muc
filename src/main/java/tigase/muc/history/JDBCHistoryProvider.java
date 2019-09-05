@@ -96,7 +96,11 @@ public class JDBCHistoryProvider extends AbstractHistoryProvider<DataRepository>
 				st.executeUpdate();
 			}
 		} catch (SQLException e) {
-			log.log(Level.WARNING, "Can't add MUC message to database", e);
+			if (e.getErrorCode() == 1366 || e.getMessage() != null && e.getMessage().startsWith("Incorrect string value")) {
+				log.log(Level.WARNING, "Your MySQL configuration can't handle extended Unicode (for example emoji) correctly. Please refer to <Support for emoji and other icons> section of the server documentation");
+			} else {
+				log.log(Level.WARNING, "Can't add MUC message to database", e);
+			}
 			throw new RuntimeException(e);
 		} finally {
 			data_repo.release(null, null);
