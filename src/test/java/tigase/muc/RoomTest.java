@@ -20,7 +20,10 @@ package tigase.muc;
 import org.junit.Assert;
 import org.junit.Before;
 import tigase.component.DSLBeanConfigurator;
+import tigase.component.PacketWriter;
 import tigase.component.exceptions.RepositoryException;
+import tigase.component.responses.AsyncCallback;
+import tigase.component.responses.ResponseManager;
 import tigase.conf.ConfigWriter;
 import tigase.conf.ConfigurationException;
 import tigase.db.beans.DataSourceBean;
@@ -28,7 +31,6 @@ import tigase.eventbus.EventBusFactory;
 import tigase.kernel.DefaultTypesConverter;
 import tigase.kernel.beans.config.AbstractBeanConfigurator;
 import tigase.kernel.core.Kernel;
-import tigase.muc.utils.ArrayWriter;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
 import tigase.test.junit.XMPPTestCase;
@@ -38,6 +40,7 @@ import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,7 +51,7 @@ import java.util.Map;
 public class RoomTest
 		extends XMPPTestCase {
 
-	private TestMUCCompoent pubsub;
+	private TestMUCCompoent muc;
 	private JUnitXMLIO xmlio;
 
 	@Before
@@ -70,9 +73,12 @@ public class RoomTest
 		kernel.registerBean("dataSourceBean").asClass(DataSourceBean.class).exportable().exec();
 		kernel.registerBean("mucRepository").asInstance(new MockMucRepository()).exportable().exec();
 
-		final ArrayWriter writer = new ArrayWriter();
 		kernel.registerBean("muc").asClass(TestMUCCompoent.class).exec();
-		this.pubsub = kernel.getInstance(TestMUCCompoent.class);
+		this.muc = kernel.getInstance(TestMUCCompoent.class);
+
+		ResponseManager rm = ((Kernel) kernel.getInstance("muc#KERNEL")).getInstance(ResponseManager.class);
+
+		final ArrayWriter writer = new ArrayWriter(rm);
 		((Kernel) kernel.getInstance("muc#KERNEL")).registerBean("writer").asInstance(writer).exec();
 
 		xmlio = new JUnitXMLIO() {
@@ -95,7 +101,7 @@ public class RoomTest
 					writer.clear();
 					Packet p = Packet.packetInstance(data);
 					p.setXMLNS(Packet.CLIENT_XMLNS);
-					pubsub.processPacket(p);
+					muc.processPacket(p);
 					send(writer.getElements());
 				} catch (TigaseStringprepException e) {
 					e.printStackTrace();
@@ -109,7 +115,7 @@ public class RoomTest
 	public void test_destroyRoom() {
 		test("src/test/scripts/destroying-room.cor", xmlio);
 		try {
-			Room room = pubsub.getMucRepository().getRoom(BareJID.bareJIDInstance("darkcave@macbeth.shakespeare.lit"));
+			Room room = muc.getMucRepository().getRoom(BareJID.bareJIDInstance("darkcave@macbeth.shakespeare.lit"));
 			Assert.assertNull("Room should be destroyed", room);
 		} catch (Exception e) {
 			Assert.fail(e.getMessage());
@@ -124,6 +130,11 @@ public class RoomTest
 	@org.junit.Test
 	public void test_ghostUser() {
 		test("src/test/scripts/ghostUser.cor", xmlio);
+	}
+
+	@org.junit.Test
+	public void test_mucSelfPing() {
+		test("src/test/scripts/selfPing.cor", xmlio);
 	}
 
 	@org.junit.Test
@@ -165,7 +176,7 @@ public class RoomTest
 	public void test_nonpersistentRoomProblem() {
 		test("src/test/scripts/nonpersistent-room-problem.cor", xmlio);
 		try {
-			Room room = pubsub.getMucRepository().getRoom(BareJID.bareJIDInstance("darkcave@macbeth.shakespeare.lit"));
+			Room room = muc.getMucRepository().getRoom(BareJID.bareJIDInstance("darkcave@macbeth.shakespeare.lit"));
 			Assert.assertNull("Room should be destroyed", room);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -186,7 +197,7 @@ public class RoomTest
 	@org.junit.Test
 	public void test_presences2_exiting() throws Exception {
 		test("src/test/scripts/processPresence2-exiting.cor", xmlio);
-		Room room = pubsub.getMucRepository().getRoom(BareJID.bareJIDInstanceNS("darkcave@macbeth.shakespeare.lit"));
+		Room room = muc.getMucRepository().getRoom(BareJID.bareJIDInstanceNS("darkcave@macbeth.shakespeare.lit"));
 		Assert.assertNotNull(room);
 
 		Collection<String> nicknames = room.getOccupantsNicknames(false);
@@ -209,5 +220,43 @@ public class RoomTest
 	@org.junit.Test
 	public void test_room_config() {
 		test("src/test/scripts/room-configuration.cor", xmlio);
+	}
+
+	static class ArrayWriter
+			implements PacketWriter {
+
+		private final ArrayList<Element> elements = new ArrayList<Element>();
+		private final ResponseManager responseManager;
+
+		public ArrayWriter(ResponseManager responseManager) {
+			this.responseManager = responseManager;
+		}
+
+		public void clear() {
+			elements.clear();
+		}
+
+		public ArrayList<Element> getElements() {
+			return elements;
+		}
+
+		@Override
+		public void write(Collection<Packet> elements) {
+			for (Packet packet : elements) {
+				this.elements.add(packet.getElement());
+			}
+		}
+
+		@Override
+		public void write(Packet element) {
+			this.elements.add(element.getElement());
+		}
+
+		@Override
+		public void write(Packet packet, AsyncCallback callback) {
+			responseManager.registerResponseHandler(packet, ResponseManager.DEFAULT_TIMEOUT, callback);
+			write(packet);
+		}
+
 	}
 }

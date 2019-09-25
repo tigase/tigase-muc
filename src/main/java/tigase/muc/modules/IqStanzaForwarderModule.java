@@ -18,6 +18,7 @@
 package tigase.muc.modules;
 
 import tigase.component.exceptions.ComponentException;
+import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
@@ -43,7 +44,8 @@ public class IqStanzaForwarderModule
 		extends AbstractMucModule {
 
 	public static final String ID = "iqforwarder";
-
+	@Inject
+	private IMucRepository repository;
 	private final Criteria crit = new Criteria() {
 
 		@Override
@@ -56,9 +58,6 @@ public class IqStanzaForwarderModule
 			return checkIfProcessed(element);
 		}
 	};
-
-	@Inject
-	private IMucRepository repository;
 
 	@Override
 	public String[] getFeatures() {
@@ -146,8 +145,27 @@ public class IqStanzaForwarderModule
 			return false;
 		}
 		try {
-			return getNicknameFromJid(JID.jidInstance(element.getAttributeStaticStr("to"))) != null;
+			final String recipientNickname = getNicknameFromJid(JID.jidInstance(element.getAttributeStaticStr("to")));
+			if (recipientNickname == null) {
+				return false;
+			}
+			final JID senderJID = JID.jidInstance(element.getAttributeStaticStr("from"));
+			final BareJID roomJID = BareJID.bareJIDInstance(element.getAttributeStaticStr("to"));
+			final Room room = repository.getRoom(roomJID);
+			if (room == null) {
+				return false;
+			}
+			final String senderNickname = room.getOccupantsNickname(senderJID);
+			if (senderNickname == null) {
+				return false;
+			}
+
+			return !recipientNickname.equals(senderNickname);
 		} catch (TigaseStringprepException e) {
+			return false;
+		} catch (RepositoryException e) {
+			return false;
+		} catch (MUCException e) {
 			return false;
 		}
 	}

@@ -21,7 +21,6 @@ import tigase.component.AbstractKernelBasedComponent;
 import tigase.component.exceptions.RepositoryException;
 import tigase.component.modules.impl.AdHocCommandModule;
 import tigase.component.modules.impl.JabberVersionModule;
-import tigase.component.modules.impl.XmppPingModule;
 import tigase.form.Field;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
@@ -31,6 +30,8 @@ import tigase.kernel.beans.selector.ConfigType;
 import tigase.kernel.beans.selector.ConfigTypeEnum;
 import tigase.kernel.core.Kernel;
 import tigase.muc.modules.*;
+import tigase.muc.modules.selfping.SelfPingModule;
+import tigase.muc.modules.selfping.SelfPingerMonitor;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.xmpp.mam.MAMItemHandler;
@@ -144,7 +145,8 @@ public class MUCComponent
 
 	@Override
 	protected void registerModules(Kernel kernel) {
-		kernel.registerBean(XmppPingModule.class).exec();
+		kernel.registerBean(SelfPingerMonitor.class).exec();
+		kernel.registerBean(SelfPingModule.class).exec();
 		kernel.registerBean(JabberVersionModule.class).exec();
 		//kernel.registerBean(DiscoveryModule.class).exec();
 		kernel.registerBean(GroupchatMessageModule.class).exec();
@@ -165,7 +167,7 @@ public class MUCComponent
 
 //		kernel.registerBean(IMucRepository.ID).asClass(InMemoryMucRepository.class).exec();
 		//kernel.registerBean(RoomChatLogger.class).exec();
-		//kernel.registerBean(Ghostbuster2.class).exec();
+		kernel.registerBean(Ghostbuster2.class).exec();
 	}
 
 	private void updateDefaultRoomConfig() throws RepositoryException {

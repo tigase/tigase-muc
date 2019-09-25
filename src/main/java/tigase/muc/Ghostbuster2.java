@@ -236,6 +236,15 @@ public class Ghostbuster2
 		}
 	}
 
+	public void kickJIDFromRooms(JID jid, Collection<BareJID> rooms) throws TigaseStringprepException {
+		this.monitoredObjects.remove(jid);
+		for (Room r : repository.getActiveRooms().values()) {
+			if ((rooms == null || rooms.contains(r.getRoomJID())) && r.isOccupantInRoom(jid)) {
+				presenceModule.doQuit(r, jid);
+			}
+		}
+	}
+
 	protected void onPingReceived(Packet packet) throws TigaseStringprepException {
 		update(packet);
 	}
@@ -324,12 +333,7 @@ public class Ghostbuster2
 			log.finest("Forced removal last activity of " + obj.source);
 		}
 
-		this.monitoredObjects.remove(obj.source);
-		for (Room r : repository.getActiveRooms().values()) {
-			if (obj.rooms.contains(r.getRoomJID()) && r.isOccupantInRoom(obj.source)) {
-				presenceModule.doQuit(r, obj.source);
-			}
-		}
+		kickJIDFromRooms(obj.source, obj.rooms);
 	}
 
 	protected class MonitoredObject {
