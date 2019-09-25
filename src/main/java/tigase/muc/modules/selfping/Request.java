@@ -1,5 +1,5 @@
-/*
- *  Tigase MUC - Multi User Chat component for Tigase
+/**
+ * Tigase MUC - Multi User Chat component for Tigase
  * Copyright (C) 2007 Tigase, Inc. (office@tigase.com)
  *
  * This program is free software: you can redistribute it and/or modify
@@ -15,7 +15,6 @@
  * along with this program. Look for COPYING file in the top folder.
  * If not, see http://www.gnu.org/licenses/.
  */
-
 package tigase.muc.modules.selfping;
 
 import tigase.xmpp.jid.JID;

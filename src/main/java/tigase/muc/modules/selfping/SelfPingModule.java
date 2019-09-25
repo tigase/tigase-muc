@@ -1,5 +1,5 @@
-/*
- *  Tigase MUC - Multi User Chat component for Tigase
+/**
+ * Tigase MUC - Multi User Chat component for Tigase
  * Copyright (C) 2007 Tigase, Inc. (office@tigase.com)
  *
  * This program is free software: you can redistribute it and/or modify
