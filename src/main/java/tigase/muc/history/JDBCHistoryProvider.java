@@ -126,7 +126,9 @@ public class JDBCHistoryProvider extends AbstractHistoryProvider<DataRepository>
 
 		int maxMessages = room.getConfig().getMaxHistory();
 		try {
-			if (since != null) {
+			if (maxchars != null && maxchars == 0) {
+				return;
+			} else if (since != null) {
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest(
 							"Using SINCE selector: roomJID=" + roomJID + ", since=" + since.getTime() + " (" + since +
