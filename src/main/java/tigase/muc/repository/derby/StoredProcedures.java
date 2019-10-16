@@ -31,16 +31,6 @@ public class StoredProcedures {
 
 	private static final Charset UTF8 = Charset.forName("UTF-8");
 
-	protected static String sha1OfLower(String data) throws SQLException {
-		try {
-			MessageDigest md = MessageDigest.getInstance("SHA-1");
-			byte[] hash = md.digest(data.toLowerCase().getBytes(UTF8));
-			return Algorithms.bytesToHex(hash);
-		} catch (NoSuchAlgorithmException e) {
-			throw new SQLException(e);
-		}
-	}
-
 	public static void migrateFromOldSchema() throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
@@ -61,12 +51,30 @@ public class StoredProcedures {
 			} catch (SQLException ex) {
 				stmt.execute("alter table tig_muc_room_affiliations add column nickname varchar(1024)");
 			}
+			try {
+				ResultSet rs = stmt.executeQuery("select avatar_hash from tig_muc_rooms where room_id = 0");
+				rs.close();
+			} catch (SQLException ex) {
+				stmt.execute("alter table tig_muc_rooms add avatar text");
+				stmt.execute("alter table tig_muc_rooms add avatar_hash varchar(22)");
+			}
 		} catch (SQLException e) {
 			throw e;
 		} finally {
 			conn.close();
 		}
 	}
+
+	protected static String sha1OfLower(String data) throws SQLException {
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-1");
+			byte[] hash = md.digest(data.toLowerCase().getBytes(UTF8));
+			return Algorithms.bytesToHex(hash);
+		} catch (NoSuchAlgorithmException e) {
+			throw new SQLException(e);
+		}
+	}
+
 	public static void tigMucAddMessage(String roomJid, Timestamp ts, String senderJid, String senderNick, String body,
 										Boolean publicEvent, String msg) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
@@ -169,6 +177,20 @@ public class StoredProcedures {
 		}
 	}
 
+	public static void tigMucGetAvatar(Long id, ResultSet[] data) throws SQLException {
+		Connection conn = DriverManager.getConnection("jdbc:default:connection");
+		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+		try {
+			PreparedStatement ps = conn.prepareStatement("select avatar from tig_muc_rooms where room_id = ?");
+			ps.setLong(1, id);
+			data[0] = ps.executeQuery();
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			conn.close();
+		}
+	}
+
 	public static void tigMucGetMessages(String roomJid, Integer maxMessages, Timestamp since, ResultSet[] data)
 			throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
@@ -202,7 +224,7 @@ public class StoredProcedures {
 
 		try {
 			PreparedStatement ps = conn.prepareStatement(
-					"select room_id, creation_date, creator, config, subject, subject_creator_nick, subject_date" +
+					"select room_id, creation_date, creator, config, subject, subject_creator_nick, subject_date, avatar_hash" +
 							" from tig_muc_rooms where jid_sha1 = ?");
 
 			ps.setString(1, sha1OfLower(roomJid));
@@ -333,7 +355,27 @@ public class StoredProcedures {
 		}
 	}
 
-	public static void tigMucSetRoomAffiliation(Long roomId, String jid, String affiliation, Boolean persistent, String nickname) throws SQLException {
+	public static void tigMucSetAvatar(Long roomId, String avatar, String avatarHash) throws SQLException {
+		Connection conn = DriverManager.getConnection("jdbc:default:connection");
+		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+
+		try {
+			PreparedStatement ps = conn.prepareStatement(
+					"update tig_muc_rooms set avatar = ?, avatar_hash = ? where room_id = ?");
+
+			ps.setString(1, avatar);
+			ps.setString(2, avatarHash);
+			ps.setLong(3, roomId);
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			throw e;
+		} finally {
+			conn.close();
+		}
+	}
+
+	public static void tigMucSetRoomAffiliation(Long roomId, String jid, String affiliation, Boolean persistent,
+												String nickname) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
@@ -348,8 +390,9 @@ public class StoredProcedures {
 
 			if (rs.next()) {
 				if (!"none".equals(affiliation)) {
-					ps = conn.prepareStatement("update tig_muc_room_affiliations set affiliation = ?, persistent = ?, nickname = ?" +
-													   " where room_id = ? and jid_sha1 = ?");
+					ps = conn.prepareStatement(
+							"update tig_muc_room_affiliations set affiliation = ?, persistent = ?, nickname = ?" +
+									" where room_id = ? and jid_sha1 = ?");
 					ps.setString(1, affiliation);
 					ps.setBoolean(2, persistent);
 					ps.setString(3, nickname);

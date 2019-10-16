@@ -47,6 +47,10 @@ public interface IMucDAO<DS extends DataSource, ID>
 
 	void setAffiliation(RoomWithId<ID> room, BareJID jid, RoomAffiliation affiliation) throws RepositoryException;
 
+	String getRoomAvatar(RoomWithId<Long> room) throws RepositoryException;
+
+	void updateRoomAvatar(RoomWithId<Long> room, String encodedAvatar, String hash) throws RepositoryException;
+
 	void setSubject(RoomWithId<ID> room, String subject, String creatorNickname, Date changeDate)
 			throws RepositoryException;
 

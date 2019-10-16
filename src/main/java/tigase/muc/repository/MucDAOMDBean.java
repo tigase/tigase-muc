@@ -25,7 +25,10 @@ import tigase.db.beans.MDRepositoryBean;
 import tigase.db.beans.MDRepositoryBeanWithStatistics;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.config.ConfigField;
-import tigase.muc.*;
+import tigase.muc.MUCComponent;
+import tigase.muc.RoomAffiliation;
+import tigase.muc.RoomConfig;
+import tigase.muc.RoomWithId;
 import tigase.server.BasicComponent;
 import tigase.xmpp.jid.BareJID;
 
@@ -96,6 +99,16 @@ public class MucDAOMDBean
 	@Override
 	public void setAffiliation(RoomWithId room, BareJID jid, RoomAffiliation affiliation) throws RepositoryException {
 		getRepository(room.getRoomJID().getDomain()).setAffiliation(room, jid, affiliation);
+	}
+
+	@Override
+	public void updateRoomAvatar(RoomWithId room, String encodedAvatar, String hash) throws RepositoryException {
+		getRepository(room.getRoomJID().getDomain()).updateRoomAvatar(room, encodedAvatar, hash);
+	}
+
+	@Override
+	public String getRoomAvatar(RoomWithId room) throws RepositoryException {
+		return getRepository(room.getRoomJID().getDomain()).getRoomAvatar(room);
 	}
 
 	@Override

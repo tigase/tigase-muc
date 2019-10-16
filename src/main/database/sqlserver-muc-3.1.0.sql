@@ -34,6 +34,16 @@ end
 -- QUERY END:
 GO
 
+-- QUERY START:
+if not exists (select 1 from sys.columns where object_id = object_id('dbo.tig_muc_rooms') and name = 'avatar_hash')
+begin
+    alter table tig_muc_rooms
+        add avatar_hash nvarchar(22);
+    alter table tig_muc_rooms
+        add avatar nvarchar(MAX);
+end
+-- QUERY END:
+GO
 
 -- QUERY START:
 IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MUC_GetRoomAffiliations')
@@ -85,6 +95,63 @@ BEGIN
                 VALUES (@_roomId, @_jid, @_jidSha1, @_affiliation, @_persistent, @_nickname);
     END
     SET NOCOUNT OFF;
+END
+-- QUERY END:
+GO
+
+-- QUERY START:
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MUC_GetRoom')
+    DROP PROCEDURE Tig_MUC_GetRoom
+-- QUERY END:
+GO
+
+-- QUERY START:
+CREATE PROCEDURE dbo.Tig_MUC_GetRoom
+@_roomJid [nvarchar](2049)
+AS
+BEGIN
+    DECLARE @_roomJidSha1 [varbinary](40);
+
+    SET @_roomJidSha1 = HASHBYTES('SHA1', LOWER( @_roomJid ) )
+
+    SELECT room_id, creation_date, creator, config, subject, subject_creator_nick, subject_date, avatar_hash
+    FROM tig_muc_rooms
+    WHERE jid_sha1 = @_roomJidSha1;
+END
+-- QUERY END:
+GO
+
+
+-- QUERY START:
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MUC_GetRoomAvatar')
+    DROP PROCEDURE Tig_MUC_GetRoomAvatar
+-- QUERY END:
+GO
+
+-- QUERY START:
+CREATE PROCEDURE dbo.Tig_MUC_GetRoomAvatar @_roomId [bigint]
+AS
+BEGIN
+    SELECT avatar FROM tig_muc_rooms WHERE room_id = @_roomId;
+END
+-- QUERY END:
+GO
+
+-- QUERY START:
+IF EXISTS (SELECT * FROM sys.objects WHERE type = 'P' AND name = 'Tig_MUC_SetRoomAvatar')
+    DROP PROCEDURE Tig_MUC_SetRoomAvatar
+-- QUERY END:
+GO
+
+
+-- QUERY START:
+CREATE PROCEDURE dbo.Tig_MUC_SetRoomAvatar
+    @_roomId [bigint],
+    @_encodedAvatar [nvarchar](MAX),
+    @_avatarHash [nvarchar](22)
+AS
+BEGIN
+    UPDATE tig_muc_rooms SET avatar = @_encodedAvatar, avatar_hash = @_avatarHash WHERE room_id = @_roomId;
 END
 -- QUERY END:
 GO

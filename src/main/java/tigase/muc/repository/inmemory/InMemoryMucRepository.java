@@ -122,6 +122,24 @@ public class InMemoryMucRepository
 		};
 	}
 
+	@Override
+	public String getRoomAvatar(Room room) throws RepositoryException {
+		if (room instanceof RoomWithId) {
+			return dao.getRoomAvatar((RoomWithId<Long>) room);
+		} else {
+			throw new RepositoryException("Cannot get ID of room " + room.getRoomJID());
+		}
+	}
+
+	@Override
+	public void updateRoomAvatar(Room room, String encodedAvatar, String hash) throws RepositoryException {
+		if (room instanceof RoomWithId) {
+			dao.updateRoomAvatar((RoomWithId<Long>) room, encodedAvatar, hash);
+		} else {
+			throw new RepositoryException("Cannot get ID of room " + room.getRoomJID());
+		}
+	}
+
 	/*
 	 * (non-Javadoc)
 	 *

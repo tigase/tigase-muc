@@ -26,6 +26,7 @@ import tigase.xmpp.jid.JID;
 
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -36,6 +37,7 @@ public class MockMucRepository
 		implements IMucRepository {
 
 	private final Map<BareJID, InternalRoom> allRooms = new HashMap<BareJID, InternalRoom>();
+	private final Map<BareJID, String> avatars = new ConcurrentHashMap<>();
 	private final RoomConfigListener roomConfigListener;
 	private final HashMap<BareJID, Room> rooms = new HashMap<BareJID, Room>();
 	protected Logger log = Logger.getLogger(this.getClass().getName());
@@ -86,6 +88,20 @@ public class MockMucRepository
 				}
 			}
 		};
+	}
+
+	@Override
+	public String getRoomAvatar(Room room) throws RepositoryException {
+		return avatars.get(room.getRoomJID());
+	}
+
+	@Override
+	public void updateRoomAvatar(Room room, String encodedAvatar, String hash) throws RepositoryException {
+		if (encodedAvatar == null) {
+			this.avatars.remove(room.getRoomJID());
+		} else {
+			this.avatars.put(room.getRoomJID(), encodedAvatar);
+		}
 	}
 
 	/*

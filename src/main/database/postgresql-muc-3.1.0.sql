@@ -30,6 +30,12 @@ begin
         alter table tig_muc_room_affiliations
             add nickname varchar(1024);
     end if;
+    if not exists (select 1 from information_schema.columns where table_catalog = current_database() and table_schema = 'public' and table_name = 'tig_muc_rooms' and column_name = 'avatar_hash') then
+        alter table tig_muc_rooms
+            add avatar_hash varchar(22);
+        alter table tig_muc_rooms
+            add avatar text;
+    end if;
 end$$;
 -- QUERY END:
 
@@ -74,4 +80,61 @@ begin
     end if;
 end;
 $$ LANGUAGE 'plpgsql';
+-- QUERY END:
+
+-- QUERY START:
+do
+$$
+    begin
+        if exists(select 1
+                  from pg_proc
+                  where proname = lower('Tig_MUC_GetRoom')
+                    and pg_get_function_result(oid) =
+                        'TABLE(room_id bigint, creation_date timestamp without time zone, creator character varying, config text, subject text, subject_creator_nick character varying, subject_change_date timestamp without time zone)') then
+            drop function Tig_MUC_GetRoom(character varying);
+        end if;
+    end
+$$;
+-- QUERY END:
+
+-- QUERY START:
+create or replace function Tig_MUC_GetRoom(varchar(2049))
+    returns table
+            (
+                room_id              bigint,
+                creation_date        timestamp with time zone,
+                creator              varchar(2049),
+                config               text,
+                subject              text,
+                subject_creator_nick varchar(1024),
+                subject_change_date  timestamp with time zone,
+                avatar_hash          varchar(22)
+            )
+as
+$$
+select room_id,
+       creation_date,
+       creator,
+       config,
+       subject,
+       subject_creator_nick,
+       subject_date,
+       avatar_hash
+from tig_muc_rooms
+where lower(jid) = lower($1)
+$$ LANGUAGE SQL;
+-- QUERY END:
+
+-- QUERY START:
+create or replace function Tig_MUC_SetRoomAvatar(_roomId bigint, _avatar text, _avatarHash varchar(22)) returns void as $$
+begin
+    update tig_muc_rooms set avatar = _avatar, avatar_hash = _avatarHash where room_id = _roomId;
+end;
+$$ LANGUAGE 'plpgsql';
+-- QUERY END:
+
+-- QUERY START:
+create or replace function Tig_MUC_GetRoomAvatar(bigint) returns table (avatar text) as $$
+select avatar from tig_muc_rooms where room_id = $1
+$$ LANGUAGE SQL;
 -- QUERY END:

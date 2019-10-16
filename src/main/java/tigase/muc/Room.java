@@ -51,6 +51,7 @@ public class Room
 	private final List<Room.RoomOccupantListener> occupantListeners = new CopyOnWriteArrayList<Room.RoomOccupantListener>();
 	private final Map<String, OccupantEntry> occupants = new ConcurrentHashMap<String, OccupantEntry>();
 	private final Map<String, Object> roomCustomData = new ConcurrentHashMap<String, Object>();
+	private String avatarHash;
 	private boolean roomLocked;
 	private String subject;
 	private Date subjectChangeDate;
@@ -93,6 +94,14 @@ public class Room
 		addListener(presenceFiltered);
 		rc.addListener(this);
 		presences.setOrdening(rc.getPresenceDeliveryLogic());
+	}
+
+	public String getAvatarHash() {
+		return avatarHash;
+	}
+
+	public void setAvatarHash(String avatarHash) {
+		this.avatarHash = avatarHash;
 	}
 
 	public void addAffiliationByJid(BareJID jid, RoomAffiliation affiliation) throws RepositoryException {

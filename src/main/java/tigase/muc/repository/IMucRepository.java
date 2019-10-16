@@ -34,6 +34,10 @@ public interface IMucRepository {
 
 	public static final String ID = "mucRepository";
 
+	String getRoomAvatar(Room room) throws RepositoryException;
+
+	void updateRoomAvatar(Room room, String encodedAvatar, String hash) throws RepositoryException;
+
 	Room createNewRoom(BareJID roomJID, JID senderJid) throws RepositoryException;
 
 	void destroyRoom(Room room, Element destroyElement) throws RepositoryException;

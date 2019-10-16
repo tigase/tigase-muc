@@ -30,6 +30,11 @@ begin
     if not exists (select 1 from information_schema.columns where table_schema = database() and table_name = 'tig_muc_room_affiliations' and column_name = 'nickname') then
         alter table tig_muc_room_affiliations add nickname varchar(1024);
     end if;
+
+    if not exists (select 1 from information_schema.columns where table_schema = database() and table_name = 'tig_muc_rooms' and column_name = 'avatar_hash') then
+        alter table tig_muc_rooms add avatar text;
+        alter table tig_muc_rooms add avatar_hash varchar(22);
+    end if;
 end //
 -- QUERY END:
 
@@ -53,6 +58,10 @@ drop procedure if exists Tig_MUC_GetRoomAffiliations;
 
 -- QUERY START:
 drop procedure if exists Tig_MUC_SetRoomAffiliation;
+-- QUERY END:
+
+-- QUERY START:
+drop procedure if exists Tig_MUC_GetRoom;
 -- QUERY END:
 
 delimiter //
@@ -89,5 +98,31 @@ begin
     end if;
 
 	COMMIT;
+end //
+-- QUERY END:
+
+-- QUERY START:
+create procedure Tig_MUC_GetRoom(_roomJid varchar(2049))
+begin
+    select room_id, creation_date, creator, config, subject, subject_creator_nick, subject_date, avatar_hash
+    from tig_muc_rooms
+    where jid_sha1 = SHA1( LOWER( _roomJid ) );
+end //
+-- QUERY END:
+
+-- QUERY START:
+create procedure Tig_MUC_SetRoomAvatar(_roomId bigint, _avatar text charset utf8mb4 collate utf8mb4_bin, _avatarHash varchar(2))
+begin
+    update tig_muc_rooms set avatar = _avatar, avatar_hash = _avatarHash where room_id = _roomId;
+end //
+-- QUERY END:
+
+
+-- QUERY START:
+create procedure Tig_MUC_GetRoomAvatar(_roomId bigint)
+begin
+    select avatar
+    from tig_muc_rooms
+    where room_id = _roomId;
 end //
 -- QUERY END:

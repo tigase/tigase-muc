@@ -27,6 +27,23 @@ CREATE procedure Tig_MUC_UPGRADE()
 -- QUERY END:
 
 -- QUERY START:
+create procedure Tig_MUC_GetRoomAvatar(id BIGINT)
+    PARAMETER STYLE JAVA
+    LANGUAGE JAVA
+    READS SQL DATA
+    DYNAMIC RESULT SETS 1
+    EXTERNAL NAME 'tigase.muc.repository.derby.StoredProcedures.tigMucGetAvatar';
+-- QUERY END:
+
+-- QUERY START:
+create procedure Tig_MUC_SetRoomAvatar(roomId bigint, avatar varchar(32672), avatarHash varchar(2))
+    PARAMETER STYLE JAVA
+    LANGUAGE JAVA
+    MODIFIES SQL DATA
+    EXTERNAL NAME 'tigase.muc.repository.derby.StoredProcedures.tigMucSetAvatar';
+-- QUERY END:
+
+-- QUERY START:
 call Tig_MUC_UPGRADE();
 -- QUERY END:
 

@@ -48,6 +48,8 @@ public class JDBCMucDAO
 	private static final String DESTROY_ROOM_QUERY = "{ call Tig_MUC_DestroyRoom(?) }";
 	private static final String GET_ROOM_AFFILIATIONS_QUERY = "{ call Tig_MUC_GetRoomAffiliations(?) }";
 	private static final String GET_ROOM_QUERY = "{ call Tig_MUC_GetRoom(?) }";
+	private static final String GET_ROOM_AVATAR_QUERY = "{ call Tig_MUC_GetRoomAvatar(?) }";
+	private static final String SET_ROOM_AVATAR_QUERY = "{ call Tig_MUC_SetRoomAvatar(?,?,?) }";
 	private static final String GET_ROOMS_JIDS_QUERY = "{ call Tig_MUC_GetRoomsJids() }";
 	private static final String SET_ROOM_AFFILIATION_QUERY = "{ call Tig_MUC_SetRoomAffiliation(?,?,?,?,?) }";
 	private static final String SET_ROOM_SUBJECT_QUERY = "{ call Tig_MUC_SetRoomSubject(?,?,?,?) }";
@@ -132,7 +134,8 @@ public class JDBCMucDAO
 						}
 						Affiliation affiliation = Affiliation.valueOf(affStr);
 
-						RoomAffiliation roomAffiliation = RoomAffiliation.from(affiliation, persistent, rs.getString(4));
+						RoomAffiliation roomAffiliation = RoomAffiliation.from(affiliation, persistent,
+																			   rs.getString(4));
 						affiliations.put(BareJID.bareJIDInstance(rs.getString(1)), roomAffiliation);
 					}
 				} finally {
@@ -173,6 +176,8 @@ public class JDBCMucDAO
 						Date subjectDate = data_repo.getTimestamp(rs, 7);
 						room.setSubjectChangeDate(subjectDate);
 
+						room.setAvatarHash(rs.getString(8));
+
 						return room;
 					}
 
@@ -211,7 +216,8 @@ public class JDBCMucDAO
 	}
 
 	@Override
-	public void setAffiliation(RoomWithId<Long> room, BareJID jid, RoomAffiliation affiliation) throws RepositoryException {
+	public void setAffiliation(RoomWithId<Long> room, BareJID jid, RoomAffiliation affiliation)
+			throws RepositoryException {
 		try {
 			PreparedStatement stmt = data_repo.getPreparedStatement(mucConfig.getServiceName(),
 																	SET_ROOM_AFFILIATION_QUERY);
@@ -231,6 +237,47 @@ public class JDBCMucDAO
 			throw new RepositoryException(
 					"Error while setting affiliation for room " + room.getRoomJID() + " for jid " + jid + " to " +
 							affiliation.toString(), ex);
+		}
+	}
+
+	@Override
+	public String getRoomAvatar(RoomWithId<Long> room) throws RepositoryException {
+		try {
+			ResultSet rs = null;
+			PreparedStatement stmt = data_repo.getPreparedStatement(mucConfig.getServiceName(), GET_ROOM_AVATAR_QUERY);
+			synchronized (stmt) {
+				try {
+					stmt.setLong(1, room.getId());
+					rs = stmt.executeQuery();
+
+					if (rs.next()) {
+						return rs.getString(1);
+					} else {
+						return null;
+					}
+				} finally {
+					data_repo.release(null, rs);
+				}
+			}
+		} catch (SQLException ex) {
+			throw new RepositoryException("Error while reading room avatar", ex);
+		}
+	}
+
+	@Override
+	public void updateRoomAvatar(RoomWithId<Long> room, String encodedAvatar, String hash) throws RepositoryException {
+		try {
+			final PreparedStatement stmt = data_repo.getPreparedStatement(mucConfig.getServiceName(),
+																		  SET_ROOM_AVATAR_QUERY);
+			synchronized (stmt) {
+				stmt.setLong(1, room.getId());
+				stmt.setString(2, encodedAvatar);
+				stmt.setString(3, hash);
+
+				stmt.execute();
+			}
+		} catch (SQLException ex) {
+			throw new RepositoryException("Error while setting avatar for room " + room.getRoomJID(), ex);
 		}
 	}
 
