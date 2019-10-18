@@ -336,6 +336,8 @@ public class JDBCMucDAO
 		repo.initPreparedStatement(SET_ROOM_AFFILIATION_QUERY, SET_ROOM_AFFILIATION_QUERY);
 		repo.initPreparedStatement(SET_ROOM_SUBJECT_QUERY, SET_ROOM_SUBJECT_QUERY);
 		repo.initPreparedStatement(SET_ROOM_CONFIG_QUERY, SET_ROOM_CONFIG_QUERY);
+		repo.initPreparedStatement(GET_ROOM_AVATAR_QUERY, GET_ROOM_AVATAR_QUERY);
+		repo.initPreparedStatement(SET_ROOM_AVATAR_QUERY, SET_ROOM_AVATAR_QUERY);
 	}
 
 }

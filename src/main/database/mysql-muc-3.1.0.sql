@@ -64,6 +64,14 @@ drop procedure if exists Tig_MUC_SetRoomAffiliation;
 drop procedure if exists Tig_MUC_GetRoom;
 -- QUERY END:
 
+-- QUERY START:
+drop procedure if exists Tig_MUC_SetRoomAvatar;
+-- QUERY END:
+
+-- QUERY START:
+drop procedure if exists Tig_MUC_GetRoomAvatar;
+-- QUERY END:
+
 delimiter //
 
 -- QUERY START:
@@ -111,7 +119,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MUC_SetRoomAvatar(_roomId bigint, _avatar text charset utf8mb4 collate utf8mb4_bin, _avatarHash varchar(2))
+create procedure Tig_MUC_SetRoomAvatar(_roomId bigint, _avatar text charset utf8mb4 collate utf8mb4_bin, _avatarHash varchar(22))
 begin
     update tig_muc_rooms set avatar = _avatar, avatar_hash = _avatarHash where room_id = _roomId;
 end //

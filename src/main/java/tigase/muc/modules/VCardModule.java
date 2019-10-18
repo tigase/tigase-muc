@@ -137,6 +137,9 @@ public class VCardModule
 		if (room == null) {
 			throw new MUCException(Authorization.ITEM_NOT_FOUND);
 		}
+		if (!room.getConfig().isPersistentRoom()) {
+			throw new MUCException(Authorization.FEATURE_NOT_IMPLEMENTED);
+		}
 
 		final JID senderJid = packet.getStanzaFrom();
 		final String nickName = room.getOccupantsNickname(senderJid);
