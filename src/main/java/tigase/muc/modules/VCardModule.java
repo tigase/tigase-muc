@@ -27,7 +27,6 @@ import tigase.kernel.beans.Initializable;
 import tigase.kernel.beans.Inject;
 import tigase.kernel.beans.UnregisterAware;
 import tigase.muc.Affiliation;
-import tigase.muc.MUCComponent;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
@@ -43,10 +42,12 @@ import tigase.xmpp.jid.JID;
 
 import java.security.MessageDigest;
 
-@Bean(name = "vcard", parent = MUCComponent.class, active = true)
+@Bean(name = VCardModule.ID, active = true)
 public class VCardModule
 		extends AbstractMucModule
 		implements Initializable, UnregisterAware {
+
+	public static final String ID = "vcard";
 
 	public static final String NAME = "vCard";
 	public static final String XMLNS = "vcard-temp";
