@@ -36,7 +36,7 @@ create procedure Tig_MUC_GetRoomAvatar(id BIGINT)
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MUC_SetRoomAvatar(roomId bigint, avatar varchar(32672), avatarHash varchar(22))
+create procedure Tig_MUC_SetRoomAvatar(roomId bigint, avatar varchar(32672), avatarHash varchar(42))
     PARAMETER STYLE JAVA
     LANGUAGE JAVA
     MODIFIES SQL DATA

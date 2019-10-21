@@ -56,7 +56,7 @@ public class StoredProcedures {
 				rs.close();
 			} catch (SQLException ex) {
 				stmt.execute("alter table tig_muc_rooms add avatar text");
-				stmt.execute("alter table tig_muc_rooms add avatar_hash varchar(22)");
+				stmt.execute("alter table tig_muc_rooms add avatar_hash varchar(42)");
 			}
 		} catch (SQLException e) {
 			throw e;

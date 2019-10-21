@@ -38,7 +38,7 @@ GO
 if not exists (select 1 from sys.columns where object_id = object_id('dbo.tig_muc_rooms') and name = 'avatar_hash')
 begin
     alter table tig_muc_rooms
-        add avatar_hash nvarchar(22);
+        add avatar_hash nvarchar(42);
     alter table tig_muc_rooms
         add avatar nvarchar(MAX);
 end
@@ -148,7 +148,7 @@ GO
 CREATE PROCEDURE dbo.Tig_MUC_SetRoomAvatar
     @_roomId [bigint],
     @_encodedAvatar [nvarchar](MAX),
-    @_avatarHash [nvarchar](22)
+    @_avatarHash [nvarchar](42)
 AS
 BEGIN
     UPDATE tig_muc_rooms SET avatar = @_encodedAvatar, avatar_hash = @_avatarHash WHERE room_id = @_roomId;

@@ -33,7 +33,7 @@ begin
 
     if not exists (select 1 from information_schema.columns where table_schema = database() and table_name = 'tig_muc_rooms' and column_name = 'avatar_hash') then
         alter table tig_muc_rooms add avatar text;
-        alter table tig_muc_rooms add avatar_hash varchar(22);
+        alter table tig_muc_rooms add avatar_hash varchar(42);
     end if;
 end //
 -- QUERY END:
@@ -119,7 +119,7 @@ end //
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MUC_SetRoomAvatar(_roomId bigint, _avatar text charset utf8mb4 collate utf8mb4_bin, _avatarHash varchar(22))
+create procedure Tig_MUC_SetRoomAvatar(_roomId bigint, _avatar text charset utf8mb4 collate utf8mb4_bin, _avatarHash varchar(42))
 begin
     update tig_muc_rooms set avatar = _avatar, avatar_hash = _avatarHash where room_id = _roomId;
 end //

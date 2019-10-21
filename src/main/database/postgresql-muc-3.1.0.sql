@@ -32,7 +32,7 @@ begin
     end if;
     if not exists (select 1 from information_schema.columns where table_catalog = current_database() and table_schema = 'public' and table_name = 'tig_muc_rooms' and column_name = 'avatar_hash') then
         alter table tig_muc_rooms
-            add avatar_hash varchar(22);
+            add avatar_hash varchar(42);
         alter table tig_muc_rooms
             add avatar text;
     end if;
@@ -108,7 +108,7 @@ create or replace function Tig_MUC_GetRoom(varchar(2049))
                 subject              text,
                 subject_creator_nick varchar(1024),
                 subject_change_date  timestamp with time zone,
-                avatar_hash          varchar(22)
+                avatar_hash          varchar(42)
             )
 as
 $$
@@ -126,7 +126,7 @@ $$ LANGUAGE SQL;
 -- QUERY END:
 
 -- QUERY START:
-create or replace function Tig_MUC_SetRoomAvatar(_roomId bigint, _avatar text, _avatarHash varchar(22)) returns void as $$
+create or replace function Tig_MUC_SetRoomAvatar(_roomId bigint, _avatar text, _avatarHash varchar(42)) returns void as $$
 begin
     update tig_muc_rooms set avatar = _avatar, avatar_hash = _avatarHash where room_id = _roomId;
 end;

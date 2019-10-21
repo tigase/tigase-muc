@@ -21,8 +21,11 @@ import tigase.component.exceptions.ComponentException;
 import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
+import tigase.eventbus.HandleEvent;
 import tigase.kernel.beans.Bean;
+import tigase.kernel.beans.Initializable;
 import tigase.kernel.beans.Inject;
+import tigase.kernel.beans.UnregisterAware;
 import tigase.muc.Affiliation;
 import tigase.muc.MUCComponent;
 import tigase.muc.Room;
@@ -42,7 +45,8 @@ import java.security.MessageDigest;
 
 @Bean(name = "vcard", parent = MUCComponent.class, active = true)
 public class VCardModule
-		extends AbstractMucModule {
+		extends AbstractMucModule
+		implements Initializable, UnregisterAware {
 
 	public static final String NAME = "vCard";
 	public static final String XMLNS = "vcard-temp";
@@ -110,14 +114,36 @@ public class VCardModule
 		}
 	}
 
+	@Override
+	public void initialize() {
+		eventBus.registerEvent(VCardChangedEvent.class.getName(), "FIred when room avatar is changed", false);
+		eventBus.registerAll(this);
+	}
+
+	@Override
+	public void beforeUnregister() {
+		eventBus.unregisterAll(this);
+	}
+
+	@HandleEvent(filter = HandleEvent.Type.remote)
+	public void onAvatarChanged(final VCardChangedEvent event) {
+		final Room room;
+		try {
+			room = repository.getRoom(event.getRoomJID());
+			if (room != null) {
+				room.setAvatarHash(event.getHash());
+			}
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	private void processGet(final Packet packet) throws MUCException, RepositoryException {
 		final BareJID roomJID = packet.getStanzaTo().getBareJID();
 		final Room room = repository.getRoom(roomJID);
 		if (room == null) {
 			throw new MUCException(Authorization.ITEM_NOT_FOUND);
 		}
-
-
 
 		final Element vCard = new Element(NAME, new String[]{"xmlns"}, new String[]{XMLNS});
 		String encodedAvatar = repository.getRoomAvatar(room);
@@ -154,8 +180,12 @@ public class VCardModule
 		if (photo != null) {
 			String hash = calculatePhotoHash(photo.photo);
 			repository.updateRoomAvatar(room, photo.type + SEPARATOR + Base64.encode(photo.photo), hash);
+			room.setAvatarHash(hash);
+			eventBus.fire(new VCardChangedEvent(room.getRoomJID(), hash));
 		} else {
 			repository.updateRoomAvatar(room, null, null);
+			room.setAvatarHash(null);
+			eventBus.fire(new VCardChangedEvent(room.getRoomJID(), null));
 		}
 
 		write(packet.okResult((Element) null, 0));
@@ -170,5 +200,36 @@ public class VCardModule
 			this.type = type;
 			this.photo = photo;
 		}
+	}
+
+	public static class VCardChangedEvent {
+
+		private String hash;
+		private BareJID roomJID;
+
+		public VCardChangedEvent() {
+		}
+
+		public VCardChangedEvent(BareJID roomJID, String hash) {
+			this.roomJID = roomJID;
+			this.hash = hash;
+		}
+
+		public String getHash() {
+			return hash;
+		}
+
+		public void setHash(String hash) {
+			this.hash = hash;
+		}
+
+		public BareJID getRoomJID() {
+			return roomJID;
+		}
+
+		public void setRoomJID(BareJID roomJID) {
+			this.roomJID = roomJID;
+		}
+
 	}
 }
