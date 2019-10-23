@@ -584,6 +584,7 @@ public class PresenceModuleImpl
 		// TODO Service Informs User that Room Occupant Limit Has Been Reached
 		// Service Sends Presence from Existing Occupants to New Occupant
 		sendPresencesToNewOccupant(room, senderJID);
+		sendPresenceFromRoomToNewOccupant(room, senderJID);
 
 		final Role newRole = Room.getDefaultRole(room.getConfig(), affiliation.getAffiliation());
 
@@ -692,7 +693,8 @@ public class PresenceModuleImpl
 											  String newNickName) throws TigaseStringprepException {
 
 		final String occupantNickname = room.getOccupantsNickname(senderJID);
-		final BareJID occupantJID = Optional.ofNullable(room.getOccupantsJidByNickname(occupantNickname)).orElse(senderJID.getBareJID());
+		final BareJID occupantJID = Optional.ofNullable(room.getOccupantsJidByNickname(occupantNickname))
+				.orElse(senderJID.getBareJID());
 		final Affiliation occupantAffiliation = room.getAffiliation(occupantJID).getAffiliation();
 		final Role occupantRole = room.getRole(occupantNickname);
 
@@ -757,6 +759,20 @@ public class PresenceModuleImpl
 			sendPresenceToAllOccupants(presence, room, senderJID, newRoomCreated, newNickName);
 		}
 		return presence;
+	}
+
+	private void sendPresenceFromRoomToNewOccupant(Room room, JID occupandJid) throws TigaseStringprepException {
+		if (room.getAvatarHash() != null) {
+			Element presence = new Element("presence");
+			presence.setAttribute("to", occupandJid.toString());
+			presence.setAttribute("from", room.getRoomJID().toString());
+
+			Element photoX = new Element("x", new String[]{"xmlns"}, new String[]{"vcard-temp:x:update"});
+			photoX.addChild(new Element("photo", room.getAvatarHash()));
+			presence.addChild(photoX);
+
+			write(Packet.packetInstance(presence));
+		}
 	}
 
 	private Integer toInteger(String v, Integer defaultValue) throws NumberFormatException {

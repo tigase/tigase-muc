@@ -160,7 +160,8 @@ public class IqStanzaForwarderModule
 				return false;
 			}
 
-			return !recipientNickname.equals(senderNickname);
+//			return !recipientNickname.equals(senderNickname);
+			return true;
 		} catch (TigaseStringprepException e) {
 			return false;
 		} catch (RepositoryException e) {

@@ -144,16 +144,16 @@ public interface PresenceModule
 			this.items = items;
 		}
 
-		void addStatusCode(int code) {
-			x.addChild(new Element("status", new String[]{"code"}, new String[]{"" + code}));
-		}
-
 		public Packet getPacket() {
 			return packet;
 		}
 
 		public Element getX() {
 			return x;
+		}
+
+		void addStatusCode(int code) {
+			x.addChild(new Element("status", new String[]{"code"}, new String[]{"" + code}));
 		}
 	}
 

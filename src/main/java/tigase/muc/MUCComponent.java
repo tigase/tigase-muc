@@ -163,6 +163,7 @@ public class MUCComponent
 		kernel.registerBean(MAMQueryParser.class).exec();
 		kernel.registerBean(MAMQueryModule.class).exec();
 		kernel.registerBean(GetFormModule.class).exec();
+		kernel.registerBean(VCardModule.class).exec();
 		//kernel.registerBean(MUCConfig.class).exec();
 
 //		kernel.registerBean(IMucRepository.ID).asClass(InMemoryMucRepository.class).exec();

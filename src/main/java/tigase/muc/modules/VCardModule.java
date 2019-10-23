@@ -41,6 +41,7 @@ import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
 import java.security.MessageDigest;
+import java.util.logging.Level;
 
 @Bean(name = VCardModule.ID, active = true)
 public class VCardModule
@@ -52,8 +53,26 @@ public class VCardModule
 	public static final String NAME = "vCard";
 	public static final String XMLNS = "vcard-temp";
 
-	private static final Criteria CRIT = ElementCriteria.name("iq").add(ElementCriteria.name(NAME, XMLNS));
+	private static final Criteria CRIT = new Criteria() {
+		@Override
+		public Criteria add(Criteria criteria) {
+			return null;
+		}
+
+		@Override
+		public boolean match(Element element) {
+			try {
+				String to = element.getAttributeStaticStr(Packet.TO_ATT);
+				return to != null && !JID.jidInstance(to).hasResource() &&
+						ElementCriteria.name("iq").add(ElementCriteria.name(NAME, XMLNS)).match(element);
+			} catch (TigaseStringprepException e) {
+				return false;
+			}
+		}
+	};
 	private final static String SEPARATOR = ";";
+	@Inject(nullAllowed = false)
+	private GroupchatMessageModule messageModule;
 	@Inject
 	private IMucRepository repository;
 
@@ -98,9 +117,9 @@ public class VCardModule
 	@Override
 	public void process(Packet packet) throws ComponentException, TigaseStringprepException {
 		try {
-			if (getNicknameFromJid(packet.getTo()) != null) {
-				throw new MUCException(Authorization.BAD_REQUEST);
-			}
+//			if (getNicknameFromJid(packet.getTo()) != null) {
+//				throw new MUCException(Authorization.BAD_REQUEST);
+//			}
 			if (packet.getType() == StanzaType.get) {
 				processGet(packet);
 			} else if (packet.getType() == StanzaType.set) {
@@ -188,8 +207,20 @@ public class VCardModule
 			room.setAvatarHash(null);
 			eventBus.fire(new VCardChangedEvent(room.getRoomJID(), null));
 		}
-
 		write(packet.okResult((Element) null, 0));
+		sendConfigurationChangeInfo(room);
+	}
+
+	private void sendConfigurationChangeInfo(Room room) {
+		try {
+			final Element x = new Element("x", new String[]{"xmlns"},
+										  new String[]{"http://jabber.org/protocol/muc#user"});
+			x.addChild(new Element("status", new String[]{"code"}, new String[]{"104"}));
+
+			this.messageModule.sendMessagesToAllOccupants(room, JID.jidInstance(room.getRoomJID()), x);
+		} catch (TigaseStringprepException e) {
+			log.log(Level.WARNING, "Invalid JID. ", e);
+		}
 	}
 
 	private static class Photo {
