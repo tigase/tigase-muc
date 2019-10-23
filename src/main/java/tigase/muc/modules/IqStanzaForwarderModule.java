@@ -20,6 +20,7 @@ package tigase.muc.modules;
 import tigase.component.exceptions.ComponentException;
 import tigase.component.exceptions.RepositoryException;
 import tigase.criteria.Criteria;
+import tigase.criteria.ElementCriteria;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.muc.Role;
@@ -44,6 +45,8 @@ public class IqStanzaForwarderModule
 		extends AbstractMucModule {
 
 	public static final String ID = "iqforwarder";
+	private final static Criteria SELF_PING_CRIT = ElementCriteria.nameType("iq", "get")
+			.add(ElementCriteria.name("ping", "urn:xmpp:ping"));
 	@Inject
 	private IMucRepository repository;
 	private final Criteria crit = new Criteria() {
@@ -160,8 +163,11 @@ public class IqStanzaForwarderModule
 				return false;
 			}
 
-//			return !recipientNickname.equals(senderNickname);
-			return true;
+			if (isSelfPing(element)) {
+				return !recipientNickname.equals(senderNickname);
+			} else {
+				return true;
+			}
 		} catch (TigaseStringprepException e) {
 			return false;
 		} catch (RepositoryException e) {
@@ -169,6 +175,10 @@ public class IqStanzaForwarderModule
 		} catch (MUCException e) {
 			return false;
 		}
+	}
+
+	private boolean isSelfPing(Element element) {
+		return SELF_PING_CRIT.match(element);
 	}
 
 }
