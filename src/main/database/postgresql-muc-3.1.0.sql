@@ -89,8 +89,10 @@ $$
         if exists(select 1
                   from pg_proc
                   where proname = lower('Tig_MUC_GetRoom')
-                    and pg_get_function_result(oid) =
-                        'TABLE(room_id bigint, creation_date timestamp without time zone, creator character varying, config text, subject text, subject_creator_nick character varying, subject_change_date timestamp without time zone)') then
+                    and (pg_get_function_result(oid) =
+                        'TABLE(room_id bigint, creation_date timestamp without time zone, creator character varying, config text, subject text, subject_creator_nick character varying, subject_change_date timestamp without time zone)'
+                    or pg_get_function_result(oid) =
+                        'TABLE(room_id bigint, creation_date timestamp with time zone, creator character varying, config text, subject text, subject_creator_nick character varying, subject_change_date timestamp with time zone)')) then
             drop function Tig_MUC_GetRoom(character varying);
         end if;
     end
