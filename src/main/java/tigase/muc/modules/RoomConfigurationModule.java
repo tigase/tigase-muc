@@ -285,6 +285,7 @@ public class RoomConfigurationModule
 					}
 				}
 				if (roomCreated) {
+					room.getConfig().notifyConfigUpdate(true);
 					fireEvent(createRoomCreatedEvent(room));
 				}
 			} else {
