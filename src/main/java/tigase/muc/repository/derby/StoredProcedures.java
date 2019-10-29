@@ -55,7 +55,7 @@ public class StoredProcedures {
 				ResultSet rs = stmt.executeQuery("select avatar_hash from tig_muc_rooms where room_id = 0");
 				rs.close();
 			} catch (SQLException ex) {
-				stmt.execute("alter table tig_muc_rooms add avatar text");
+				stmt.execute("alter table tig_muc_rooms add avatar varchar(32672)");
 				stmt.execute("alter table tig_muc_rooms add avatar_hash varchar(42)");
 			}
 		} catch (SQLException e) {
