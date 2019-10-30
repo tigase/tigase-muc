@@ -126,7 +126,7 @@ create procedure Tig_MUC_GetRoomsJids()
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MUC_SetRoomAffiliation(roomId bigint, jid varchar(2049), affiliation varchar(20))
+create procedure Tig_MUC_SetRoomAffiliation(roomId bigint, jid varchar(2049), affiliation varchar(20), persistent boolean, nickname varchar(1024))
     PARAMETER STYLE JAVA
     LANGUAGE JAVA
     MODIFIES SQL DATA
