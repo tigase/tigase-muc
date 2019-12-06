@@ -1,4 +1,4 @@
-/**
+/*
  * Tigase ACS - MUC Component - Tigase Advanced Clustering Strategy - MUC Component
  * Copyright (C) 2013 Tigase, Inc. (office@tigase.com) - All Rights Reserved
  * Unauthorized copying of this file, via any medium is strictly prohibited
