@@ -1,4 +1,4 @@
-/**
+/*
  * Tigase MUC - Multi User Chat component for Tigase
  * Copyright (C) 2007 Tigase, Inc. (office@tigase.com)
  *
