@@ -89,6 +89,11 @@ public class GroupchatMessageModule
 		}
 	}
 
+	public GroupchatMessageModule() {
+		allowedElements.add(ElementCriteria.name("oob", "jabber:x:oob"));
+	    allowedElements.add(ElementCriteria.name("encrypted", "eu.siacs.conversations.axolotl"));
+	}
+
 	@Override
 	public String[] getFeatures() {
 		ArrayList<String> f = new ArrayList<String>();
