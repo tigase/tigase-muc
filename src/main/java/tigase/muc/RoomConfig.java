@@ -484,6 +484,9 @@ public class RoomConfig {
 	@Deprecated
 	public void write(final UserRepository repo, final MUCConfig config, final String subnode)
 			throws UserNotFoundException, TigaseDBException {
+		if (!repo.userExists(config.getServiceName())) {
+			repo.addUser(config.getServiceName());
+		}
 		List<Field> fields = form.getAllFields();
 		for (Field field : fields) {
 			if (field.getVar() != null && !this.blacklist.contains(field.getVar())) {
