@@ -547,7 +547,7 @@ public class PresenceModuleImpl
 		}
 
 		final Integer roomMaxResources = room.getConfig().getMaxUserResources();
-		if (roomMaxResources != null && roomMaxResources >= room.getOccupantsJidsByNickname(nickname).size()) {
+		if (roomMaxResources != null && room.getOccupantsJidsByNickname(nickname).size() >= roomMaxResources) {
 			log.finest(
 					"User " + nickname + "' <" + senderJID.toString() + "> cannot join to room '" + room.getRoomJID() +
 							"' because maximum number of the same occupant resources is reached.");
