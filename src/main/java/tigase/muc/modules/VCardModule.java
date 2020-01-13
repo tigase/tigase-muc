@@ -29,6 +29,7 @@ import tigase.kernel.beans.UnregisterAware;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
+import tigase.muc.modules.selfping.RoomFeatures;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.util.Algorithms;
@@ -46,7 +47,7 @@ import java.util.logging.Level;
 @Bean(name = VCardModule.ID, active = true)
 public class VCardModule
 		extends AbstractMucModule
-		implements Initializable, UnregisterAware {
+		implements RoomFeatures, Initializable, UnregisterAware {
 
 	public static final String ID = "vcard";
 
@@ -112,6 +113,11 @@ public class VCardModule
 	@Override
 	public String[] getFeatures() {
 		return new String[]{XMLNS};
+	}
+
+	@Override
+	public String[] getRoomFeatures(Room room) {
+		return getFeatures();
 	}
 
 	@Override

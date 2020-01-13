@@ -23,6 +23,7 @@ import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.muc.*;
 import tigase.muc.exceptions.MUCException;
+import tigase.muc.modules.selfping.RoomFeatures;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.util.datetime.TimestampHelper;
@@ -31,6 +32,7 @@ import tigase.xmpp.Authorization;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 
@@ -47,6 +49,9 @@ public class DiscoveryModule
 	private IMucRepository repository;
 	@Inject(nullAllowed = true)
 	private MAMQueryModule mamQueryModule;
+
+	@Inject
+	private List<RoomFeatures> roomFeaturesModules;
 
 	private static void addFeature(Element query, String feature) {
 		query.addChild(new Element("feature", new String[]{"var"}, new String[]{feature}));
@@ -100,6 +105,13 @@ public class DiscoveryModule
 
 			resultQuery.addChild(resultIdentity);
 			addFeature(resultQuery, "http://jabber.org/protocol/muc");
+
+			for (RoomFeatures roomFeaturesModule : roomFeaturesModules) {
+				for (String roomFeature : roomFeaturesModule.getRoomFeatures(room)) {
+					addFeature(resultQuery, roomFeature);
+				}
+			}
+
 			addFeature(resultQuery, "jabber:iq:register");
 			
 			switch (room.getConfig().getRoomAnonymity()) {
@@ -168,7 +180,7 @@ public class DiscoveryModule
 												 new String[]{"conference", roomAffiliation.getRegisteredNickname(),
 															  "text"}));
 			}
-			
+
 			write(packet.okResult(resultQuery, 0));
 		} else {
 			throw new MUCException(Authorization.BAD_REQUEST);
