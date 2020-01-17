@@ -55,7 +55,7 @@ public class StoredProcedures {
 				ResultSet rs = stmt.executeQuery("select avatar_hash from tig_muc_rooms where room_id = 0");
 				rs.close();
 			} catch (SQLException ex) {
-				stmt.execute("alter table tig_muc_rooms add avatar varchar(32672)");
+				stmt.execute("alter table tig_muc_rooms add avatar clob");
 				stmt.execute("alter table tig_muc_rooms add avatar_hash varchar(42)");
 			}
 		} catch (SQLException e) {
@@ -355,7 +355,7 @@ public class StoredProcedures {
 		}
 	}
 
-	public static void tigMucSetAvatar(Long roomId, String avatar, String avatarHash) throws SQLException {
+	public static void tigMucSetAvatar(Long roomId, Clob avatar, String avatarHash) throws SQLException {
 		Connection conn = DriverManager.getConnection("jdbc:default:connection");
 		conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
@@ -363,7 +363,7 @@ public class StoredProcedures {
 			PreparedStatement ps = conn.prepareStatement(
 					"update tig_muc_rooms set avatar = ?, avatar_hash = ? where room_id = ?");
 
-			ps.setString(1, avatar);
+			ps.setClob(1, avatar);
 			ps.setString(2, avatarHash);
 			ps.setLong(3, roomId);
 			ps.executeUpdate();

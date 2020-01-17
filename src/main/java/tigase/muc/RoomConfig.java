@@ -426,6 +426,9 @@ public class RoomConfig {
 	@Deprecated
 	public void read(final UserRepository repository, final MUCConfig config, final String subnode)
 			throws UserNotFoundException, TigaseDBException {
+		if (!repository.userExists(config.getServiceName())) {
+			repository.addUser(config.getServiceName());
+		}
 		String[] keys = repository.getKeys(config.getServiceName(), subnode);
 		if (keys != null) {
 			for (String key : keys) {
