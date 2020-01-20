@@ -15,7 +15,7 @@
  * along with this program. Look for COPYING file in the top folder.
  * If not, see http://www.gnu.org/licenses/.
  */
-package tigase.muc.modules.selfping;
+package tigase.muc.modules;
 
 import tigase.muc.Room;
 

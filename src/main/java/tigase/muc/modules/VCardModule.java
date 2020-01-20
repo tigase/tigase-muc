@@ -29,7 +29,6 @@ import tigase.kernel.beans.UnregisterAware;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
-import tigase.muc.modules.selfping.RoomFeatures;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.util.Algorithms;

@@ -23,7 +23,6 @@ import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.muc.*;
 import tigase.muc.exceptions.MUCException;
-import tigase.muc.modules.selfping.RoomFeatures;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
 import tigase.util.datetime.TimestampHelper;
