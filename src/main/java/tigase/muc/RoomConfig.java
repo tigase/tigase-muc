@@ -251,7 +251,7 @@ public class RoomConfig {
 	public Integer getMaxUserResources() {
 		try {
 			String v = form.getAsString(MUC_ROOMCONFIG_MAX_USER_RESOURCES_KEY);
-			if (v == null || v.isEmpty()) {
+			if (v == null || v.isEmpty() || "none".equals(v)) {
 				return null;
 			}
 			return Integer.valueOf(v);
@@ -263,7 +263,7 @@ public class RoomConfig {
 	public Integer getMaxUsers() {
 		try {
 			String v = form.getAsString(MUC_ROOMCONFIG_MAXUSERS_KEY);
-			if (v == null || v.isEmpty()) {
+			if (v == null || v.isEmpty() || "none".equals(v)) {
 				return null;
 			}
 			return Integer.valueOf(v);
@@ -345,11 +345,11 @@ public class RoomConfig {
 
 		form.addField(Field.fieldListSingle(MUC_ROOMCONFIG_MAXUSERS_KEY, "", "Maximum Number of Occupants",
 											new String[]{"10", "20", "30", "50", "100", "None"},
-											new String[]{"10", "20", "30", "50", "100", ""}));
+											new String[]{"10", "20", "30", "50", "100", "none"}));
 		form.addField(Field.fieldListSingle(MUC_ROOMCONFIG_MAX_USER_RESOURCES_KEY, "",
 											"Maximum Number of Single " + "Occupant Resources",
 											new String[]{"5", "10", "20", "30", "50", "100", "None"},
-											new String[]{"5", "10", "20", "30", "50", "100", ""}));
+											new String[]{"5", "10", "20", "30", "50", "100", "none"}));
 
 		form.addField(Field.fieldListSingle(TIGASE_ROOMCONFIG_PRESENCE_DELIVERY_LOGIC,
 											PresenceStore.PresenceDeliveryLogic.PREFERE_PRIORITY.toString(),
