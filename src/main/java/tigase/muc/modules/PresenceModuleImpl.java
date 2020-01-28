@@ -573,7 +573,10 @@ public class PresenceModuleImpl
 		}
 
 		if ((!affiliation.isPersistentOccupant()) && this.config.isAutomaticallyPersistOccupantOnJoin()) {
-			affiliation = RoomAffiliation.from(affiliation.getAffiliation(), true, affiliation.getRegisteredNickname());
+			affiliation = RoomAffiliation.from(affiliation.getAffiliation() == Affiliation.none
+											   ? Affiliation.member
+											   : affiliation.getAffiliation(), true,
+											   affiliation.getRegisteredNickname());
 			try {
 				room.addAffiliationByJid(senderJID.getBareJID(), affiliation);
 			} catch (RepositoryException ex) {
