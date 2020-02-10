@@ -120,7 +120,9 @@ public class ShardingStrategy
 		// will send informations about destroying/going offline of rooms
 		// hosted by this node
 		List<JID> toNodes = getNodesConnected();
-		cl_controller.sendToNodes(NODE_SHUTDOWN_CMD, localNodeJid, toNodes.toArray(new JID[toNodes.size()]));
+		if (cl_controller != null && toNodes != null) {
+			cl_controller.sendToNodes(NODE_SHUTDOWN_CMD, localNodeJid, toNodes.toArray(new JID[toNodes.size()]));
+		}
 	}
 
 	@Override
