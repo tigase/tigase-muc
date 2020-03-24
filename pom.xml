@@ -16,7 +16,7 @@
     </properties>
 
     <artifactId>tigase-muc</artifactId>
-    <version>2.4.3-SNAPSHOT</version>
+    <version>2.4.3</version>
     <packaging>bundle</packaging>
 
     <name>Tigase MUC</name>
@@ -54,7 +54,7 @@
         <connection>scm:git:https://github.com/tigase/tigase-muc.git</connection>
         <developerConnection>scm:git:https://github.com/tigase/tigase-muc.git</developerConnection>
         <url>https://github.com/tigase/tigase-muc/</url>
-        <tag>HEAD</tag>
+        <tag>tigase-muc-2.4.3</tag>
     </scm>
 
     <build>
@@ -78,7 +78,7 @@
         <dependency>
             <groupId>tigase</groupId>
             <artifactId>tigase-testsuite</artifactId>
-            <version>2.3.1-SNAPSHOT</version>
+            <version>2.3.1</version>
             <scope>test</scope>
             <exclusions>
                 <exclusion>
