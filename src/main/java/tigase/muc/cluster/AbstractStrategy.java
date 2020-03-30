@@ -181,7 +181,7 @@ public abstract class AbstractStrategy
 														  occupant.toString(), "unavailable"});
 			Element x = new Element("x", new String[]{"xmlns"}, new String[]{"http://jabber.org/protocol/muc#user"});
 			presenceEl.addChild(x);
-			Element item = new Element("item", new String[]{"role"}, new String[]{"none"});
+			Element item = new Element("item", new String[]{"role", "affiliation"}, new String[]{"none", "none"});
 			x.addChild(item);
 			if (toDisconnectedOccupant) {
 				item.addChild(new Element("reason", "MUC component is disconnected."));
