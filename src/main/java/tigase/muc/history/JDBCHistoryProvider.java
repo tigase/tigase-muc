@@ -134,7 +134,7 @@ public class JDBCHistoryProvider extends AbstractHistoryProvider<DataRepository>
 							"Using SINCE selector: roomJID=" + roomJID + ", since=" + since.getTime() + " (" + since +
 									")");
 				}
-				getMessagesSince(room, senderJID, maxMessages, new Timestamp(since.getTime()), writer);
+				getMessagesSince(room, senderJID, maxMessages, since.getTime() == 0 ? null : new Timestamp(since.getTime()), writer);
 			} else if (maxstanzas != null) {
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest("Using MAXSTANZAS selector: roomJID=" + roomJID + ", maxstanzas=" + maxstanzas);
