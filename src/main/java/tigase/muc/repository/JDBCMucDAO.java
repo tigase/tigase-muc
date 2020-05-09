@@ -243,6 +243,10 @@ public class JDBCMucDAO
 	@Override
 	public String getRoomAvatar(RoomWithId<Long> room) throws RepositoryException {
 		try {
+			// we may have a RoomWithId instance but room may still not be persisted and in this case there is no ID 
+			if (room.getId() == null) {
+				return null;
+			}
 			ResultSet rs = null;
 			PreparedStatement stmt = data_repo.getPreparedStatement(mucConfig.getServiceName(), GET_ROOM_AVATAR_QUERY);
 			synchronized (stmt) {
