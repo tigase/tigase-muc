@@ -62,7 +62,7 @@ public class Converter {
 		ConfiguratorAbstract.loadLogManagerConfig(initial_config);
 	}
 
-	public static void main(String[] argv) throws RepositoryException, IOException {
+	public static void main(String[] argv) throws IOException {
 		initLogger();
 
 		if (argv == null || argv.length == 0) {
@@ -97,11 +97,16 @@ public class Converter {
 		}
 
 		log.config("initializing converter");
-		converter.init(repoClass, oldRepoUri, newRepoUri);
-
-		log.info("starting migration");
-		converter.convert();
-		log.info("migration finished");
+		try {
+			converter.init(repoClass, oldRepoUri, newRepoUri);
+			log.info("starting migration");
+			converter.convert();
+			log.info("migration finished");
+			System.exit(0);
+		} catch (RepositoryException e) {
+			log.info("Migration failed");
+			System.exit(1);
+		}
 	}
 
 	public void convert() throws RepositoryException {
