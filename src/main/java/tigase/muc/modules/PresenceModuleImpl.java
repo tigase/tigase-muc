@@ -227,6 +227,7 @@ public class PresenceModuleImpl
 		} else {
 			occupantJIDs = new ArrayList<JID>(room.getOccupantsJidsByNickname(leavingNickname));
 
+			Role role = room.getRole(leavingNickname);
 			Element pe = room.getLastPresenceCopy(senderJID.getBareJID(), leavingNickname);
 			if (pe == null) {
 				pe = new Element("presence", new String[]{"type"}, new String[]{"unavailable"});
@@ -238,7 +239,7 @@ public class PresenceModuleImpl
 																					senderJID.getBareJID(),
 																					occupantJIDs, leavingNickname,
 																					leavingAffiliation.getAffiliation(),
-																					Role.none);
+																					role);
 						write(presence.packet);
 					} else {
 						for (JID jid : occupantJIDs) {
@@ -248,7 +249,7 @@ public class PresenceModuleImpl
 																						senderJID.getBareJID(), z,
 																						leavingNickname,
 																						leavingAffiliation.getAffiliation(),
-																						Role.none);
+																						role);
 							write(presence.packet);
 						}
 					}
