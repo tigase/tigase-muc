@@ -24,11 +24,11 @@
 
     <name>Tigase ACS - MUC Component</name>
     <description>Tigase Advanced Clustering Strategy - MUC Component</description>
-    <url>https://projects.tigase.org/projects/tigase-acs-muc</url>
+    <url>https://github.com/tigase/tigase-acs-muc.git</url>
 
     <issueManagement>
-        <system>Redmine</system>
-        <url>https://projects.tigase.org/projects/tigase-acs-muc</url>
+        <system>GitHub</system>
+        <url>https://github.com/tigase/tigase-acs-muc</url>
     </issueManagement>
 
     <developers>
@@ -49,9 +49,9 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:https://repository.tigase.org/git/tigase-acs-muc.git</connection>
-        <developerConnection>scm:git:https://repository.tigase.org/git/tigase-acs-muc.git</developerConnection>
-        <url>https://projects.tigase.org/projects/tigase-acs-muc/repository</url>
+        <connection>scm:git:${scm_repo_base}/tigase-acs-muc.git</connection>
+        <developerConnection>scm:git:${scm_repo_base}/tigase-acs-muc.git</developerConnection>
+        <url>https://github.com/tigase/tigase-acs-muc.git</url>
         <tag>HEAD</tag>
     </scm>
 
