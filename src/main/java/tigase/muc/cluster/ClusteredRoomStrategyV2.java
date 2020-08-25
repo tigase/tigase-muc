@@ -112,11 +112,15 @@ public class ClusteredRoomStrategyV2
 
 	private void sendRemoteOccupantPresenceToLocalOccupant(Room room, JID occupantJid, Occupant occupant)
 			throws TigaseStringprepException {
+		Element occupantPresence = occupant.getBestPresence();
+		if (occupantPresence == null) {
+			// it may be null if remote occupant left but room had not removed it from the remote occupants list
+			return;
+		}
 
 		PresenceModule.PresenceWrapper presenceWrapper = PresenceModule.PresenceWrapper.preparePresenceW(room,
 																										 occupantJid,
-																										 occupant.getBestPresence()
-																												 .clone(),
+																										 occupantPresence.clone(),
 																										 occupant.getOccupantJID(),
 																										 occupant.getOccupants(),
 																										 occupant.getNickname(),
