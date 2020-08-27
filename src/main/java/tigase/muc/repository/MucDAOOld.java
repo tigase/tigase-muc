@@ -17,6 +17,7 @@
  */
 package tigase.muc.repository;
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.component.exceptions.RepositoryException;
 import tigase.db.TigaseDBException;
 import tigase.db.UserNotFoundException;
@@ -37,6 +38,8 @@ import java.util.logging.Logger;
 /**
  * @author bmalkow
  */
+@Deprecated
+@TigaseDeprecated(removeIn = "9.0.0", since = "8.1.0", note = "Only used for conversion")
 public class MucDAOOld
 		implements Initializable {
 
