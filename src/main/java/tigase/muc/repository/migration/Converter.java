@@ -179,7 +179,7 @@ public class Converter {
 				String roomDetails = room == null
 									 ? "n/a"
 									 : ", Room affiliations: " + room.getAffiliations() + ", Room configuration: " +
-											 room.getConfig();
+											 room.getConfig().getAsElement();
 				log.log(Level.WARNING, "Error converting room with jid: " + roomJid + ". Subject: " + subject +
 						", SubjectCreationDate: " + subjectDate + ", SubjectCreatorNickname: " + subjectNick +
 						roomDetails, e);
