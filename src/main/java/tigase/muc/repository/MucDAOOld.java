@@ -25,13 +25,11 @@ import tigase.db.UserRepository;
 import tigase.kernel.beans.Initializable;
 import tigase.kernel.beans.Inject;
 import tigase.muc.*;
+import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -52,14 +50,18 @@ public class MucDAOOld
 	private static final String SUBJECT_DATE_KEY = "date";
 
 	private static final String SUBJECT_KEY = "subject";
-
 	protected Logger log = Logger.getLogger(this.getClass().getName());
+	private boolean ignoreIncorrectRoomNames = false;
 	@Inject
 	private MUCConfig mucConfig;
 	@Inject
 	private UserRepository repository;
 	@Inject
 	private Room.RoomFactory roomFactory;
+
+	public void setIgnoreIncorrectRoomNames(boolean ignoreIncorrectRoomNames) {
+		this.ignoreIncorrectRoomNames = ignoreIncorrectRoomNames;
+	}
 
 	public void createRoom(Room room) throws RepositoryException {
 		try {
@@ -125,7 +127,16 @@ public class MucDAOOld
 			String[] ids = repository.getSubnodes(serviceName, ROOMS_KEY);
 			if (ids != null) {
 				for (String id : ids) {
-					jids.add(BareJID.bareJIDInstance(id));
+					if (ignoreIncorrectRoomNames) {
+						final BareJID bareJID = BareJID.bareJIDInstanceNS(id);
+						if (bareJID != null) {
+							jids.add(bareJID);
+						} else {
+							log.log(Level.SEVERE, "Failed to read room named: " + id);
+						}
+					} else {
+						jids.add(BareJID.bareJIDInstance(id));
+					}
 				}
 			}
 			return jids;
@@ -202,7 +213,12 @@ public class MucDAOOld
 
 			if (tmpDate != null && creatorJid != null) {
 
-				JID creatorJID = JID.jidInstance(creatorJid);
+				JID creatorJID = null;
+				try {
+					creatorJID = JID.jidInstance(creatorJid);
+				} catch (TigaseStringprepException e) {
+					throw new TigaseStringprepException("Error creating JID instance for creator: " + creatorJid);
+				}
 
 				Date date = new Date(Long.valueOf(tmpDate));
 				RoomConfig rc = new RoomConfig(roomJID);
@@ -222,6 +238,8 @@ public class MucDAOOld
 				String[] affJids = repository.getKeys(mucConfig.getServiceName(),
 													  ROOMS_KEY + roomJID + "/affiliations");
 				if (affJids != null) {
+					log.log(Level.FINEST, "Read room: {0} affiliations: {1}",
+							new Object[]{roomJID, Arrays.asList(affJids)});
 					for (final String jid : affJids) {
 						if (jid == null || jid.isEmpty()) {
 							continue;
@@ -234,7 +252,13 @@ public class MucDAOOld
 						}
 
 						Affiliation affiliation = Affiliation.valueOf(t);
-						affiliations.put(JID.jidInstance(jid).getBareJID(), RoomAffiliation.from(affiliation, false, null));
+						try {
+							affiliations.put(JID.jidInstance(jid).getBareJID(),
+											 RoomAffiliation.from(affiliation, false, null));
+						} catch (TigaseStringprepException e) {
+							throw new TigaseStringprepException(
+									"Error creating JID instance for affiliated member: " + jid);
+						}
 					}
 				}
 
@@ -245,9 +269,9 @@ public class MucDAOOld
 			return null;
 		} catch (Exception e) {
 			if (log.isLoggable(Level.WARNING)) {
-				log.log(Level.WARNING, "Room reading error", e);
+				log.log(Level.WARNING, "Room reading error: " + roomJID, e);
 			}
-			throw new RepositoryException("Room reading error", e);
+			throw new RepositoryException("Room reading error: " + roomJID, e);
 		}
 	}
 

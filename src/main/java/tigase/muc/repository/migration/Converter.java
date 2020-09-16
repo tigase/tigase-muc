@@ -33,11 +33,14 @@ import tigase.muc.Room;
 import tigase.muc.RoomWithId;
 import tigase.muc.repository.IMucDAO;
 import tigase.muc.repository.MucDAOOld;
+import tigase.xmpp.jid.BareJID;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -49,15 +52,25 @@ public class Converter {
 	private static final Logger log = Logger.getLogger(Converter.class.getCanonicalName());
 	private IMucDAO newRepo;
 	private MucDAOOld oldRepo;
+	private boolean stopOnError;
+
 
 	public static void initLogger() {
-		String initial_config = "tigase.level=ALL\n" + "tigase.db.jdbc.level=INFO\n" + "tigase.xml.level=INFO\n" +
+		// @formatter:off
+		String initial_config =
+				"tigase.level=ALL\n" +
+				"tigase.db.jdbc.level=INFO\n" +
+				"tigase.xml.level=INFO\n" +
 				"tigase.form.level=INFO\n" +
+				"tigase.kernel.level=INFO\n" +
 				"handlers=java.util.logging.ConsoleHandler java.util.logging.FileHandler\n" +
-				"java.util.logging.ConsoleHandler.level=ALL\n" +
-				"java.util.logging.ConsoleHandler.formatter=tigase.util.LogFormatter\n" +
-				"java.util.logging.FileHandler.formatter=tigase.util.LogFormatter\n" +
-				"java.util.logging.FileHandler.pattern=muc_db_migration.log\n" + "tigase.useParentHandlers=true\n";
+				"java.util.logging.ConsoleHandler.level=INFO\n" +
+				"java.util.logging.ConsoleHandler.formatter=" + tigase.util.log.LogFormatter.class.getName() + "\n" +
+				"java.util.logging.FileHandler.LEVEL=ALL\n" +
+				"java.util.logging.FileHandler.formatter=" + tigase.util.log.LogFormatter.class.getName() + "\n" +
+				"java.util.logging.FileHandler.pattern=muc_db_migration.log\n" +
+				"tigase.useParentHandlers=true\n";
+		// @formatter:on
 
 		ConfiguratorAbstract.loadLogManagerConfig(initial_config);
 	}
@@ -66,22 +79,25 @@ public class Converter {
 		initLogger();
 
 		if (argv == null || argv.length == 0) {
-			System.out.println("\nConverter paramters:\n");
+			System.out.println("\nConverter parameters:\n");
 			System.out.println(
 					" -in-repo-class tigase.db.jdbc.DataRepositoryImpl                           -      class implementing UserRepository");
 			System.out.println(
 					" -in 'jdbc:xxxx://localhost/tigasedb?user=tigase&password=tigase_pass'      -		uri of source database");
 			System.out.println(
 					" -out 'jdbc:xxxx://localhost/tigasedb?user=tigase&password=tigase_pass'     -		uri of destination database");
+			System.out.println(
+					" -stop-on-error                                                             -      whether to stop conversion on first error");
 			return;
 		}
 
 		Converter converter = new Converter();
 
-		log.config("parsing configuration parameters");
+		log.info("parsing configuration parameters");
 		String repoClass = null;
 		String oldRepoUri = null;
 		String newRepoUri = null;
+		boolean stopOnError = false;
 		for (int i = 0; i < argv.length; i++) {
 			String arg = argv[i];
 			if ("-in".equals(arg)) {
@@ -93,41 +109,63 @@ public class Converter {
 			} else if ("-in-repo-class".equals(arg)) {
 				i++;
 				repoClass = argv[i];
+			} else if ("-stop-on-error".equals(arg)) {
+				stopOnError = true;
 			}
 		}
 
-		log.config("initializing converter");
+		log.info("initializing converter");
 		try {
-			converter.init(repoClass, oldRepoUri, newRepoUri);
-			log.info("starting migration");
-			converter.convert();
-			log.info("migration finished");
-			System.exit(0);
-		} catch (RepositoryException e) {
-			log.info("Migration failed");
+			converter.init(repoClass, oldRepoUri, newRepoUri, stopOnError);
+			log.info("Starting migration");
+			final boolean conversionFinishedCorrectly = converter.convert();
+			log.info(conversionFinishedCorrectly ? "Migration finished correctly" : "Migration FAILED!");
+			System.exit(conversionFinishedCorrectly ? 0 : 1);
+		} catch (Exception e) {
+			log.log(Level.WARNING, "Migration failed: " + e, e);
 			System.exit(1);
 		}
 	}
 
-	public void convert() throws RepositoryException {
-		oldRepo.getRoomsJIDList().forEach(roomJid -> {
+	/**
+	 * @return {@code true} if the conversion was correct and {@code false} if there were errors
+	 *
+	 * @throws RepositoryException
+	 */
+	public boolean convert() throws Exception {
+		AtomicLong failedConversionCount = new AtomicLong();
+		AtomicLong warningConversionCount = new AtomicLong();
+		final ArrayList<BareJID> roomsJIDList = oldRepo.getRoomsJIDList();
+		RoomWithId room = null;
+		String subject = null;
+		Date subjectDate = null;
+		String subjectNick = null;
+		for (BareJID roomJid : roomsJIDList) {
 			try {
-				RoomWithId room = (RoomWithId) oldRepo.readRoom(roomJid);
-				String subject = oldRepo.getSubject(roomJid);
-				Date subjectDate = oldRepo.getSubjectCreationDate(roomJid);
-				String subjectNick = oldRepo.getSubjectCreatorNickname(roomJid);
+				log.log(Level.FINE, "Reading details of room with jid: {0}", new Object[]{roomJid});
+				room = (RoomWithId) oldRepo.readRoom(roomJid);
+				subject = oldRepo.getSubject(roomJid);
+				subjectDate = oldRepo.getSubjectCreationDate(roomJid);
+				subjectNick = oldRepo.getSubjectCreatorNickname(roomJid);
 
 				if (room == null || room.getConfig() == null) {
+					warningConversionCount.incrementAndGet();
 					log.log(Level.WARNING,
 							"skipping conversion of room with jid " + roomJid + " - room configuration is missing!");
 					oldRepo.destroyRoom(roomJid);
-					return;
+					continue;
 				}
 
 				if (newRepo.getRoom(roomJid) != null) {
-					return;
+					warningConversionCount.incrementAndGet();
+					log.log(Level.INFO, "Room with jid " + roomJid + " already exists, skipping conversion!");
+					continue;
 				}
 
+				log.log(Level.FINER,
+						"Converting room with jid: {0}. Subject: {1}, SubjectCreationDate: {2}, SubjectCreatorNickname: {3}, Room affiliations: {4}, Room configuration: {5}",
+						new Object[]{roomJid, subject, subjectDate, subjectNick, room.getAffiliations(),
+									 room.getConfig().getAsElement()});
 				newRepo.createRoom(room);
 
 				if (subjectDate != null) {
@@ -135,13 +173,27 @@ public class Converter {
 				}
 
 				oldRepo.destroyRoom(roomJid);
-			} catch (RepositoryException e) {
-				throw new RuntimeException("Repository conversion failed", e);
+				log.log(Level.FINE, "Room with jid: {0} converted successfully", new Object[]{roomJid});
+			} catch (Exception e) {
+				failedConversionCount.incrementAndGet();
+				String roomDetails = room == null
+									 ? "n/a"
+									 : ", Room affiliations: " + room.getAffiliations() + ", Room configuration: " +
+											 room.getConfig();
+				log.log(Level.WARNING, "Error converting room with jid: " + roomJid + ". Subject: " + subject +
+						", SubjectCreationDate: " + subjectDate + ", SubjectCreatorNickname: " + subjectNick +
+						roomDetails, e);
+				if (stopOnError) {
+					throw new RuntimeException("Repository conversion failed", e);
+				}
 			}
-		});
+		}
+		log.log(Level.INFO, "Failed converting {0} out of {1} rooms",
+				new Object[]{failedConversionCount.get(), roomsJIDList.size()});
+		return failedConversionCount.get() == 0;
 	}
 
-	public void init(String repoClass, String oldRepoUri, String newRepoUri) throws RepositoryException {
+	public void init(String repoClass, String oldRepoUri, String newRepoUri, boolean stopOnError) throws RepositoryException {
 		Kernel kernel = new Kernel();
 		try {
 			kernel.registerBean(DefaultTypesConverter.class).exec();
@@ -153,6 +205,7 @@ public class Converter {
 			Map<String, Object> defaultProps = new HashMap<>();
 			defaultProps.put("uri", oldRepoUri);
 			dataSourceProps.put("default", defaultProps);
+			dataSourceProps.put("schema-management", false);
 
 			AbstractBeanConfigurator.BeanDefinition mucDataSourceProps = new AbstractBeanConfigurator.BeanDefinition();
 			mucDataSourceProps.setBeanName("new-repo");
@@ -183,10 +236,12 @@ public class Converter {
 			DataSource ds = ((DataSourceBean) kernel.getInstance("dataSource")).getRepository("new-repo");
 
 			oldRepo = kernel.getInstance(MucDAOOld.class);
+			oldRepo.setIgnoreIncorrectRoomNames(true);
 
 			newRepo = kernel.getInstance(IMucDAO.class);
 
 			newRepo.setDataSource(ds);
+			this.stopOnError = stopOnError;
 		} catch (Exception ex) {
 			throw new RepositoryException("could not initialize converter", ex);
 		}
