@@ -39,13 +39,38 @@ import java.util.Collections;
 public interface PresenceModule
 		extends Module {
 
-	public static final String ID = "presences";
+	String ID = "presences";
 
 	void doQuit(final Room room, final JID senderJID) throws TigaseStringprepException;
 
-	public void sendPresencesToNewOccupant(Room room, JID senderJID) throws TigaseStringprepException;
+	void sendPresencesToNewOccupant(Room room, JID senderJID) throws TigaseStringprepException;
 
-	public static class PresenceWrapper {
+	class PresenceWrapper {
+
+		/**
+		 * Inform user that any occupant is allowed to see the user's full JID.
+		 */
+		public static final int STATUS_CODE_OCCUPANT_IS_ALLOWED_TO_SEE_JID = 100;
+		/**
+		 * Inform user that presence refers to itself.
+		 */
+		public static final int STATUS_CODE_SELF_PRESENCE = 110;
+		/**
+		 * Inform occupants that room logging is now enabled.
+		 */
+		public static final int STATUS_CODE_ROOM_LOGGING_IS_ENABLED = 170;
+		/**
+		 * Inform occupants that room logging is now disabled.
+		 */
+		public static final int STATUS_CODE_ROOM_LOGGING_IS_DISABLED = 171;
+		/**
+		 * Inform user that a new room has been created.
+		 */
+		public static final int STATUS_CODE_NEW_ROOM = 201;
+		/**
+		 * Inform all occupants of new room nickname.
+		 */
+		public static final int STATUS_CODE_NEW_NICKNAME = 303;
 
 		final Element[] items;
 		final Packet packet;
@@ -56,7 +81,8 @@ public interface PresenceModule
 													   String occupantNickname, Affiliation occupantAffiliation,
 													   Role occupantRole) throws TigaseStringprepException {
 			Anonymity anonymity = room.getConfig().getRoomAnonymity();
-			final Affiliation destinationAffiliation = room.getAffiliation(destinationJID.getBareJID()).getAffiliation();
+			final Affiliation destinationAffiliation = room.getAffiliation(destinationJID.getBareJID())
+					.getAffiliation();
 
 			try {
 				presence.setAttribute("from", JID.jidInstance(room.getRoomJID(), occupantNickname).toString());
@@ -94,12 +120,12 @@ public interface PresenceModule
 
 			if (occupantBareJID != null && occupantBareJID.equals(destinationJID.getBareJID())) {
 				wrapper.packet.setPriority(Priority.HIGH);
-				wrapper.addStatusCode(110);
+				wrapper.addStatusCode(PresenceWrapper.STATUS_CODE_SELF_PRESENCE);
 				if (anonymity == Anonymity.nonanonymous) {
-					wrapper.addStatusCode(100);
+					wrapper.addStatusCode(PresenceWrapper.STATUS_CODE_OCCUPANT_IS_ALLOWED_TO_SEE_JID);
 				}
 				if (room.getConfig().isLoggingEnabled()) {
-					wrapper.addStatusCode(170);
+					wrapper.addStatusCode(PresenceWrapper.STATUS_CODE_ROOM_LOGGING_IS_ENABLED);
 				}
 			}
 
@@ -121,8 +147,9 @@ public interface PresenceModule
 			if (occupantNickname == null) {
 				final Affiliation occupantAffiliation = room.getAffiliation(occupantJID.getBareJID()).getAffiliation();
 
-				return preparePresenceW(room, destinationJID, presence, occupantJID.getBareJID(), Collections.singleton(occupantJID), occupantJID.getBareJID().toString(), occupantAffiliation,
-										Role.none);
+				return preparePresenceW(room, destinationJID, presence, occupantJID.getBareJID(),
+										Collections.singleton(occupantJID), occupantJID.getBareJID().toString(),
+										occupantAffiliation, Role.none);
 			} else {
 				return preparePresenceW(room, destinationJID, presence, occupantNickname);
 			}
@@ -152,8 +179,15 @@ public interface PresenceModule
 			return x;
 		}
 
-		void addStatusCode(int code) {
-			x.addChild(new Element("status", new String[]{"code"}, new String[]{"" + code}));
+		void addStatusCode(final int code) {
+			final String codeToSet = String.valueOf(code).intern();
+			boolean alreadySet = x.getChildren(
+					element -> "status" == element.getName() && element.getAttributeStaticStr("code") == codeToSet) !=
+					null;
+
+			if (!alreadySet) {
+				x.addChild(new Element("status", new String[]{"code"}, new String[]{codeToSet}));
+			}
 		}
 	}
 

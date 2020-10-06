@@ -131,11 +131,14 @@ public class PresenceModuleNoBroadcast
 
 	@Override
 	protected void sendPresenceToAllOccupants(final Element $presence, Room room, JID senderJID, boolean newRoomCreated,
-											  String newNickName) throws TigaseStringprepException {
+											  final String newNickName) throws TigaseStringprepException {
 
 		// send presence only back to the joining user
-		PresenceWrapper presence = super.preparePresence(senderJID, $presence.clone(), room, senderJID, newRoomCreated,
-														 newNickName);
+		PresenceWrapper presence = super.preparePresence(senderJID, $presence.clone(), room, senderJID, newRoomCreated);
+		if (newRoomCreated) {
+			presence.addStatusCode(PresenceWrapper.STATUS_CODE_NEW_ROOM);
+		}
+
 		write(presence.getPacket());
 
 	}

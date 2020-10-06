@@ -68,18 +68,18 @@ public class PresenceModuleImpl
 	@Inject
 	private IMucRepository repository;
 
-	public static void addCodes(PresenceWrapper wrapper, boolean newRoomCreated, String newNickName) {
-		if (newRoomCreated) {
-			wrapper.addStatusCode(201);
-		}
-		if (newNickName != null) {
-			wrapper.addStatusCode(303);
-
-			for (Element item : wrapper.items) {
-				item.setAttribute("nick", newNickName);
-			}
-		}
-	}
+//	public static void addCodes(PresenceWrapper wrapper, boolean newRoomCreated, final String newNickName) {
+//		if (newRoomCreated) {
+//			wrapper.addStatusCode(201);
+//		}
+//		if (newNickName != null) {
+//			wrapper.addStatusCode(303);
+//
+//			for (Element item : wrapper.items) {
+//				item.setAttribute("nick", newNickName);
+//			}
+//		}
+//	}
 
 	public PresenceModuleImpl() {
 		allowedElements.add(ElementCriteria.name("show"));
@@ -383,7 +383,7 @@ public class PresenceModuleImpl
 		if (event.getOldAffiliation().isPersistentOccupant() && !event.getNewAffiliation().isPersistentOccupant()) {
 			// exit
 			JID sender = JID.jidInstanceNS(event.getJid());
-			sendPresenceToAllOccupants(event.getRoom(), sender, false, event.getJid().toString());
+			sendPresenceToAllOccupants(event.getRoom(), sender, false, null);
 		} else if (!event.getOldAffiliation().isPersistentOccupant() &&
 				event.getNewAffiliation().isPersistentOccupant()) {
 			// enter
@@ -423,11 +423,8 @@ public class PresenceModuleImpl
 	}
 
 	protected PresenceWrapper preparePresence(JID destinationJID, final Element presence, Room room, JID occupantJID,
-											  boolean newRoomCreated, String newNickName)
-			throws TigaseStringprepException {
+											  boolean newRoomCreated) throws TigaseStringprepException {
 		final PresenceWrapper wrapper = PresenceWrapper.preparePresenceW(room, destinationJID, presence, occupantJID);
-
-		addCodes(wrapper, newRoomCreated, newNickName);
 
 		return wrapper;
 	}
@@ -694,7 +691,7 @@ public class PresenceModuleImpl
 	}
 
 	protected void sendPresenceToAllOccupants(final Element $presence, Room room, JID senderJID, boolean newRoomCreated,
-											  String newNickName) throws TigaseStringprepException {
+											  final String newNickName) throws TigaseStringprepException {
 
 		final String occupantNickname = room.getOccupantsNickname(senderJID);
 		final BareJID occupantJID = Optional.ofNullable(room.getOccupantsJidByNickname(occupantNickname))
@@ -728,7 +725,10 @@ public class PresenceModuleImpl
 
 				if (config.isMultiItemMode()) {
 					PresenceWrapper presence = preparePresence(destinationJID, $presence.clone(), room, senderJID,
-															   newRoomCreated, newNickName);
+															   newRoomCreated);
+					if (newRoomCreated) {
+						presence.addStatusCode(PresenceWrapper.STATUS_CODE_NEW_ROOM);
+					}
 					write(presence.packet);
 				} else {
 					for (JID jid : room.getOccupantsJidsByNickname(occupantNickname)) {
@@ -737,7 +737,9 @@ public class PresenceModuleImpl
 						PresenceWrapper l = PresenceWrapper.preparePresenceW(room, destinationJID, $presence.clone(),
 																			 occupantJID, z, occupantNickname,
 																			 occupantAffiliation, occupantRole);
-						addCodes(l, newRoomCreated, newNickName);
+						if (newRoomCreated) {
+							l.addStatusCode(PresenceWrapper.STATUS_CODE_NEW_ROOM);
+						}
 
 						write(l.packet);
 					}
@@ -746,8 +748,8 @@ public class PresenceModuleImpl
 		}
 	}
 
-	protected Element sendPresenceToAllOccupants(Room room, JID senderJID, boolean newRoomCreated, String newNickName)
-			throws TigaseStringprepException {
+	protected Element sendPresenceToAllOccupants(Room room, JID senderJID, boolean newRoomCreated,
+												 final String newNickName) throws TigaseStringprepException {
 		Element presence;
 
 		if (newNickName != null) {
