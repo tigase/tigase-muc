@@ -127,7 +127,6 @@ public class ClusteredRoomStrategyV2
 																										 occupant.getAffiliation(),
 																										 occupant.getRole());
 
-		PresenceModuleImpl.addCodes(presenceWrapper, false, occupant.getNickname());
 		mucComponentClustered.addOutPacket(presenceWrapper.getPacket());
 	}
 
@@ -192,9 +191,6 @@ public class ClusteredRoomStrategyV2
 					PresenceModule.PresenceWrapper presenceWrapper = PresenceModule.PresenceWrapper.preparePresenceW(
 							room, destinationJID, presence, occupantJID.getBareJID(),
 							Collections.singleton(occupantJID), nickname, occupantAffiliation, occupantRole);
-					if (!"unavailable".equals(presence.getAttributeStaticStr("type"))) {
-						PresenceModuleImpl.addCodes(presenceWrapper, false, nickname);
-					}
 					mucComponentClustered.addOutPacket(presenceWrapper.getPacket());
 				}
 

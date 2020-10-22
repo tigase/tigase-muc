@@ -121,9 +121,6 @@ public class ClusteredRoomStrategy
 						PresenceModule.PresenceWrapper presenceWrapper = PresenceModule.PresenceWrapper.preparePresenceW(
 								room, destinationJID, presence, occupantJID.getBareJID(),
 								Collections.singleton(occupantJID), nickname, occupantAffiliation, occupantRole);
-						if (!"unavailable".equals(presence.getAttributeStaticStr("type"))) {
-							PresenceModuleImpl.addCodes(presenceWrapper, false, nickname);
-						}
 						strategy.mucComponentClustered.addOutPacket(presenceWrapper.getPacket());
 					}
 				}
