@@ -179,7 +179,7 @@ public interface PresenceModule
 			return x;
 		}
 
-		void addStatusCode(final int code) {
+		public void addStatusCode(final int code) {
 			final String codeToSet = String.valueOf(code).intern();
 			boolean alreadySet = x.getChildren(
 					element -> "status" == element.getName() && element.getAttributeStaticStr("code") == codeToSet) !=
