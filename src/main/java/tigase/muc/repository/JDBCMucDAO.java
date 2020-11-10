@@ -24,6 +24,7 @@ import tigase.db.util.RepositoryVersionAware;
 import tigase.kernel.beans.Inject;
 import tigase.muc.*;
 import tigase.util.stringprep.TigaseStringprepException;
+import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
 
 import java.sql.PreparedStatement;
@@ -31,6 +32,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -165,7 +167,18 @@ public class JDBCMucDAO
 						Date date = data_repo.getTimestamp(rs, 2);
 						BareJID creator = BareJID.bareJIDInstance(rs.getString(3));
 						RoomConfig roomConfig = new RoomConfig(roomJID);
-						roomConfig.readFromElement(parseConfigElement(rs.getString(4)));
+						final String roomConfigurationString = rs.getString(4);
+						if (log.isLoggable(Level.FINEST)) {
+							log.log(Level.FINEST, "Parsing room {0} configuration: {1}",
+									new Object[]{roomJID, roomConfigurationString});
+						}
+						final Element roomConfiguration = parseConfigElement(roomConfigurationString);
+						if (roomConfiguration == null) {
+							log.log(Level.SEVERE, "Failed parsing room {0} configuration: {1}",
+									new Object[]{roomJID, roomConfigurationString});
+							throw new RepositoryException("Error while reading room " + roomJID + " configuration");
+						}
+						roomConfig.readFromElement(roomConfiguration);
 
 						RoomWithId room = roomFactory.newInstance(roomId, roomConfig, date, creator);
 
