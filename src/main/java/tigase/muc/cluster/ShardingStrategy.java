@@ -352,7 +352,6 @@ public class ShardingStrategy
 						Optional.ofNullable(room.getConfig())
 								.map(RoomConfig::getRoomName)
 								.ifPresent(name -> roomEl.setAttribute("name", name));
-						roomEl.setAttribute("name", room.getConfig().getRoomName());
 						roomEl.setAttribute("public", String.valueOf(room.getConfig().isRoomconfigPublicroom()));
 						roomEl.setAttribute("persistent", String.valueOf(room.getConfig().isPersistentRoom()));
 					}
