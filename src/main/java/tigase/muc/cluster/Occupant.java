@@ -127,6 +127,10 @@ public class Occupant {
 			this.priority = x;
 		}
 
+		public JID getFrom() {
+			return JID.jidInstanceNS(this.element.getAttributeStaticStr("from"));
+		}
+
 		@Override
 		public int compareTo(Presence o) {
 			return priority - o.priority;

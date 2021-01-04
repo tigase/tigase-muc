@@ -13,10 +13,7 @@ import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Predicate;
@@ -90,6 +87,22 @@ public class RoomClustered<ID>
 		}
 	}
 
+	public Optional<JID> getOccupantJidForIqRequestForward(String recipientNickname) {
+		return Optional.ofNullable(getOccupantsJidByNickname(recipientNickname))
+				.map(jid -> this.presences.getBestPresenceInt(jid))
+				.map(PresenceStore.Presence::getFrom)
+				.or(() -> Optional.ofNullable(this.remoteOccupants.get(recipientNickname))
+						.map(Occupant::getBestPresenceInt)
+						.map(Occupant.Presence::getFrom));
+	}
+
+	public Optional<JID> getOccupantJidForIqResponseForward(String recipientNickname, Predicate<JID> filter) {
+		return Stream.concat(getLocalOccupantsJidsByNickname(recipientNickname).stream(),
+							 Optional.ofNullable(remoteOccupants.get(recipientNickname))
+									 .map(occupant -> occupant.getOccupants().stream())
+									 .orElse(Stream.empty())).filter(filter).findFirst();
+	}
+	
 	@Override
 	public boolean isOccupantOnline(BareJID jid) {
 		if (!super.isOccupantOnline(jid)) {
