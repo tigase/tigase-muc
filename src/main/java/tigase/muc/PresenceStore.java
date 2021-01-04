@@ -295,6 +295,10 @@ public class PresenceStore {
 			this.priority = x;
 		}
 
+		public JID getFrom() {
+			return from;
+		}
+
 		public Element getElement() {
 			return element;
 		}

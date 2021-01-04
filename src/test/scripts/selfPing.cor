@@ -141,7 +141,7 @@ expect all: {
 <iq from="darkcave@macbeth.shakespeare.lit/secondwitch" id="s2c2" to="wiccarocks@shakespeare.lit/laptop" type="error" xmlns="jabber:client">
 <ping xmlns="urn:xmpp:ping"/>
 <error code="406" type="modify"><not-acceptable xmlns="urn:ietf:params:xml:ns:xmpp-stanzas"/>
-<text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="en">secondwitch is not in room</text></error>
+<text xmlns="urn:ietf:params:xml:ns:xmpp-stanzas" xml:lang="en">laptop is not in room</text></error>
 </iq>
 }
 

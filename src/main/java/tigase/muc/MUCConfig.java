@@ -54,6 +54,8 @@ public class MUCConfig {
 	private boolean messageFilterEnabled = true;
 	@ConfigField(desc = "Multi resources login allowed", alias = MUC_MULTI_ITEM_ALLOWED_KEY)
 	private boolean multiItemMode = true;
+	@ConfigField(desc = "Forwared iq to resource with highest priority", alias = "muc-multi-item-forward-best")
+	private boolean multiItemForwardBest = true;
 	@ConfigField(desc = "Lock newly created room", alias = MUC_LOCK_NEW_ROOM_KEY)
 	private boolean newRoomLocked = true;
 	@ConfigField(desc = "Passing only bare presence", alias = PRESENCE_FILTER_ENABLED_KEY)
@@ -95,6 +97,10 @@ public class MUCConfig {
 
 	public boolean isMultiItemMode() {
 		return multiItemMode;
+	}
+
+	public boolean isMultiItemModeForwardBest() {
+		return multiItemForwardBest;
 	}
 
 	public boolean isNewRoomLocked() {

@@ -437,6 +437,16 @@ public class Room
 		return aff.isPersistentOccupant();
 	}
 
+	public Optional<JID> getOccupantJidForIqRequestForward(String recipientNickname) {
+		return Optional.ofNullable(getOccupantsJidByNickname(recipientNickname))
+				.map(jid -> this.presences.getBestPresenceInt(jid))
+				.map(pe -> pe.getFrom());
+	}
+
+	public Optional<JID> getOccupantJidForIqResponseForward(String recipientNickname, Predicate<JID> filter) {
+		return getLocalOccupantsJidsByNickname(recipientNickname).stream().filter(filter).findFirst();
+	}
+
 	public boolean isRoomLocked() {
 		return roomLocked;
 	}

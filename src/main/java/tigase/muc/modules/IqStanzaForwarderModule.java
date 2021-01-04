@@ -23,18 +23,26 @@ import tigase.criteria.Criteria;
 import tigase.criteria.ElementCriteria;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
+import tigase.muc.MUCConfig;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
+import tigase.util.Base64;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.StanzaType;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.logging.Level;
 
 /**
@@ -47,6 +55,8 @@ public class IqStanzaForwarderModule
 	public static final String ID = "iqforwarder";
 	private final static Criteria SELF_PING_CRIT = ElementCriteria.nameType("iq", "get")
 			.add(ElementCriteria.name("ping", "urn:xmpp:ping"));
+	@Inject
+	private MUCConfig config;
 	@Inject
 	private IMucRepository repository;
 	private final Criteria crit = new Criteria() {
@@ -86,6 +96,8 @@ public class IqStanzaForwarderModule
 	@Override
 	public void process(Packet packet) throws ComponentException, TigaseStringprepException {
 		try {
+			final boolean isRequest = this.isRequest(packet);
+
 			final JID senderJID = packet.getStanzaFrom();
 			final BareJID roomJID = packet.getStanzaTo().getBareJID();
 			final String recipientNickname = getNicknameFromJid(packet.getStanzaTo());
@@ -99,7 +111,13 @@ public class IqStanzaForwarderModule
 				throw new MUCException(Authorization.ITEM_NOT_FOUND);
 			}
 
-			final String senderNickname = room.getOccupantsNickname(senderJID);
+			// if that is response for vCard request and it come from the BareJID, we should look for occupant with nickname with this bare jid
+			final String senderNickname = Optional.ofNullable(room.getOccupantsNickname(senderJID))
+					.or(() -> (!isRequest)
+							  ? room.getOccupantsNicknames(senderJID.getBareJID()).stream().findFirst()
+							  : Optional.empty())
+					.orElseThrow(() -> new MUCException(Authorization.NOT_ACCEPTABLE,
+														"" + getNicknameFromJid(senderJID) + " is not in room"));
 			final Role senderRole = room.getRole(senderNickname);
 
 			if (log.isLoggable(Level.FINEST)) {
@@ -111,10 +129,81 @@ public class IqStanzaForwarderModule
 			if (!senderRole.isSendPrivateMessages()) {
 				throw new MUCException(Authorization.NOT_ALLOWED, "Role is not allowed to send private messages");
 			}
+
+			forwardPacket(packet, room, senderNickname, senderJID, recipientNickname, isRequest);
+		} catch (MUCException e1) {
+			throw e1;
+		} catch (TigaseStringprepException e) {
+			throw new MUCException(Authorization.BAD_REQUEST);
+		} catch (Exception e) {
+			log.log(Level.FINEST, "Error during forwarding IQ", e);
+			throw new RuntimeException(e);
+		}
+	}
+
+	protected boolean isRequest(Packet packet) throws MUCException {
+		final StanzaType type = packet.getType();
+		if (type == null) {
+			throw new MUCException(Authorization.BAD_REQUEST, "IQ stanza is required to have a type");
+		}
+		switch (type) {
+			case result:
+			case error:
+				return false;
+			case set:
+			case get:
+				return true;
+			default:
+				throw new MUCException(Authorization.BAD_REQUEST, "IQ stanza has invalid type");
+		}
+	}
+
+	protected static String generateJidShortcut(JID jid) throws ComponentException {
+		try {
+			MessageDigest md = MessageDigest.getInstance("SHA-1");
+			byte[] arr = md.digest(jid.toString().getBytes(StandardCharsets.UTF_8));
+			return Base64.encode(Arrays.copyOfRange(arr, arr.length - 6, arr.length));
+		} catch (NoSuchAlgorithmException e) {
+			throw new ComponentException(Authorization.INTERNAL_SERVER_ERROR, e.getMessage());
+		}
+	}
+
+	protected void forwardPacket(Packet packet, Room room, String senderNickname, JID senderJID, String recipientNickname, boolean isRequest) throws ComponentException, TigaseStringprepException {
+		if (config.isMultiItemModeForwardBest()) {
+			final String id = packet.getStanzaId();
+			if (id == null) {
+				throw new MUCException(Authorization.BAD_REQUEST, "IQ stanza is required to have id attribute");
+			}
+
+			if (isRequest) {
+				JID recipientJid = room.getOccupantJidForIqRequestForward(recipientNickname).orElseThrow(() -> new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient"));
+				// if this request is for vCard then we should route it to the bare JID of the recipient occupant
+				if (packet.getElemChild("vCard", "vcard-temp") != null) {
+					recipientJid = recipientJid.copyWithoutResource();
+				}
+				String idPrefix = generateJidShortcut(senderJID);
+
+				forwardPacket(packet, room.getRoomJID(), senderNickname, recipientJid, idPrefix + "-" + id);
+			} else {
+				String idPrefix = id.substring(0,8);
+				room.getOccupantJidForIqResponseForward(recipientNickname, jid -> {
+					try {
+						return idPrefix.equals(generateJidShortcut(jid));
+					} catch (ComponentException ex) {
+						return false;
+					}
+				}).ifPresent(recipientJid -> {
+					try {
+						forwardPacket(packet, room.getRoomJID(), senderNickname, recipientJid, id.substring(9));
+					} catch (TigaseStringprepException ex) {
+						log.log(Level.FINEST, "Could not forward response to request sender", ex);
+					}
+				});
+			}
+		} else {
 			if (room.getOccupantsJidsByNickname(senderNickname).size() > 1) {
 				throw new MUCException(Authorization.NOT_ALLOWED, "Many source resources detected.");
 			}
-
 			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);
 			if (recipientJids == null || recipientJids.isEmpty()) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
@@ -124,23 +213,20 @@ public class IqStanzaForwarderModule
 				throw new MUCException(Authorization.NOT_ALLOWED, "Many destination resources detected.");
 			}
 
-			JID recipientJid = recipientJids.iterator().next();
-
-			final Element iq = packet.getElement().clone();
-			iq.setAttribute("from", roomJID.toString() + "/" + senderNickname);
-			iq.setAttribute("to", recipientJid.toString());
-
-			Packet p = Packet.packetInstance(iq);
-			p.setXMLNS(Packet.CLIENT_XMLNS);
-			write(p);
-		} catch (MUCException e1) {
-			throw e1;
-		} catch (TigaseStringprepException e) {
-			throw new MUCException(Authorization.BAD_REQUEST);
-		} catch (Exception e) {
-			log.log(Level.FINEST, "Error during forwarding IQ", e);
-			throw new RuntimeException(e);
+			forwardPacket(packet, room.getRoomJID(), senderNickname, recipientJids.iterator().next(), null);
 		}
+	}
+
+	protected void forwardPacket(Packet packet, BareJID roomJID, String senderNickname, JID recipientJid, String id)
+			throws TigaseStringprepException {
+		final Element iq = packet.getElement().clone();
+		if (id != null) {
+			iq.setAttribute("id", id);
+		}
+
+		Packet p = Packet.packetInstance(iq, JID.jidInstance(roomJID, senderNickname), recipientJid);
+		p.setXMLNS(Packet.CLIENT_XMLNS);
+		write(p);
 	}
 
 	protected boolean checkIfProcessed(Element element) {
@@ -159,9 +245,6 @@ public class IqStanzaForwarderModule
 				return false;
 			}
 			final String senderNickname = room.getOccupantsNickname(senderJID);
-			if (senderNickname == null) {
-				return false;
-			}
 
 			if (isSelfPing(element)) {
 				return !recipientNickname.equals(senderNickname);
