@@ -23,9 +23,12 @@ package tigase.admin
 // AS:ComponentClass: tigase.muc.MUCComponent
 
 import tigase.form.Form
+import tigase.kernel.core.Kernel
 import tigase.muc.Affiliation
 import tigase.muc.Room
 import tigase.muc.RoomConfig
+import tigase.muc.modules.RoomConfigurationModule
+import tigase.muc.repository.IMucRepository
 import tigase.server.Command
 import tigase.server.Iq
 import tigase.server.Packet
@@ -37,6 +40,8 @@ def ROOM_NAME_KEY = "room-name"
 
 def Iq p = (Iq) packet
 def roomName = Command.getFieldValue(p, ROOM_NAME_KEY)
+
+final IMucRepository mucRepository = kernel.getInstance(IMucRepository.class);
 
 if (roomName == null) {
 	RoomConfig roomConfig = mucRepository.getDefaultRoomConfig();

@@ -17,6 +17,10 @@
  */
 package tigase.admin
 
+import tigase.kernel.core.Kernel
+import tigase.muc.modules.RoomConfigurationModule
+import tigase.muc.repository.IMucRepository
+
 // AS:Description: Remove room
 // AS:CommandId: room-remove
 // AS:Component: muc
@@ -36,6 +40,9 @@ def Iq p = (Iq) packet
 def roomName = Command.getFieldValue(p, ROOM_NAME_KEY)
 def reason = Command.getFieldValue(p, REASON_KEY)
 def alternateJid = Command.getFieldValue(p, ALTERNATE_JID_KEY)
+
+final IMucRepository mucRepository = kernel.getInstance(IMucRepository.class);
+final RoomConfigurationModule ownerModule = kernel.getInstance(RoomConfigurationModule.class);
 
 if (roomName == null) {
 	// No data to process, let's ask user to provide
