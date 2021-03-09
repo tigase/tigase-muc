@@ -184,7 +184,7 @@ public class IqStanzaForwarderModule
 				String idPrefix = generateJidShortcut(senderJID);
 
 				forwardPacket(packet, room.getRoomJID(), senderNickname, recipientJid, idPrefix + "-" + id);
-			} else {
+			} else if (id.length() >= 8) {
 				String idPrefix = id.substring(0,8);
 				room.getOccupantJidForIqResponseForward(recipientNickname, jid -> {
 					try {
@@ -199,6 +199,10 @@ public class IqStanzaForwarderModule
 						log.log(Level.FINEST, "Could not forward response to request sender", ex);
 					}
 				});
+			} else if (id.startsWith("spng-")) {
+				// that is handled by self-ping, we do not have any other way to detect self-ping..
+			} else {
+				throw new MUCException(Authorization.ITEM_NOT_FOUND, "Unknown recipient");
 			}
 		} else {
 			if (room.getOccupantsJidsByNickname(senderNickname).size() > 1) {
