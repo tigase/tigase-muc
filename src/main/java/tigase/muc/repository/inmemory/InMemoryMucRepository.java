@@ -390,6 +390,7 @@ public class InMemoryMucRepository
 				if (roomConfig.isPersistentRoom()) {
 					final Room room = getRoom(roomConfig.getRoomJID());
 					dao.createRoom((RoomWithId) room);
+					dao.setSubject((RoomWithId) room, room.getSubject(), room.getSubjectChangerNick(), room.getSubjectChangeDate());
 				} else {
 					dao.destroyRoom(roomConfig.getRoomJID());
 				}
