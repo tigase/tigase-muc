@@ -57,6 +57,8 @@ public class RoomConfigurationModule
 	@Inject(nullAllowed = false)
 	private GroupchatMessageModule messageModule;
 	@Inject
+	private PermissionChecker permissionChecker;
+	@Inject
 	private IMucRepository repository;
 
 	public static Element createRoomCreatedEvent(Room room) {
@@ -205,7 +207,7 @@ public class RoomConfigurationModule
 			if (roomJID.getLocalpart() == null) {
 				throw new MUCException(Authorization.JID_MALFORMED);
 			}
-			
+
 			JID senderJID = JID.jidInstance(element.getAttributeStaticStr(Packet.FROM_ATT));
 			final Element query = element.getElement().getChild("query", "http://jabber.org/protocol/muc#owner");
 			Room room = repository.getRoom(roomJID.getBareJID());
@@ -213,10 +215,12 @@ public class RoomConfigurationModule
 			boolean roomCreated = false;
 			final Element x = query.getChild("x", "jabber:x:data");
 			final Element destroy = query.getChild("destroy");
+			final Form form = x != null ? new Form(x) : null;
 
 			if (room == null && destroy != null) {
 				throw new MUCException(Authorization.ITEM_NOT_FOUND, "There is no such room.");
 			} else if (room == null) {
+				permissionChecker.checkCreatePermission(roomJID.getBareJID(), senderJID, form);
 				roomCreated = true;
 				room = repository.createNewRoom(roomJID.getBareJID(), senderJID);
 				room.addAffiliationByJid(senderJID.getBareJID(), RoomAffiliation.owner);
@@ -235,8 +239,6 @@ public class RoomConfigurationModule
 				destroy(room, destroy);
 				write(element.okResult((Element) null, 0));
 			} else if (x != null) {
-				Form form = new Form(x);
-
 				if ("submit".equals(form.getType())) {
 					String ps = form.getAsString(RoomConfig.MUC_ROOMCONFIG_ROOMSECRET_KEY);
 
@@ -244,6 +246,9 @@ public class RoomConfigurationModule
 							((ps == null) || (ps.length() == 0))) {
 						throw new MUCException(Authorization.NOT_ACCEPTABLE, "Passwords cannot be empty");
 					}
+
+					permissionChecker.checkUpdateVisibilityPermission(room, senderJID, form);
+
 					write(element.okResult((Element) null, 0));
 
 					final RoomConfig oldConfig = room.getConfig().clone();

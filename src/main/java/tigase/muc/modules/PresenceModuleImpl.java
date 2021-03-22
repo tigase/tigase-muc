@@ -66,6 +66,8 @@ public class PresenceModuleImpl
 	@Inject(nullAllowed = true)
 	private MucLogger mucLogger;
 	@Inject
+	private PermissionChecker permissionChecker;
+	@Inject
 	private IMucRepository repository;
 
 //	public static void addCodes(PresenceWrapper wrapper, boolean newRoomCreated, final String newNickName) {
@@ -333,6 +335,9 @@ public class PresenceModuleImpl
 							"Creating new room '" + roomJID + "' by user " + nickName + "' <" + senderJID.toString() +
 									">");
 				}
+
+				permissionChecker.checkCreatePermission(roomJID, senderJID, null);
+
 				room = repository.createNewRoom(roomJID, senderJID);
 				room.addAffiliationByJid(senderJID.getBareJID(), RoomAffiliation.owner);
 				room.setRoomLocked(config.isNewRoomLocked());
@@ -642,55 +647,6 @@ public class PresenceModuleImpl
 
 	}
 
-	/**
-	 * Implementation based on https://xmpp.org/extensions/xep-0045.html#enter-subject
-	 *
-	 * After the room has optionally sent the discussion history to the new occupant, it SHALL send the current room
-	 * subject. This is a <message/> stanza from the room JID (or from the occupant JID of the entity that set
-	 * the subject), with a <subject/> element but no <body/> element, as shown in the following example. In addition,
-	 * the subject SHOULD be stamped with Delayed Delivery (XEP-0203) [14] information qualified by
-	 * the 'urn:xmpp:delay' namespace to indicate the time at which the subject was last modified.
-	 * If the <delay/> element is included, its 'from' attribute MUST be set to the JID of the room itself.
-	 *
-	 * If there is no subject set, the room MUST return an empty <subject/> element. The <delay/> SHOULD be included
-	 * if the subject was actively cleared and MAY be omitted if the room never had a subject set.
-	 */
-	private void sendSubject(Room room, JID senderJID) throws TigaseStringprepException {
-		String nick = room.getSubjectChangerNick() != null
-					  ? room.getSubjectChangerNick()
-					  : room.getOccupantsNicknames(room.getCreatorJid()).stream().findAny().orElse("");
-
-		final Date subjectChangeDate = room.getSubjectChangeDate() != null ? room.getSubjectChangeDate() : new Date();
-		String subjectId = GroupchatMessageModule.generateSubjectId(subjectChangeDate, room.getSubject() == null ? "" : room.getSubject());
-		Element message = new Element(Message.ELEM_NAME,
-									  new String[]{Packet.TYPE_ATT, Packet.FROM_ATT, Packet.TO_ATT, Packet.ID_ATT},
-									  new String[]{"groupchat", room.getRoomJID() + "/" + nick, senderJID.toString(),
-												   subjectId});
-
-		message.addChild(new Element("subject", room.getSubject()));
-
-		if ((room.getSubjectChangerNick() != null) && (room.getSubjectChangeDate() != null)) {
-			String stamp = dateTimeFormatter.formatWithMs(subjectChangeDate);
-			Element delay = new Element("delay", new String[]{"xmlns", "stamp"}, new String[]{"urn:xmpp:delay", stamp});
-
-			delay.setAttribute("jid", String.valueOf(room.getRoomJID()));
-
-			message.addChild(delay);
-
-			if (config.useLegacyDelayedDelivery()) {
-				Element x = new Element("x", new String[]{"xmlns", "stamp"}, new String[]{"jabber:x:delay",
-																						  dateTimeFormatter.formatInLegacyDelayedDelivery(
-																								  subjectChangeDate)});
-				message.addChild(x);
-			}
-		}
-
-		Packet p = Packet.packetInstance(message);
-		p.setXMLNS(Packet.CLIENT_XMLNS);
-
-		write(p);
-	}
-
 	protected void processExit(final Room room, final Element presenceElement, final JID senderJID)
 			throws MUCException, TigaseStringprepException {
 		if (log.isLoggable(Level.FINEST)) {
@@ -786,6 +742,56 @@ public class PresenceModuleImpl
 			sendPresenceToAllOccupants(presence, room, senderJID, newRoomCreated, newNickName);
 		}
 		return presence;
+	}
+
+	/**
+	 * Implementation based on https://xmpp.org/extensions/xep-0045.html#enter-subject
+	 *
+	 * After the room has optionally sent the discussion history to the new occupant, it SHALL send the current room
+	 * subject. This is a <message/> stanza from the room JID (or from the occupant JID of the entity that set
+	 * the subject), with a <subject/> element but no <body/> element, as shown in the following example. In addition,
+	 * the subject SHOULD be stamped with Delayed Delivery (XEP-0203) [14] information qualified by
+	 * the 'urn:xmpp:delay' namespace to indicate the time at which the subject was last modified.
+	 * If the <delay/> element is included, its 'from' attribute MUST be set to the JID of the room itself.
+	 *
+	 * If there is no subject set, the room MUST return an empty <subject/> element. The <delay/> SHOULD be included
+	 * if the subject was actively cleared and MAY be omitted if the room never had a subject set.
+	 */
+	private void sendSubject(Room room, JID senderJID) throws TigaseStringprepException {
+		String nick = room.getSubjectChangerNick() != null
+					  ? room.getSubjectChangerNick()
+					  : room.getOccupantsNicknames(room.getCreatorJid()).stream().findAny().orElse("");
+
+		final Date subjectChangeDate = room.getSubjectChangeDate() != null ? room.getSubjectChangeDate() : new Date();
+		String subjectId = GroupchatMessageModule.generateSubjectId(subjectChangeDate,
+																	room.getSubject() == null ? "" : room.getSubject());
+		Element message = new Element(Message.ELEM_NAME,
+									  new String[]{Packet.TYPE_ATT, Packet.FROM_ATT, Packet.TO_ATT, Packet.ID_ATT},
+									  new String[]{"groupchat", room.getRoomJID() + "/" + nick, senderJID.toString(),
+												   subjectId});
+
+		message.addChild(new Element("subject", room.getSubject()));
+
+		if ((room.getSubjectChangerNick() != null) && (room.getSubjectChangeDate() != null)) {
+			String stamp = dateTimeFormatter.formatWithMs(subjectChangeDate);
+			Element delay = new Element("delay", new String[]{"xmlns", "stamp"}, new String[]{"urn:xmpp:delay", stamp});
+
+			delay.setAttribute("jid", String.valueOf(room.getRoomJID()));
+
+			message.addChild(delay);
+
+			if (config.useLegacyDelayedDelivery()) {
+				Element x = new Element("x", new String[]{"xmlns", "stamp"}, new String[]{"jabber:x:delay",
+																						  dateTimeFormatter.formatInLegacyDelayedDelivery(
+																								  subjectChangeDate)});
+				message.addChild(x);
+			}
+		}
+
+		Packet p = Packet.packetInstance(message);
+		p.setXMLNS(Packet.CLIENT_XMLNS);
+
+		write(p);
 	}
 
 	private void sendPresenceFromRoomToNewOccupant(Room room, JID occupandJid) throws TigaseStringprepException {
