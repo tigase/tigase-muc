@@ -51,7 +51,7 @@ public class Ghostbuster2Test {
 		AtomicBoolean timeouts = new AtomicBoolean(true);
 		PresenceModule presenceModule = new PresenceModuleImpl() {
 			@Override
-			public void doQuit(Room room, JID senderJID) throws TigaseStringprepException {
+			public void doQuit(final Room room, final JID senderJID, final Integer... selfStatusCodes) throws TigaseStringprepException {
 				room.removeOccupant(senderJID);
 			}
 		};

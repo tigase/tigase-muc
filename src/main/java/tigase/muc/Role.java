@@ -22,10 +22,10 @@ package tigase.muc;
  */
 public enum Role {
 
-	moderator(3, true, true, true, true, true, true, true, true, true, true, true, true, true),
 	none(0, false, false, false, false, false, false, false, false, false, false, false, false, false),
+	visitor(1, true, true, true, true, true, true, true, true, false, false, false, false, false),
 	participant(2, true, true, true, true, true, true, true, true, true, false, false, false, false),
-	visitor(1, true, true, true, true, true, true, true, true, false, false, false, false, false);
+	moderator(3, true, true, true, true, true, true, true, true, true, true, true, true, true);
 
 	private final boolean changeAvailabilityStatus;
 
@@ -55,10 +55,10 @@ public enum Role {
 
 	private final int weight;
 
-	private Role(int weight, boolean presentInRoom, boolean receiveMessages, boolean receiveOccupantPresence,
-				 boolean presenceBroadcastedToRoom, boolean changeAvailabilityStatus, boolean changeRoomNickname,
-				 boolean sendPrivateMessages, boolean inviteOtherUsers, boolean sendMessagesToAll,
-				 boolean modifySubject, boolean kickParticipantsAndVisitors, boolean grantVoice, boolean revokeVoice) {
+	Role(int weight, boolean presentInRoom, boolean receiveMessages, boolean receiveOccupantPresence,
+		 boolean presenceBroadcastedToRoom, boolean changeAvailabilityStatus, boolean changeRoomNickname,
+		 boolean sendPrivateMessages, boolean inviteOtherUsers, boolean sendMessagesToAll, boolean modifySubject,
+		 boolean kickParticipantsAndVisitors, boolean grantVoice, boolean revokeVoice) {
 		this.weight = weight;
 		this.presentInRoom = presentInRoom;
 		this.receiveMessages = receiveMessages;

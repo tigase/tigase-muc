@@ -159,7 +159,8 @@ public class PresenceModuleImpl
 	}
 
 	@Override
-	public void doQuit(final Room room, final JID senderJID) throws TigaseStringprepException {
+	public void doQuit(final Room room, final JID senderJID, final Integer... selfStatusCodes)
+			throws TigaseStringprepException {
 		final String leavingNickname = room.getOccupantsNickname(senderJID);
 		if (leavingNickname == null) {
 			if (log.isLoggable(Level.FINE)) {
@@ -190,6 +191,11 @@ public class PresenceModuleImpl
 																				  leavingNickname,
 																				  leavingAffiliation.getAffiliation(),
 																				  Role.none);
+			if (selfStatusCodes != null) {
+				for (Integer statusCode : selfStatusCodes) {
+					selfPresence.addStatusCode(statusCode);
+				}
+			}
 			write(selfPresence.packet);
 		} else {
 			Collection<JID> z = new ArrayList<JID>(1);
@@ -200,6 +206,11 @@ public class PresenceModuleImpl
 																				  leavingNickname,
 																				  leavingAffiliation.getAffiliation(),
 																				  Role.none);
+			if (selfStatusCodes != null) {
+				for (Integer statusCode : selfStatusCodes) {
+					selfPresence.addStatusCode(statusCode);
+				}
+			}
 			write(selfPresence.packet);
 		}
 
@@ -326,10 +337,18 @@ public class PresenceModuleImpl
 				return;
 			}
 
+			final boolean groupchat10 = element.getElement().getChild("x", "http://jabber.org/protocol/muc") == null;
+
 			final String knownNickname;
 			final boolean roomCreated;
 
 			if (room == null) {
+
+				if (groupchat10) {
+					sendUnavailableResponseForGroupchat10(element);
+					return;
+				}
+
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest(
 							"Creating new room '" + roomJID + "' by user " + nickName + "' <" + senderJID.toString() +
@@ -350,12 +369,13 @@ public class PresenceModuleImpl
 				knownNickname = room.getOccupantsNickname(senderJID);
 			}
 
-			final boolean probablyReEnter =
-					element.getElement().getChild("x", "http://jabber.org/protocol/muc") != null;
-
 			if ((knownNickname != null) && !knownNickname.equals(nickName)) {
 				processChangeNickname(room, element.getElement(), senderJID, knownNickname, nickName);
-			} else if (probablyReEnter || (knownNickname == null)) {
+			} else if (!groupchat10 || (knownNickname == null)) {
+				if (groupchat10) {
+					sendUnavailableResponseForGroupchat10(element);
+					return;
+				}
 				processEntering(room, roomCreated, element.getElement(), senderJID, nickName);
 			} else if (knownNickname.equals(nickName)) {
 				processChangeAvailabilityStatus(room, element.getElement(), senderJID, knownNickname);
@@ -704,7 +724,7 @@ public class PresenceModuleImpl
 					PresenceWrapper presence = preparePresence(destinationJID, $presence.clone(), room, senderJID,
 															   newRoomCreated);
 					if (newRoomCreated) {
-						presence.addStatusCode(PresenceWrapper.STATUS_CODE_NEW_ROOM);
+						presence.addStatusCode(StatusCodes.NEW_ROOM);
 					}
 					write(presence.packet);
 				} else {
@@ -715,7 +735,7 @@ public class PresenceModuleImpl
 																			 occupantJID, z, occupantNickname,
 																			 occupantAffiliation, occupantRole);
 						if (newRoomCreated) {
-							l.addStatusCode(PresenceWrapper.STATUS_CODE_NEW_ROOM);
+							l.addStatusCode(StatusCodes.NEW_ROOM);
 						}
 
 						write(l.packet);
@@ -742,6 +762,26 @@ public class PresenceModuleImpl
 			sendPresenceToAllOccupants(presence, room, senderJID, newRoomCreated, newNickName);
 		}
 		return presence;
+	}
+
+	private void sendUnavailableResponseForGroupchat10(Packet packet) throws TigaseStringprepException {
+		Element presence = new Element("presence");
+		presence.setAttribute("to", packet.getStanzaFrom().toString());
+		presence.setAttribute("from", packet.getStanzaTo().toString());
+		presence.setAttribute("type", "unavailable");
+
+		Element x = new Element("x", new String[]{"xmlns"}, new String[]{"http://jabber.org/protocol/muc#user"});
+		x.addChild(new Element("status", new String[]{"code"}, new String[]{StatusCodes.SELF_PRESENCE.toString()}));
+		x.addChild(new Element("status", new String[]{"code"}, new String[]{StatusCodes.KICKED.toString()}));
+		x.addChild(new Element("status", new String[]{"code"}, new String[]{StatusCodes.REMOVED_FROM_ROOM.toString()}));
+
+		Element item = new Element("item", new String[]{"affiliation", "role"}, new String[]{"none", "none"});
+		item.addChild(new Element("reason", "You are not in the room."));
+		x.addChild(item);
+
+		presence.addChild(x);
+		write(Packet.packetInstance(presence));
+
 	}
 
 	/**

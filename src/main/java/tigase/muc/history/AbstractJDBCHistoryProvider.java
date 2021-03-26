@@ -19,9 +19,7 @@ package tigase.muc.history;
 
 import tigase.component.PacketWriter;
 import tigase.db.DataRepository;
-import tigase.muc.Affiliation;
 import tigase.muc.Room;
-import tigase.muc.RoomConfig.Anonymity;
 import tigase.server.Packet;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
@@ -216,11 +214,7 @@ public abstract class AbstractJDBCHistoryProvider
 			log.finest("Select messages for " + senderJID + " from room " + room.getRoomJID());
 		}
 
-		Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID()).getAffiliation();
-		boolean addRealJids = room.getConfig().getRoomAnonymity() == Anonymity.nonanonymous ||
-				room.getConfig().getRoomAnonymity() == Anonymity.semianonymous &&
-						(recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
-
+		boolean addRealJids = isAllowedToSeeJIDs(senderJID.getBareJID(), room);
 		while (rs.next()) {
 			String msgSenderNickname = rs.getString("sender_nickname");
 			Date msgTimestamp = new Date(rs.getLong("timestamp"));

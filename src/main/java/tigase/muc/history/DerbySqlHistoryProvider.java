@@ -19,9 +19,7 @@ package tigase.muc.history;
 
 import tigase.component.PacketWriter;
 import tigase.db.DataRepository;
-import tigase.muc.Affiliation;
 import tigase.muc.Room;
-import tigase.muc.RoomConfig.Anonymity;
 import tigase.server.Packet;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
@@ -166,10 +164,7 @@ public class DerbySqlHistoryProvider
 			throws SQLException, TigaseStringprepException {
 		int i = 0;
 
-		Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID()).getAffiliation();
-		boolean addRealJids = room.getConfig().getRoomAnonymity() == Anonymity.nonanonymous ||
-				room.getConfig().getRoomAnonymity() == Anonymity.semianonymous &&
-						(recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
+		boolean addRealJids = isAllowedToSeeJIDs(senderJID.getBareJID(), room);
 
 		ArrayList<Packet> result = new ArrayList<Packet>();
 		for (; rs.next() && (maxStanzas == null || maxStanzas > i); i++) {

@@ -240,7 +240,7 @@ public class Ghostbuster2
 		this.monitoredObjects.remove(jid);
 		for (Room r : repository.getActiveRooms().values()) {
 			if ((rooms == null || rooms.contains(r.getRoomJID())) && r.isOccupantInRoom(jid)) {
-				presenceModule.doQuit(r, jid);
+				presenceModule.doQuit(r, jid, StatusCodes.REMOVED_FROM_ROOM);
 			}
 		}
 	}

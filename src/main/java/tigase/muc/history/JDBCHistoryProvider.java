@@ -24,9 +24,7 @@ import tigase.db.Repository;
 import tigase.db.TigaseDBException;
 import tigase.db.util.RepositoryVersionAware;
 import tigase.kernel.beans.config.ConfigField;
-import tigase.muc.Affiliation;
 import tigase.muc.Room;
-import tigase.muc.RoomConfig;
 import tigase.muc.repository.Schema;
 import tigase.server.Packet;
 import tigase.util.stringprep.TigaseStringprepException;
@@ -50,23 +48,24 @@ import java.util.logging.Logger;
  */
 @Repository.Meta(supportedUris = {"jdbc:.*"})
 @Repository.SchemaId(id = Schema.MUC_SCHEMA_ID, name = Schema.MUC_SCHEMA_NAME)
-public class JDBCHistoryProvider extends AbstractHistoryProvider<DataRepository>
+public class JDBCHistoryProvider
+		extends AbstractHistoryProvider<DataRepository>
 		implements HistoryProvider<DataRepository>, MAMRepository, RepositoryVersionAware {
 
 	private static final Logger log = Logger.getLogger(JDBCHistoryProvider.class.getCanonicalName());
 	protected DataRepository data_repo;
 	@ConfigField(desc = "Query to append message to history", alias = "add-message-query")
-	private String addMessageQuery = "{ call Tig_MUC_AddMessage(?,?,?,?,?,?,?) }";
+	private final String addMessageQuery = "{ call Tig_MUC_AddMessage(?,?,?,?,?,?,?) }";
 	@ConfigField(desc = "Delete messages from history", alias = "delete-messages-query")
-	private String deleteMessagesQuery = "{ call Tig_MUC_DeleteMessages(?) }";
+	private final String deleteMessagesQuery = "{ call Tig_MUC_DeleteMessages(?) }";
 	@ConfigField(desc = "Retrieve messages from history", alias = "get-messages-query")
-	private String getMessagesQuery = "{ call Tig_MUC_GetMessages(?,?,?) }";
+	private final String getMessagesQuery = "{ call Tig_MUC_GetMessages(?,?,?) }";
 	@ConfigField(desc = "Retrieve position of message in archive", alias = "mam-get-message-position-query")
-	private String mamGetMessagePositionQuery = "{ call Tig_MUC_MAM_GetMessagePosition(?,?,?,?,?) }";
+	private final String mamGetMessagePositionQuery = "{ call Tig_MUC_MAM_GetMessagePosition(?,?,?,?,?) }";
 	@ConfigField(desc = "Retrieve messages from archive", alias = "mam-get-messages-count-query")
-	private String mamGetMessagesCountQuery = "{ call Tig_MUC_MAM_GetMessagesCount(?,?,?,?) }";
+	private final String mamGetMessagesCountQuery = "{ call Tig_MUC_MAM_GetMessagesCount(?,?,?,?) }";
 	@ConfigField(desc = "Retrieve messages from archive", alias = "mam-get-messages-query")
-	private String mamGetMessagesQuery = "{ call Tig_MUC_MAM_GetMessages(?,?,?,?,?,?) }";
+	private final String mamGetMessagesQuery = "{ call Tig_MUC_MAM_GetMessages(?,?,?,?,?,?) }";
 
 	@Override
 	public void addJoinEvent(Room room, Date date, JID senderJID, String nickName) {
@@ -96,8 +95,10 @@ public class JDBCHistoryProvider extends AbstractHistoryProvider<DataRepository>
 				st.executeUpdate();
 			}
 		} catch (SQLException e) {
-			if (e.getErrorCode() == 1366 || e.getMessage() != null && e.getMessage().startsWith("Incorrect string value")) {
-				log.log(Level.WARNING, "Your MySQL configuration can't handle extended Unicode (for example emoji) correctly. Please refer to <Support for emoji and other icons> section of the server documentation");
+			if (e.getErrorCode() == 1366 ||
+					e.getMessage() != null && e.getMessage().startsWith("Incorrect string value")) {
+				log.log(Level.WARNING,
+						"Your MySQL configuration can't handle extended Unicode (for example emoji) correctly. Please refer to <Support for emoji and other icons> section of the server documentation");
 			} else {
 				log.log(Level.WARNING, "Can't add MUC message to database", e);
 			}
@@ -134,7 +135,8 @@ public class JDBCHistoryProvider extends AbstractHistoryProvider<DataRepository>
 							"Using SINCE selector: roomJID=" + roomJID + ", since=" + since.getTime() + " (" + since +
 									")");
 				}
-				getMessagesSince(room, senderJID, maxMessages, since.getTime() == 0 ? null : new Timestamp(since.getTime()), writer);
+				getMessagesSince(room, senderJID, maxMessages,
+								 since.getTime() == 0 ? null : new Timestamp(since.getTime()), writer);
 			} else if (maxstanzas != null) {
 				if (log.isLoggable(Level.FINEST)) {
 					log.finest("Using MAXSTANZAS selector: roomJID=" + roomJID + ", maxstanzas=" + maxstanzas);
@@ -226,9 +228,8 @@ public class JDBCHistoryProvider extends AbstractHistoryProvider<DataRepository>
 						String body = rs.getString("body");
 						String msg = rs.getString("msg");
 
-						Element msgEl = createMessageElement(
-								query.getComponentJID().getBareJID(), query.getQuestionerJID(), msgSenderNickname, msg,
-								body);
+						Element msgEl = createMessageElement(query.getComponentJID().getBareJID(),
+															 query.getQuestionerJID(), msgSenderNickname, msg, body);
 
 						Item item = new Item() {
 							@Override
@@ -295,10 +296,7 @@ public class JDBCHistoryProvider extends AbstractHistoryProvider<DataRepository>
 			log.finest("Select messages for " + senderJID + " from room " + room.getRoomJID());
 		}
 
-		Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID()).getAffiliation();
-		boolean addRealJids = room.getConfig().getRoomAnonymity() == RoomConfig.Anonymity.nonanonymous ||
-				room.getConfig().getRoomAnonymity() == RoomConfig.Anonymity.semianonymous &&
-						(recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
+		boolean addRealJids = isAllowedToSeeJIDs(senderJID.getBareJID(), room);
 
 		while (rs.next()) {
 			String msgSenderNickname = rs.getString("sender_nickname");
@@ -307,8 +305,8 @@ public class JDBCHistoryProvider extends AbstractHistoryProvider<DataRepository>
 			String body = rs.getString("body");
 			String msg = rs.getString("msg");
 
-			Packet m = createMessage(room.getRoomJID(), senderJID, msgSenderNickname, msg, body,
-															 msgSenderJid, addRealJids, msgTimestamp);
+			Packet m = createMessage(room.getRoomJID(), senderJID, msgSenderNickname, msg, body, msgSenderJid,
+									 addRealJids, msgTimestamp);
 			writer.write(m);
 		}
 	}

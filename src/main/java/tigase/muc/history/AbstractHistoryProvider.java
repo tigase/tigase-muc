@@ -18,6 +18,9 @@
 package tigase.muc.history;
 
 import tigase.db.DataSource;
+import tigase.muc.Affiliation;
+import tigase.muc.Room;
+import tigase.muc.RoomConfig;
 import tigase.server.Packet;
 import tigase.util.datetime.TimestampHelper;
 import tigase.util.stringprep.TigaseStringprepException;
@@ -75,7 +78,7 @@ public abstract class AbstractHistoryProvider<DS extends DataSource>
 	}
 
 	public Packet createMessage(BareJID roomJID, JID senderJID, String msgSenderNickname, String originalMessage,
-									   String body, String msgSenderJid, boolean addRealJids, Date msgTimestamp)
+								String body, String msgSenderJid, boolean addRealJids, Date msgTimestamp)
 			throws TigaseStringprepException {
 
 		Packet message = Packet.packetInstance(
@@ -91,7 +94,7 @@ public abstract class AbstractHistoryProvider<DS extends DataSource>
 	}
 
 	public Element createMessageElement(BareJID roomJID, JID senderJID, String msgSenderNickname,
-											   String originalMessage, String body) throws TigaseStringprepException {
+										String originalMessage, String body) throws TigaseStringprepException {
 		Element message = null;
 		if (originalMessage != null) {
 			DomBuilderHandler domHandler = new DomBuilderHandler();
@@ -118,4 +121,13 @@ public abstract class AbstractHistoryProvider<DS extends DataSource>
 		return message;
 	}
 
+	protected boolean isAllowedToSeeJIDs(BareJID jid, Room room) {
+		final Affiliation aff = room.getAffiliation(jid).getAffiliation();
+		final RoomConfig.WhoisPrivilege whois = room.getConfig().getWhois();
+		if (whois == RoomConfig.WhoisPrivilege.anyone) {
+			return true;
+		} else {
+			return aff.isViewOccupantsJid();
+		}
+	}
 }

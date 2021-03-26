@@ -23,6 +23,7 @@ import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.muc.Role;
 import tigase.muc.Room;
+import tigase.muc.RoomConfig;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
@@ -77,7 +78,7 @@ public class PrivateMessageModule
 			final String senderNickname = room.getOccupantsNickname(senderJID);
 			final Role senderRole = room.getRole(senderNickname);
 
-			if (!senderRole.isSendPrivateMessages()) {
+			if (!isAllowedToSendPrivateMessage(room.getConfig(), senderRole)) {
 				throw new MUCException(Authorization.NOT_ALLOWED,
 									   "Your role is '" + senderRole + "'. You can't send private message.");
 			}
@@ -103,5 +104,19 @@ public class PrivateMessageModule
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	private boolean isAllowedToSendPrivateMessage(final RoomConfig config, final Role role) {
+		switch (config.getPrivateMessageACL()) {
+			case none:
+				return false;
+			case anyone:
+				return role.isSendPrivateMessages();
+			case participants:
+				return role.isSendMessagesToAll();
+			case moderators:
+				return role == Role.moderator;
+		}
+		return true;
 	}
 }

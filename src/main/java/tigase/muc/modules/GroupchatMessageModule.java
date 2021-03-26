@@ -99,6 +99,7 @@ public class GroupchatMessageModule
 		ArrayList<String> f = new ArrayList<String>();
 
 		f.add("http://jabber.org/protocol/muc");
+		f.add("http://jabber.org/protocol/muc#stable_id");
 
 		if (isChatStateAllowed()) {
 			f.add("http://jabber.org/protocol/chatstates");

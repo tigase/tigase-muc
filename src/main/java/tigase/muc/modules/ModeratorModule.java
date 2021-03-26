@@ -23,7 +23,6 @@ import tigase.criteria.ElementCriteria;
 import tigase.kernel.beans.Bean;
 import tigase.kernel.beans.Inject;
 import tigase.muc.*;
-import tigase.muc.RoomConfig.Anonymity;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
@@ -94,7 +93,7 @@ public class ModeratorModule
 		final BareJID occupantJid = room.getOccupantsJidByNickname(occupantNick);
 		final Affiliation occupantAffiliation = room.getAffiliation(occupantJid).getAffiliation();
 
-		codes.add("307");
+		codes.add(StatusCodes.KICKED.toString());
 		boolean isUnavailable = true;
 
 		final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(occupantNick);
@@ -335,8 +334,8 @@ public class ModeratorModule
 				boolean allowed = false;
 				allowed = allowed || senderAffiliation == Affiliation.admin;
 				allowed = allowed || senderAffiliation == Affiliation.owner;
-				allowed = allowed ||
-						(room.getConfig().getRoomAnonymity() == Anonymity.nonanonymous && senderRole.isPresentInRoom());
+				allowed = allowed || (room.getConfig().getWhois() == RoomConfig.WhoisPrivilege.anyone &&
+						senderRole.isPresentInRoom());
 				allowed = allowed || (room.getConfig().isRoomMembersOnly() && senderRole.isPresentInRoom());
 
 				if (!allowed) {
@@ -382,8 +381,7 @@ public class ModeratorModule
 
 			if (filterRole != null && role == filterRole ||
 					filterAffiliation != null && affiliation == filterAffiliation) {
-				BareJID jid = room.getConfig().getRoomAnonymity() != Anonymity.fullanonymous ? occupantBareJid : null;
-				Item i = new Item(affiliation, jid, occupantNickname, role);
+				Item i = new Item(affiliation, occupantBareJid, occupantNickname, role);
 				resultItems.remove(i);
 				resultItems.add(i);
 			}
@@ -457,7 +455,8 @@ public class ModeratorModule
 			sendInvitation(room, occupantBareJid, actor);
 		}
 		room.addAffiliationByJid(occupantBareJid,
-								 RoomAffiliation.from(newAffiliation, previousAffiliation.isPersistentOccupant(), previousAffiliation.getRegisteredNickname()));
+								 RoomAffiliation.from(newAffiliation, previousAffiliation.isPersistentOccupant(),
+													  previousAffiliation.getRegisteredNickname()));
 
 		boolean isUnavailable = false;
 		Set<String> codes = new HashSet<String>();
@@ -470,7 +469,7 @@ public class ModeratorModule
 				log.fine("Kicking occupant " + occupantBareJid + " (" + occupantsNicknames + ")");
 			}
 			for (String occupantNick : occupantsNicknames) {
-				codes.add("301");
+				codes.add(StatusCodes.BANNED.toString());
 				isUnavailable = true;
 
 				final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(occupantNick);
@@ -488,7 +487,8 @@ public class ModeratorModule
 		}
 
 		if (log.isLoggable(Level.FINE)) {
-			log.fine("Sending new affiliation of " + occupantBareJid + " to occupants " + room.getOccupantsNicknames(false));
+			log.fine("Sending new affiliation of " + occupantBareJid + " to occupants " +
+							 room.getOccupantsNicknames(false));
 		}
 		for (String nickname : room.getOccupantsNicknames(false)) {
 			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
@@ -518,7 +518,7 @@ public class ModeratorModule
 		List<String> codes = new ArrayList<String>();
 
 		if (newRole == Role.none) {
-			codes.add("307");
+			codes.add(StatusCodes.KICKED.toString());
 			isUnavailable = true;
 
 			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(occupantNick);

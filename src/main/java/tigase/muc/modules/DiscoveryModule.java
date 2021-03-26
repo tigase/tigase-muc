@@ -44,11 +44,10 @@ public class DiscoveryModule
 
 	private final TimestampHelper dtf = new TimestampHelper();
 	private DiscoItemsFilter filter = null;//new DefaultDiscoItemsFilter();
-	@Inject
-	private IMucRepository repository;
 	@Inject(nullAllowed = true)
 	private MAMQueryModule mamQueryModule;
-
+	@Inject
+	private IMucRepository repository;
 	@Inject
 	private List<RoomFeatures> roomFeaturesModules;
 
@@ -104,6 +103,7 @@ public class DiscoveryModule
 
 			resultQuery.addChild(resultIdentity);
 			addFeature(resultQuery, "http://jabber.org/protocol/muc");
+			addFeature(resultQuery, "http://jabber.org/protocol/muc#stable_id");
 
 			for (RoomFeatures roomFeaturesModule : roomFeaturesModules) {
 				for (String roomFeature : roomFeaturesModule.getRoomFeatures(room)) {
@@ -112,21 +112,13 @@ public class DiscoveryModule
 			}
 
 			addFeature(resultQuery, "jabber:iq:register");
-			
-			switch (room.getConfig().getRoomAnonymity()) {
-				case fullanonymous:
-					addFeature(resultQuery, "muc_fullyanonymous");
 
-					break;
-
-				case semianonymous:
+			switch (room.getConfig().getWhois()) {
+				case moderators:
 					addFeature(resultQuery, "muc_semianonymous");
-
 					break;
-
-				case nonanonymous:
+				case anyone:
 					addFeature(resultQuery, "muc_nonanonymous");
-
 					break;
 			}
 			if (room.getConfig().isRoomModerated()) {
@@ -174,7 +166,7 @@ public class DiscoveryModule
 											  new String[]{"http://jabber.org/protocol/disco#info", node});
 
 			RoomAffiliation roomAffiliation = room.getAffiliation(senderJID.getBareJID());
-			if (roomAffiliation != null && roomAffiliation.getRegisteredNickname() != null)  {
+			if (roomAffiliation != null && roomAffiliation.getRegisteredNickname() != null) {
 				resultQuery.addChild(new Element("identity", new String[]{"category", "name", "type"},
 												 new String[]{"conference", roomAffiliation.getRegisteredNickname(),
 															  "text"}));
@@ -337,11 +329,7 @@ public class DiscoveryModule
 		final boolean allowedToViewAll;
 		if (!room.getOccupantsNicknames(senderJID.getBareJID()).isEmpty()) {
 			allowedToViewAll = true;
-		} else if (senderAffiliation.isEnterMembersOnlyRoom()) {
-			allowedToViewAll = true;
-		} else {
-			allowedToViewAll = false;
-		}
+		} else allowedToViewAll = senderAffiliation.isEnterMembersOnlyRoom();
 
 		if (!config.isRoomconfigPublicroom() && !allowedToViewAll) {
 			return;
@@ -407,13 +395,12 @@ public class DiscoveryModule
 		}
 
 		// list-single Affiliations that May Discover Real JIDs of Occupants
-		RoomConfig.Anonymity anonymity = config.getRoomAnonymity();
 		Object[] whois;
-		switch (anonymity) {
-			case nonanonymous:
+		switch (config.getWhois()) {
+			case anyone:
 				whois = new String[]{Affiliation.owner.name(), Affiliation.admin.name(), Affiliation.member.name(),
 									 Affiliation.none.name()};
-			case semianonymous:
+			case moderators:
 				whois = new String[]{Affiliation.owner.name(), Affiliation.admin.name()};
 			default:
 				whois = null;

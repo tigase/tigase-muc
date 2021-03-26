@@ -28,6 +28,7 @@ import tigase.kernel.beans.Inject;
 import tigase.kernel.beans.UnregisterAware;
 import tigase.muc.Affiliation;
 import tigase.muc.Room;
+import tigase.muc.StatusCodes;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
@@ -220,7 +221,8 @@ public class VCardModule
 		try {
 			final Element x = new Element("x", new String[]{"xmlns"},
 										  new String[]{"http://jabber.org/protocol/muc#user"});
-			x.addChild(new Element("status", new String[]{"code"}, new String[]{"104"}));
+			x.addChild(new Element("status", new String[]{"code"},
+								   new String[]{StatusCodes.CONFIGURATION_CHANGE.toString()}));
 
 			this.messageModule.sendMessagesToAllOccupants(room, JID.jidInstance(room.getRoomJID()), x);
 		} catch (TigaseStringprepException e) {

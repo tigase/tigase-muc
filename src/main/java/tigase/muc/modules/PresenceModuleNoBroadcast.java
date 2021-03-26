@@ -59,7 +59,8 @@ public class PresenceModuleNoBroadcast
 	private IMucRepository repository;
 
 	@Override
-	public void doQuit(final Room room, final JID senderJID) throws TigaseStringprepException {
+	public void doQuit(final Room room, final JID senderJID, final Integer... selfStatusCodes)
+			throws TigaseStringprepException {
 		final String leavingNickname = room.getOccupantsNickname(senderJID);
 		final Affiliation leavingAffiliation = room.getAffiliation(leavingNickname).getAffiliation();
 		final Role leavingRole = room.getRole(leavingNickname);
@@ -78,6 +79,11 @@ public class PresenceModuleNoBroadcast
 																				  senderJID.getBareJID(), occupantJIDs,
 																				  leavingNickname, leavingAffiliation,
 																				  leavingRole);
+			if (selfStatusCodes != null) {
+				for (Integer statusCode : selfStatusCodes) {
+					selfPresence.addStatusCode(statusCode);
+				}
+			}
 			write(selfPresence.getPacket());
 		} else {
 			Collection<JID> z = new ArrayList<JID>(1);
@@ -87,6 +93,11 @@ public class PresenceModuleNoBroadcast
 																				  senderJID.getBareJID(), z,
 																				  leavingNickname, leavingAffiliation,
 																				  leavingRole);
+			if (selfStatusCodes != null) {
+				for (Integer statusCode : selfStatusCodes) {
+					selfPresence.addStatusCode(statusCode);
+				}
+			}
 			write(selfPresence.getPacket());
 		}
 
@@ -136,7 +147,7 @@ public class PresenceModuleNoBroadcast
 		// send presence only back to the joining user
 		PresenceWrapper presence = super.preparePresence(senderJID, $presence.clone(), room, senderJID, newRoomCreated);
 		if (newRoomCreated) {
-			presence.addStatusCode(PresenceWrapper.STATUS_CODE_NEW_ROOM);
+			presence.addStatusCode(StatusCodes.NEW_ROOM);
 		}
 
 		write(presence.getPacket());

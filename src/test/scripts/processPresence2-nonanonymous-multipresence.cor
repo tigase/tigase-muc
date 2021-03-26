@@ -41,8 +41,8 @@ send(unlocking): {
       <field var='FORM_TYPE'>
         <value>http://jabber.org/protocol/muc#roomconfig</value>
       </field>
-      <field var='muc#roomconfig_anonymity'>
-        <value>nonanonymous</value>
+      <field var='muc#roomconfig_whois'>
+        <value>anyone</value>
       </field>
     </x>
   </query>

@@ -21,10 +21,10 @@ package tigase.muc;
  * @author bmalkow
  */
 public enum Affiliation {
-	admin(30, true, true, true, true, true, true, true, false, false, false, false, true),
-	member(20, true, true, true, true, false, false, false, false, false, false, false, false),
-	none(10, true, true, false, false, false, false, false, false, false, false, false, false),
 	outcast(0, false, false, false, false, false, false, false, false, false, false, false, false),
+	none(10, true, true, false, false, false, false, false, false, false, false, false, false),
+	member(20, true, true, true, true, false, false, false, false, false, false, false, false),
+	admin(30, true, true, true, true, true, true, true, false, false, false, false, true),
 	owner(40, true, true, true, true, true, true, true, true, true, true, true, true);
 
 	private final boolean banMembersAndUnaffiliatedUsers;
@@ -41,10 +41,10 @@ public enum Affiliation {
 	private final boolean viewOccupantsJid;
 	private final int weight;
 
-	private Affiliation(int weight, boolean enterOpenRoom, boolean registerWithOpenRoom, boolean retrieveMemberList,
-						boolean enterMembersOnlyRoom, boolean banMembersAndUnaffiliatedUsers, boolean editMemberList,
-						boolean editModeratorList, boolean editAdminList, boolean editOwnerList,
-						boolean changeRoomDefinition, boolean destroyRoom, boolean viewOccupantsJid) {
+	Affiliation(int weight, boolean enterOpenRoom, boolean registerWithOpenRoom, boolean retrieveMemberList,
+				boolean enterMembersOnlyRoom, boolean banMembersAndUnaffiliatedUsers, boolean editMemberList,
+				boolean editModeratorList, boolean editAdminList, boolean editOwnerList, boolean changeRoomDefinition,
+				boolean destroyRoom, boolean viewOccupantsJid) {
 		this.weight = weight;
 		this.enterOpenRoom = enterOpenRoom;
 		this.registerWithOpenRoom = registerWithOpenRoom;

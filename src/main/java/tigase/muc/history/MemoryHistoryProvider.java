@@ -19,9 +19,7 @@ package tigase.muc.history;
 
 import tigase.component.PacketWriter;
 import tigase.db.DataSource;
-import tigase.muc.Affiliation;
 import tigase.muc.Room;
-import tigase.muc.RoomConfig.Anonymity;
 import tigase.server.Packet;
 import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
@@ -40,7 +38,7 @@ public class MemoryHistoryProvider
 		extends AbstractHistoryProvider {
 
 	private final Map<BareJID, LinkedList<HItem>> history = new ConcurrentHashMap<BareJID, LinkedList<HItem>>();
-	private int maxSize = 256;
+	private final int maxSize = 256;
 
 	public MemoryHistoryProvider() {
 	}
@@ -116,10 +114,7 @@ public class MemoryHistoryProvider
 				}
 			}
 
-			Affiliation recipientAffiliation = room.getAffiliation(senderJID.getBareJID()).getAffiliation();
-			boolean addRealJids = room.getConfig().getRoomAnonymity() == Anonymity.nonanonymous ||
-					room.getConfig().getRoomAnonymity() == Anonymity.semianonymous &&
-							(recipientAffiliation == Affiliation.owner || recipientAffiliation == Affiliation.admin);
+			boolean addRealJids = isAllowedToSeeJIDs(senderJID.getBareJID(), room);
 
 			try {
 				Packet message = createMessage(room.getRoomJID(), senderJID, item.senderNickname, item.msg, item.body,

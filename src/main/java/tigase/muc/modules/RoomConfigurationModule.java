@@ -277,14 +277,14 @@ public class RoomConfigurationModule
 						}
 					}
 
-					String[] compareResult = room.getConfig().compareTo(oldConfig);
+					Integer[] compareResult = room.getConfig().calculateStatusCodesByDiff(oldConfig);
 
-					if (compareResult != null) {
+					if (compareResult.length > 0) {
 						Element z = new Element("x", new String[]{"xmlns"},
 												new String[]{"http://jabber.org/protocol/muc#user"});
 
-						for (String code : compareResult) {
-							z.addChild(new Element("status", new String[]{"code"}, new String[]{code}));
+						for (Integer code : compareResult) {
+							z.addChild(new Element("status", new String[]{"code"}, new String[]{code.toString()}));
 						}
 						this.messageModule.sendMessagesToAllOccupants(room, roomJID, z);
 					}
