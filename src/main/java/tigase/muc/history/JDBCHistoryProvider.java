@@ -55,17 +55,17 @@ public class JDBCHistoryProvider
 	private static final Logger log = Logger.getLogger(JDBCHistoryProvider.class.getCanonicalName());
 	protected DataRepository data_repo;
 	@ConfigField(desc = "Query to append message to history", alias = "add-message-query")
-	private final String addMessageQuery = "{ call Tig_MUC_AddMessage(?,?,?,?,?,?,?) }";
+	private String addMessageQuery = "{ call Tig_MUC_AddMessage(?,?,?,?,?,?,?) }";
 	@ConfigField(desc = "Delete messages from history", alias = "delete-messages-query")
-	private final String deleteMessagesQuery = "{ call Tig_MUC_DeleteMessages(?) }";
+	private String deleteMessagesQuery = "{ call Tig_MUC_DeleteMessages(?) }";
 	@ConfigField(desc = "Retrieve messages from history", alias = "get-messages-query")
-	private final String getMessagesQuery = "{ call Tig_MUC_GetMessages(?,?,?) }";
+	private String getMessagesQuery = "{ call Tig_MUC_GetMessages(?,?,?) }";
 	@ConfigField(desc = "Retrieve position of message in archive", alias = "mam-get-message-position-query")
-	private final String mamGetMessagePositionQuery = "{ call Tig_MUC_MAM_GetMessagePosition(?,?,?,?,?) }";
+	private String mamGetMessagePositionQuery = "{ call Tig_MUC_MAM_GetMessagePosition(?,?,?,?,?) }";
 	@ConfigField(desc = "Retrieve messages from archive", alias = "mam-get-messages-count-query")
-	private final String mamGetMessagesCountQuery = "{ call Tig_MUC_MAM_GetMessagesCount(?,?,?,?) }";
+	private String mamGetMessagesCountQuery = "{ call Tig_MUC_MAM_GetMessagesCount(?,?,?,?) }";
 	@ConfigField(desc = "Retrieve messages from archive", alias = "mam-get-messages-query")
-	private final String mamGetMessagesQuery = "{ call Tig_MUC_MAM_GetMessages(?,?,?,?,?,?) }";
+	private String mamGetMessagesQuery = "{ call Tig_MUC_MAM_GetMessages(?,?,?,?,?,?) }";
 
 	@Override
 	public void addJoinEvent(Room room, Date date, JID senderJID, String nickName) {

@@ -42,35 +42,35 @@ public class MUCConfig {
 	protected static final String MUC_REPO_URL_PROP_KEY = "muc-repo-url";
 	private static final String GHOSTBUSTER_ENABLED_KEY = "ghostbuster-enabled";
 	protected final Logger log = Logger.getLogger(this.getClass().getName());
-	@ConfigField(desc = "Automatically persist occupant on join", alias = "persist-occupant-on-join")
-	private final boolean automaticallyPersistOccupantOnJoin = false;
-	@ConfigField(desc = "Logs Directory", alias = LOG_DIR_KEY)
-	private final String chatLoggingDirectory = "./logs/";
-	@ConfigField(desc = "GhostBuster enabled", alias = GHOSTBUSTER_ENABLED_KEY)
-	private final boolean ghostbusterEnabled = true;
-	@ConfigField(desc = "ACL for creation hidden rooms")
-	private final CmdAcl.Type hiddenRoomCreationAcl = CmdAcl.Type.ALL;
-	@ConfigField(desc = "Enable sending timestamps in legacy format descibed in XEP-0091", alias = "legacy-delayed-delivery-enabled")
-	private final boolean legacyDelayedDeliveryEnabled = false;
-	@ConfigField(desc = "Passing only body element", alias = MESSAGE_FILTER_ENABLED_KEY)
-	private final boolean messageFilterEnabled = true;
-	@ConfigField(desc = "Forwared iq to resource with highest priority", alias = "muc-multi-item-forward-best")
-	private final boolean multiItemForwardBest = true;
-	@ConfigField(desc = "Multi resources login allowed", alias = MUC_MULTI_ITEM_ALLOWED_KEY)
-	private final boolean multiItemMode = true;
-	@ConfigField(desc = "Lock newly created room", alias = MUC_LOCK_NEW_ROOM_KEY)
-	private final boolean newRoomLocked = true;
-	@ConfigField(desc = "Passing only bare presence", alias = PRESENCE_FILTER_ENABLED_KEY)
-	private final boolean presenceFilterEnabled = false;
-	@ConfigField(desc = "ACL for creation public rooms")
-	private final CmdAcl.Type publicRoomCreationAcl = CmdAcl.Type.ALL;
-	private final BareJID serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
-	@ConfigField(desc = "Send welcome messages on room creation", alias = "welcome-message")
-	private final boolean welcomeMessagesEnabled = true;
 	@ConfigField(desc = "Add ID to messages if missing", alias = MUC_ADD_ID_TO_MESSAGE_IF_MISSING_KEY)
 	protected boolean addMessageIdIfMissing = true;
 	@ConfigField(desc = "Allowing Chat-States", alias = MUC_ALLOW_CHAT_STATES_KEY)
 	protected Boolean chatStateAllowed = false;
+	@ConfigField(desc = "Automatically persist occupant on join", alias = "persist-occupant-on-join")
+	private boolean automaticallyPersistOccupantOnJoin = false;
+	@ConfigField(desc = "Logs Directory", alias = LOG_DIR_KEY)
+	private String chatLoggingDirectory = "./logs/";
+	@ConfigField(desc = "GhostBuster enabled", alias = GHOSTBUSTER_ENABLED_KEY)
+	private boolean ghostbusterEnabled = true;
+	@ConfigField(desc = "ACL for creation hidden rooms")
+	private CmdAcl.Type hiddenRoomCreationAcl = CmdAcl.Type.ALL;
+	@ConfigField(desc = "Enable sending timestamps in legacy format descibed in XEP-0091", alias = "legacy-delayed-delivery-enabled")
+	private boolean legacyDelayedDeliveryEnabled = false;
+	@ConfigField(desc = "Passing only body element", alias = MESSAGE_FILTER_ENABLED_KEY)
+	private boolean messageFilterEnabled = true;
+	@ConfigField(desc = "Forwared iq to resource with highest priority", alias = "muc-multi-item-forward-best")
+	private boolean multiItemForwardBest = true;
+	@ConfigField(desc = "Multi resources login allowed", alias = MUC_MULTI_ITEM_ALLOWED_KEY)
+	private boolean multiItemMode = true;
+	@ConfigField(desc = "Lock newly created room", alias = MUC_LOCK_NEW_ROOM_KEY)
+	private boolean newRoomLocked = true;
+	@ConfigField(desc = "Passing only bare presence", alias = PRESENCE_FILTER_ENABLED_KEY)
+	private boolean presenceFilterEnabled = false;
+	@ConfigField(desc = "ACL for creation public rooms")
+	private CmdAcl.Type publicRoomCreationAcl = CmdAcl.Type.ALL;
+	private BareJID serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
+	@ConfigField(desc = "Send welcome messages on room creation", alias = "welcome-message")
+	private boolean welcomeMessagesEnabled = true;
 
 	public CmdAcl.Type getPublicRoomCreationAcl() {
 		return publicRoomCreationAcl;
