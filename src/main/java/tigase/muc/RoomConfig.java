@@ -172,6 +172,7 @@ public class RoomConfig {
 	public void copyFrom(Form configForm, boolean fireEvents) {
 		final Set<String> modifiedVars = fireEvents ? findFieldsWithDifferentValues(configForm) : null;
 		form.copyValuesFrom(configForm);
+		convertDeprecatedFields(configForm);
 		if (modifiedVars != null && modifiedVars.size() > 0) {
 			fireConfigChanged(modifiedVars);
 		}
@@ -267,18 +268,10 @@ public class RoomConfig {
 	public WhoisPrivilege getWhois() {
 		try {
 			String tmp = form.getAsString(MUC_ROOMCONFIG_WHOIS_KEY);
-			if (tmp != null) {
-				return WhoisPrivilege.valueOf(tmp);
-			} else {
-				// workaround for old configs
-				tmp = form.getAsString(MUC_ROOMCONFIG_ANONYMITY_KEY);
-				if (tmp != null && tmp.equals("nonanonymous")) {
-					return WhoisPrivilege.anyone;
-				}
-			}
+			return tmp == null ? WhoisPrivilege.moderators : WhoisPrivilege.valueOf(tmp);
 		} catch (Exception ignored) {
+			return WhoisPrivilege.moderators;
 		}
-		return WhoisPrivilege.moderators;
 	}
 
 	/**
@@ -512,6 +505,23 @@ public class RoomConfig {
 
 	}
 
+	/**
+	 * It converts some old fields to new fields if it is required.
+	 */
+	private void convertDeprecatedFields(final Form oldConfig) {
+		Field field = oldConfig.get(MUC_ROOMCONFIG_ANONYMITY_KEY);
+		if (field != null) {
+			String tmp = field.getValue();
+			WhoisPrivilege result;
+			if (tmp != null && tmp.equals("nonanonymous")) {
+				result = WhoisPrivilege.anyone;
+			} else {
+				result = WhoisPrivilege.moderators;
+			}
+			setValues(MUC_ROOMCONFIG_WHOIS_KEY, new String[]{result.name()});
+		}
+	}
+
 	private boolean asBoolean(Boolean value, boolean defaultValue) {
 		return value == null ? defaultValue : value.booleanValue();
 	}
@@ -532,7 +542,7 @@ public class RoomConfig {
 		for (Field field : form.getAllFields()) {
 			Field of = this.form.get(field.getVar());
 			if (of == null) {
-				result.add(field.getVar());
+				// result.add(field.getVar());
 			} else {
 				boolean tmp = Arrays.equals(field.getValues(), of.getValues());
 				if (!tmp) {

@@ -19,6 +19,8 @@
 package tigase.muc;
 
 import org.junit.Test;
+import tigase.form.Field;
+import tigase.form.Form;
 import tigase.xmpp.jid.BareJID;
 
 import java.util.Arrays;
@@ -50,6 +52,49 @@ public class RoomConfigTest {
 		assertEquals(2, codes.size());
 		assertTrue(codes.contains(173));
 		assertTrue(codes.contains(170));
+	}
+
+	@Test
+	public void conversionTest() throws Exception {
+		RoomConfig rc1 = new RoomConfig(BareJID.bareJIDInstance("a@b"));
+		assertEquals(RoomConfig.WhoisPrivilege.moderators, rc1.getWhois());
+
+		Form frm = new Form("submit", null, null);
+		Field anon = Field.fieldListSingle("muc#roomconfig_anonymity", "nonanonymous", "Anonymous", new String[]{""},
+										   new String[]{"nonanonymous"});
+		frm.addField(anon);
+		rc1.copyFrom(frm);
+
+		assertEquals(RoomConfig.WhoisPrivilege.anyone, rc1.getWhois());
+
+		frm = new Form("submit", null, null);
+		anon = Field.fieldListSingle("muc#roomconfig_anonymity", "fullanonymous", "Anonymous", new String[]{""},
+									 new String[]{"nonanonymous"});
+		frm.addField(anon);
+		rc1.copyFrom(frm);
+
+		assertEquals(RoomConfig.WhoisPrivilege.moderators, rc1.getWhois());
+
+		frm = new Form("submit", null, null);
+		anon = Field.fieldListSingle("muc#roomconfig_anonymity", "semianonymous", "Anonymous", new String[]{""},
+									 new String[]{"nonanonymous"});
+		frm.addField(anon);
+		rc1.copyFrom(frm);
+
+		assertEquals(RoomConfig.WhoisPrivilege.moderators, rc1.getWhois());
+
+		frm = new Form("submit", null, null);
+		anon = Field.fieldListSingle("muc#roomconfig_anonymity", "invalid value", "Anonymous", new String[]{""},
+									 new String[]{"nonanonymous"});
+		frm.addField(anon);
+		rc1.copyFrom(frm);
+
+		assertEquals(RoomConfig.WhoisPrivilege.moderators, rc1.getWhois());
+
+		frm = new Form("submit", null, null);
+		rc1.copyFrom(frm);
+
+		assertEquals(RoomConfig.WhoisPrivilege.moderators, rc1.getWhois());
 	}
 
 }
