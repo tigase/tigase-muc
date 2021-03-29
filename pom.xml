@@ -19,7 +19,7 @@
     </properties>
 
     <artifactId>tigase-muc</artifactId>
-    <version>3.1.2-SNAPSHOT</version>
+    <version>3.1.2</version>
     <packaging>bundle</packaging>
 
     <name>Tigase MUC</name>
@@ -56,7 +56,7 @@
         <connection>scm:git:${scm_repo_base}/tigase-muc.git</connection>
         <developerConnection>scm:git:${scm_repo_base}/tigase-muc.git</developerConnection>
         <url>https://projects.tigase.org/projects/tigase-muc/repository</url>
-        <tag>tigase-muc-3.1.0</tag>
+        <tag>tigase-muc-3.1.2</tag>
     </scm>
 
     <build>
