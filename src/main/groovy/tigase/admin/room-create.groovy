@@ -17,68 +17,78 @@
  */
 package tigase.admin
 
+import groovy.transform.CompileStatic
 import tigase.form.Form
+import tigase.kernel.core.Kernel
+import tigase.muc.MUCComponent
+import tigase.muc.PermissionChecker
+import tigase.muc.Room
+import tigase.muc.RoomAffiliation
+import tigase.muc.RoomConfig
+import tigase.muc.repository.IMucRepository
+import tigase.server.Command
+import tigase.server.Iq
+import tigase.server.Packet
+import tigase.server.script.CommandIfc
+import tigase.util.stringprep.TigaseStringprepException
+import tigase.xml.Element
+import tigase.xmpp.jid.BareJID
 
 // AS:Description: Create room
 // AS:CommandId: room-create
 // AS:Component: muc
 // AS:ComponentClass: tigase.muc.MUCComponent
 
-import tigase.muc.Affiliation
-import tigase.muc.PermissionChecker
-import tigase.muc.Room
-import tigase.muc.RoomConfig
-import tigase.muc.repository.IMucRepository
-import tigase.server.Command
-import tigase.server.Iq
-import tigase.server.Packet
-import tigase.util.stringprep.TigaseStringprepException
-import tigase.xml.Element
-import tigase.xmpp.jid.BareJID
+Kernel kernel = (Kernel) kernel;
+MUCComponent component = (MUCComponent) component
+packet = (Iq) packet
 
-def ROOM_NAME_KEY = "room-name"
+@CompileStatic
+Packet process(Kernel kernel, MUCComponent component, Iq p, Set admins) {
+	String roomName = Command.getFieldValue(p, "room-name");
 
-Iq p = (Iq) packet
-def roomName = Command.getFieldValue(p, ROOM_NAME_KEY)
+	final IMucRepository mucRepository = kernel.getInstance(IMucRepository.class)
+	final PermissionChecker permissionChecker = kernel.getInstance(PermissionChecker.class)
 
-final IMucRepository mucRepository = kernel.getInstance(IMucRepository.class)
-final PermissionChecker permissionChecker = kernel.getInstance(PermissionChecker.class)
+	if (roomName == null) {
+		RoomConfig roomConfig = mucRepository.getDefaultRoomConfig()
 
-if (roomName == null) {
-	RoomConfig roomConfig = mucRepository.getDefaultRoomConfig()
+		// No data to process, let's ask user to provide
+		// a list of words
+		Packet res = p.commandResult(Command.DataType.form)
+		Command.addFieldValue(res, "room-name", "", "text-single", "Room name")
 
-	// No data to process, let's ask user to provide
-	// a list of words
-	Packet res = p.commandResult(Command.DataType.form)
-	Command.addFieldValue(res, ROOM_NAME_KEY, "", "text-single", "Room name")
+		Element command = res.getElement().getChild("command")
+		Element x = command.getChild("x", "jabber:x:data")
 
-	Element command = res.getElement().getChild("command")
-	Element x = command.getChild("x", "jabber:x:data")
+		x.addChildren(roomConfig.getConfigForm().getElement().getChildren())
 
-	x.addChildren(roomConfig.getConfigForm().getElement().getChildren())
+		return res
+	} else {
+		BareJID jid
+		try {
+			jid = BareJID.bareJIDInstance(roomName + "@" + p.getStanzaTo().getBareJID().getDomain())
+		} catch (TigaseStringprepException e) {
+			jid = BareJID.bareJIDInstance(roomName)
+		}
 
-	return res
-}
+		Element command = p.getElement().getChild("command")
+		Element x = command.getChild("x", "jabber:x:data")
+		Form f = new Form(x)
 
-if (roomName != null) {
-	BareJID jid
-	try {
-		jid = BareJID.bareJIDInstance(roomName + "@" + p.getStanzaTo().getBareJID().getDomain())
-	} catch (TigaseStringprepException e) {
-		jid = BareJID.bareJIDInstance(roomName)
+		permissionChecker.checkCreatePermission(jid, p.getStanzaFrom(), f)
+
+		Room room = mucRepository.createNewRoom(jid, p.getStanzaFrom())
+		room.addAffiliationByJid(p.getStanzaFrom().getBareJID(), RoomAffiliation.owner)
+		room.getConfig().copyFrom(f)
+		room.setRoomLocked(false)
+		room.getConfig().notifyConfigUpdate(true)
+
+		Packet result = p.commandResult(Command.DataType.result);
+
+		Command.addFieldMultiValue(result, CommandIfc.SCRIPT_RESULT, Arrays.asList("Room " + room.getRoomJID() + " created"));
+		return result;
 	}
-
-	Element command = p.getElement().getChild("command")
-	Element x = command.getChild("x", "jabber:x:data")
-	Form f = new Form(x)
-
-	permissionChecker.checkCreatePermission(jid, p.getStanzaFrom(), f)
-
-	Room room = mucRepository.createNewRoom(jid, p.getStanzaFrom())
-	room.addAffiliationByJid(p.getStanzaFrom().getBareJID(), Affiliation.owner)
-	room.getConfig().copyFrom(f)
-	room.setRoomLocked(false)
-	room.getConfig().notifyConfigUpdate(true)
-
-	return "Room " + room.getRoomJID() + " created"
 }
+
+return process(kernel, component, packet, (Set) adminsSet);

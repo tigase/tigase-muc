@@ -17,15 +17,12 @@
  */
 package tigase.admin
 
+import groovy.transform.CompileStatic
+import tigase.kernel.core.Kernel
+import tigase.muc.MUCComponent
+import tigase.muc.Room
 import tigase.muc.modules.RoomConfigurationModule
 import tigase.muc.repository.IMucRepository
-
-// AS:Description: Mass room remove
-// AS:CommandId: mass-room-remove
-// AS:Component: muc
-// AS:ComponentClass: tigase.muc.MUCComponent
-
-import tigase.kernel.core.Kernel;
 import tigase.server.Command
 import tigase.server.Iq
 import tigase.server.Packet
@@ -35,59 +32,68 @@ import tigase.xmpp.jid.BareJID
 import java.util.logging.Level
 import java.util.logging.Logger
 
-def ROOM_NAME_KEY = "room-name"
-def REASON_KEY = "reason"
-def ALTERNATE_JID_KEY = "alternate-jid"
+// AS:Description: Mass room remove
+// AS:CommandId: mass-room-remove
+// AS:Component: muc
+// AS:ComponentClass: tigase.muc.MUCComponent
 
-Logger log = Logger.getLogger("tigase.admin");
+Kernel kernel = (Kernel) kernel;
+MUCComponent component = (MUCComponent) component
+packet = (Iq) packet
 
-def Iq p = (Iq) packet
-def roomNames = Command.getFieldValues(p, ROOM_NAME_KEY)
-def reason = Command.getFieldValue(p, REASON_KEY)
-def alternateJid = Command.getFieldValue(p, ALTERNATE_JID_KEY)
-def res = (Packet) p.commandResult(Command.DataType.form)
+@CompileStatic
+Packet process(Kernel kernel, MUCComponent component, Iq p, Set admins) {
+	String[] roomNames = Command.getFieldValues(p, "room-name")
+	String reason = Command.getFieldValue(p, "reason")
+	String alternateJid = Command.getFieldValue(p, "alternate-jid")
+	Packet res = p.commandResult(Command.DataType.form)
 
-final IMucRepository mucRepository = kernel.getInstance(IMucRepository.class);
-final RoomConfigurationModule ownerModule = kernel.getInstance(RoomConfigurationModule.class);
+	final IMucRepository mucRepository = kernel.getInstance(IMucRepository.class);
+	final RoomConfigurationModule ownerModule = kernel.getInstance(RoomConfigurationModule.class);
 
-try {
-	if (roomNames == null) {
-		Command.addFieldMultiValue(res, ROOM_NAME_KEY, [ ], "Names of the rooms to delete")
-		Command.addFieldValue(res, REASON_KEY, "", "text-single", "Reason")
-	}
+	Logger log = Logger.getLogger("tigase.admin");
 
-	if (roomNames != null) {
-		log.log(Level.FINEST, "Removing ${roomNames.length} rooms")
-		List<String> results = new ArrayList<>(roomNames.length);
-		for (String roomName : roomNames) {
-			log.log(Level.FINEST, "Processing room: ${roomName}")
-			BareJID jid = null;
-			try {
-				if (roomName.contains("@")) {
-					jid = BareJID.bareJIDInstance(roomName);
-				} else {
-					jid = BareJID.bareJIDInstance(roomName + "@" + p.getStanzaTo().getBareJID().getDomain());
-				}
-			} catch (TigaseStringprepException e) {
-				results.add(roomName + ": failed with exception: " + e.getMessage())
-			}
-			if (jid != null) {
-				log.log(Level.FINEST, "Getting room for JID: ${jid}");
-				def room = mucRepository.getRoom(jid)
-				if (room == null) {
-					results.add(jid.toString() + ": doesn't exists")
-				} else {
-					ownerModule.destroy(room, alternateJid, reason);
-					log.log(Level.FINEST, "Room removed: ${room.getRoomJID().toString()}");
-					results.add(room.getRoomJID().toString() + ": removed")
-				}
-			}
+	try {
+		if (roomNames == null) {
+			Command.addFieldMultiValue(res, "room-name", [ ], "Names of the rooms to delete")
+			Command.addFieldValue(res, "reason", "", "text-single", "Reason")
 		}
-		Command.addTitle(res, "Room processing result")
-		Command.addFieldMultiValue(res, "Result", results, "Result")
+
+		if (roomNames != null) {
+			log.log(Level.FINEST, "Removing ${roomNames.length} rooms")
+			List<String> results = new ArrayList<>(roomNames.length);
+			for (String roomName : roomNames) {
+				log.log(Level.FINEST, "Processing room: ${roomName}")
+				BareJID jid = null;
+				try {
+					if (roomName.contains("@")) {
+						jid = BareJID.bareJIDInstance(roomName);
+					} else {
+						jid = BareJID.bareJIDInstance(roomName + "@" + p.getStanzaTo().getBareJID().getDomain());
+					}
+				} catch (TigaseStringprepException e) {
+					results.add(roomName + ": failed with exception: " + e.getMessage())
+				}
+				if (jid != null) {
+					log.log(Level.FINEST, "Getting room for JID: ${jid}");
+					Room room = mucRepository.getRoom(jid)
+					if (room == null) {
+						results.add(jid.toString() + ": doesn't exists")
+					} else {
+						ownerModule.destroy(room, alternateJid, reason);
+						log.log(Level.FINEST, "Room removed: ${room.getRoomJID().toString()}");
+						results.add(room.getRoomJID().toString() + ": removed")
+					}
+				}
+			}
+			Command.addTitle(res, "Room processing result")
+			Command.addFieldMultiValue(res, "Result", results, "Result")
+		}
+	} catch (Exception e) {
+		log.log(Level.WARNING, "Error while mass-removing MUC rooms",e);
+		Command.addNote(res, "Room removal error" + e.getMessage())
 	}
-} catch (Exception e) {
-	log.log(Level.WARNING, "Error while mass-removing MUC rooms",e);
-	Command.addNote(res, "Room removal error" + e.getMessage())
+	return res;
 }
-return res;
+
+return process(kernel, component, packet, (Set) adminsSet);

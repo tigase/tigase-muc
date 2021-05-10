@@ -25,57 +25,72 @@
 
 package tigase.admin
 
+import groovy.transform.CompileStatic
 import tigase.form.Form
+import tigase.kernel.core.Kernel
+import tigase.muc.MUCComponent
+import tigase.muc.RoomConfig
 import tigase.muc.repository.IMucRepository
 import tigase.server.Command
 import tigase.server.Iq
+import tigase.server.Packet
+import tigase.server.script.CommandIfc
+import tigase.xml.Element
+import tigase.xmpp.jid.BareJID
 
-def SUBMIT = "submit";
+Kernel kernel = (Kernel) kernel;
+MUCComponent component = (MUCComponent) component
+packet = (Iq) packet
 
-def mucRepositoryModule = (IMucRepository) mucRepository;
-def Iq p = (Iq) packet;
-def admins = (Set) adminsSet
+@CompileStatic
+Packet process(Kernel kernel, MUCComponent component, Iq p, Set admins) {
+	final IMucRepository mucRepository = kernel.getInstance(IMucRepository.class)
 
-def stanzaFromBare = p.getStanzaFrom().getBareJID()
-def isServiceAdmin = admins.contains(stanzaFromBare)
-if (!isServiceAdmin) {
-	def result = p.commandResult(Command.DataType.result)
-	Command.addTextField(result, "Error", "You do not have enough permissions to access this data.");
-	return result
-}
-
-def xform = Command.getData(p, "x", "jabber:x:data");
-def submit = xform == null ? false : xform.getAttributeStaticStr("type") == SUBMIT;
-
-if (submit) {
-	def command = p.getElement().getChild("command", "http://jabber.org/protocol/commands");
-	def x = command.getChild("x", "jabber:x:data");
-
-	def frm = new Form(x);
-	def df = mucRepositoryModule.getDefaultRoomConfig();
-
-	df.copyFrom(frm);
-
-	mucRepositoryModule.updateDefaultRoomConfig(df)
-
-	return "Default configurtation updated";
-} else if (!submit) {
-	def res = (Iq) p.commandResult(Command.DataType.form)
-	def command = res.getElement().getChild("command", "http://jabber.org/protocol/commands");
-	def x = command.getChild("x", "jabber:x:data");
-	command.removeChild(x);
-
-	def df = mucRepositoryModule.getDefaultRoomConfig().form;
-
-	def frm = new Form(x);
-
-	for (fld in df.getAllFields()) {
-		frm.addField(fld);
+	BareJID stanzaFromBare = p.getStanzaFrom().getBareJID()
+	boolean isServiceAdmin = admins.contains(stanzaFromBare)
+	if (!isServiceAdmin) {
+		def result = p.commandResult(Command.DataType.result)
+		Command.addTextField(result, "Error", "You do not have enough permissions to access this data.");
+		return result
 	}
 
-	frm.copyValuesFrom(df);
+	Element xform = Command.getData(p, "x", "jabber:x:data");
+	boolean submit = xform == null ? false : xform.getAttributeStaticStr("type") == "submit";
 
-	command.addChild(frm.getElement());
+	if (submit) {
+		Element command = p.getElement().getChild("command", "http://jabber.org/protocol/commands");
+		Element x = command.getChild("x", "jabber:x:data");
 
-	return res;
+		Form frm = new Form(x);
+		RoomConfig roomConfig = mucRepository.getDefaultRoomConfig();
+
+		roomConfig.copyFrom(frm);
+
+		mucRepository.updateDefaultRoomConfig(roomConfig)
+
+		Packet result = p.commandResult(Command.DataType.result);
+		Command.addFieldMultiValue(result, CommandIfc.SCRIPT_RESULT, Arrays.asList("Default configurtation updated"));
+		return result;
+	} else {
+		Packet res = p.commandResult(Command.DataType.form)
+		Element command = res.getElement().getChild("command", "http://jabber.org/protocol/commands");
+		Element x = command.getChild("x", "jabber:x:data");
+		command.removeChild(x);
+
+		Form df = mucRepository.getDefaultRoomConfig().getConfigForm();
+
+		def frm = new Form(x);
+
+		for (fld in df.getAllFields()) {
+			frm.addField(fld);
+		}
+
+		frm.copyValuesFrom(df);
+
+		command.addChild(frm.getElement());
+
+		return res;
+	}
 }
+
+return process(kernel, component, packet, (Set) adminsSet);
