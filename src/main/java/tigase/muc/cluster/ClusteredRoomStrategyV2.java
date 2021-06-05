@@ -15,7 +15,6 @@ import tigase.muc.Affiliation;
 import tigase.muc.Role;
 import tigase.muc.Room;
 import tigase.muc.modules.PresenceModule;
-import tigase.muc.modules.PresenceModuleImpl;
 import tigase.server.Packet;
 import tigase.server.Priority;
 import tigase.util.stringprep.TigaseStringprepException;
@@ -163,6 +162,10 @@ public class ClusteredRoomStrategyV2
 									 occupantRole, newOccupant});
 
 				RoomClustered room = (RoomClustered) mucRepository.getRoom(roomJid);
+				if (room == null) {
+					// there is no room to broadcast presence "from", skipping presence broadcast...
+					return;
+				}
 
 				// update map of remote occupants
 				if ("unavailable".equals(presenceOrig.getAttributeStaticStr("type"))) {
