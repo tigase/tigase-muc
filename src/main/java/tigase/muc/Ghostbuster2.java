@@ -78,6 +78,10 @@ public class Ghostbuster2
 			@Override
 			public void responseReceived(Packet data, Packet response) {
 				try {
+					if (log.isLoggable(Level.FINEST)) {
+						log.log(Level.FINEST, "Received ping response for ping, data: {0}, response: {1}",
+								new Object[]{data, response});
+					}
 					onPingReceived(response);
 				} catch (Exception e) {
 					if (log.isLoggable(Level.WARNING)) {
@@ -237,6 +241,9 @@ public class Ghostbuster2
 	}
 
 	public void kickJIDFromRooms(JID jid, Collection<BareJID> rooms) throws TigaseStringprepException {
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST, "Kicking out JID: {0}, from rooms: {1}", new Object[]{jid, rooms});
+		}
 		this.monitoredObjects.remove(jid);
 		for (Room r : repository.getActiveRooms().values()) {
 			if ((rooms == null || rooms.contains(r.getRoomJID())) && r.isOccupantInRoom(jid)) {

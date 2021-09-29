@@ -23,8 +23,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class Request {
+
+	private final static Logger log = Logger.getLogger(Request.class.getName());
 
 	public enum Result {
 		Ok,
@@ -80,6 +84,11 @@ public class Request {
 
 	public void registerRequest(JID jid, String stanzaId) {
 		final String key = SelfPingerMonitor.key(jid, stanzaId);
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST,
+					"Registering request, jid: {0}, stanzaId: {1}, key: {2}, subrequests: {3}",
+					new Object[]{jid, stanzaId, key, subrequests});
+		}
 		this.subrequests.put(key, jid);
 		monitor.registerSubRequest(key, this);
 		++requestsCounter;
@@ -115,7 +124,13 @@ public class Request {
 
 	public void registerResponse(JID jid, String stanzaId, Result result) {
 		final String key = SelfPingerMonitor.key(jid, stanzaId);
-		if (this.subrequests.containsKey(key)) {
+		final boolean containsKey = this.subrequests.containsKey(key);
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST,
+					"Registering response ping, jid: {0}, stanzaId: {1}, result: {2}, containsKey: {3}, subrequests: {4}",
+					new Object[]{jid, stanzaId, result, containsKey, subrequests.size()});
+		}
+		if (containsKey) {
 			switch (result) {
 				case Ok:
 					++resultOkCounter;
@@ -132,10 +147,30 @@ public class Request {
 					break;
 			}
 		}
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST,
+					"Registering response ping[2], jid: {0}, stanzaId: {1}, result: {2}, subrequests: {3}, this.Request: {4}",
+					new Object[]{jid, stanzaId, result, subrequests.size(), this});
+		}
 		if (this.subrequests.isEmpty() ||
 				(resultOkCounter + resultErrorCounter + resultTimeoutCounter == requestsCounter)) {
 			monitor.finish(this);
 		}
 	}
 
+	@Override
+	public String toString() {
+		final StringBuffer sb = new StringBuffer("Request{");
+		sb.append("id='").append(id).append('\'');
+		sb.append(", jid=").append(jid);
+		sb.append(", jidTo=").append(jidTo);
+		sb.append(", timestampt=").append(timestampt);
+		sb.append(", requestsCounter=").append(requestsCounter);
+		sb.append(", resultErrorCounter=").append(resultErrorCounter);
+		sb.append(", resultOkCounter=").append(resultOkCounter);
+		sb.append(", resultTimeoutCounter=").append(resultTimeoutCounter);
+		sb.append(", timeoutedJIDs=").append(getTimeoutedJIDs());
+		sb.append('}');
+		return sb.toString();
+	}
 }

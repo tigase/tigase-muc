@@ -29,10 +29,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 @Bean(name = "self-pinger-monitor", parent = MUCComponent.class, active = true)
 public class SelfPingerMonitor
 		extends ScheduledTask {
+
+	private final static Logger log = Logger.getLogger(SelfPingerMonitor.class.getName());
 
 	public enum ResultStatus {
 		AllSuccess,
@@ -56,6 +60,11 @@ public class SelfPingerMonitor
 
 	public Request register(JID jidFrom, JID jidTo, String id) {
 		Request r = new Request(this, jidFrom, jidTo, id);
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST,
+					"PRegistering for ping, from: {0}, to: {1}, id: {2}, requests: {3}",
+					new Object[]{jidFrom, jidTo, id, requests.size()});
+		}
 		synchronized (requests) {
 			requests.add(r);
 		}
@@ -69,6 +78,11 @@ public class SelfPingerMonitor
 	public void registerResponse(JID jid, String stanzaId, Request.Result result) {
 		final String key = SelfPingerMonitor.key(jid, stanzaId);
 		Request req = this.sentSubrequests.get(key);
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST,
+					"Registering response self-ping, jid: {0}, stanzaId: {1}, result: {2}, req: {3}, sentSubrequests: {4}",
+					new Object[]{jid, stanzaId, result, req, sentSubrequests.size()});
+		}
 		if (req != null) {
 			req.registerResponse(jid, stanzaId, result);
 		}
@@ -89,6 +103,11 @@ public class SelfPingerMonitor
 	}
 
 	void kickOut(JID jid) {
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST,
+					"Kicking out JID: {0}",
+					new Object[]{jid});
+		}
 		try {
 			if (ghostbuster2 != null) {
 				ghostbuster2.kickJIDFromRooms(jid, null);
@@ -103,6 +122,11 @@ public class SelfPingerMonitor
 	}
 
 	void finish(final Request request) {
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST,
+					"Finishing request: {0}",
+					new Object[]{request});
+		}
 		synchronized (requests) {
 			requests.remove(request);
 		}
