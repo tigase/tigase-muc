@@ -179,12 +179,12 @@ public class Room
 	}
 
 	public RoomAffiliation getAffiliation(BareJID jid) {
-		if (log.isLoggable(Level.FINEST)) {
-			log.log(Level.FINEST, "Getting affiliations for: " + jid + " from set: " + affiliations.toString());
-		}
 		RoomAffiliation result = null;
 		if (jid != null) {
 			result = this.affiliations.get(jid);
+		}
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST, "Getting affiliations for: " + jid + ", result : " + result);
 		}
 		return result == null ? RoomAffiliation.none : result;
 	}
@@ -387,10 +387,16 @@ public class Room
 		}
 		OccupantEntry entry = this.occupants.get(nickname);
 		if (entry != null) {
+			if (log.isLoggable(Level.FINEST)) {
+				log.finest("Getting role for nick: " + nickname + ". OccupantEntry: " + entry);
+			}
 			return entry.role == null ? Role.none : entry.role;
 		}
 
 		BareJID candidate = getPersistentOccupantJidByNickname(nickname);
+		if (log.isLoggable(Level.FINEST)) {
+			log.finest("Getting role for nick: " + nickname + ". persistent JID: " + candidate);
+		}
 		if (candidate == null) {
 			return Role.none;
 		}

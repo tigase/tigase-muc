@@ -58,6 +58,11 @@ public class SelfPingModule
 			final BareJID roomJID = packet.getStanzaTo().getBareJID();
 			final String recipientNickname = packet.getStanzaTo().getResource();
 
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "Processing ping packet: {0}, module-ping: {1}, room-ping: {2}",
+						new Object[]{packet, (roomJID.getLocalpart() == null), (recipientNickname == null)});
+			}
+
 			if (roomJID.getLocalpart() == null) {
 				// process module ping
 				super.process(packet);
@@ -76,6 +81,10 @@ public class SelfPingModule
 			}
 
 			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "Processing ping packet[2]: {0}, recipientJids: {1}, room: {2}",
+						new Object[]{packet, recipientJids, room});
+			}
 			if (recipientJids.isEmpty()) {
 				throw new SelfPingException(Authorization.NOT_ACCEPTABLE, room.getRoomJID().toString(),
 											recipientNickname + " is not in room");
@@ -125,6 +134,9 @@ public class SelfPingModule
 
 	private void onPingMultirequestFinished(Request req, SelfPingerMonitor.ResultStatus resultStatus) {
 		try {
+			if (log.isLoggable(Level.FINEST)) {
+				log.log(Level.FINEST, "Finished processing, req: {0}, result: {1}", new Object[]{req, resultStatus});
+			}
 			final Element ping = new Element("iq", new String[]{"id", "from", "to"},
 											 new String[]{req.getId(), req.getJidTo().toString(),
 														  req.getJid().toString()});
@@ -153,6 +165,11 @@ public class SelfPingModule
 
 	private void pingAll(String stanzaId, final JID from, final JID to, final Collection<JID> recipientJids) {
 		final Request request = this.pingMonitor.register(from, to, stanzaId);
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST,
+					"Pinging connections, stanzaId: {0}, from: {1}, to: {2}, recipientJids: {3}, request: {4}",
+					new Object[]{stanzaId, from, to, recipientJids, request});
+		}
 		recipientJids.forEach(jid -> {
 			try {
 				final String id = nextStanzaId();
