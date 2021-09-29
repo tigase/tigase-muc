@@ -196,12 +196,12 @@ public class SelfPingModule
 
 		@Override
 		public void onError(Packet responseStanza, String errorCondition) {
-			pingMonitor.registerResponse(responseStanza.getFrom(), responseStanza.getStanzaId(), Request.Result.Error);
+			pingMonitor.registerResponse(responseStanza.getStanzaFrom(), responseStanza.getStanzaId(), Request.Result.Error);
 		}
 
 		@Override
 		public void onSuccess(Packet responseStanza) {
-			pingMonitor.registerResponse(responseStanza.getFrom(), responseStanza.getStanzaId(), Request.Result.Ok);
+			pingMonitor.registerResponse(responseStanza.getStanzaFrom(), responseStanza.getStanzaId(), Request.Result.Ok);
 		}
 
 		@Override
