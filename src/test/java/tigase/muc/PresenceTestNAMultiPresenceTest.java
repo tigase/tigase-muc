@@ -29,6 +29,7 @@ import tigase.eventbus.EventBusFactory;
 import tigase.kernel.DefaultTypesConverter;
 import tigase.kernel.beans.config.AbstractBeanConfigurator;
 import tigase.kernel.core.Kernel;
+import tigase.server.CmdAcl;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
 import tigase.test.junit.XMPPTestCase;
@@ -69,6 +70,10 @@ public class PresenceTestNAMultiPresenceTest
 		kernel.registerBean("eventBus").asInstance(EventBusFactory.getInstance()).exportable().exec();
 		kernel.registerBean("dataSourceBean").asClass(DataSourceBean.class).exportable().exec();
 		kernel.registerBean("mucRepository").asInstance(new MockMucRepository()).exportable().exec();
+		kernel.registerBean("mucConfig").asInstance(new MUCConfig()).exportable().exec();
+		final MUCConfig config = kernel.getInstance(MUCConfig.class);
+		config.setHiddenRoomCreationAcl(CmdAcl.Type.ALL);
+		config.setPublicRoomCreationAcl(CmdAcl.Type.ALL);
 
 		final ArrayWriter writer = new ArrayWriter();
 		kernel.registerBean("muc").asClass(TestMUCCompoent.class).exec();

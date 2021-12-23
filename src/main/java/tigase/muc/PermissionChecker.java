@@ -60,9 +60,9 @@ public class PermissionChecker {
 		}
 
 		if (roomConfig.isRoomconfigPublicroom() && !checkAcl(roomJID, senderJid, config.getPublicRoomCreationAcl())) {
-			throw new MUCException(Authorization.FORBIDDEN);
+			throw new MUCException(Authorization.FORBIDDEN, "You don't have enough permissions to create public room");
 		} else if (!checkAcl(roomJID, senderJid, config.getHiddenRoomCreationAcl())) {
-			throw new MUCException(Authorization.FORBIDDEN);
+			throw new MUCException(Authorization.FORBIDDEN, "You don't have enough permissions to create hidden room");
 		}
 
 	}
@@ -81,9 +81,9 @@ public class PermissionChecker {
 		final Boolean willBePublic = form.getAsBoolean(RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY);
 		if (willBePublic != null && willBePublic &&
 				!checkAcl(room.getRoomJID(), senderJid, config.getPublicRoomCreationAcl())) {
-			throw new MUCException(Authorization.FORBIDDEN);
+			throw new MUCException(Authorization.FORBIDDEN, "You don't have enough permissions to see room");
 		} else if (willBePublic != null && !checkAcl(room.getRoomJID(), senderJid, config.getHiddenRoomCreationAcl())) {
-			throw new MUCException(Authorization.FORBIDDEN);
+			throw new MUCException(Authorization.FORBIDDEN, "You don't have enough permissions to see room");
 		}
 	}
 

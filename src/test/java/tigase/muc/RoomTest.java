@@ -31,6 +31,7 @@ import tigase.eventbus.EventBusFactory;
 import tigase.kernel.DefaultTypesConverter;
 import tigase.kernel.beans.config.AbstractBeanConfigurator;
 import tigase.kernel.core.Kernel;
+import tigase.server.CmdAcl;
 import tigase.server.Packet;
 import tigase.test.junit.JUnitXMLIO;
 import tigase.test.junit.XMPPTestCase;
@@ -40,10 +41,7 @@ import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author bmalkow
@@ -74,6 +72,10 @@ public class RoomTest
 		kernel.registerBean("mucRepository").asInstance(new MockMucRepository()).exportable().exec();
 
 		kernel.registerBean("muc").asClass(TestMUCCompoent.class).exec();
+		kernel.registerBean("mucConfig").asInstance(new MUCConfig()).exportable().exec();
+		final MUCConfig config = kernel.getInstance(MUCConfig.class);
+		config.setHiddenRoomCreationAcl(CmdAcl.Type.ALL);
+		config.setPublicRoomCreationAcl(CmdAcl.Type.ALL);
 		this.muc = kernel.getInstance(TestMUCCompoent.class);
 
 		ResponseManager rm = ((Kernel) kernel.getInstance("muc#KERNEL")).getInstance(ResponseManager.class);

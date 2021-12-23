@@ -53,7 +53,7 @@ public class MUCConfig {
 	@ConfigField(desc = "GhostBuster enabled", alias = GHOSTBUSTER_ENABLED_KEY)
 	private boolean ghostbusterEnabled = true;
 	@ConfigField(desc = "ACL for creation hidden rooms")
-	private CmdAcl.Type hiddenRoomCreationAcl = CmdAcl.Type.ALL;
+	private CmdAcl.Type hiddenRoomCreationAcl = CmdAcl.Type.DOMAIN;
 	@ConfigField(desc = "Enable sending timestamps in legacy format descibed in XEP-0091", alias = "legacy-delayed-delivery-enabled")
 	private boolean legacyDelayedDeliveryEnabled = false;
 	@ConfigField(desc = "Passing only body element", alias = MESSAGE_FILTER_ENABLED_KEY)
@@ -67,7 +67,7 @@ public class MUCConfig {
 	@ConfigField(desc = "Passing only bare presence", alias = PRESENCE_FILTER_ENABLED_KEY)
 	private boolean presenceFilterEnabled = false;
 	@ConfigField(desc = "ACL for creation public rooms")
-	private CmdAcl.Type publicRoomCreationAcl = CmdAcl.Type.ALL;
+	private CmdAcl.Type publicRoomCreationAcl = CmdAcl.Type.DOMAIN_ADMIN;
 	private BareJID serviceName = BareJID.bareJIDInstanceNS("multi-user-chat");
 	@ConfigField(desc = "Send welcome messages on room creation", alias = "welcome-message")
 	private boolean welcomeMessagesEnabled = true;
