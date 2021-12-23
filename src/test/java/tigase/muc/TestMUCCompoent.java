@@ -34,6 +34,9 @@ public class TestMUCCompoent
 	@Inject
 	private IMucRepository mucRepository;
 
+	@Inject
+	private MUCConfig mucConfig;
+
 	public TestMUCCompoent() {
 	}
 

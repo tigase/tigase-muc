@@ -20,6 +20,7 @@ package tigase.muc;
 import org.junit.Assert;
 import org.junit.Before;
 import tigase.component.DSLBeanConfigurator;
+import tigase.component.DSLBeanConfiguratorWithBackwardCompatibility;
 import tigase.component.PacketWriter;
 import tigase.component.exceptions.RepositoryException;
 import tigase.component.responses.AsyncCallback;
@@ -65,6 +66,8 @@ public class RoomTest
 		props.put("muc/" + MUCConfig.MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
 		props.put("muc/" + MUCConfig.PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
 		props.put("muc/" + MUCConfig.LOG_DIR_KEY, "./");
+		props.put("muc/" + "hidden-room-creation-acl", CmdAcl.Type.ALL);
+		props.put("muc/" + "public-room-creation-acl", CmdAcl.Type.ALL);
 		props = ConfigWriter.buildTree(props);
 		kernel.getInstance(DSLBeanConfigurator.class).setProperties(props);
 		kernel.registerBean("eventBus").asInstance(EventBusFactory.getInstance()).exportable().exec();
@@ -72,10 +75,6 @@ public class RoomTest
 		kernel.registerBean("mucRepository").asInstance(new MockMucRepository()).exportable().exec();
 
 		kernel.registerBean("muc").asClass(TestMUCCompoent.class).exec();
-		kernel.registerBean("mucConfig").asInstance(new MUCConfig()).exportable().exec();
-		final MUCConfig config = kernel.getInstance(MUCConfig.class);
-		config.setHiddenRoomCreationAcl(CmdAcl.Type.ALL);
-		config.setPublicRoomCreationAcl(CmdAcl.Type.ALL);
 		this.muc = kernel.getInstance(TestMUCCompoent.class);
 
 		ResponseManager rm = ((Kernel) kernel.getInstance("muc#KERNEL")).getInstance(ResponseManager.class);
