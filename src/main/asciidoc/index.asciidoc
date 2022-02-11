@@ -10,6 +10,7 @@ v{revnumber}, {localdate}
 Welcome to Tigase Multi User Chat component guide
 
 include::text/Overview.asciidoc[leveloffset=+1]
+include::text/tigase-muc-release-notes.asciidoc[leveloffset=+1]
 include::text/Announcement.asciidoc[leveloffset=+1]
 include::text/Database.asciidoc[leveloffset=+1]
 include::text/Configuration.asciidoc[leveloffset=+1]

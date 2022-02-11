@@ -1,0 +1,6 @@
+= Tigase MUC Release Notes
+:author: Wojciech Kapcia
+
+Welcome to Tigase MUC 3.2.0! This is a feature release for with a number of fixes and updates.
+
+include::tigase-muc-current.asciidoc[leveloffset=+1]
