@@ -536,16 +536,18 @@ public class ModeratorModule
 			room.setNewRole(occupantNick, newRole);
 		}
 
-		// sending presence to all occupants
-		for (String nickname : room.getOccupantsNicknames(false)) {
-			final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
+		// sending presence to all occupants, if occupant which role was changes is still online
+		if (occupantJid != null) {
+			for (String nickname : room.getOccupantsNicknames(false)) {
+				final Collection<JID> occupantJids = room.getOccupantsJidsByNickname(nickname);
 
-			for (JID jid : occupantJids) {
-				Packet occupantPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
-													   occupantAffiliation, newRole, occupantNick, reason, null,
-													   codes.toArray(new String[]{}));
+				for (JID jid : occupantJids) {
+					Packet occupantPresence = makePresence(jid, room.getRoomJID(), room, occupantJid, isUnavailable,
+														   occupantAffiliation, newRole, occupantNick, reason, null,
+														   codes.toArray(new String[]{}));
 
-				write(occupantPresence);
+					write(occupantPresence);
+				}
 			}
 		}
 	}
