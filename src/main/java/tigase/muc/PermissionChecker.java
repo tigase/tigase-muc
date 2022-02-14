@@ -79,11 +79,15 @@ public class PermissionChecker {
 	public void checkUpdateVisibilityPermission(final Room room, final JID senderJid, final Form form)
 			throws MUCException {
 		final Boolean willBePublic = form.getAsBoolean(RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY);
-		if (willBePublic != null && willBePublic &&
-				!checkAcl(room.getRoomJID(), senderJid, config.getPublicRoomCreationAcl())) {
-			throw new MUCException(Authorization.FORBIDDEN, "You don't have enough permissions to see room");
-		} else if (willBePublic != null && !checkAcl(room.getRoomJID(), senderJid, config.getHiddenRoomCreationAcl())) {
-			throw new MUCException(Authorization.FORBIDDEN, "You don't have enough permissions to see room");
+		// check permissions only if we are changing visibility
+		if (willBePublic != null) {
+			if (room.getConfig().isRoomconfigPublicroom() != willBePublic) {
+				// we are changing visibility
+				// block only making private room public, but allow anyone to convert public room to private
+				if (willBePublic && !checkAcl(room.getRoomJID(), senderJid, config.getPublicRoomCreationAcl())) {
+					throw new MUCException(Authorization.FORBIDDEN, "You don't have enough permissions to make room public");
+				}
+			}
 		}
 	}
 
