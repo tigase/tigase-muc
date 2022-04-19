@@ -12,3 +12,6 @@ init.properties
 /init-muc.properties
 derby.log
 /docs/
+
+src/main/restructure/locale/pl/LC_MESSAGES/*.po
+src/main/restructure/_build/
