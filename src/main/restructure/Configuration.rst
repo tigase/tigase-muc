@@ -131,7 +131,7 @@ MUC component by default filters messages and allows only ``<body/>`` element to
        'message-filter-enabled' = false
    }
 
-11.5.5. Disable presence filtering
+Disable presence filtering
 -----------------------------------
 
 To disable filter and allow MUC transfer all subelements in <presence/>, ``presence-filter-enabled`` property of MUC component needs to be set to ``false``
