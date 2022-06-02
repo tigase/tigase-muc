@@ -1,0 +1,106 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2004-2022, Tigase, Inc
+# This file is distributed under the same license as the TigaseDoc package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: TigaseDoc \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2022-06-02 14:00-0700\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+
+#: ../../Room_configuration.rst:2
+msgid "Room configuration options"
+msgstr ""
+
+#: ../../Room_configuration.rst:4
+msgid ""
+"In addition to the default Room configuration options defined in the MUC "
+"specification Tigase offers following as well:"
+msgstr ""
+
+#: ../../Room_configuration.rst:27
+msgid "**Tigase MUC Options**"
+msgstr ""
+
+#: ../../Room_configuration.rst:7
+msgid ""
+"tigase#presence_delivery_logic - allows configuring logic determining "
+"which presence should be used by occupant in the room while using "
+"multiple-resource connections under one nickname, following options are "
+"available:"
+msgstr ""
+
+#: ../../Room_configuration.rst:9
+msgid "PREFERE_PRIORITY"
+msgstr ""
+
+#: ../../Room_configuration.rst:11
+msgid "PREFERE_LAST"
+msgstr ""
+
+#: ../../Room_configuration.rst:13
+msgid ""
+"tigase#presence_filtering - (boolean) when enabled broadcasts presence "
+"only to selected affiliation groups"
+msgstr ""
+
+#: ../../Room_configuration.rst:15
+msgid ""
+"tigase#presence_filtered_affiliations - when enabled "
+"tigase#presence_filtering is enabled one can select affiliation which "
+"should receive presences, following are possible to select from:"
+msgstr ""
+
+#: ../../Room_configuration.rst:17
+msgid "owner"
+msgstr ""
+
+#: ../../Room_configuration.rst:19
+msgid "admin"
+msgstr ""
+
+#: ../../Room_configuration.rst:21
+msgid "member"
+msgstr ""
+
+#: ../../Room_configuration.rst:23
+msgid "none"
+msgstr ""
+
+#: ../../Room_configuration.rst:25
+msgid "outcast"
+msgstr ""
+
+#: ../../Room_configuration.rst:27
+msgid "muc#roomconfig_maxusers - Allows configuring of maximum users of room."
+msgstr ""
+
+#: ../../Room_configuration.rst:30
+msgid "**Configuring default room configuration in init.properties**"
+msgstr ""
+
+#: ../../Room_configuration.rst:30
+msgid ""
+"For more informations look into `??? <#Configuring default room "
+"configuration>`__"
+msgstr ""
+
+#: ../../Room_configuration.rst:33
+msgid "**Configuration per-room**"
+msgstr ""
+
+#: ../../Room_configuration.rst:33
+msgid ""
+"Per room configuration is done using IQ stanzas defined in the "
+"specification, for example:"
+msgstr ""
+
