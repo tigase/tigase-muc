@@ -11,7 +11,7 @@ Database schema changes
 
 We decided to improve performance of MUC repository storage and to do so we needed to change database schema of MUC component. Additionally we decided to no longer use *in-code* database upgrade to update database schema of MUC component and rather provide separate schema files for every supported database.
 
-To continue usage of new versions of MUC component it is required to manually load new component database schema, see `??? <#Preparation of database>`__ section for informations about that.
+To continue usage of new versions of MUC component it is required to manually load new component database schema, see :ref:`Preparation of database<Preparation_of_database>` section for informations about that.
 
 Moreover we no longer store rooms list and configurations inside ``UserRepository`` of default Tigase XMPP Server database. Instead we use separate tables which are part of new schema. Due to that it is required to execute converter which will move room configurations from ``UserRepository`` to new tables. It needs to be executed **AFTER** new database schema is loaded to database.
 
