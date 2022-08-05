@@ -927,8 +927,8 @@ public class PresenceModuleImpl
 									p.setXMLNS(Packet.CLIENT_XMLNS);
 									sender.sendDelayedPacket(p);
 								} catch (TigaseStringprepException ex) {
-									if (log.isLoggable(Level.INFO)) {
-										log.info("Packet addressing problem, stringprep failed: " + element);
+									if (log.isLoggable(Level.CONFIG)) {
+										log.log(Level.CONFIG, "Packet addressing problem, stringprep failed: " + element);
 									}
 								}
 							}
