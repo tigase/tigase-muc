@@ -206,3 +206,20 @@ To enable support for XEP-0091 you need to set ``legacy-delayed-delivery-enabled
    muc () {
        'legacy-delayed-delivery-enabled' = true
    }
+
+Limiting who can create room
+------------------------------------------------------------
+
+For public installations it's desirable to limit visibility of the room - only domain administrators should be able to create publicly visible room that can be discovered by anyone. Everyone else should only be able to create private rooms. This was implemented in https://projects.tigase.net/issue/muc-133.
+
+The feature is configurable via two options: `hidden-room-creation-acl` and `public-room-creation-acl` and follow ACL options defined for Tigase Server (https://docs.tigase.net/projects/tigase-tigase-mix/en/latest/Configuration.html#setting-acl)
+
+::
+
+    muc () {
+        mucConfig () {
+            'hidden-room-creation-acl' = DOMAIN
+            'public-room-creation-acl' = DOMAIN_ADMIN
+        }
+    }
+
