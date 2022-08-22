@@ -13,5 +13,5 @@ init.properties
 derby.log
 /docs/
 
-src/main/restructure/locale/pl/LC_MESSAGES/*.mo
+src/main/restructure/locale/*/LC_MESSAGES/*.mo
 src/main/restructure/_build/
