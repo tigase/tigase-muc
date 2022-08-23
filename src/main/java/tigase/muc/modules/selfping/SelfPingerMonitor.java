@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -44,7 +45,7 @@ public class SelfPingerMonitor
 		Timeouts
 	}
 
-	private final Set<Request> requests = new HashSet<>();
+	private final Set<Request> requests = ConcurrentHashMap.newKeySet();
 	private final Map<String, Request> sentSubrequests = new ConcurrentHashMap<>();
 	@Inject(nullAllowed = true)
 	private Ghostbuster2 ghostbuster2;
@@ -65,9 +66,7 @@ public class SelfPingerMonitor
 					"PRegistering for ping, from: {0}, to: {1}, id: {2}, requests: {3}",
 					new Object[]{jidFrom, jidTo, id, requests.size()});
 		}
-		synchronized (requests) {
-			requests.add(r);
-		}
+		requests.add(r);
 		return r;
 	}
 
@@ -92,13 +91,11 @@ public class SelfPingerMonitor
 	public void run() {
 		final HashSet<Request> toFinish = new HashSet<>();
 		final long tm = System.currentTimeMillis() - 1000 * 45;
-		synchronized (this.requests) {
-			this.requests.forEach(req -> {
-				if (req.getTimestampt() <= tm) {
-					toFinish.add(req);
-				}
-			});
-		}
+		this.requests.forEach(req -> {
+			if (req.getTimestampt() <= tm) {
+				toFinish.add(req);
+			}
+		});
 		toFinish.forEach(this::finish);
 	}
 
@@ -127,9 +124,7 @@ public class SelfPingerMonitor
 					"Finishing request: {0}",
 					new Object[]{request});
 		}
-		synchronized (requests) {
-			requests.remove(request);
-		}
+		requests.remove(request);
 		final long err = request.getResultErrorCounter();
 		final long oks = request.getResultOkCounter();
 		final long tms = request.getNoResultCounter();
