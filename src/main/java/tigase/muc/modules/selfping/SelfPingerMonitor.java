@@ -143,7 +143,7 @@ public class SelfPingerMonitor
 			st = ResultStatus.AllSuccess;
 		}
 		handler.finished(request, st);
-		sentSubrequests.get(request.getId());
+		sentSubrequests.remove(request.getId());
 		request.getTimeoutedJIDs().forEach(this::kickOut);
 	}
 
