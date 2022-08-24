@@ -3,27 +3,30 @@
 # This file is distributed under the same license as the TigaseDoc package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2022.
 #
-#, fuzzy
 msgid ""
 msgstr ""
-"Project-Id-Version: TigaseDoc \n"
+"Project-Id-Version: TigaseDoc\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2022-08-22 00:40-0700\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"PO-Revision-Date: 2022-08-24 13:17+0000\n"
+"Last-Translator: Qian Luo <qian.luo@tigase.net>\n"
+"Language-Team: Chinese (Simplified) <http://translate.tigase.net/projects/"
+"tigase-pubsub-documentation/tigase-pubsub-documentation/zh_Hans/>\n"
+"Language: zh_CN\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 4.11.2\n"
 "Generated-By: Babel 2.8.0\n"
 
 #: ../../Announcement.rst:2
 msgid "Announcement"
-msgstr ""
+msgstr "公告"
 
 #: ../../Announcement.rst:5
 msgid "Major changes"
-msgstr ""
+msgstr "主要变化"
 
 #: ../../Announcement.rst:7
 msgid ""
@@ -31,10 +34,12 @@ msgid ""
 "structure. To continue to use Tigase MUC component, a few changes may be "
 "needed to be made to your systems. Please see them below:"
 msgstr ""
+"Tigase MUC 组件对我们的代码和结构进行了一些重大更改。要继续使用 Tigase MUC "
+"组件，可能需要对您的系统进行一些更改。请在下面查看它们："
 
 #: ../../Announcement.rst:10
 msgid "Database schema changes"
-msgstr ""
+msgstr "数据库架构更改"
 
 #: ../../Announcement.rst:12
 msgid ""
@@ -44,6 +49,9 @@ msgid ""
 "schema of MUC component and rather provide separate schema files for "
 "every supported database."
 msgstr ""
+"我们决定提高 MUC 存储库存储的性能，为此我们需要更改 MUC "
+"组件的数据库模式。此外，我们决定不再使用 *in-code* 数据库升级来更新 MUC "
+"组件的数据库架构，而是为每个支持的数据库提供单独的架构文件。"
 
 #: ../../Announcement.rst:14
 msgid ""
@@ -51,6 +59,8 @@ msgid ""
 "manually load new component database schema, see :ref:`Preparation of "
 "database<Preparation_of_database>` section for informations about that."
 msgstr ""
+"要继续使用新版本的 MUC 组件，需要手动加载新的组件数据库模式，请参阅 "
+":ref:`数据库准备<Preparation_of_database>` 部分了解有关信息。"
 
 #: ../../Announcement.rst:16
 msgid ""
@@ -61,6 +71,11 @@ msgid ""
 "``UserRepository`` to new tables. It needs to be executed **AFTER** new "
 "database schema is loaded to database."
 msgstr ""
+"此外，我们不再将房间列表和配置存储在默认 Tigase XMPP 服务器数据库的 "
+"``UserRepository`` "
+"中。相反，我们使用单独的表，它们是新模式的一部分。因此需要执行转换器，"
+"它将房间配置从 ``UserRepository`` 移动到新表。"
+"它需要在新数据库模式加载到数据库 **以后** 才执行。"
 
 #: ../../Announcement.rst:20
 msgid ""
@@ -68,53 +83,55 @@ msgid ""
 "suggest to use same database for new schema and storage of rooms "
 "configurations as well. In other case message history will not be moved "
 "to new schema."
-msgstr ""
+msgstr "如果您使用单独的数据库来存储消息历史记录，我们强烈建议您使用相同的数据库来存"
+"储新架构和房间配置。在其他情况下，消息历史不会移动到新模式。"
 
 #: ../../Announcement.rst:22
 msgid ""
 "In ``database`` directory of installation package there is a ``muc-db-"
 "migrate`` utility which takes 2 parameters:"
-msgstr ""
+msgstr "在安装包的 ``database`` 目录中，有一个 ``muc-db-migrate`` 实用程序，它有 2 "
+"个参数："
 
 #: ../../Announcement.rst:25
 msgid "-in 'jdbc_uri_to_user_repository'"
-msgstr ""
+msgstr "-in 'jdbc_uri_to_user_repository'"
 
 #: ../../Announcement.rst:25
 msgid "To set JDBC URI of UserRepository"
-msgstr ""
+msgstr "设置 UserRepository 的 JDBC URI"
 
 #: ../../Announcement.rst:28
 msgid "-out 'jdbc_uri_to_muc_database'"
-msgstr ""
+msgstr "-out 'jdbc_uri_to_muc_database'"
 
 #: ../../Announcement.rst:28
 msgid "To set JDBC URI of database with loaded database schema."
-msgstr ""
+msgstr "使用加载的数据库模式设置数据库的 JDBC URI。"
 
 #: ../../Announcement.rst:32
 msgid "Both JDBC uri’s may be the same."
-msgstr ""
+msgstr "两个 JDBC uri 可能相同。"
 
 #: ../../Announcement.rst:36
 msgid "During this opeartion it removes room configurations from old storage."
-msgstr ""
+msgstr "在此操作期间，它会从旧存储中删除房间配置。"
 
 #: ../../Announcement.rst:39
 msgid "Examples"
-msgstr ""
+msgstr "示例"
 
 #: ../../Announcement.rst:41
 msgid "UNIX / Linux / OSX"
-msgstr ""
+msgstr "UNIX / Linux / OSX"
 
 #: ../../Announcement.rst:47
 msgid "Windows"
-msgstr ""
+msgstr "Windows"
 
 #: ../../Announcement.rst:54
 msgid "Support for MAM"
-msgstr ""
+msgstr "支持 MAM"
 
 #: ../../Announcement.rst:56
 msgid ""
@@ -124,10 +141,14 @@ msgid ""
 "chat history using MAM and more advanced queries than retrieval of last X"
 " messages or messages since particular date supported by MUC"
 msgstr ""
+"在这个版本中，我们添加了对 `XEP-0313: Message Archive Management <http://xmpp"
+".org/extensions/xep-0313.html:>`__ 协议的支持，该协议它允许任何支持 MUC 的 "
+"MAM 兼容 XMPP 客户端来使用 MAM 检索房间聊天历史记录，并且支持比检索最后 X "
+"条消息或自 MUC 支持的特定日期以来的消息更高级的查询"
 
 #: ../../Announcement.rst:59
 msgid "Disabled support for XEP-0091: Legacy Delayed Delivery"
-msgstr ""
+msgstr "禁用对 XEP-0091：传统延迟发送的支持"
 
 #: ../../Announcement.rst:61
 msgid ""
@@ -142,16 +163,23 @@ msgid ""
 "information see `Enabling support for XEP-0091: Legacy Delayed Delivery "
 "<#legacyDelayedDeliveryEnabled>`__"
 msgstr ""
+"在这个版本中，我们默认禁用了对 `XEP-0091: Legacy Delayed Delivery "
+"<https://xmpp.org/extensions/xep-0091.html:>`__ 的支持。"
+"做出此决定的原因是不再推荐使用 XEP-0091，并且应该仅用于向后兼容。此外，"
+"它增加了从 MUC 房间历史发送的每条传输消息的额外开销，而在 `XEP-0203: Delayed "
+"Delivery <https://xmpp.org/extensions/xep-0203.html:>`__ "
+"格式中已经提供了相同的信息。有关详细信息，请参阅 :ref:`启用对 XEP-0091 "
+"的支持：旧版延迟交付<legacyDelayedDeliveryEnabled>`"
 
 #: ../../Configuration.rst:2
 msgid "Configuration"
-msgstr ""
+msgstr "配置"
 
 #: ../../Configuration.rst:4
 msgid ""
 "To enable Tigase MUC Component you need to add following block to "
 "``etc/init.properties`` file:"
-msgstr ""
+msgstr "要启用 Tigase MUC 组件，您需要将以下块添加到 ``etc/init.properties`` 文件："
 
 #: ../../Configuration.rst:11
 msgid ""
@@ -159,10 +187,12 @@ msgid ""
 "it will also use database configured as ``default`` data source to store "
 "data - including room configuration, affiliations and chat history."
 msgstr ""
+"它将启用组件并在名称为 ``muc`` 下配置它。默认情况下，它还将使用配置为 "
+"``default`` 数据源的数据库来存储数据 - 包括房间配置、隶属关系和聊天记录。"
 
 #: ../../Configuration.rst:14
 msgid "Using separate storage"
-msgstr ""
+msgstr "使用单独的存储"
 
 #: ../../Configuration.rst:16
 msgid ""
@@ -174,6 +204,11 @@ msgid ""
 "name of newly configured data source to ``dataSourceName`` property of "
 "``default`` DAO of MUC component."
 msgstr ""
+"如上所述，默认情况下 Tigase MUC 组件使用为 Tigase XMPP 服务器配置的 "
+"``default`` 数据源。也可以通过 MUC 组件使用单独的存储。为此，您需要在 "
+"``dataSource`` 部分配置新的 ``DataSource``。在这里，我们将使用 ``muc-store`` "
+"作为新配置的数据源的名称。此外，您需要将新配置的数据源的名称传递给 MUC "
+"组件的 ``default`` DAO 的 ``dataSourceName`` 属性。"
 
 #: ../../Configuration.rst:34
 msgid ""
@@ -182,60 +217,65 @@ msgid ""
 "``muc.example.com`` and use it to store data for MUC rooms hosted at "
 "``muc.example.com``:"
 msgstr ""
+"也可以为特定域配置单独的存储，即 ``muc.example.com``。在这里，我们将配置名为 "
+"``muc.example.com`` 的数据源，并使用它来存储托管在 ``muc.example.com`` "
+"的MUC房间的数据："
 
 #: ../../Configuration.rst:54
 msgid ""
 "With this configuration room data for other domains than example.com will"
 " be stored in default data source."
-msgstr ""
+msgstr "使用此配置，除 example.com 之外的其他域的数据将存储在默认数据源中。"
 
 #: ../../Configuration.rst:57
 msgid "Configuring default room configuration"
-msgstr ""
+msgstr "进行默认房间配置"
 
 #: ../../Configuration.rst:59
 msgid ""
 "It is possible to define value for every room option by setting it’s "
 "value to ``defaultRoomConfig`` as a property:"
-msgstr ""
+msgstr "可以通过将其值设置为 ``defaultRoomConfig`` 作为属性来定义每个房间选项的值："
 
 #: ../../Configuration.rst:69
 msgid "for example:"
-msgstr ""
+msgstr "例如："
 
 #: ../../Configuration.rst:80
 msgid "Enabling and configuring MUC room logging"
-msgstr ""
+msgstr "启用和配置 MUC 房间日志记录"
 
 #: ../../Configuration.rst:82
 msgid "MUC component supports logging inforamtions about"
-msgstr ""
+msgstr "MUC 组件支持记录关于"
 
 #: ../../Configuration.rst:84
 msgid "joining room"
-msgstr ""
+msgstr "加入房间"
 
 #: ../../Configuration.rst:86
 msgid "leaving room"
-msgstr ""
+msgstr "离开房间"
 
 #: ../../Configuration.rst:88
 msgid "broadcasting message by room"
-msgstr ""
+msgstr "按房间广播消息"
 
 #: ../../Configuration.rst:90
 msgid "setting room chat subject"
-msgstr ""
+msgstr "设置房间聊天主题"
 
 #: ../../Configuration.rst:92
 msgid "to HTML, XML or plain text files."
-msgstr ""
+msgstr "转换为 HTML、XML 或纯文本文件。"
 
 #: ../../Configuration.rst:94
 msgid ""
 "To enable this functionality you need to modify ``etc/init.properties`` "
 "file to enable ``muc-logger`` in MUC component, like this:"
 msgstr ""
+"要启用此功能，您需要修改 ``etc/init.properties`` 文件以在 MUC 组件中启用 "
+"``muc-logger``，如下所示："
 
 #: ../../Configuration.rst:103
 msgid ""
@@ -244,6 +284,9 @@ msgid ""
 "directory`` property of MUC component to path where you want to store "
 "room logs."
 msgstr ""
+"默认情况下，文件存储在 Tigase XMPP 服务器安装目录的 ``logs`` 子目录中。"
+"您可以通过将 MUC 组件的 ``room-log-directory`` "
+"属性设置为您想要存储房间日志的路径来更改它。"
 
 #: ../../Configuration.rst:113
 msgid ""
@@ -251,10 +294,12 @@ msgid ""
 "your own custom logger. Here we set ``com.example.CustomLogger`` as "
 "logger for MUC rooms:"
 msgstr ""
+"我们为房间事件提供默认记录器，但如果您愿意，您可以设置自己的自定义记录器。在"
+"这里，我们将 ``com.example.CustomLogger`` 设置为 MUC 房间的记录器："
 
 #: ../../Configuration.rst:124
 msgid "Disable message filtering"
-msgstr ""
+msgstr "禁用消息过滤"
 
 #: ../../Configuration.rst:126
 msgid ""
@@ -263,10 +308,12 @@ msgid ""
 "required to set ``message-filter-enabled`` property of MUC component to "
 "``false``."
 msgstr ""
+"MUC 组件默认过滤消息并只允许将 ``<body/>`` 元素传递给参与者。要禁用此过滤，"
+"需要将 MUC 组件的 ``message-filter-enabled`` 属性设置为 ``false``。"
 
 #: ../../Configuration.rst:135
 msgid "Disable presence filtering"
-msgstr ""
+msgstr "禁用状态过滤"
 
 #: ../../Configuration.rst:137
 msgid ""
@@ -274,42 +321,47 @@ msgid ""
 "``presence-filter-enabled`` property of MUC component needs to be set to "
 "``false``"
 msgstr ""
+"要禁用过滤器并允许 MUC 传输 <presence/> 中的所有子元素，MUC 组件的 "
+"``presence-filter-enabled`` 属性需要设置为 ``false``"
 
 #: ../../Configuration.rst:146
 msgid "Configuring discovering of disconnected participants"
-msgstr ""
+msgstr "配置发现断开连接的参与者"
 
 #: ../../Configuration.rst:148
 msgid ""
 "MUC component automatically discovers disconnected participants by "
 "checking if user is still connected every 5 minutes."
-msgstr ""
+msgstr "MUC 组件通过每 5 分钟检查用户是否仍然连接来自动发现断开连接的参与者。"
 
 #: ../../Configuration.rst:150
 msgid ""
 "It is possible to increase checking frequency by setting ``search-ghosts-"
 "every-minute`` property of MUC component to ``true``"
-msgstr ""
+msgstr "可以通过将 MUC 组件的 ``search-ghosts-every-minute`` 属性设置为 ``true`` "
+"来增加检查频率"
 
 #: ../../Configuration.rst:158
 msgid ""
 "It is also possible to disable this discovery by setting ``ghostbuster-"
 "enabled`` property of MUC component to ``false``"
-msgstr ""
+msgstr "也可以通过将 MUC 组件的 ``ghostbuster-enabled`` 属性设置为 ``false`` "
+"来禁用此发现"
 
 #: ../../Configuration.rst:167
 msgid "Allow chat states in rooms"
-msgstr ""
+msgstr "允许聊天室中的聊天状态"
 
 #: ../../Configuration.rst:169
 msgid ""
 "To allow transfer of chat-states in MUC messages set ``muc-allow-chat-"
 "states`` property of MUC component to ``true``"
-msgstr ""
+msgstr "为了允许在 MUC 消息中传输聊天状态，请将 MUC 组件的 ``muc-allow-chat-states`` "
+"属性设置为 ``true``"
 
 #: ../../Configuration.rst:178
 msgid "Disable locking of new rooms"
-msgstr ""
+msgstr "禁用锁定新房间"
 
 #: ../../Configuration.rst:180
 msgid ""
@@ -317,30 +369,35 @@ msgid ""
 " property of MUC component to \\`false’ by default new room will be "
 "locked until owner submits a new room configuration."
 msgstr ""
+"要关闭默认锁定新创建的房间，请将 MUC 组件的 ``muc-lock-new-room`` 属性设置为 "
+"\\`false’，默认情况下，新房间将被锁定，直到所有者提交新房间配置。"
 
 #: ../../Configuration.rst:189
 msgid "Disable joining with multiple resources under same nickname"
-msgstr ""
+msgstr "禁止加入同一昵称下的多个资源"
 
 #: ../../Configuration.rst:191
 msgid ""
 "To disable joining from multiple resources under single nickname set "
 "``muc-multi-item-allowed`` property of MUC component to ``false``"
-msgstr ""
+msgstr "要禁用单个昵称下的多个资源的加入，请将 MUC 组件的 ``muc-multi-item-allowed`` "
+"属性设置为 ``false``"
 
 #: ../../Configuration.rst:200
 msgid "Enabling support for XEP-0091: Legacy Delayed Delivery"
-msgstr ""
+msgstr "启用对 XEP-0091：旧延迟交付的支持"
 
 #: ../../Configuration.rst:202
 msgid ""
 "To enable support for XEP-0091 you need to set ``legacy-delayed-delivery-"
 "enabled`` property of MUC component to ``true``"
 msgstr ""
+"要启用对 XEP-0091 的支持，您需要将 MUC 组件的 ``legacy-delayed-delivery-"
+"enabled`` 属性设置为 ``true``"
 
 #: ../../Configuration.rst:211
 msgid "Limiting who can create room"
-msgstr ""
+msgstr "对谁可以创建房间进行限制"
 
 #: ../../Configuration.rst:213
 msgid ""
@@ -350,6 +407,9 @@ msgid ""
 "to create private rooms. This was implemented in "
 "https://projects.tigase.net/issue/muc-133."
 msgstr ""
+"对于公共安装，最好限制房间的可见性 - 只有域管理员能够创建任何人都可以发现的公"
+"开可见的房间。其他人应该只能创建私人房间。这是在 https://projects.tigase.net/"
+"issue/muc-133 中实现的。"
 
 #: ../../Configuration.rst:215
 msgid ""
@@ -358,14 +418,17 @@ msgid ""
 "Server (https://docs.tigase.net/projects/tigase-tigase-"
 "mix/en/latest/Configuration.html#setting-acl)"
 msgstr ""
+"该功能可通过两个选项进行配置：`hidden-room-creation-acl` 和 `public-room-"
+"creation-acl`，并遵循为 Tigase 服务器定义的 ACL 选项（https://docs.tigase."
+"net/projects/tigase-tigase-mix/en/latest/Configuration.html#setting-acl)"
 
 #: ../../Database.rst:2
 msgid "Database"
-msgstr ""
+msgstr "数据库"
 
 #: ../../Database.rst:7
 msgid "Preparation of database"
-msgstr ""
+msgstr "准备数据库"
 
 #: ../../Database.rst:9
 msgid ""
@@ -373,6 +436,8 @@ msgid ""
 "initialize this database. We provide few schemas for this component for "
 "MySQL, PostgreSQL, SQLServer and DerbyDB."
 msgstr ""
+"在您能够使用 Tigase MUC 组件之前，您需要初始化此数据库。我们为 "
+"MySQL、PostgreSQL、SQLServer 和 DerbyDB 的这个组件提供了一些模式。"
 
 #: ../../Database.rst:11
 msgid ""
@@ -381,6 +446,9 @@ msgid ""
 "type which this schema supports and ``version`` is version of a MUC "
 "component for which this schema is designed."
 msgstr ""
+"它们被放置在安装包的 ``database/`` 目录下，并在 ``dbtype-mucversion.sql`` "
+"中命名，其中 ``dbname`` 是该模式支持的数据库类型的名称，``version`` "
+"是版本为其设计此架构的 MUC 组件。"
 
 #: ../../Database.rst:13
 msgid ""
@@ -390,10 +458,13 @@ msgid ""
 "Preparation>`__ section of `Tigase XMPP Server Administration Guide "
 "<#Tigase XMPP Server Administration Guide>`__"
 msgstr ""
+"您需要为正确的数据库和组件手动选择架构并将此架构加载到数据库。有关加载数据库"
+"模式的更多信息，请查看 `Tigase XMPP 服务器管理指南 <#Tigase XMPP Server "
+"Administration Guide>`__ 的 `数据库准备 <#Database Preparation>`__ 部分"
 
 #: ../../Database.rst:16
 msgid "Upgrade of database schema"
-msgstr ""
+msgstr "升级数据库架构"
 
 #: ../../Database.rst:18
 msgid ""
@@ -402,243 +473,248 @@ msgid ""
 "schema please follow instuctions from :ref:`Preparation of "
 "database<Preparation_of_database>` section."
 msgstr ""
+"我们组件的数据库架构可能会在版本之间发生变化，如果是这样，则需要在新版本启动"
+"之前对其进行更新。要升级架构，请遵循 "
+":ref:`数据库准备<Preparation_of_database>` 部分的说明。"
 
 #: ../../Database.rst:22
 msgid ""
 "If you use SNAPSHOT builds then schema may change for same version as "
 "this are versions we are still working on."
-msgstr ""
+msgstr "如果您使用 SNAPSHOT "
+"构建，则架构可能会更改为相同版本，因为这是我们仍在处理的版本。"
 
 #: ../../Database.rst:25
 msgid "Schema description"
-msgstr ""
+msgstr "架构描述"
 
 #: ../../Database.rst:27
 msgid ""
 "Tigase MUC component uses few tables and stored procedures. To make it "
 "easier to find them on database level they are prefixed with "
 "``tig_muc_``."
-msgstr ""
+msgstr "Tigase MUC 组件使用少部分的表和存储程序。为了更容易在数据库级别找到它们，"
+"它们以 ``tig_muc_`` 为前缀。"
 
 #: ../../Database.rst:30
 msgid "Table ``tig_muc_rooms``"
-msgstr ""
+msgstr "表 ``tig_muc_rooms``"
 
 #: ../../Database.rst:32
 msgid "This table stores list of rooms and configuration of rooms."
-msgstr ""
+msgstr "此表存储房间列表和房间配置。"
 
 #: ../../Database.rst:35 ../../Database.rst:67 ../../Database.rst:87
 msgid "Field"
-msgstr ""
+msgstr "字段"
 
 #: ../../Database.rst:35 ../../Database.rst:67 ../../Database.rst:87
 msgid "Description"
-msgstr ""
+msgstr "描述"
 
 #: ../../Database.rst:35 ../../Database.rst:67 ../../Database.rst:87
 msgid "Comments"
-msgstr ""
+msgstr "补充说明"
 
 #: ../../Database.rst:37 ../../Database.rst:69
 msgid "room_id"
-msgstr ""
+msgstr "room_id"
 
 #: ../../Database.rst:37
 msgid "Database ID of a room"
-msgstr ""
+msgstr "房间的数据库ID"
 
 #: ../../Database.rst:39 ../../Database.rst:71
 msgid "jid"
-msgstr ""
+msgstr "jid"
 
 #: ../../Database.rst:39 ../../Database.rst:89
 msgid "Room JID"
-msgstr ""
+msgstr "房间 JID"
 
 #: ../../Database.rst:41 ../../Database.rst:73
 msgid "jid_sha1"
-msgstr ""
+msgstr "jid_sha1"
 
 #: ../../Database.rst:41 ../../Database.rst:91
 msgid "SHA1 value of lowercased room JID"
-msgstr ""
+msgstr "房间小写 JID 的 SHA1 值"
 
 #: ../../Database.rst:41 ../../Database.rst:73 ../../Database.rst:91
 msgid "Used for proper bare JID comparison during lookup."
-msgstr ""
+msgstr "用于在查找期间进行正确的裸 JID 比较。"
 
 #: ../../Database.rst:43 ../../Database.rst:75 ../../Database.rst:93
 msgid "(Not exists in PostgreSQL schema)"
-msgstr ""
+msgstr "（在 PostgreSQL 模式中不存在）"
 
 #: ../../Database.rst:45
 msgid "name"
-msgstr ""
+msgstr "名称"
 
 #: ../../Database.rst:45
 msgid "Room name"
-msgstr ""
+msgstr "房间名称"
 
 #: ../../Database.rst:47
 msgid "config"
-msgstr ""
+msgstr "config"
 
 #: ../../Database.rst:47
 msgid "Serialized room configuration"
-msgstr ""
+msgstr "序列化房间配置"
 
 #: ../../Database.rst:49
 msgid "creator"
-msgstr ""
+msgstr "creator"
 
 #: ../../Database.rst:49
 msgid "Bare JID of room creator"
-msgstr ""
+msgstr "房间创建者的裸 JID"
 
 #: ../../Database.rst:51
 msgid "creation_date"
-msgstr ""
+msgstr "creation_date"
 
 #: ../../Database.rst:51
 msgid "Room creation date"
-msgstr ""
+msgstr "房间创建日期"
 
 #: ../../Database.rst:53
 msgid "subject"
-msgstr ""
+msgstr "subject"
 
 #: ../../Database.rst:53
 msgid "Room subject"
-msgstr ""
+msgstr "房间主题"
 
 #: ../../Database.rst:55
 msgid "subject_creator_nick"
-msgstr ""
+msgstr "subject_creator_nick"
 
 #: ../../Database.rst:55
 msgid "Nick of participant who set subject"
-msgstr ""
+msgstr "设定主题参加者的Nick"
 
 #: ../../Database.rst:57
 msgid "subject_date"
-msgstr ""
+msgstr "subject_date"
 
 #: ../../Database.rst:57
 msgid "Timestamp of subject"
-msgstr ""
+msgstr "主题时间戳"
 
 #: ../../Database.rst:62
 msgid "Table ``tig_muc_room_affiliations``"
-msgstr ""
+msgstr "表 ``tig_muc_room_affiliations``"
 
 #: ../../Database.rst:64
 msgid "Table stores rooms affiliations."
-msgstr ""
+msgstr "表格存储房间从属关系。"
 
 #: ../../Database.rst:69
 msgid "ID of a room"
-msgstr ""
+msgstr "房间号"
 
 #: ../../Database.rst:69
 msgid "References ``room_id`` from ``tig_muc_rooms``"
-msgstr ""
+msgstr "参考 ``tig_muc_rooms`` 的 ``room_id``"
 
 #: ../../Database.rst:71
 msgid "JID of affiliate"
-msgstr ""
+msgstr "会员的JID"
 
 #: ../../Database.rst:73
 msgid "SHA1 value of lowercased affiliate JID"
-msgstr ""
+msgstr "小写会员 JID 的 SHA1 值"
 
 #: ../../Database.rst:77
 msgid "affiliation"
-msgstr ""
+msgstr "会员"
 
 #: ../../Database.rst:77
 msgid "Affiliation between room and affiliate"
-msgstr ""
+msgstr "房间和会员之间的附属关系"
 
 #: ../../Database.rst:82
 msgid "Table ``tig_muc_room_history``"
-msgstr ""
+msgstr "表格 ``tig_muc_room_history``"
 
 #: ../../Database.rst:84
 msgid "Table stores room messages history."
-msgstr ""
+msgstr "表格存储房间消息历史记录。"
 
 #: ../../Database.rst:89
 msgid "room_jid"
-msgstr ""
+msgstr "room_jid"
 
 #: ../../Database.rst:91
 msgid "room_jid_sha1"
-msgstr ""
+msgstr "room_jid_sha1"
 
 #: ../../Database.rst:95
 msgid "event_type"
-msgstr ""
+msgstr "event_type"
 
 #: ../../Database.rst:95
 msgid "For future use, if we decide to store other events as well."
-msgstr ""
+msgstr "以备将来使用，如果我们决定也存储其他事件。"
 
 #: ../../Database.rst:97
 msgid "ts"
-msgstr ""
+msgstr "ts"
 
 #: ../../Database.rst:97
 msgid "Timestamp of a message"
-msgstr ""
+msgstr "消息的时间戳"
 
 #: ../../Database.rst:99
 msgid "sender_jid"
-msgstr ""
+msgstr "sender_jid"
 
 #: ../../Database.rst:99
 msgid "JID of a sender"
-msgstr ""
+msgstr "发件人的JID"
 
 #: ../../Database.rst:101
 msgid "sender_nickname"
-msgstr ""
+msgstr "sender_nickname"
 
 #: ../../Database.rst:101
 msgid "Nickname of a message sender"
-msgstr ""
+msgstr "消息发送者的昵称"
 
 #: ../../Database.rst:103
 msgid "body"
-msgstr ""
+msgstr "body"
 
 #: ../../Database.rst:103
 msgid "Body of a message"
-msgstr ""
+msgstr "消息正文"
 
 #: ../../Database.rst:105
 msgid "public_event"
-msgstr ""
+msgstr "public_event"
 
 #: ../../Database.rst:105
 msgid "Mark public events"
-msgstr ""
+msgstr "标记公共事件"
 
 #: ../../Database.rst:107
 msgid "msg"
-msgstr ""
+msgstr "msg"
 
 #: ../../Database.rst:107
 msgid "Serialized message"
-msgstr ""
+msgstr "序列化消息"
 
 #: ../../Overview.rst:1
 msgid "Welcome to Tigase Multi User Chat component guide"
-msgstr ""
+msgstr "欢迎使用 Tigase 多用户聊天组件指南"
 
 #: ../../Overview.rst:4
 msgid "Overview"
-msgstr ""
+msgstr "概述"
 
 #: ../../Overview.rst:6
 msgid ""
@@ -649,10 +725,14 @@ msgid ""
 "<http://xmpp.org/extensions/xep-0313.html:>`__ protocol for easier "
 "retrieval of MUC room chat history."
 msgstr ""
+"Tigase MUC 组件是 `XEP-0045: Multi-User Chat <http://xmpp.org/extensions/"
+"xep-0045.html:>`__ 的实现，它为 Tigase XMPP 服务器的多用户聊天提供支持。"
+"该组件还支持 `XEP-0313: Message Archive Management <http://xmpp.org/"
+"extensions/xep-0313.html:>`__ 协议，以便更轻松地检索 MUC 房间聊天历史记录。"
 
 #: ../../Presence_from_offline.rst:2
 msgid "Offline users"
-msgstr ""
+msgstr "离线用户"
 
 #: ../../Presence_from_offline.rst:4
 msgid ""
@@ -660,6 +740,8 @@ msgid ""
 "admin ad-hoc commands), MUC delivers presence to occupants in name of "
 "offline user. MUC generates presence with ``extended away`` info:"
 msgstr ""
+"如果用户从属关系被标记为持久（可以使用管理员临时命令完成），则 MUC "
+"以离线用户的名义向居住者提供存在。 MUC 使用 ``extended away`` 信息生成存在："
 
 #: ../../Presence_from_offline.rst:12
 msgid ""
@@ -667,123 +749,143 @@ msgid ""
 "persistent occupant is added to room (but he is offline). If persistent "
 "user if online in room, then MUC sens real presence of occupant."
 msgstr ""
+"当用户离线以及将持久的占用者添加到房间（但他是离线状态）时，此状态会发送给占"
+"用者。如果持久用户在房间内在线，则 MUC 会感应到居住者的真实存在。"
 
 #: ../../Presence_from_offline.rst:15
 msgid "Entering the room"
-msgstr ""
+msgstr "进入房间"
 
 #: ../../Presence_from_offline.rst:19
 msgid "When user is joining to room, he MUST use his BareJID as room nickname!"
-msgstr ""
+msgstr "当用户加入房间时，他必须使用他的 BareJID 作为房间昵称！"
 
 #: ../../Presence_from_offline.rst:21
 msgid "**Example of entering to room.**"
-msgstr ""
+msgstr "**进入房间的示例。**"
 
 #: ../../Presence_from_offline.rst:33
 msgid "Messages"
-msgstr ""
+msgstr "消息"
 
 #: ../../Presence_from_offline.rst:35
 msgid ""
 "Room members marked as persistent are able to send message to room, when "
 "they not in room. Message will be treated as sent from online user, and "
 "delivered to all occupants."
-msgstr ""
+msgstr "标记为持久的房间成员可以在他们不在房间时向房间发送消息。消息将被视为从在线用"
+"户发送，并传递给所有居住者。"
 
 #: ../../Presence_from_offline.rst:37
 msgid ""
 "All groupchat messages will be also sent to offline members if they are "
 "marked as persistent."
-msgstr ""
+msgstr "所有群聊消息如果被标记为持久，也将发送给离线成员。"
 
 #: ../../Release_notes.rst:2
 msgid "Tigase MUC Release Notes"
-msgstr ""
+msgstr "Tigase MUC 发行说明"
 
 #: ../../Release_notes.rst:4
 msgid ""
 "Welcome to Tigase MUC 3.2.0! This is a feature release for with a number "
 "of fixes and updates."
-msgstr ""
+msgstr "欢迎来到 Tigase MUC 3.2.0！这是一个包含许多修复和更新的功能版本。"
 
 #: ../../Release_notes.rst:7
 msgid "Tigase MUC 3.2.0 Release Notes"
-msgstr ""
+msgstr "Tigase MUC 3.2.0 发行说明"
 
 #: ../../Release_notes.rst:10
 msgid "Major Changes"
-msgstr ""
+msgstr "主要变化"
 
 #: ../../Release_notes.rst:12
 msgid "Bring MUC specification support up to date"
-msgstr ""
+msgstr "更新 MUC 规范支持"
 
 #: ../../Release_notes.rst:14
 msgid "Improve handling of multiple user session using same nickname"
-msgstr ""
+msgstr "改进对使用相同昵称的多个用户会话的处理"
 
 #: ../../Release_notes.rst:16
 msgid "Fixes and improvements to ad-hoc scripts"
-msgstr ""
+msgstr "临时脚本的修复和改进"
 
 #: ../../Release_notes.rst:19
 msgid "All Changes"
-msgstr ""
+msgstr "所有更改"
 
 #: ../../Release_notes.rst:21
 msgid ""
 "`#muc-133 <https://projects.tigase.net/issue/muc-133>`__: Add component "
 "option to let only admins create rooms"
 msgstr ""
+"`#muc-133 <https://projects.tigase.net/issue/muc-133>`__: "
+"添加组件选项以仅允许管理员创建房间"
 
 #: ../../Release_notes.rst:23
 msgid ""
 "`#muc-134 <https://projects.tigase.net/issue/muc-134>`__: Better MUC "
 "Converter log"
-msgstr ""
+msgstr "`#muc-134 <https://projects.tigase.net/issue/muc-134>`__: 更好的 MUC "
+"转换器日志"
 
 #: ../../Release_notes.rst:25
 msgid ""
 "`#muc-136 <https://projects.tigase.net/issue/muc-136>`__: MUC "
 "specification supported by Tigase MUC is out of data"
 msgstr ""
+"`#muc-136 <https://projects.tigase.net/issue/muc-136>`__: Tigase MUC 支持的 "
+"MUC 规范数据不足"
 
 #: ../../Release_notes.rst:27
 msgid ""
 "`#muc-137 <https://projects.tigase.net/issue/muc-137>`__: Add support for"
 " <iq/> forwarding with multiple resources joined"
 msgstr ""
+"`#muc-137 <https://projects.tigase.net/issue/muc-137>`__: "
+"添加对加入多个资源的 <iq/> 转发的支持"
 
 #: ../../Release_notes.rst:29
 msgid ""
 "`#muc-138 <https://projects.tigase.net/issue/muc-138>`__: "
 "tigase@muc.tigase.org kicks my clients if I use them both"
 msgstr ""
+"`#muc-138 <https://projects.tigase.net/issue/muc-138>`__: "
+"如果我同时使用它们，tigase@muc.tigase.org 会踢走我的用户"
 
 #: ../../Release_notes.rst:31
 msgid ""
 "`#muc-139 <https://projects.tigase.net/issue/muc-139>`__: Create script "
 "to (mass) delete MUC rooms"
 msgstr ""
+"`#muc-139 <https://projects.tigase.net/issue/muc-139>`__: 创建脚本以（大量）"
+"删除 MUC 房间"
 
 #: ../../Release_notes.rst:33
 msgid ""
 "`#muc-140 <https://projects.tigase.net/issue/muc-140>`__: There is no "
 "empty ``<subject/>`` element for persistent room sent after re-joining"
 msgstr ""
+"`#muc-140 <https://projects.tigase.net/issue/muc-140>`__: "
+"重新加入后发送的永久房间没有空的 <subject/> 元素"
 
 #: ../../Release_notes.rst:35
 msgid ""
 "`#muc-141 <https://projects.tigase.net/issue/muc-141>`__: "
 "StringIndexOutOfBoundsException in IqStanzaForwarderModule"
 msgstr ""
+"`#muc-141 <https://projects.tigase.net/issue/muc-141>`__: "
+"IqStanzaForwarderModule 中的 StringIndexOutOfBoundsException"
 
 #: ../../Release_notes.rst:37
 msgid ""
 "`#muc-142 <https://projects.tigase.net/issue/muc-142>`__: "
 "NullPointerException when processing message with subject"
 msgstr ""
+"`#muc-142 <https://projects.tigase.net/issue/muc-142>`__: "
+"处理带有主题的消息时出现 NullPointerException"
 
 #: ../../Release_notes.rst:39
 msgid ""
@@ -791,26 +893,30 @@ msgid ""
 "scripts: \"No such property: mucRepository for class: "
 "tigase.admin.Script151\""
 msgstr ""
+"`#muc-143 <https://projects.tigase.net/issue/muc-143>`__: 修复 MUC 脚本：\"No"
+" such property: mucRepository for class: tigase.admin.Script151\""
 
 #: ../../Release_notes.rst:41
 msgid ""
 "`#muc-144 <https://projects.tigase.net/issue/muc-144>`__: No signature of"
 " method: tigase.muc.cluster.RoomClustered.addAffiliationByJid()"
 msgstr ""
+"`#muc-144 <https://projects.tigase.net/issue/muc-144>`__: "
+"没有方法签名：tigase.muc.cluster.RoomClustered.addAffiliationByJid()"
 
 #: ../../Room_configuration.rst:2
 msgid "Room configuration options"
-msgstr ""
+msgstr "房间配置选项"
 
 #: ../../Room_configuration.rst:4
 msgid ""
 "In addition to the default Room configuration options defined in the MUC "
 "specification Tigase offers following as well:"
-msgstr ""
+msgstr "除了 MUC 规范中定义的默认 Room 配置选项之外，Tigase 还提供以下功能："
 
 #: ../../Room_configuration.rst:27
 msgid "**Tigase MUC Options**"
-msgstr ""
+msgstr "**Tigase MUC 选项**"
 
 #: ../../Room_configuration.rst:7
 msgid ""
@@ -819,20 +925,22 @@ msgid ""
 "multiple-resource connections under one nickname, following options are "
 "available:"
 msgstr ""
+"tigase#presence_delivery_logic - 允许配置逻辑来决定房间中的占用者在使用一个昵"
+"称下的多资源连接时应该使用哪个出席，以下选项可用："
 
 #: ../../Room_configuration.rst:9
 msgid "PREFERE_PRIORITY"
-msgstr ""
+msgstr "PREFERE_PRIORITY"
 
 #: ../../Room_configuration.rst:11
 msgid "PREFERE_LAST"
-msgstr ""
+msgstr "PREFERE_LAST"
 
 #: ../../Room_configuration.rst:13
 msgid ""
 "tigase#presence_filtering - (boolean) when enabled broadcasts presence "
 "only to selected affiliation groups"
-msgstr ""
+msgstr "tigase#presence_filtering - （布尔值）启用时仅向选定的附属团体广播存在"
 
 #: ../../Room_configuration.rst:15
 msgid ""
@@ -840,52 +948,53 @@ msgid ""
 "tigase#presence_filtering is enabled one can select affiliation which "
 "should receive presences, following are possible to select from:"
 msgstr ""
+"tigase#presence_filtered_affiliations - 当tigase#presence_filtering "
+"被启用时，可以选择应接收存在的隶属关系，以下是可能的选择："
 
 #: ../../Room_configuration.rst:17
 msgid "owner"
-msgstr ""
+msgstr "所有者"
 
 #: ../../Room_configuration.rst:19
 msgid "admin"
-msgstr ""
+msgstr "管理员"
 
 #: ../../Room_configuration.rst:21
 msgid "member"
-msgstr ""
+msgstr "成员"
 
 #: ../../Room_configuration.rst:23
 msgid "none"
-msgstr ""
+msgstr "无"
 
 #: ../../Room_configuration.rst:25
 msgid "outcast"
-msgstr ""
+msgstr "弃儿"
 
 #: ../../Room_configuration.rst:27
 msgid "muc#roomconfig_maxusers - Allows configuring of maximum users of room."
-msgstr ""
+msgstr "muc#roomconfig_maxusers - 允许配置房间的最大用户数。"
 
 #: ../../Room_configuration.rst:30
 msgid "**Configuring default room configuration in init.properties**"
-msgstr ""
+msgstr "**在 init.properties 中进行默认房间配置**"
 
 #: ../../Room_configuration.rst:30
 msgid ""
 "For more informations look into `??? <#Configuring default room "
 "configuration>`__"
-msgstr ""
+msgstr "有关更多信息，请查看 :ref:`进行默认房间配置<ConfiguringDefaultRoom>`"
 
 #: ../../Room_configuration.rst:33
 msgid "**Configuration per-room**"
-msgstr ""
+msgstr "**每个房间的配置**"
 
 #: ../../Room_configuration.rst:33
 msgid ""
 "Per room configuration is done using IQ stanzas defined in the "
 "specification, for example:"
-msgstr ""
+msgstr "每个房间的配置是使用规范中定义的 IQ 节完成的，例如："
 
 #: ../../index.rst:4
 msgid "Tigase MUC Component - Version 3.3.0"
-msgstr ""
-
+msgstr "Tigase MUC 组件 - 版本 3.3.0"
