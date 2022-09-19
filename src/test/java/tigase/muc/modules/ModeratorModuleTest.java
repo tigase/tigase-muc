@@ -30,6 +30,7 @@ import tigase.kernel.beans.config.AbstractBeanConfigurator;
 import tigase.kernel.core.Kernel;
 import tigase.muc.*;
 import tigase.muc.exceptions.MUCException;
+import tigase.muc.repository.IMucRepository;
 import tigase.muc.utils.ArrayWriter;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
@@ -40,7 +41,7 @@ import tigase.xmpp.jid.JID;
 import java.util.HashMap;
 import java.util.Map;
 
-public class ModeratorModuleTest {
+public class ModeratorModuleTest extends AbstractMucTest {
 
 	private final ModeratorModule m = new ModeratorModule();
 	private JID admin;
@@ -49,42 +50,34 @@ public class ModeratorModuleTest {
 	private MUCComponent mucComponent;
 	private Room room;
 
-	@Before
-	public void init() throws RepositoryException, TigaseStringprepException {
-		final Kernel kernel = new Kernel();
-		kernel.registerBean(DefaultTypesConverter.class).exportable().exec();
-		kernel.registerBean(AbstractBeanConfigurator.DEFAULT_CONFIGURATOR_NAME)
-				.asClass(DSLBeanConfigurator.class)
-				.exportable()
-				.exec();
+	@Override
+	protected void registerBeans(Kernel kernel) {
+		super.registerBeans(kernel);
 		Map<String, Object> props = new HashMap();
-		props.put("muc/" + "multi-user-chat", BareJID.bareJIDInstance("multi-user-chat"));
+		props.put("muc/" + "multi-user-chat", BareJID.bareJIDInstanceNS("multi-user-chat"));
 		props.put("muc/" + MUCConfig.MESSAGE_FILTER_ENABLED_KEY, Boolean.TRUE);
 		props.put("muc/" + MUCConfig.PRESENCE_FILTER_ENABLED_KEY, Boolean.FALSE);
 		props.put("muc/" + MUCConfig.LOG_DIR_KEY, "./");
 		props = ConfigWriter.buildTree(props);
 		kernel.getInstance(DSLBeanConfigurator.class).setProperties(props);
-		kernel.registerBean("eventBus").asInstance(EventBusFactory.getInstance()).exportable().exec();
-		kernel.registerBean("dataSourceBean").asClass(DataSourceBean.class).exportable().exec();
-		kernel.registerBean("mucRepository").asInstance(new MockMucRepository()).exportable().exec();
 
-		final ArrayWriter writer = new ArrayWriter();
-		kernel.registerBean("muc").asClass(TestMUCCompoent.class).exec();
-		this.mucComponent = kernel.getInstance(TestMUCCompoent.class);
-		((Kernel) kernel.getInstance("muc#KERNEL")).registerBean("writer").asInstance(writer).exec();
+		admin = JID.jidInstanceNS("admin@example.com/res1");
+		member = JID.jidInstanceNS("member@example.com/res1");
 
-		admin = JID.jidInstance("admin@example.com/res1");
+		try {
+			room = getMucKernel().getInstance(IMucRepository.class)
+					.createNewRoom(BareJID.bareJIDInstanceNS("darkcave@macbeth.shakespeare.lit"), admin);
 
-		member = JID.jidInstance("member@example.com/res1");
-
-		room = kernel.getInstance(MockMucRepository.class)
-				.createNewRoom(BareJID.bareJIDInstance("darkcave@macbeth.shakespeare.lit"), admin);
-		room.addAffiliationByJid(admin.getBareJID(), RoomAffiliation.admin);
-		room.addAffiliationByJid(member.getBareJID(), RoomAffiliation.member);
+			room.addAffiliationByJid(admin.getBareJID(), RoomAffiliation.admin);
+			room.addAffiliationByJid(member.getBareJID(), RoomAffiliation.member);
 
 		moderatorModule = new ModeratorModule();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
 
 	}
+
 
 	@Test
 	public void testCheckItem() throws Exception {

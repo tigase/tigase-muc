@@ -76,11 +76,9 @@ public class MockMucRepository
 			@Override
 			public void onInitialRoomConfig(RoomConfig roomConfig) {
 				try {
-					if (roomConfig.isRoomconfigPublicroom()) {
-						InternalRoom ir = allRooms.get(roomConfig.getRoomJID());
-						if (ir != null) {
-							ir.isPublic = roomConfig.isRoomconfigPublicroom();
-						}
+					InternalRoom ir = allRooms.get(roomConfig.getRoomJID());
+					if (ir != null) {
+						ir.isPublic = roomConfig.isRoomconfigPublicroom();
 					}
 
 				} catch (Exception e) {

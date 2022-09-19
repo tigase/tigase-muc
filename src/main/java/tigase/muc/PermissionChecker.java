@@ -43,6 +43,32 @@ public class PermissionChecker {
 	@Inject
 	private IMucRepository mucRepository;
 
+	public PermissionChecker() {
+	}
+
+	protected PermissionChecker(BasicComponent component, MUCConfig config, IMucRepository mucRepository) {
+		this.component = component;
+		this.config = config;
+		this.mucRepository = mucRepository;
+	}
+
+	public enum ROOM_VISIBILITY_PERMISSION {
+		PUBLIC,
+		HIDDEN
+	}
+
+	public ROOM_VISIBILITY_PERMISSION getCreateRoomPermission(final BareJID roomJID, final JID senderJid)
+			throws MUCException, RepositoryException {
+		final RoomConfig roomConfig = mucRepository.getDefaultRoomConfig().clone();
+		if (roomConfig.isRoomconfigPublicroom() && checkAcl(roomJID, senderJid, config.getPublicRoomCreationAcl())) {
+			return ROOM_VISIBILITY_PERMISSION.PUBLIC;
+		} else if (checkAcl(roomJID, senderJid, config.getHiddenRoomCreationAcl())) {
+			return ROOM_VISIBILITY_PERMISSION.HIDDEN;
+		} else {
+			throw new MUCException(Authorization.FORBIDDEN, "You don't have enough permissions to create room");
+		}
+	}
+
 	/**
 	 * Checks privileges to create new room.
 	 *
@@ -85,7 +111,8 @@ public class PermissionChecker {
 				// we are changing visibility
 				// block only making private room public, but allow anyone to convert public room to private
 				if (willBePublic && !checkAcl(room.getRoomJID(), senderJid, config.getPublicRoomCreationAcl())) {
-					throw new MUCException(Authorization.FORBIDDEN, "You don't have enough permissions to make room public");
+					throw new MUCException(Authorization.FORBIDDEN,
+										   "You don't have enough permissions to make room public");
 				}
 			}
 		}
@@ -100,17 +127,17 @@ public class PermissionChecker {
 			case ADMIN:
 				return component.isAdmin(senderJid);
 			case DOMAIN: {
-				String domain = roomJID.getDomain().substring(component.getName().length() + 1);
+				String domain = getRoomVhost(roomJID);
 				return domain.equals(senderJid.getDomain());
 			}
 			case DOMAIN_ADMIN: {
-				String domain = roomJID.getDomain().substring(component.getName().length() + 1);
+				String domain = getRoomVhost(roomJID);
 				return Optional.ofNullable(component.getVHostItem(domain))
-						.filter(vhost -> vhost.isAdmin(senderJid.toString()))
+						.filter(vhost -> vhost.isAdmin(senderJid.getBareJID().toString()))
 						.isPresent() || component.isAdmin(senderJid);
 			}
 			case DOMAIN_OWNER: {
-				String domain = roomJID.getDomain().substring(component.getName().length() + 1);
+				String domain = getRoomVhost(roomJID);
 				return Optional.ofNullable(component.getVHostItem(domain))
 						.filter(vhost -> vhost.isOwner(senderJid.toString()))
 						.isPresent();
@@ -120,6 +147,11 @@ public class PermissionChecker {
 			default:
 				return false;
 		}
+	}
+
+	private String getRoomVhost(BareJID roomJID) {
+		final String name = component.getName();
+		return roomJID.getDomain().substring(name.length() + 1);
 	}
 
 }

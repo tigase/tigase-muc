@@ -704,4 +704,16 @@ public class Room
 
 	}
 
+	@Override
+	public String toString() {
+		final StringBuffer sb = new StringBuffer("Room{");
+		sb.append(getRoomJID());
+		sb.append(", creationDate=").append(creationDate);
+		sb.append(", creatorJid=").append(creatorJid);
+		sb.append(", subject=").append(subject);
+		sb.append(", affiliations=").append(affiliations.size());
+		sb.append(", occupants=").append(occupants.size());
+		sb.append('}');
+		return sb.toString();
+	}
 }

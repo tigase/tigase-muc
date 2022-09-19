@@ -354,6 +354,10 @@ public class RoomConfig {
 		fireConfigChanged(vars, initialConfigUpdate);
 	}
 
+	public void notifyConfigUpdate(Set<String> modifiedVars) {
+		fireConfigChanged(modifiedVars, false);
+	}
+
 	@Deprecated
 	public void read(final UserRepository repository, final MUCConfig config, final String subnode)
 			throws TigaseDBException {

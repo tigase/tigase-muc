@@ -26,10 +26,12 @@ import tigase.kernel.beans.Initializable;
 import tigase.kernel.beans.Inject;
 import tigase.kernel.beans.UnregisterAware;
 import tigase.muc.*;
+import tigase.muc.PermissionChecker.ROOM_VISIBILITY_PERMISSION;
 import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.logger.MucLogger;
 import tigase.muc.repository.IMucRepository;
+import tigase.muc.repository.inmemory.InMemoryMucRepository;
 import tigase.server.Message;
 import tigase.server.Packet;
 import tigase.util.datetime.TimestampHelper;
@@ -59,7 +61,7 @@ public class PresenceModuleImpl
 	@Inject
 	private MUCConfig config;
 	private TimestampHelper dateTimeFormatter = new TimestampHelper();
-	@Inject
+	@Inject(nullAllowed = true)
 	private Ghostbuster2 ghostbuster;
 	@Inject
 	private HistoryProvider historyProvider;
@@ -355,13 +357,26 @@ public class PresenceModuleImpl
 									">");
 				}
 
-				permissionChecker.checkCreatePermission(roomJID, senderJID, null);
+				final ROOM_VISIBILITY_PERMISSION createRoomPermission = permissionChecker.getCreateRoomPermission(
+						roomJID, senderJID);
 
 				room = repository.createNewRoom(roomJID, senderJID);
 				room.addAffiliationByJid(senderJID.getBareJID(), RoomAffiliation.owner);
 				room.setRoomLocked(config.isNewRoomLocked());
 				roomCreated = true;
 				knownNickname = null;
+
+				switch (createRoomPermission) {
+					case PUBLIC:
+						room.getConfig().setValue(RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY, true);
+						room.getConfig().notifyConfigUpdate(Set.of(RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY));
+						break;
+					case HIDDEN:
+						room.getConfig().setValue(RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY, false);
+						room.getConfig().notifyConfigUpdate(Set.of(RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY));
+						break;
+				}
+
 				room.getConfig().notifyConfigUpdate(true);
 				room.setNewSubject(null, nickName);
 			} else {
@@ -623,7 +638,9 @@ public class PresenceModuleImpl
 		Element pe = clonePresence(element);
 		room.addOccupantByJid(senderJID, nickname, newRole, pe);
 
-		ghostbuster.add(senderJID, room);
+		if (ghostbuster != null) {
+			ghostbuster.add(senderJID, room);
+		}
 
 		// if (currentOccupantJid == null) {
 
@@ -653,6 +670,12 @@ public class PresenceModuleImpl
 					sb.append(" Room is locked now. Configure it please!");
 				} else if (config.isNewRoomLocked()) {
 					sb.append(" Room is unlocked and ready for occupants!");
+				}
+				sb.append("\n");
+				if (room.getConfig().isRoomconfigPublicroom()) {
+					sb.append(" You've created new public room");
+				} else {
+					sb.append(" You've created new hidden room. It's not visible in service discovery and you have to invite participants");
 				}
 				sendMucMessage(room, room.getOccupantsNickname(senderJID), sb.toString());
 			}
