@@ -98,6 +98,8 @@ public class MediatedInvitationModule
 			}
 		} catch (MUCException e1) {
 			throw e1;
+		} catch (TigaseStringprepException e) {
+			throw new MUCException(Authorization.BAD_REQUEST);
 		} catch (Exception e) {
 			log.log(Level.FINEST, "Error during processing invitation", e);
 			throw new RuntimeException(e);
