@@ -279,12 +279,11 @@ public class DiscoveryModule
 
 			String nickname = room.getOccupantsNickname(packet.getStanzaFrom());
 
-			if (nickname == null) {
-				throw new MUCException(Authorization.FORBIDDEN);
-			}
-			for (String nick : room.getOccupantsNicknames(true)) {
-				resultQuery.addChild(new Element("item", new String[]{"jid", "name"},
-												 new String[]{room.getRoomJID() + "/" + nick, nick}));
+			if (nickname != null) {
+				for (String nick : room.getOccupantsNicknames(true)) {
+					resultQuery.addChild(new Element("item", new String[]{"jid", "name"},
+													 new String[]{room.getRoomJID() + "/" + nick, nick}));
+				}
 			}
 		} else if ((node == null) && (requestedJID.getLocalpart() != null) && (requestedJID.getResource() != null)) {
 			// Querying a Room Occupant
