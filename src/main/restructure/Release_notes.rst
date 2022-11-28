@@ -1,7 +1,12 @@
 Tigase MUC Release Notes
 ===========================
 
-Welcome to Tigase MUC 3.2.0! This is a feature release for with a number of fixes and updates.
+Tigase MUC 3.3.0 Release Notes
+--------------------------------
+
+- Rework permission checker (ACL) to add graceful fallback to hidden room if possible; add abstrac muc test class and tests based on it; #muc-151
+- Fix memory leak in self-ping-monitor (#muc-150) and improve collections synchronisation in module
+- Fix discovery module (Room items could be returned if available but it's advised to not return it by default and only return plain result without error)
 
 Tigase MUC 3.2.0 Release Notes
 --------------------------------
