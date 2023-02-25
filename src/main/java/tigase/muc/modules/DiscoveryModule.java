@@ -46,6 +46,8 @@ public class DiscoveryModule
 	private DiscoItemsFilter filter = null;//new DefaultDiscoItemsFilter();
 	@Inject(nullAllowed = true)
 	private MAMQueryModule mamQueryModule;
+	@Inject(nullAllowed = true)
+	private MessageModerationModule messageModerationModule;
 	@Inject
 	private IMucRepository repository;
 	@Inject
@@ -148,6 +150,11 @@ public class DiscoveryModule
 			}
 			if (mamQueryModule != null) {
 				addFeature(resultQuery, "urn:xmpp:mam:1");
+				addFeature(resultQuery, "urn:xmpp:mam:2");
+				addFeature(resultQuery, "urn:xmpp:urn:xmpp:sid:0");
+			}
+			if (messageModerationModule != null) {
+				addFeature(resultQuery, MessageModerationModule.XMLNS);
 			}
 
 			addRoomInfoForm(resultQuery, room, senderJID);

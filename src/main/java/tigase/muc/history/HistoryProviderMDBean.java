@@ -33,6 +33,7 @@ import tigase.osgi.ModulesManagerImpl;
 import tigase.server.BasicComponent;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 import tigase.xmpp.mam.MAMRepository;
 import tigase.xmpp.mam.Query;
@@ -46,13 +47,13 @@ import java.util.Date;
 @Bean(name = "historyProviderPool", parent = MUCComponent.class, active = true)
 public class HistoryProviderMDBean
 		extends MDRepositoryBeanWithStatistics<HistoryProvider>
-		implements HistoryProvider, MAMRepository {
+		implements HistoryProvider, ExtendedMAMRepository {
 
 	@ConfigField(desc = "Use domain without component name to lookup for repository", alias = "map-component-to-bare-domain")
 	private boolean mapComponentToBareDomain = false;
 
 	public HistoryProviderMDBean() {
-		super(HistoryProvider.class, MAMRepository.class);
+		super(HistoryProvider.class, ExtendedMAMRepository.class);
 	}
 
 	@Override
@@ -63,6 +64,26 @@ public class HistoryProviderMDBean
 	@Override
 	public Class<?> getDefaultBeanClass() {
 		return HistoryProviderConfigBean.class;
+	}
+
+	@Override
+	public Item getItem(BareJID owner, String stableId) throws RepositoryException {
+		HistoryProvider historyProvider = getRepository(owner.getDomain());
+		if (historyProvider instanceof ExtendedMAMRepository) {
+			return ((ExtendedMAMRepository) historyProvider).getItem(owner, stableId);
+		} else {
+			throw new RepositoryException("Feature not implemented!");
+		}
+	}
+
+	@Override
+	public void updateMessage(BareJID owner, String stableId, Element msg, String body) throws RepositoryException {
+		HistoryProvider historyProvider = getRepository(owner.getDomain());
+		if (historyProvider instanceof ExtendedMAMRepository) {
+			((ExtendedMAMRepository) historyProvider).updateMessage(owner, stableId, msg, body);
+		} else {
+			throw new RepositoryException("Feature not implemented!");
+		}
 	}
 
 	@Override
@@ -78,6 +99,11 @@ public class HistoryProviderMDBean
 	@Override
 	public void addLeaveEvent(Room room, Date date, JID senderJID, String nickName) {
 		getRepository(room).addLeaveEvent(room, date, senderJID, nickName);
+	}
+
+	@Override
+	public void addMessage(Room room, Element message, String body, JID senderJid, String senderNickname, Date time, String stableId) {
+		getRepository(room).addMessage(room, message, body, senderJid, senderNickname, time, stableId);
 	}
 
 	@Override
