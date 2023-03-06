@@ -227,7 +227,9 @@ public class GroupchatMessageModule
 			Packet msg = preparePacket(id, xmlLang, content.toArray(new Element[]{}));
 
 			if (body != null) {
-				addMessageToHistory(room, msg.getElement(), body.getCData(), senderJID, nickName, sendDate);
+				String stableId = UUID.randomUUID().toString();
+				addMessageToHistory(room, msg.getElement(), body.getCData(), senderJID, nickName, sendDate, stableId);
+				msg.getElement().addChild(new Element("stanza-id", new String[] { "xmlns", "id", "by" }, new String[] { "urn:xmpp:sid:0", stableId, roomJID.toString() }));
 			}
 			if (subject != null) {
 				addSubjectChangeToHistory(room, msg.getElement(), subject.getCData(), senderJID, nickName, sendDate);
@@ -276,10 +278,10 @@ public class GroupchatMessageModule
 	}
 
 	protected void addMessageToHistory(Room room, final Element message, String body, JID senderJid,
-									   String senderNickname, Date time) {
+									   String senderNickname, Date time, String stableId) {
 		try {
 			if (historyProvider != null) {
-				historyProvider.addMessage(room, message, body, senderJid, senderNickname, time);
+				historyProvider.addMessage(room, message, body, senderJid, senderNickname, time, stableId);
 			}
 		} catch (Exception e) {
 			if (log.isLoggable(Level.WARNING)) {

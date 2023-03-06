@@ -17,6 +17,7 @@
  */
 package tigase.muc.history;
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.component.PacketWriter;
 import tigase.db.DataSource;
 import tigase.db.DataSourceAware;
@@ -41,7 +42,13 @@ public interface HistoryProvider<DS extends DataSource>
 
 	void addLeaveEvent(Room room, Date date, JID senderJID, String nickName);
 
+	@TigaseDeprecated(removeIn = "4.0.0", note = "Use method with `stableId`", since = "3.4.0")
+	@Deprecated
 	void addMessage(Room room, Element message, String body, JID senderJid, String senderNickname, Date time);
+
+	default void addMessage(Room room, Element message, String body, JID senderJid, String senderNickname, Date time, String stableId) {
+		addMessage(room, message, body, senderJid, senderNickname, time);
+	}
 
 	/**
 	 * Adds subject changes to log/history.

@@ -17,22 +17,12 @@
  */
 package tigase.muc.history;
 
-import org.junit.*;
+import org.junit.Assume;
+import org.junit.ClassRule;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-import tigase.db.DBInitException;
 import tigase.db.DataRepository;
-import tigase.db.util.SchemaLoader;
-import tigase.server.Packet;
-import tigase.vhosts.VHostItem;
-
-import java.io.File;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Collections;
 
 /**
  * Created by andrzej on 16.10.2016.
@@ -41,7 +31,7 @@ public class JDBCHistoryProviderTest
 		extends AbstractHistoryProviderTest<DataRepository> {
 
 	private static final String PROJECT_ID = "muc";
-	private static final String VERSION = "3.0.0";
+	private static final String VERSION = "3.4.0-SNAPSHOT";
 
 	@ClassRule
 	public static TestRule rule = new TestRule() {
@@ -59,9 +49,9 @@ public class JDBCHistoryProviderTest
 		}
 	};
 
-	@BeforeClass
-	public static void loadSchema() throws DBInitException {
-		loadSchema(PROJECT_ID, VERSION, Collections.singleton("muc"));
-	}
+//	@BeforeClass
+//	public static void loadSchema() throws DBInitException {
+//		loadSchema(PROJECT_ID, VERSION, Collections.singleton("muc"));
+//	}
 
 }

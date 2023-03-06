@@ -17,6 +17,7 @@
  */
 package tigase.muc.history;
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.component.PacketWriter;
 import tigase.db.DataSource;
 import tigase.muc.Room;
@@ -28,6 +29,7 @@ import tigase.xmpp.jid.JID;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
@@ -51,8 +53,15 @@ public class MemoryHistoryProvider
 	public void addLeaveEvent(Room room, Date date, JID senderJID, String nickName) {
 	}
 
+	@TigaseDeprecated(removeIn = "4.0.0", note = "Use method with `stableId`", since = "3.4.0")
+	@Deprecated
 	@Override
 	public void addMessage(Room room, Element message, String body, JID senderJid, String senderNickname, Date time) {
+		addMessage(room, message, body, senderJid, senderNickname, time, UUID.randomUUID().toString());
+	}
+
+	@Override
+	public void addMessage(Room room, Element message, String body, JID senderJid, String senderNickname, Date time, String stableId) {
 		LinkedList<HItem> stanzas = this.history.get(room.getRoomJID());
 		if (stanzas == null) {
 			stanzas = new LinkedList<HItem>();
@@ -64,6 +73,7 @@ public class MemoryHistoryProvider
 		}
 
 		HItem item = new HItem();
+		item.id = stableId;
 		item.body = body;
 		item.senderJid = senderJid;
 		item.senderNickname = senderNickname;
@@ -118,7 +128,7 @@ public class MemoryHistoryProvider
 
 			try {
 				Packet message = createMessage(room.getRoomJID(), senderJID, item.senderNickname, item.msg, item.body,
-											   item.senderJid.toString(), addRealJids, item.timestamp);
+											   item.senderJid.toString(), addRealJids, item.timestamp, item.id);
 
 				writer.write(message);
 				++c;
@@ -148,6 +158,7 @@ public class MemoryHistoryProvider
 
 	private static class HItem {
 
+		String id;
 		String body;
 		/**
 		 * whole stanza

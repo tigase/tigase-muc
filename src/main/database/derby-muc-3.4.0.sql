@@ -16,3 +16,19 @@
 -- If not, see http://www.gnu.org/licenses/.
 --
 
+-- QUERY START:
+create procedure Tig_MUC_MAM_GetMessage(roomJid varchar(2049), stableId varchar(36))
+    PARAMETER STYLE JAVA
+    LANGUAGE JAVA
+    READS SQL DATA
+    DYNAMIC RESULT SETS 1
+    EXTERNAL NAME 'tigase.muc.repository.derby.StoredProcedures.tigMucGetMessage';
+-- QUERY END:
+
+-- QUERY START:
+create procedure Tig_MUC_MAM_UpdateMessage(roomJid varchar(2049), stableId varchar(36), "body" varchar(32672), "msg" varchar(32672))
+    PARAMETER STYLE JAVA
+    LANGUAGE JAVA
+    MODIFIES SQL DATA
+    EXTERNAL NAME 'tigase.muc.repository.derby.StoredProcedures.tigMucMamUpdateMessage';
+-- QUERY END:

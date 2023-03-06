@@ -58,6 +58,7 @@ create index tig_muc_room_affiliations_room_id on tig_muc_room_affiliations ( ro
 create table tig_muc_room_history (
 	room_jid varchar(2049) not null,
 	room_jid_sha1 varchar(50) not null,
+	stable_id varchar(36) not null,
     event_type int,
     ts timestamp not null,
     sender_jid varchar(3074),
@@ -74,6 +75,10 @@ create index tig_muc_room_history_room_jid on tig_muc_room_history ( room_jid_sh
 
 -- QUERY START:
 create index tig_muc_room_history_room_jid_ts on tig_muc_room_history ( room_jid_sha1, ts );
+-- QUERY END:
+
+-- QUERY START:
+create unique index tig_muc_room_history_room_jid_stable_id on tig_muc_room_history ( room_jid_sha1, stable_id );
 -- QUERY END:
 
 -- ---------------------
@@ -151,7 +156,7 @@ create procedure Tig_MUC_SetRoomConfig(roomJid varchar(2049), name varchar(1024)
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MUC_AddMessage(roomJid varchar(2049), "ts" timestamp, senderJid varchar(3074),
+create procedure Tig_MUC_AddMessage(roomJid varchar(2049), stableId varchar(36), "ts" timestamp, senderJid varchar(3074),
         senderNick varchar(1024), "body" varchar(32672), publicEvent boolean, "msg" varchar(32672))
     PARAMETER STYLE JAVA
     LANGUAGE JAVA
@@ -186,7 +191,7 @@ create procedure Tig_MUC_MAM_GetMessages(roomJid varchar(2049), "since" timestam
 -- QUERY END:
 
 -- QUERY START:
-create procedure Tig_MUC_MAM_GetMessagePosition(roomJid varchar(2049), "since" timestamp, "to" timestamp, "nickname" varchar(1024), "id_ts" timestamp)
+create procedure Tig_MUC_MAM_GetMessagePosition(roomJid varchar(2049), "since" timestamp, "to" timestamp, "nickname" varchar(1024), "stableId" varchar(36))
     PARAMETER STYLE JAVA
     LANGUAGE JAVA
     READS SQL DATA

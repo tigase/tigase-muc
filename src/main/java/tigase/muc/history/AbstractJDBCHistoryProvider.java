@@ -223,7 +223,7 @@ public abstract class AbstractJDBCHistoryProvider
 			String msg = rs.getString("msg");
 
 			Packet m = createMessage(room.getRoomJID(), senderJID, msgSenderNickname, msg, body, msgSenderJid,
-									 addRealJids, msgTimestamp);
+									 addRealJids, msgTimestamp, null);
 			writer.write(m);
 		}
 	}

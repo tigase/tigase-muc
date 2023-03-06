@@ -80,9 +80,15 @@ public abstract class AbstractHistoryProvider<DS extends DataSource>
 	public Packet createMessage(BareJID roomJID, JID senderJID, String msgSenderNickname, String originalMessage,
 								String body, String msgSenderJid, boolean addRealJids, Date msgTimestamp)
 			throws TigaseStringprepException {
+		return createMessage(roomJID, senderJID, msgSenderNickname, originalMessage, body, msgSenderJid, addRealJids, msgTimestamp, null);
+	}
+
+	public Packet createMessage(BareJID roomJID, JID senderJID, String msgSenderNickname, String originalMessage,
+								String body, String msgSenderJid, boolean addRealJids, Date msgTimestamp, String stableId)
+			throws TigaseStringprepException {
 
 		Packet message = Packet.packetInstance(
-				createMessageElement(roomJID, senderJID, msgSenderNickname, originalMessage, body));
+				createMessageElement(roomJID, senderJID, msgSenderNickname, originalMessage, body, stableId));
 
 		// The 'from' attribute MUST be set to the JID of the room itself.
 		Element delay = new Element("delay", new String[]{"xmlns", "from", "stamp"},
@@ -93,21 +99,32 @@ public abstract class AbstractHistoryProvider<DS extends DataSource>
 		return message;
 	}
 
+	public Element parseMessage(String originalMessage) {
+		DomBuilderHandler domHandler = new DomBuilderHandler();
+		parser.parse(domHandler, originalMessage.toCharArray(), 0, originalMessage.length());
+		Queue<Element> queue = domHandler.getParsedElements();
+
+		return queue.poll();
+	}
+
 	public Element createMessageElement(BareJID roomJID, JID senderJID, String msgSenderNickname,
-										String originalMessage, String body) throws TigaseStringprepException {
+										String originalMessage, String body, String stableId) throws TigaseStringprepException {
 		Element message = null;
 		if (originalMessage != null) {
-			DomBuilderHandler domHandler = new DomBuilderHandler();
-			parser.parse(domHandler, originalMessage.toCharArray(), 0, originalMessage.length());
-			Queue<Element> queue = domHandler.getParsedElements();
-
-			message = queue.poll();
+			message = parseMessage(originalMessage);
 			if (message != null) {
 				message.setAttribute("type", "groupchat");
 				message.setAttribute("from", JID.jidInstance(roomJID, msgSenderNickname).toString());
 				message.setAttribute("to", senderJID.toString());
 
 				message.setXMLNS(Packet.CLIENT_XMLNS);
+				Element stableIdEl = message.findChild(el -> el.getName() == "stanza-id" && el.getXMLNS() == "urn:xmpp:sid:0" && roomJID.toString().equals(el.getAttributeStaticStr("by")));
+				if (stableIdEl != null) {
+					message.removeChild(stableIdEl);
+				}
+				if (stableId != null) {
+					message.addChild(new Element("stanza-id", new String[]{"xmlns", "id", "by"}, new String[]{"urn:xmpp:sid:0", stableId, roomJID.toString()}));
+				}
 			}
 		}
 
@@ -116,6 +133,9 @@ public abstract class AbstractHistoryProvider<DS extends DataSource>
 								  new String[]{"groupchat", JID.jidInstance(roomJID, msgSenderNickname).toString(),
 											   senderJID.toString(), Packet.CLIENT_XMLNS});
 			message.addChild(new Element("body", body));
+			if (stableId != null) {
+				message.addChild(new Element("stanza-id", new String[]{"xmlns", "id", "by"}, new String[]{"urn:xmpp:sid:0", stableId, roomJID.toString()}));
+			}
 		}
 
 		return message;

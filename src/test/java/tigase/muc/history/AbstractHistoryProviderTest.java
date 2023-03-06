@@ -88,13 +88,13 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource>
 		for (int i = 0; i < 10; i++) {
 			Item item = new Item(checkEmoji ? emoji : "");
 			historyProvider.addMessage(room, item.getMessage(room.getRoomJID()), item.body, item.sender, item.nick,
-									   item.ts);
+									   item.ts, item.stableId);
 			savedMessages.add(item);
 			Thread.sleep(1000);
 		}
 
 		QueueWriter writer = new QueueWriter();
-		historyProvider.getHistoryMessages(room, creatorJID, 0, 10, null, null, writer);
+		historyProvider.getHistoryMessages(room, creatorJID, null, 10, null, null, writer);
 
 		assertEquals(10, writer.queue.size());
 
@@ -113,7 +113,7 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource>
 		Date since = savedMessages.get(4).ts;
 
 		QueueWriter writer = new QueueWriter();
-		historyProvider.getHistoryMessages(room, creatorJID, 0, 10, null, since, writer);
+		historyProvider.getHistoryMessages(room, creatorJID, null, 10, null, since, writer);
 
 		assertEquals(6, writer.queue.size());
 
@@ -130,7 +130,7 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource>
 	@Test
 	public void test4_getMessagesMaxStanzas() throws RepositoryException, InterruptedException {
 		QueueWriter writer = new QueueWriter();
-		historyProvider.getHistoryMessages(room, creatorJID, 0, 5, null, null, writer);
+		historyProvider.getHistoryMessages(room, creatorJID, null, 5, null, null, writer);
 
 		assertEquals(5, writer.queue.size());
 
@@ -166,6 +166,18 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource>
 				assertEquals(savedMessages.get(pos).body,
 							 items.get(pos).getMessage().getChildCData(new String[]{"message", "body"}));
 			});
+		}
+	}
+
+	@Test
+	public void test4_mam_retrieveByStanzaId() throws RepositoryException {
+		if (historyProvider instanceof MAMRepository) {
+			ExtendedMAMRepository mamRepository = (ExtendedMAMRepository) historyProvider;
+			int position = new Random().nextInt(savedMessages.size());
+			Item savedItem = savedMessages.get(position);
+			MAMRepository.Item foundItem = mamRepository.getItem(roomJID, savedItem.stableId);
+			assertEquals(savedItem.stableId, foundItem.getId());
+			assertEquals(savedItem.body, foundItem.getMessage().getChildCData(new String[]{"message", "body"}));
 		}
 	}
 
@@ -245,7 +257,24 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource>
 	}
 
 	@Test
-	public void test5_deleteMessages() throws RepositoryException {
+	public void test5_mam_updateMessage() throws RepositoryException {
+		if (historyProvider instanceof MAMRepository) {
+			ExtendedMAMRepository mamRepository = (ExtendedMAMRepository) historyProvider;
+			int position = new Random().nextInt(savedMessages.size());
+			Item savedItem = savedMessages.get(position);
+			String updatedBody = "Updated body " + UUID.randomUUID().toString();
+			Element updatedMessage = new Element("message").withElement("body", body -> body.setCData(
+					updatedBody));
+			mamRepository.updateMessage(roomJID, savedItem.stableId, updatedMessage, updatedBody);
+
+			MAMRepository.Item foundItem = mamRepository.getItem(roomJID, savedItem.stableId);
+			assertEquals(savedItem.stableId, foundItem.getId());
+			assertEquals(updatedBody, foundItem.getMessage().getChildCData(new String[]{"message", "body"}));
+		}
+	}
+
+	@Test
+	public void test6_deleteMessages() throws RepositoryException {
 		historyProvider.removeHistory(room);
 
 		QueueWriter writer = new QueueWriter();
@@ -255,7 +284,7 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource>
 	}
 
 	@Test
-	public void test6_destroyRoom() {
+	public void test7_destroyRoom() {
 		room = null;
 	}
 
@@ -277,6 +306,8 @@ public abstract class AbstractHistoryProviderTest<DS extends DataSource>
 		public final JID sender = JID.jidInstanceNS(UUID.randomUUID().toString(), "test.local",
 													UUID.randomUUID().toString());
 		public final Date ts = new Date();
+
+		public final String stableId = UUID.randomUUID().toString();
 
 		public Item(String suffix) {
 			body = UUID.randomUUID().toString() + suffix;

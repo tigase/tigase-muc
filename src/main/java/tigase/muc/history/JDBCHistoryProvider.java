@@ -17,6 +17,7 @@
  */
 package tigase.muc.history;
 
+import tigase.annotations.TigaseDeprecated;
 import tigase.component.PacketWriter;
 import tigase.component.exceptions.ComponentException;
 import tigase.db.DataRepository;
@@ -30,8 +31,8 @@ import tigase.server.Packet;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.Authorization;
+import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
-import tigase.xmpp.mam.MAMRepository;
 import tigase.xmpp.mam.Query;
 import tigase.xmpp.mam.QueryImpl;
 
@@ -40,6 +41,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.Date;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -50,12 +52,12 @@ import java.util.logging.Logger;
 @Repository.SchemaId(id = Schema.MUC_SCHEMA_ID, name = Schema.MUC_SCHEMA_NAME)
 public class JDBCHistoryProvider
 		extends AbstractHistoryProvider<DataRepository>
-		implements HistoryProvider<DataRepository>, MAMRepository, RepositoryVersionAware {
+		implements HistoryProvider<DataRepository>, ExtendedMAMRepository, RepositoryVersionAware {
 
 	private static final Logger log = Logger.getLogger(JDBCHistoryProvider.class.getCanonicalName());
 	protected DataRepository data_repo;
 	@ConfigField(desc = "Query to append message to history", alias = "add-message-query")
-	private String addMessageQuery = "{ call Tig_MUC_AddMessage(?,?,?,?,?,?,?) }";
+	private String addMessageQuery = "{ call Tig_MUC_AddMessage(?,?,?,?,?,?,?,?) }";
 	@ConfigField(desc = "Delete messages from history", alias = "delete-messages-query")
 	private String deleteMessagesQuery = "{ call Tig_MUC_DeleteMessages(?) }";
 	@ConfigField(desc = "Retrieve messages from history", alias = "get-messages-query")
@@ -66,6 +68,10 @@ public class JDBCHistoryProvider
 	private String mamGetMessagesCountQuery = "{ call Tig_MUC_MAM_GetMessagesCount(?,?,?,?) }";
 	@ConfigField(desc = "Retrieve messages from archive", alias = "mam-get-messages-query")
 	private String mamGetMessagesQuery = "{ call Tig_MUC_MAM_GetMessages(?,?,?,?,?,?) }";
+	@ConfigField(desc = "Retrieve message from archive", alias = "get-message-query")
+	private String getMessageQuery = "{ call Tig_MUC_MAM_GetMessage(?,?) }";
+	@ConfigField(desc = "Update message in archive", alias = "update-message-query")
+	private String updateMessageQuery = "{ call Tig_MUC_MAM_UpdateMessage(?,?,?,?) }";
 
 	@Override
 	public void addJoinEvent(Room room, Date date, JID senderJID, String nickName) {
@@ -77,20 +83,29 @@ public class JDBCHistoryProvider
 		// TODO Auto-generated method stub
 	}
 
+
+	@TigaseDeprecated(removeIn = "4.0.0", note = "Use method with `stableId`", since = "3.4.0")
+	@Deprecated
 	@Override
 	public void addMessage(Room room, Element message, String body, JID senderJid, String senderNickname, Date time) {
+		addMessage(room, message, body, senderJid, senderNickname, time, UUID.randomUUID().toString());
+	}
+
+	@Override
+	public void addMessage(Room room, Element message, String body, JID senderJid, String senderNickname, Date time, String stableId) {
 		PreparedStatement st = null;
 		try {
 			st = this.data_repo.getPreparedStatement(senderJid.getBareJID(), addMessageQuery);
 
 			synchronized (st) {
 				st.setString(1, room.getRoomJID().toString());
-				data_repo.setTimestamp(st, 2, new Timestamp(time.getTime()));
-				st.setString(3, senderJid.toString());
-				st.setString(4, senderNickname);
-				st.setString(5, body);
-				st.setBoolean(6, room.getConfig().isLoggingEnabled());
-				st.setString(7, message == null ? null : message.toString());
+				st.setString(2, stableId);
+				data_repo.setTimestamp(st, 3, new Timestamp(time.getTime()));
+				st.setString(4, senderJid.toString());
+				st.setString(5, senderNickname);
+				st.setString(6, body);
+				st.setBoolean(7, room.getConfig().isLoggingEnabled());
+				st.setString(8, message == null ? null : message.toString());
 
 				st.executeUpdate();
 			}
@@ -164,6 +179,63 @@ public class JDBCHistoryProvider
 	}
 
 	@Override
+	public Item getItem(BareJID owner, String stableId) throws TigaseDBException {
+		try {
+			PreparedStatement ps = this.data_repo.getPreparedStatement(owner, getMessageQuery);
+			synchronized (ps) {
+				ps.setString(1,owner.toString());
+				ps.setString(2, stableId);
+				ResultSet rs = ps.executeQuery();
+				try {
+					if (!rs.next()) {
+						return null;
+				   	}
+					Date msgTimestamp = data_repo.getTimestamp(rs, "ts");
+					String msg = rs.getString("msg");
+
+					Element msgEl = parseMessage(msg);
+					return new Item() {
+						@Override
+						public String getId() {
+							return stableId;
+						}
+
+						@Override
+						public Element getMessage() {
+							return msgEl;
+						}
+
+						@Override
+						public Date getTimestamp() {
+							return msgTimestamp;
+						}
+					};
+				} finally {
+					data_repo.release(null, rs);
+				}
+			}
+		} catch (SQLException ex) {
+			throw new TigaseDBException("Failed to retrieve message", ex);
+		}
+	}
+
+	@Override
+	public void updateMessage(BareJID owner, String stableId, Element msg, String body) throws TigaseDBException {
+		try {
+			PreparedStatement st = this.data_repo.getPreparedStatement(owner, updateMessageQuery);
+			synchronized (st) {
+				st.setString(1, owner.toString());
+				st.setString(2, stableId);
+				st.setString(3, body);
+				st.setString(4, msg.toString());
+				st.executeUpdate();
+			}
+		} catch (SQLException ex) {
+			throw new TigaseDBException("Failed to update message", ex);
+		}
+	}
+
+	@Override
 	public boolean isPersistent(Room room) {
 		return false;
 	}
@@ -223,18 +295,19 @@ public class JDBCHistoryProvider
 
 					while (rs.next()) {
 						String msgSenderNickname = rs.getString("sender_nickname");
+						String stableId = rs.getString("stable_id").toLowerCase();
 						Date msgTimestamp = data_repo.getTimestamp(rs, "ts");
 						String msgSenderJid = rs.getString("sender_jid");
 						String body = rs.getString("body");
 						String msg = rs.getString("msg");
 
 						Element msgEl = createMessageElement(query.getComponentJID().getBareJID(),
-															 query.getQuestionerJID(), msgSenderNickname, msg, body);
+															 query.getQuestionerJID(), msgSenderNickname, msg, body, stableId);
 
 						Item item = new Item() {
 							@Override
 							public String getId() {
-								return String.valueOf(msgTimestamp.getTime());
+								return stableId;
 							}
 
 							@Override
@@ -300,13 +373,14 @@ public class JDBCHistoryProvider
 
 		while (rs.next()) {
 			String msgSenderNickname = rs.getString("sender_nickname");
+			String stableId = rs.getString("stable_id").toLowerCase();
 			Date msgTimestamp = data_repo.getTimestamp(rs, "ts");
 			String msgSenderJid = rs.getString("sender_jid");
 			String body = rs.getString("body");
 			String msg = rs.getString("msg");
 
 			Packet m = createMessage(room.getRoomJID(), senderJID, msgSenderNickname, msg, body, msgSenderJid,
-									 addRealJids, msgTimestamp);
+									 addRealJids, msgTimestamp, stableId);
 			writer.write(m);
 		}
 	}
@@ -318,6 +392,8 @@ public class JDBCHistoryProvider
 		repo.initPreparedStatement(mamGetMessagesQuery, mamGetMessagesQuery);
 		repo.initPreparedStatement(mamGetMessagesCountQuery, mamGetMessagesCountQuery);
 		repo.initPreparedStatement(mamGetMessagePositionQuery, mamGetMessagePositionQuery);
+		repo.initPreparedStatement(getMessageQuery, getMessageQuery);
+		repo.initPreparedStatement(updateMessageQuery, updateMessageQuery);
 	}
 
 	private int setStatementParamsForMAM(PreparedStatement st, Query query) throws SQLException {
@@ -366,21 +442,19 @@ public class JDBCHistoryProvider
 		}
 	}
 
-	private Integer getItemPosition(String msgId, Query query) throws TigaseDBException, ComponentException {
-		if (msgId == null) {
+	private Integer getItemPosition(String stableId, Query query) throws TigaseDBException, ComponentException {
+		if (stableId == null) {
 			return null;
 		}
 
 		try {
-			java.sql.Timestamp ts = new Timestamp(Long.parseLong(msgId));
-
 			PreparedStatement st = this.data_repo.getPreparedStatement(query.getQuestionerJID().getBareJID(),
 																	   mamGetMessagePositionQuery);
 			synchronized (st) {
 				ResultSet rs = null;
 				try {
 					int i = setStatementParamsForMAM(st, query);
-					data_repo.setTimestamp(st, i++, ts);
+					st.setString(i++, stableId);
 
 					rs = st.executeQuery();
 					if (rs.next()) {
@@ -393,9 +467,9 @@ public class JDBCHistoryProvider
 				}
 			}
 		} catch (NumberFormatException ex) {
-			throw new ComponentException(Authorization.ITEM_NOT_FOUND, "Not found message with id = " + msgId);
+			throw new ComponentException(Authorization.ITEM_NOT_FOUND, "Not found message with id = " + stableId);
 		} catch (SQLException ex) {
-			throw new TigaseDBException("Can't find position for message with id " + msgId + " in archive for room " +
+			throw new TigaseDBException("Can't find position for message with id " + stableId + " in archive for room " +
 												query.getComponentJID(), ex);
 		}
 	}
