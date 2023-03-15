@@ -23,7 +23,7 @@ import tigase.muc.MUCComponent;
 import tigase.xmpp.rsm.RSM;
 
 @Bean(name = "mamQueryParser", parent = MUCComponent.class, active = true)
-public class MAMQueryParser extends tigase.xmpp.mam.MAMQueryParser {
+public class MAMQueryParser extends tigase.xmpp.mam.MAM2QueryParser {
 
 	@Override
 	protected void validateRsm(RSM rsm) throws ComponentException {
