@@ -38,7 +38,7 @@ public class MAMQueryParserTest {
 		query.getRsm().setAfter(String.valueOf(after.getTime()));
 		mamQueryParser.handleOldIds(query);
 		assertNull(query.getRsm().getAfter());
-		assertEquals(after, query.getStart());
+		assertEquals(after.getTime() + 1, query.getStart().getTime());
 	}
 
 	@Test
@@ -50,7 +50,7 @@ public class MAMQueryParserTest {
 		query.getRsm().setAfter(String.valueOf(after.getTime()));
 		mamQueryParser.handleOldIds(query);
 		assertNull(query.getRsm().getAfter());
-		assertEquals(after, query.getStart());
+		assertEquals(after.getTime() + 1, query.getStart().getTime());
 	}
 
 	@Test
@@ -62,7 +62,7 @@ public class MAMQueryParserTest {
 		query.getRsm().setAfter(String.valueOf(after.getTime()));
 		mamQueryParser.handleOldIds(query);
 		assertNull(query.getRsm().getAfter());
-		assertEquals(start, query.getStart());
+		assertEquals(start.getTime(), query.getStart().getTime());
 	}
 	
 	@Test
@@ -72,7 +72,7 @@ public class MAMQueryParserTest {
 		query.getRsm().setBefore(String.valueOf(before.getTime()));
 		mamQueryParser.handleOldIds(query);
 		assertNull(query.getRsm().getBefore());
-		assertEquals(before, query.getEnd());
+		assertEquals(before.getTime() - 1, query.getEnd().getTime());
 	}
 
 	@Test
@@ -84,7 +84,7 @@ public class MAMQueryParserTest {
 		query.getRsm().setBefore(String.valueOf(before.getTime()));
 		mamQueryParser.handleOldIds(query);
 		assertNull(query.getRsm().getBefore());
-		assertEquals(before, query.getEnd());
+		assertEquals(before.getTime() - 1, query.getEnd().getTime());
 	}
 
 	@Test
@@ -96,7 +96,7 @@ public class MAMQueryParserTest {
 		query.getRsm().setBefore(String.valueOf(before.getTime()));
 		mamQueryParser.handleOldIds(query);
 		assertNull(query.getRsm().getBefore());
-		assertEquals(end, query.getEnd());
+		assertEquals(end.getTime(), query.getEnd().getTime());
 	}
 
 }

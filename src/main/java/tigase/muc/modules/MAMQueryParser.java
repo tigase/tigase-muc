@@ -46,7 +46,7 @@ public class MAMQueryParser extends tigase.xmpp.mam.MAM2QueryParser {
 	protected void handleOldIds(Query request) throws ComponentException {
 		if (request.getRsm().getBefore() != null && !maybeUUID(request.getRsm().getBefore())) {
 			try {
-				Date before = new Date(Long.parseLong(request.getRsm().getBefore()));
+				Date before = new Date(Long.parseLong(request.getRsm().getBefore()) - 1);
 				if (request.getEnd() == null || request.getEnd().after(before)) {
 					request.setEnd(before);
 				}
@@ -58,7 +58,7 @@ public class MAMQueryParser extends tigase.xmpp.mam.MAM2QueryParser {
 		}
 		if (request.getRsm().getAfter() != null && !maybeUUID(request.getRsm().getAfter())) {
 			try {
-				Date after = new Date(Long.parseLong(request.getRsm().getAfter()));
+				Date after = new Date(Long.parseLong(request.getRsm().getAfter()) + 1);
 				if (request.getStart() == null || request.getStart().before(after)) {
 					request.setStart(after);
 				}
