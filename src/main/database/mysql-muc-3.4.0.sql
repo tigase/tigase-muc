@@ -107,6 +107,10 @@ drop procedure if exists Tig_MUC_MAM_GetMessages;
 drop procedure if exists Tig_MUC_MAM_GetMessagePosition;
 -- QUERY END:
 
+-- QUERY START:
+drop procedure if exists Tig_MUC_SetRoomAffiliation;
+-- QUERY END:
+
 delimiter //
 
 -- QUERY START:
@@ -180,5 +184,34 @@ begin
         where h1.room_jid_sha1 = SHA1( LOWER( _roomJid ) )
           and h1.stable_id = Tig_MUC_UuidToOrdered(_stableId)
     );
+end //
+-- QUERY END:
+
+-- QUERY START:
+create procedure Tig_MUC_SetRoomAffiliation(_roomId bigint, _jid varchar(2049), _affiliation varchar(20), _persistent int, _nickname  varchar(1024))
+begin
+    -- DO NOT REMOVE, required for properly handle exceptions within transactions!
+	DECLARE exit handler for sqlexception
+	BEGIN
+		ROLLBACK;
+		RESIGNAL;
+	END;
+
+	START TRANSACTION;
+
+    if exists( select 1 from tig_muc_room_affiliations where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) ) ) then
+        if _affiliation <> 'none' then
+            update tig_muc_room_affiliations set affiliation = _affiliation, persistent = _persistent, nickname = _nickname where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) );
+        else
+            delete from tig_muc_room_affiliations where room_id = _roomId and jid_sha1 = SHA1( LOWER( _jid ) );
+        end if;
+    else
+        if _affiliation <> 'none' then
+            insert into tig_muc_room_affiliations (room_id, jid, jid_sha1, affiliation, persistent, nickname)
+                values (_roomId, _jid, SHA1( LOWER( _jid ) ), _affiliation, _persistent, _nickname);
+        end if;
+    end if;
+
+	COMMIT;
 end //
 -- QUERY END:
