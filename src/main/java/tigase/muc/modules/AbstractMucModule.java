@@ -18,22 +18,32 @@
 package tigase.muc.modules;
 
 import tigase.component.modules.AbstractModule;
+import tigase.kernel.beans.Inject;
+import tigase.muc.Affiliation;
 import tigase.muc.Room;
+import tigase.muc.exceptions.MUCException;
 import tigase.server.Iq;
 import tigase.server.Message;
 import tigase.server.Packet;
+import tigase.server.rtbl.RTBLRepository;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
+import tigase.xmpp.Authorization;
 import tigase.xmpp.StanzaType;
+import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
 import java.util.Collection;
+import java.util.logging.Level;
 
 /**
  * @author bmalkow
  */
 public abstract class AbstractMucModule
 		extends AbstractModule {
+
+	@Inject(nullAllowed = true)
+	private RTBLRepository rtblRepository;
 
 	public static Element createResultIQ(Element iq) {
 		return new Element(Iq.ELEM_NAME, new String[]{Packet.TYPE_ATT, Packet.FROM_ATT, Packet.TO_ATT, Packet.ID_ATT},
@@ -64,4 +74,18 @@ public abstract class AbstractMucModule
 		}
 	}
 
+	protected void validateRTBL(BareJID senderJID, Affiliation affiliation) throws MUCException {
+		if (affiliation == Affiliation.none) {
+			if (rtblRepository != null) {
+				if (rtblRepository.isBlocked(senderJID)) {
+					if (log.isLoggable(Level.FINEST)) {
+						log.finest("User " + senderJID + " matches entry in RTBL");
+					}
+					throw new MUCException(Authorization.FORBIDDEN, "You are banned from this service");
+				}
+			} else {
+				log.finest("skipping RTBL check, no RTBL repository available");
+			}
+		}
+	}
 }
