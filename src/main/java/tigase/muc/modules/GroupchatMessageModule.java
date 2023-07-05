@@ -152,6 +152,8 @@ public class GroupchatMessageModule
 				throw new MUCException(Authorization.FORBIDDEN, "Insufficient privileges to send groupchat message.");
 			}
 
+			validateRTBL(senderJID.getBareJID(), affiliation);
+
 			String xmlLang = packet.getElement().getAttributeStaticStr("xml:lang");
 			Element body = null;
 			Element subject = null;

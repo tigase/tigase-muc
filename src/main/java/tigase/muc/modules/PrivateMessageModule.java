@@ -83,6 +83,8 @@ public class PrivateMessageModule
 									   "Your role is '" + senderRole + "'. You can't send private message.");
 			}
 
+			validateRTBL(senderJID.getBareJID(), room.getAffiliation(senderNickname).getAffiliation());
+
 			final Collection<JID> recipientJids = room.getOccupantsJidsByNickname(recipientNickname);
 
 			if (recipientJids.isEmpty()) {

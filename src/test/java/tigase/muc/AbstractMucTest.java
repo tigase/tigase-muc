@@ -33,7 +33,7 @@ import tigase.kernel.core.Kernel;
 import tigase.muc.repository.AbstractMucDAO;
 import tigase.muc.repository.IMucDAO;
 import tigase.muc.utils.ArrayWriter;
-import tigase.server.xmppserver.S2SConnManTest;
+import tigase.vhosts.DummyVHostManager;
 import tigase.xml.db.DBElement;
 import tigase.xml.db.NodeNotFoundException;
 import tigase.xml.db.XMLDB;
@@ -72,7 +72,7 @@ public class AbstractMucTest
 
 		kernel.registerBean("eventBus").asInstance(EventBusFactory.getInstance()).exportable().exec();
 		kernel.registerBean("vHostManager")
-				.asClass(S2SConnManTest.DummyVHostManager.class)
+				.asClass(DummyVHostManager.class)
 				.exportable()
 				.setActive(true)
 				.exec();

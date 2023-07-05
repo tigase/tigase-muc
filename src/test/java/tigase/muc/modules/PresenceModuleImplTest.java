@@ -27,9 +27,8 @@ import tigase.muc.AbstractMucTest;
 import tigase.muc.PermissionChecker;
 import tigase.muc.TestMUCCompoent;
 import tigase.server.Packet;
-import tigase.server.xmppserver.S2SConnManAbstractTest;
-import tigase.server.xmppserver.S2SConnManTest;
 import tigase.util.stringprep.TigaseStringprepException;
+import tigase.vhosts.DummyVHostManager;
 import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
@@ -61,8 +60,8 @@ public class PresenceModuleImplTest
 		mucComponent = getKernel().getInstance(TestMUCCompoent.class);
 		mucComponent.setAdmins(Set.of(adminJID.getBareJID()));
 
-		final S2SConnManAbstractTest.DummyVHostManager vHostManager = getKernel().getInstance(
-				S2SConnManTest.DummyVHostManager.class);
+		final DummyVHostManager vHostManager = getKernel().getInstance(
+				DummyVHostManager.class);
 		vHostManager.addVhost(vhost);
 		vHostManager.getVHostItem(vhost).setAdmins(new String[]{domainAdminJID.getBareJID().toString()});
 		permissionChecker = getMucKernel().getInstance(PermissionChecker.class);

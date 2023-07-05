@@ -24,15 +24,14 @@ import tigase.component.exceptions.RepositoryException;
 import tigase.kernel.core.Kernel;
 import tigase.muc.exceptions.MUCException;
 import tigase.server.CmdAcl;
-import tigase.server.xmppserver.S2SConnManAbstractTest;
-import tigase.server.xmppserver.S2SConnManTest;
+import tigase.vhosts.DummyVHostManager;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
 import java.lang.reflect.Field;
 import java.util.Set;
 
-import static tigase.muc.PermissionChecker.*;
+import static tigase.muc.PermissionChecker.ROOM_VISIBILITY_PERMISSION;
 
 public class PermissionCheckerTest
 		extends AbstractMucTest {
@@ -52,7 +51,7 @@ public class PermissionCheckerTest
 		TestMUCCompoent mucComponent = kernel.getInstance(TestMUCCompoent.class);
 		mucComponent.setAdmins(Set.of(adminJID.getBareJID()));
 
-		final S2SConnManAbstractTest.DummyVHostManager vHostManager = kernel.getInstance(S2SConnManTest.DummyVHostManager.class);
+		final DummyVHostManager vHostManager = kernel.getInstance(DummyVHostManager.class);
 		vHostManager.addVhost(vhost);
 		vHostManager.getVHostItem(vhost).setAdmins(new String[]{domainAdminJID.getBareJID().toString()});
 		permissionChecker = getMucKernel().getInstance(PermissionChecker.class);

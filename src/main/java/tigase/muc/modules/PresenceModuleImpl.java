@@ -31,7 +31,6 @@ import tigase.muc.exceptions.MUCException;
 import tigase.muc.history.HistoryProvider;
 import tigase.muc.logger.MucLogger;
 import tigase.muc.repository.IMucRepository;
-import tigase.muc.repository.inmemory.InMemoryMucRepository;
 import tigase.server.Message;
 import tigase.server.Packet;
 import tigase.util.datetime.TimestampHelper;
@@ -509,6 +508,8 @@ public class PresenceModuleImpl
 		}
 
 		RoomAffiliation affiliation = room.getAffiliation(senderJID.getBareJID());
+		validateRTBL(senderJID.getBareJID(), affiliation.getAffiliation());
+
 		final Element xElement = element.getChild("x", "http://jabber.org/protocol/muc");
 		final Element password = (xElement == null) ? null : xElement.getChild("password");
 
