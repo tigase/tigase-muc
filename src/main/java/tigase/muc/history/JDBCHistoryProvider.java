@@ -192,9 +192,18 @@ public class JDBCHistoryProvider
 				   	}
 					Date msgTimestamp = data_repo.getTimestamp(rs, "ts");
 					String msg = rs.getString("msg");
+					String msgSenderJid = rs.getString("sender_jid");
 
 					Element msgEl = parseMessage(msg);
 					return new Item() {
+						@Override
+						public JID getSenderJID() {
+							if (msgSenderJid != null) {
+								return JID.jidInstanceNS(msgSenderJid);
+							}
+							return null;
+						}
+
 						@Override
 						public String getId() {
 							return stableId;
@@ -318,6 +327,14 @@ public class JDBCHistoryProvider
 							@Override
 							public Date getTimestamp() {
 								return msgTimestamp;
+							}
+
+							@Override
+							public JID getSenderJID() {
+								if (msgSenderJid != null) {
+									return JID.jidInstanceNS(msgSenderJid);
+								}
+								return null;
 							}
 						};
 						itemHandler.itemFound(query, item);

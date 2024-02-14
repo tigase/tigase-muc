@@ -20,13 +20,20 @@ package tigase.muc.history;
 import tigase.component.exceptions.RepositoryException;
 import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
+import tigase.xmpp.jid.JID;
 import tigase.xmpp.mam.MAMRepository;
 import tigase.xmpp.mam.Query;
 
-public interface ExtendedMAMRepository<Q extends Query, I extends MAMRepository.Item> extends MAMRepository<Q, I> {
+public interface ExtendedMAMRepository<Q extends Query, I extends ExtendedMAMRepository.Item> extends MAMRepository<Q, I> {
 
 	Item getItem(BareJID owner, String stableId) throws RepositoryException;
 
 	void updateMessage(BareJID owner, String stableId, Element msg, String body) throws RepositoryException;
+
+	interface Item extends MAMRepository.Item {
+
+		JID getSenderJID();
+
+	}
 
 }

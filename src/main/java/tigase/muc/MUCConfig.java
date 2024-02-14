@@ -57,7 +57,7 @@ public class MUCConfig {
 	@ConfigField(desc = "Enable sending timestamps in legacy format descibed in XEP-0091", alias = "legacy-delayed-delivery-enabled")
 	private boolean legacyDelayedDeliveryEnabled = false;
 	@ConfigField(desc = "Passing only body element", alias = MESSAGE_FILTER_ENABLED_KEY)
-	private boolean messageFilterEnabled = true;
+	private boolean messageFilterEnabled = false;
 	@ConfigField(desc = "Forwared iq to resource with highest priority", alias = "muc-multi-item-forward-best")
 	private boolean multiItemForwardBest = true;
 	@ConfigField(desc = "Multi resources login allowed", alias = MUC_MULTI_ITEM_ALLOWED_KEY)
