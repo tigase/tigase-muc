@@ -42,6 +42,7 @@ import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import static tigase.db.util.importexport.Exporter.EXPORT_MAM_BATCH_SIZE;
 import static tigase.db.util.importexport.Exporter.EXPORT_MAM_SINCE;
 import static tigase.db.util.importexport.RepositoryManager.isSet;
 
@@ -58,7 +59,7 @@ public class MUCRepositoryManagerExtension extends RepositoryManagerExtensionBas
 
 	@Override
 	public Stream<CommandlineParameter> getExportParameters() {
-		return Stream.concat(super.getExportParameters(), Stream.of(INCLUDE_MUC, EXPORT_MAM_SINCE));
+		return Stream.concat(super.getExportParameters(), Stream.of(INCLUDE_MUC, EXPORT_MAM_SINCE, EXPORT_MAM_BATCH_SIZE));
 	}
 
 	@Override
