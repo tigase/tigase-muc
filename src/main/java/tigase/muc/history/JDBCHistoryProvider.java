@@ -371,7 +371,11 @@ public class JDBCHistoryProvider
 			try {
 				st.setString(1, room.getRoomJID().toString());
 				st.setInt(2, maxMessages);
-				data_repo.setTimestamp(st, 3, since);
+				if (since != null && data_repo.getDatabaseType() == DataRepository.dbTypes.mysql && since.getTime() <= 0) {
+					st.setObject(3, null);
+				} else {
+					data_repo.setTimestamp(st, 3, since);
+				}
 				rs = st.executeQuery();
 				processResultSet(room, senderJID, writer, rs);
 			} finally {
@@ -417,12 +421,20 @@ public class JDBCHistoryProvider
 		int i = 1;
 		st.setString(i++, query.getComponentJID().getBareJID().toString());
 		if (query.getStart() != null) {
-			data_repo.setTimestamp(st, i++, new Timestamp(query.getStart().getTime()));
+			if (data_repo.getDatabaseType() == DataRepository.dbTypes.mysql && query.getStart().getTime() <= 0) {
+				st.setObject(i++, null);
+			} else {
+				data_repo.setTimestamp(st, i++, new Timestamp(query.getStart().getTime()));
+			}
 		} else {
 			st.setObject(i++, null);
 		}
 		if (query.getEnd() != null) {
-			data_repo.setTimestamp(st, i++, new Timestamp(query.getEnd().getTime()));
+			if (data_repo.getDatabaseType() == DataRepository.dbTypes.mysql && query.getEnd().getTime() <= 0) {
+				st.setObject(i++, null);
+			} else {
+				data_repo.setTimestamp(st, i++, new Timestamp(query.getEnd().getTime()));
+			}
 		} else {
 			st.setObject(i++, null);
 		}
