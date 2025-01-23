@@ -294,7 +294,7 @@ public class Ghostbuster2
 
 		final Element errorElement = packet.getElement().getChild("error");
 
-		if (errorElement == null) {
+		if (errorElement == null || errorElement.getChildren() == null) {
 			return null;
 		}
 		for (Element reason : errorElement.getChildren()) {
