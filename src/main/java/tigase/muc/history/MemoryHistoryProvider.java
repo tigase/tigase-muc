@@ -198,7 +198,15 @@ public class MemoryHistoryProvider
 
 	@Override
 	public void updateMessage(BareJID owner, String stableId, Element msg, String body) throws RepositoryException {
-
+		LinkedList<HItem> stanzas = this.history.get(owner);
+		if (stanzas == null) {
+			stanzas = new LinkedList<HItem>();
+			this.history.put(owner, stanzas);
+		}
+		stanzas.stream().filter(item -> item.id.equals(stableId)).findFirst().ifPresent(item -> {
+			item.msg = msg.toString();
+			item.body = body;
+		});
 	}
 
 	@Override

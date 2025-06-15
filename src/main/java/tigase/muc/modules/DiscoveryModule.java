@@ -155,7 +155,9 @@ public class DiscoveryModule
 				addFeature(resultQuery, "urn:xmpp:urn:xmpp:sid:0");
 			}
 			if (messageModerationModule != null) {
-				addFeature(resultQuery, MessageModerationModule.XMLNS);
+				for (String feature : messageModerationModule.getFeatures()) {
+					addFeature(resultQuery, feature);
+				}
 			}
 
 			addRoomInfoForm(resultQuery, room, senderJID);

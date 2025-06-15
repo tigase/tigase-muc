@@ -42,7 +42,7 @@ import static org.junit.Assert.*;
 import static tigase.muc.RoomConfig.MUC_ROOMCONFIG_PUBLICROOM_KEY;
 
 public class OccupantIdTest
-		extends AbstractMucTest{
+		extends AbstractMucTest {
 
 	private final String vhost = "tigase.org";
 	private final String componentName = "muc";
