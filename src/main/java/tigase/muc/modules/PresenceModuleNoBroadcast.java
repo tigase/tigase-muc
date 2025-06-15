@@ -79,6 +79,7 @@ public class PresenceModuleNoBroadcast
 																				  senderJID.getBareJID(), occupantJIDs,
 																				  leavingNickname, leavingAffiliation,
 																				  leavingRole);
+			addOccupantIdToPresence(room, senderJID.getBareJID(), selfPresence.packet.getElement());
 			if (selfStatusCodes != null) {
 				for (Integer statusCode : selfStatusCodes) {
 					selfPresence.addStatusCode(statusCode);
@@ -93,6 +94,7 @@ public class PresenceModuleNoBroadcast
 																				  senderJID.getBareJID(), z,
 																				  leavingNickname, leavingAffiliation,
 																				  leavingRole);
+			addOccupantIdToPresence(room, senderJID.getBareJID(), selfPresence.packet.getElement());
 			if (selfStatusCodes != null) {
 				for (Integer statusCode : selfStatusCodes) {
 					selfPresence.addStatusCode(statusCode);

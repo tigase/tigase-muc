@@ -30,10 +30,14 @@ import tigase.muc.RoomConfig.RoomConfigListener;
 import tigase.muc.repository.IMucDAO;
 import tigase.muc.repository.IMucRepository;
 import tigase.server.Packet;
+import tigase.util.Base64;
 import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
+import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -64,6 +68,7 @@ public class InMemoryMucRepository
 	private Room.RoomFactory roomFactory;
 	@Inject
 	private UserRepository userRepository;
+	private SecretKey secretKey = null;
 
 	public InMemoryMucRepository() {
 		this.roomListener = new Room.RoomListener() {
@@ -157,6 +162,7 @@ public class InMemoryMucRepository
 		rc.copyFrom(getDefaultRoomConfig(), false);
 
 		RoomWithId room = roomFactory.newInstance(null, rc, new Date(), senderJid.getBareJID());
+		room.setSecretKey(secretKey);
 		room.getConfig().addListener(roomConfigListener);
 		room.addListener(roomListener);
 		this.rooms.put(roomJID, room);
@@ -277,6 +283,7 @@ public class InMemoryMucRepository
 		if (room == null) {
 			room = dao.getRoom(roomJID);
 			if (room != null) {
+				room.setSecretKey(secretKey);
 				room.setAffiliations(dao.getAffiliations(room));
 				room.getConfig().addListener(roomConfigListener);
 				room.addListener(roomListener);
@@ -285,7 +292,7 @@ public class InMemoryMucRepository
 		}
 		return room;
 	}
-
+	
 	@Override
 	public void initialize() {
 		try {
@@ -301,6 +308,20 @@ public class InMemoryMucRepository
 					}
 				}
 			}
+
+			byte[] data = new byte[32];
+			new SecureRandom().nextBytes(data);
+			String newSecretKeyStr = Base64.encode(data);
+			String secretKeyStr = userRepository.getData(mucConfig.getServiceName(), "secret-key");
+			while (secretKeyStr == null) {
+				userRepository.setData(mucConfig.getServiceName(), "secret-key", newSecretKeyStr);
+				try {
+					// delay to read the last concurrent write in the cluster
+					Thread.sleep(100);
+				}  catch (InterruptedException ex) {}
+				secretKeyStr = userRepository.getData(mucConfig.getServiceName(), "secret-key");
+			}
+			secretKey = new SecretKeySpec(Base64.decode(secretKeyStr), "HmacSHA1");
 
 			List<BareJID> roomJids = dao.getRoomsJIDList();
 			if (roomJids != null) {

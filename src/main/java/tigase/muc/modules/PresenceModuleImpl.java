@@ -174,6 +174,7 @@ public class PresenceModuleImpl
 
 		Element presenceElement = new Element("presence");
 		presenceElement.setAttribute("type", "unavailable");
+		addOccupantIdToPresence(room, senderJID.getBareJID(), presenceElement);
 
 		if (log.isLoggable(Level.FINER)) {
 			log.finer(
@@ -192,6 +193,7 @@ public class PresenceModuleImpl
 																				  leavingNickname,
 																				  leavingAffiliation.getAffiliation(),
 																				  Role.none);
+			addOccupantIdToPresence(room, senderJID.getBareJID(), selfPresence.packet.getElement());
 			if (selfStatusCodes != null) {
 				for (Integer statusCode : selfStatusCodes) {
 					selfPresence.addStatusCode(statusCode);
@@ -207,6 +209,7 @@ public class PresenceModuleImpl
 																				  leavingNickname,
 																				  leavingAffiliation.getAffiliation(),
 																				  Role.none);
+			addOccupantIdToPresence(room, senderJID.getBareJID(), selfPresence.packet.getElement());
 			if (selfStatusCodes != null) {
 				for (Integer statusCode : selfStatusCodes) {
 					selfPresence.addStatusCode(statusCode);
@@ -231,7 +234,7 @@ public class PresenceModuleImpl
 																				leavingNickname,
 																				leavingAffiliation.getAffiliation(),
 																				room.getRole(leavingNickname));
-
+					addOccupantIdToPresence(room, senderJID.getBareJID(), presence.packet.getElement());
 					write(presence.packet);
 				}
 			}
@@ -254,6 +257,7 @@ public class PresenceModuleImpl
 																					occupantJIDs, leavingNickname,
 																					leavingAffiliation.getAffiliation(),
 																					role);
+						addOccupantIdToPresence(room, senderJID.getBareJID(), presence.packet.getElement());
 						write(presence.packet);
 					} else {
 						for (JID jid : occupantJIDs) {
@@ -264,6 +268,7 @@ public class PresenceModuleImpl
 																						leavingNickname,
 																						leavingAffiliation.getAffiliation(),
 																						role);
+							addOccupantIdToPresence(room, senderJID.getBareJID(), presence.packet.getElement());
 							write(presence.packet);
 						}
 					}
@@ -431,34 +436,52 @@ public class PresenceModuleImpl
 		}
 	}
 
+	public static void addOccupantIdToPresence(Room room, BareJID sender, Element element) {
+		String occupantId = room.generateOccupantId(sender);
+		element.addChild(new Element("occupant-id").withAttribute("xmlns", "urn:xmpp:occupant-id:0")
+								 .withAttribute("id", occupantId));
+	}
+
 	protected Element clonePresence(Element element) {
 		Element presence = new Element(element);
-		if (config.isPresenceFilterEnabled()) {
-			List<Element> cc = element.getChildren();
+		List<Element> cc = element.getChildren();
 
-			if (cc != null) {
-				@SuppressWarnings("rawtypes") List<XMLNodeIfc> children = new ArrayList<XMLNodeIfc>();
-
+		if (cc != null) {
+			@SuppressWarnings("rawtypes") List<XMLNodeIfc> children = new ArrayList<XMLNodeIfc>();
+			if (config.isPresenceFilterEnabled()) {
 				for (Element c : cc) {
 					for (Criteria crit : allowedElements) {
 						if (crit.match(c)) {
 							children.add(c);
-
 							break;
 						}
 					}
 				}
-				presence.setChildren(children);
+			} else {
+				for (Element c : cc) {
+					if (isXMuc(c)) {
+						continue;
+					}
+					if (isOccupantId(c)) {
+						continue;
+					}
+					children.add(c);
+				}
 			}
-		}
-
-		Element toRemove = presence.getChild("x", "http://jabber.org/protocol/muc");
-
-		if (toRemove != null) {
-			presence.removeChild(toRemove);
+			presence.setChildren(children);
 		}
 
 		return presence;
+	}
+
+	protected boolean isOccupantId(Element element) {
+		return Objects.equals(element.getName(), "occupant-id") &&
+				Objects.equals(element.getXMLNS(), "urn:xmpp:occupant-id:0");
+	}
+
+	protected boolean isXMuc(Element element) {
+		return Objects.equals(element.getName(), "x") &&
+				Objects.equals(element.getXMLNS(), "http://jabber.org/protocol/muc");
 	}
 
 	protected PresenceWrapper preparePresence(JID destinationJID, final Element presence, Room room, JID occupantJID,
@@ -479,7 +502,9 @@ public class PresenceModuleImpl
 				!room.getConfig().getPresenceFilteredAffiliations().isEmpty() && room.getConfig()
 				.getPresenceFilteredAffiliations()
 				.contains(room.getAffiliation(senderJID.getBareJID()).getAffiliation()))) {
-			room.updatePresenceByJid(null, nickname, clonePresence(presenceElement));
+			Element clonedPresence = clonePresence(presenceElement);
+			addOccupantIdToPresence(room, senderJID.getBareJID(), clonedPresence);
+			room.updatePresenceByJid(senderJID, nickname, clonedPresence);
 		}
 
 		Element pe = room.getLastPresenceCopyByJid(senderJID.getBareJID());
@@ -637,6 +662,7 @@ public class PresenceModuleImpl
 		}
 
 		Element pe = clonePresence(element);
+		addOccupantIdToPresence(room, senderJID.getBareJID(), pe);
 		room.addOccupantByJid(senderJID, nickname, newRole, pe);
 
 		if (ghostbuster != null) {

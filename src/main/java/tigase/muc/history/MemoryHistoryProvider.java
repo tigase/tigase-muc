@@ -19,25 +19,28 @@ package tigase.muc.history;
 
 import tigase.annotations.TigaseDeprecated;
 import tigase.component.PacketWriter;
+import tigase.component.exceptions.ComponentException;
+import tigase.component.exceptions.RepositoryException;
 import tigase.db.DataSource;
 import tigase.muc.Room;
 import tigase.server.Packet;
+import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
+import tigase.xmpp.mam.ExtendedQueryImpl;
+import tigase.xmpp.mam.Query;
 
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
+import java.util.stream.Stream;
 
 /**
  * @author bmalkow
  */
 public class MemoryHistoryProvider
-		extends AbstractHistoryProvider {
+		extends AbstractHistoryProvider implements ExtendedMAMRepository {
 
 	private final Map<BareJID, LinkedList<HItem>> history = new ConcurrentHashMap<BareJID, LinkedList<HItem>>();
 	private final int maxSize = 256;
@@ -142,6 +145,63 @@ public class MemoryHistoryProvider
 	}
 
 	@Override
+	public Item getItem(BareJID owner, String stableId) throws RepositoryException {
+		LinkedList<HItem> stanzas = this.history.get(owner);
+		if (stanzas == null) {
+			stanzas = new LinkedList<HItem>();
+			this.history.put(owner, stanzas);
+		}
+		return stanzas.stream().filter(item -> item.id.equals(stableId)).findFirst().map(this::convert).orElse(null);
+	}
+
+	@Override
+	public void queryItems(Query query, ItemHandler itemHandler) throws RepositoryException, ComponentException {
+		LinkedList<HItem> stanzas = this.history.get(query.getComponentJID().getBareJID());
+		if (stanzas == null) {
+			stanzas = new LinkedList<HItem>();
+			this.history.put(query.getComponentJID().getBareJID(), stanzas);
+		}
+		Stream<HItem> stream = stanzas.stream();
+		if (query.getStart() != null) {
+			stream = stream.filter(it -> it.timestamp.after(query.getStart()));
+		}
+		if (query.getEnd() != null) {
+			stream = stream.filter(it -> it.timestamp.before(query.getEnd()));
+		}
+		List<HItem> allItems = stream.toList();
+		stream = allItems.stream();
+		if (query.getRsm().getAfter() != null) {
+			stream = stream.dropWhile(it -> !it.id.equals(query.getRsm().getAfter())).skip(1);
+		}
+		if (query.getRsm().getBefore() != null) {
+			stream = stream.takeWhile(it -> !it.id.equals(query.getRsm().getBefore()));
+		}
+		List<HItem> items = stream.toList();
+		query.getRsm().setCount(allItems.size());
+		if (allItems.size() > 0) {
+			query.getRsm().setIndex(allItems.indexOf(items.get(0)));
+		}
+		if (query.getRsm().hasBefore() && query.getRsm().getBefore() == null) {
+			items = items.reversed();
+		}
+		items.stream()
+				.map(item -> convert(query.getComponentJID().getBareJID(), query.getQuestionerJID(), item))
+				.forEach(item -> {
+					itemHandler.itemFound(query, item);
+				});
+	}
+
+	@Override
+	public Query newQuery() {
+		return new ExtendedQueryImpl();
+	}
+
+	@Override
+	public void updateMessage(BareJID owner, String stableId, Element msg, String body) throws RepositoryException {
+
+	}
+
+	@Override
 	public boolean isPersistent(Room room) {
 		return false;
 	}
@@ -154,6 +214,55 @@ public class MemoryHistoryProvider
 	@Override
 	public void removeHistory(Room room) {
 		this.history.remove(room.getRoomJID());
+	}
+
+	private Item convert(HItem item) {
+		return new Item(item.id, parseMessage(item.msg), item.timestamp, item.senderJid);
+	}
+
+	private Item convert(BareJID roomJID, JID senderJID, HItem item) {
+		try {
+			Element message = createMessageElement(roomJID, senderJID, item.senderNickname, item.msg, item.body,
+												   item.id);
+			return new Item(item.id, message, item.timestamp, item.senderJid);
+		} catch (TigaseStringprepException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private static class Item implements ExtendedMAMRepository.Item {
+
+		private final String id;
+		private final Element message;
+		private final Date timestamp;
+		private final JID sender;
+
+		private Item(String id, Element message, Date timestamp, JID sender) {
+			this.id = id;
+			this.message = message;
+			this.timestamp = timestamp;
+			this.sender = sender;
+		}
+
+		@Override
+		public String getId() {
+			return id;
+		}
+
+		@Override
+		public Element getMessage() {
+			return message;
+		}
+
+		@Override
+		public JID getSenderJID() {
+			return sender;
+		}
+
+		@Override
+		public Date getTimestamp() {
+			return timestamp;
+		}
 	}
 
 	private static class HItem {

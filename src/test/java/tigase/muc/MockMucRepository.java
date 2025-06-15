@@ -24,6 +24,8 @@ import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
+import javax.crypto.spec.SecretKeySpec;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
@@ -116,6 +118,9 @@ public class MockMucRepository
 		rc.copyFrom(getDefaultRoomConfig(), false);
 
 		Room room = new Room(rc, new Date(), senderJid.getBareJID());
+		byte[] data = new byte[32];
+		new SecureRandom().nextBytes(data);
+		room.setSecretKey(new SecretKeySpec(data, "HmacSha1"));
 		room.getConfig().addListener(roomConfigListener);
 		this.rooms.put(roomJID, room);
 		this.allRooms.put(roomJID, new InternalRoom());

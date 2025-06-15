@@ -39,6 +39,8 @@ import tigase.xmpp.jid.JID;
 
 import java.util.logging.Level;
 
+import static tigase.muc.modules.PresenceModuleImpl.addOccupantIdToPresence;
+
 /**
  * @author bmalkow
  */
@@ -122,7 +124,7 @@ public class RoomConfigurationModule
 				PresenceWrapper presence = PresenceWrapper.preparePresenceW(room, occupantJid, p,
 																			occupantJid.getBareJID(), occupantNickname,
 																			Affiliation.none, Role.none);
-
+				addOccupantIdToPresence(room, occupantJid.getBareJID(), presence.packet.getElement());
 				presence.x.addChild(destroyElement);
 				write(presence.packet);
 			}

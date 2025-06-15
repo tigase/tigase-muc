@@ -106,6 +106,7 @@ public class DiscoveryModule
 			resultQuery.addChild(resultIdentity);
 			addFeature(resultQuery, "http://jabber.org/protocol/muc");
 			addFeature(resultQuery, "http://jabber.org/protocol/muc#stable_id");
+			addFeature(resultQuery, "urn:xmpp:occupant-id:0");
 
 			for (RoomFeatures roomFeaturesModule : roomFeaturesModules) {
 				for (String roomFeature : roomFeaturesModule.getRoomFeatures(room)) {

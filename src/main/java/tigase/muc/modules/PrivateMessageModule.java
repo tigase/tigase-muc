@@ -93,6 +93,16 @@ public class PrivateMessageModule
 			for (JID jid : recipientJids) {
 				final Element message = element.getElement().clone();
 
+				// strip any incoming occupant-id and add a valid one generated locally
+				Element incomingOccupantId = message.findChild(el -> "occupant-id".equals(el.getName()) && "urn:xmpp:occupant-id:0".equals(el.getXMLNS()));
+				if (incomingOccupantId != null) {
+					message.removeChild(incomingOccupantId);
+				}
+				message.withElement("occupant-id", occupantId -> {
+					occupantId.withAttribute("xmlns", "urn:xmpp:occupant-id:0")
+							.withAttribute("id", room.generateOccupantId(senderJID.getBareJID()));
+				});
+
 				message.setAttribute("from", JID.jidInstance(roomJID, senderNickname).toString());
 				message.setAttribute("to", jid.toString());
 				Packet p = Packet.packetInstance(message);

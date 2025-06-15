@@ -172,6 +172,8 @@ public class GroupchatMessageModule
 					} else if ("subject".equals(c.getName())) {
 						subject = c;
 						content.add(c);
+					} else if ("occupant-id".equals(c.getName()) && "urn:xmpp:occupant-id:0".equals(c.getXMLNS())) {
+						// we need to remove occupant-id that is not expected
 					} else if (!config.isMessageFilterEnabled()) {
 						content.add(c);
 					} else if (config.isChatStateAllowed() && CRIT_CHAT_STAT.match(c)) {
@@ -187,6 +189,9 @@ public class GroupchatMessageModule
 					}
 				}
 			}
+			// add occupant-id to the message
+			content.add(new Element("occupant-id").withAttribute("xmlns", "urn:xmpp:occupant-id:0")
+								.withAttribute("id", room.generateOccupantId(senderJID.getBareJID())));
 
 			final JID senderRoomJID = JID.jidInstance(roomJID, nickName);
 

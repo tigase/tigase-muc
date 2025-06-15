@@ -17,6 +17,7 @@
  */
 package tigase.muc;
 
+import org.jspecify.annotations.NonNull;
 import tigase.server.Packet;
 import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
@@ -88,7 +89,7 @@ public class PresenceFiltered
 	}
 
 	@Override
-	public void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence,
+	public void onOccupantChangedPresence(Room room, @NonNull JID occupantJid, String nickname, Element presence,
 										  boolean newOccupant) {
 		// we don't need to do anything here
 	}

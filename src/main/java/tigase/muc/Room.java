@@ -17,14 +17,21 @@
  */
 package tigase.muc;
 
+import org.jspecify.annotations.NonNull;
 import tigase.component.exceptions.RepositoryException;
 import tigase.kernel.beans.Bean;
 import tigase.server.Packet;
+import tigase.util.Algorithms;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
 import tigase.xmpp.jid.JID;
 
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -56,6 +63,7 @@ public class Room
 	private String subject;
 	private Date subjectChangeDate;
 	private String subjectChangerNick;
+	private SecretKey secretKey;
 
 	public static Role getDefaultRole(final RoomConfig config, final Affiliation affiliation) {
 		if (config.isRoomModerated() && (affiliation == Affiliation.none)) {
@@ -460,6 +468,10 @@ public class Room
 	public void setRoomLocked(boolean roomLocked) {
 		this.roomLocked = roomLocked;
 	}
+	
+	public void setSecretKey(SecretKey secretKey) {
+		this.secretKey = secretKey;
+	}
 
 	@Override
 	public void onConfigChanged(RoomConfig roomConfig, Set<String> modifiedVars) {
@@ -541,7 +553,7 @@ public class Room
 		}
 	}
 
-	public void updatePresenceByJid(JID jid, String nickname, Element cp) throws TigaseStringprepException {
+	public void updatePresenceByJid(@NonNull JID jid, String nickname, Element cp) throws TigaseStringprepException {
 		if (cp == null) {
 			this.presences.remove(jid);
 			if (log.isLoggable(Level.FINEST)) {
@@ -555,6 +567,19 @@ public class Room
 		}
 
 		fireOnOccupantChangedPresence(jid, nickname, cp, false);
+	}
+
+	public String generateOccupantId(BareJID jid) {
+		try {
+			Mac mac = Mac.getInstance("HmacSHA1");
+			mac.init(secretKey);
+			mac.update(this.getRoomJID().toString().getBytes());
+			mac.update((byte) 0x00);
+			mac.update(jid.toString().getBytes(StandardCharsets.UTF_8));
+			return Algorithms.bytesToHex(mac.doFinal());
+		} catch (NoSuchAlgorithmException|InvalidKeyException e) {
+			throw new RuntimeException("Unable to compute occupant id for user " + jid + " in the room " + getRoomJID(), e);
+		}
 	}
 
 	protected Collection<JID> getLocalOccupantsJidsByNickname(final String nickname) {
@@ -610,7 +635,7 @@ public class Room
 		}
 	}
 
-	private void fireOnOccupantChangedPresence(JID occupantJid, String nickname, Element cp, boolean newOccupant) {
+	private void fireOnOccupantChangedPresence(@NonNull JID occupantJid, String nickname, Element cp, boolean newOccupant) {
 		for (Room.RoomOccupantListener listener : this.occupantListeners) {
 			listener.onOccupantChangedPresence(this, occupantJid, nickname, cp, newOccupant);
 		}
@@ -664,7 +689,7 @@ public class Room
 
 		void onOccupantAdded(Room room, JID occupantJid);
 
-		void onOccupantChangedPresence(Room room, JID occupantJid, String nickname, Element presence,
+		void onOccupantChangedPresence(Room room, @NonNull JID occupantJid, String nickname, Element presence,
 									   boolean newOccupant);
 
 		void onOccupantRemoved(Room room, JID occupantJid);

@@ -102,7 +102,7 @@ public class AbstractMucTest
 		getMucKernel().registerBean(PermissionChecker.class).exec();
 
 		writer = new ArrayWriter();
-		getMucKernel().registerBean("writer").asInstance(writer).exec();
+		getMucKernel().registerBean("writer").asInstance(writer).exportable().exec();
 
 	}
 
