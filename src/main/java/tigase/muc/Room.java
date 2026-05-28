@@ -453,8 +453,8 @@ public class Room
 
 	public Optional<JID> getOccupantJidForIqRequestForward(String recipientNickname) {
 		return Optional.ofNullable(getOccupantsJidByNickname(recipientNickname))
-				.map(jid -> this.presences.getBestPresenceInt(jid))
-				.map(pe -> pe.getFrom());
+				.map(this.presences::getBestPresenceInt)
+				.map(PresenceStore.Presence::getFrom);
 	}
 
 	public Optional<JID> getOccupantJidForIqResponseForward(String recipientNickname, Predicate<JID> filter) {
@@ -582,10 +582,13 @@ public class Room
 		}
 	}
 
-	protected Collection<JID> getLocalOccupantsJidsByNickname(final String nickname) {
+	protected @NonNull Collection<JID> getLocalOccupantsJidsByNickname(@NonNull final String nickname) {
+		if (nickname == null) {
+			return Collections.emptyList();
+		}
 		OccupantEntry entry = this.occupants.get(nickname);
 		if (entry != null) {
-			return Collections.unmodifiableCollection(new ConcurrentSkipListSet(entry.jids));
+			return Collections.unmodifiableCollection(new ConcurrentSkipListSet<>(entry.jids));
 		}
 		return Collections.emptyList();
 	}
