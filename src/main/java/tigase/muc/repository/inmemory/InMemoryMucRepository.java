@@ -213,11 +213,14 @@ public class InMemoryMucRepository
 	@Override
 	public Map<BareJID, String> getPublicVisibleRooms(String domain) throws RepositoryException {
 		Map<BareJID, String> result = new HashMap<>();
+		log.finest(() -> "Getting public visible rooms for domain " + domain + ", available: " + allRooms.size());
 		for (Map.Entry<BareJID, InternalRoom> entry : this.allRooms.entrySet()) {
+			log.finest(() -> "Processing room: " + entry);
 			if (entry.getValue().isPublic == null) {
 				InternalRoom ir = entry.getValue();
 				try {
 					Room room = dao.getRoom(entry.getKey());
+					log.finest(() -> "Processing room, retrieved configuration from the database: " + entry);
 					synchronized (ir) {
 						ir.isPublic = room == null ? false : room.getConfig().isRoomconfigPublicroom();
 					}
@@ -247,17 +250,21 @@ public class InMemoryMucRepository
 				result.put(jid, name);
 			}
 		}
+		log.finest(() -> "Getting public visible rooms for domain " + domain + ", result: " + result);
 		return result;
 	}
 
 	@Override
 	public BareJID[] getPublicVisibleRoomsIdList() throws RepositoryException {
+		log.finest(() -> "Getting public visible rooms id list from database using repository");
 		List<BareJID> result = new ArrayList<BareJID>();
 		for (Map.Entry<BareJID, InternalRoom> entry : this.allRooms.entrySet()) {
+			log.finest(() -> "Processing room, isPublic is null: " + entry);
 			if (entry.getValue().isPublic == null) {
 				InternalRoom ir = entry.getValue();
 				try {
 					Room room = dao.getRoom(entry.getKey());
+					log.finest(() -> "Processing room, retrieved configuration from the database: " + entry);
 					synchronized (ir) {
 						ir.isPublic = room == null ? false : room.getConfig().isRoomconfigPublicroom();
 					}
@@ -280,8 +287,10 @@ public class InMemoryMucRepository
 	@Override
 	public Room getRoom(final BareJID roomJID) throws RepositoryException {
 		RoomWithId room = this.rooms.get(roomJID);
+		log.finest( "Processing room: " + room);
 		if (room == null) {
 			room = dao.getRoom(roomJID);
+			log.finest("Processing room, retrieved configuration from the database: " + room);
 			if (room != null) {
 				room.setSecretKey(secretKey);
 				room.setAffiliations(dao.getAffiliations(room));
@@ -324,6 +333,7 @@ public class InMemoryMucRepository
 			secretKey = new SecretKeySpec(Base64.decode(secretKeyStr), "HmacSHA1");
 
 			List<BareJID> roomJids = dao.getRoomsJIDList();
+			log.finest(() -> "Found rooms: " + roomJids);
 			if (roomJids != null) {
 				for (BareJID jid : roomJids) {
 					if (jid.getLocalpart() == null) {
@@ -439,5 +449,15 @@ public class InMemoryMucRepository
 		public boolean isPersistent = false;
 		public Boolean isPublic = null;
 		public String name;
+
+		@Override
+		public String toString() {
+			final StringBuilder sb = new StringBuilder("InternalRoom{");
+			sb.append("name='").append(name).append('\'');
+			sb.append(", isPublic=").append(isPublic);
+			sb.append(", isPersistent=").append(isPersistent);
+			sb.append('}');
+			return sb.toString();
+		}
 	}
 }

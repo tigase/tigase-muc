@@ -22,7 +22,12 @@ import tigase.db.DataRepository;
 import tigase.db.Repository;
 import tigase.db.util.RepositoryVersionAware;
 import tigase.kernel.beans.Inject;
-import tigase.muc.*;
+import tigase.muc.Affiliation;
+import tigase.muc.MUCConfig;
+import tigase.muc.Room;
+import tigase.muc.RoomAffiliation;
+import tigase.muc.RoomConfig;
+import tigase.muc.RoomWithId;
 import tigase.util.stringprep.TigaseStringprepException;
 import tigase.xml.Element;
 import tigase.xmpp.jid.BareJID;
@@ -31,7 +36,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -154,6 +163,11 @@ public class JDBCMucDAO
 
 	@Override
 	public RoomWithId<Long> getRoom(BareJID roomJID) throws RepositoryException {
+
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST, "Getting room " + roomJID + " from database using repository: " + data_repo);
+		}
+
 		try {
 			ResultSet rs = null;
 			PreparedStatement stmt = data_repo.getPreparedStatement(roomJID, GET_ROOM_QUERY);
@@ -206,6 +220,9 @@ public class JDBCMucDAO
 
 	@Override
 	public List<BareJID> getRoomsJIDList() throws RepositoryException {
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST, "Getting list of rooms jids from database using repository: " + data_repo);
+		}
 		ArrayList<BareJID> jids = new ArrayList<>();
 		try {
 			ResultSet rs = null;
@@ -224,6 +241,9 @@ public class JDBCMucDAO
 			}
 		} catch (SQLException | TigaseStringprepException ex) {
 			throw new RepositoryException("Error while reading list of rooms jids from database", ex);
+		}
+		if (log.isLoggable(Level.FINEST)) {
+			log.log(Level.FINEST, "Retrieved MUC room list from database: " + jids);
 		}
 		return jids;
 	}
